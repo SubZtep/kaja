@@ -52,6 +52,17 @@ const DELTA_INTERVAL_MS = 80
 /** Rounds in a row where every call on this computer failed before the terminal stops resuming, as `--local` stops its loop. */
 const MAX_FAILING_CLIENT_ROUNDS = 3
 
+/** What one turn request carries besides the session and the terminal's declarations. */
+type TurnRequest =
+  | { message: string; toolResults?: NasiToolResult[] }
+  | { approval: CloudApproval }
+  | { toolResults: NasiToolResult[] }
+
+// A run's first request: a message also answers the calls the failure guard held back.
+function withHeldResults(first: TurnRequest, held: NasiToolResult[] | undefined): TurnRequest {
+  return held && "message" in first ? { ...first, toolResults: held } : first
+}
+
 /**
  * Drives cloud Nasi over `/nasi/turn/stream` from React state — the lite
  * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
@@ -197,6 +208,27 @@ export function useCloudAgent({
     [computer, approve, pushEvent, info]
   )
 
+  /**
+   * Runs a paused round's calls here; their results resume the turn, unless every call failed too many rounds in a
+   * row: then there's no next request, and the results wait for the next message.
+   */
+  const resumeOnComputer = useCallback(
+    async (calls: NasiClientCall[], failingRounds: number) => {
+      const results = await runOnComputer(calls)
+      const allFailed = results.length > 0 && results.every(result => result.status === "error")
+      const failing = allFailed ? failingRounds + 1 : 0
+      if (failing < MAX_FAILING_CLIENT_ROUNDS) return { request: { toolResults: results }, failingRounds: failing }
+      heldResultsRef.current = results
+      pushEvent({
+        type: "error",
+        text: t("timeline.computerStopped", { count: MAX_FAILING_CLIENT_ROUNDS }),
+        category: "tool"
+      })
+      return { request: undefined, failingRounds: failing }
+    },
+    [runOnComputer, pushEvent]
+  )
+
   /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server asks about and while it waits on this computer. */
   const runTurns = useCallback(
     async (first: { message: string } | { approval: CloudApproval }) => {
@@ -251,15 +283,11 @@ export function useCloudAgent({
       const declared: Partial<NasiTurnRequest> = here
         ? { clientTools: here.tools, clientSkills: here.skills, clientPersonas: here.personas }
         : {}
-      const held = "message" in first ? heldResultsRef.current : undefined
+      let request: TurnRequest | undefined = withHeldResults(first, heldResultsRef.current)
       heldResultsRef.current = undefined
       try {
-        let request:
-          | { message: string; toolResults?: NasiToolResult[] }
-          | { approval: CloudApproval }
-          | { toolResults: NasiToolResult[] } = held ? { ...first, toolResults: held } : first
         let failingRounds = 0
-        while (true) {
+        while (request) {
           clientCalls = []
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
           // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
@@ -278,24 +306,10 @@ export function useCloudAgent({
             next = await gen.next()
           }
           sessionRef.current = next.value.session
-          if (next.value.status === "needs_client_tool") {
-            const results = await runOnComputer(clientCalls)
-            const allFailed = results.length > 0 && results.every(result => result.status === "error")
-            failingRounds = allFailed ? failingRounds + 1 : 0
-            if (failingRounds >= MAX_FAILING_CLIENT_ROUNDS) {
-              heldResultsRef.current = results
-              pushEvent({
-                type: "error",
-                text: t("timeline.computerStopped", { count: MAX_FAILING_CLIENT_ROUNDS }),
-                category: "tool"
-              })
-              break
-            }
-            request = { toolResults: results }
-            continue
-          }
-          if (!yolo || next.value.status !== "needs_approval") break
-          request = { approval: "approve" }
+          const status = next.value.status
+          if (status === "needs_client_tool")
+            ({ request, failingRounds } = await resumeOnComputer(clientCalls, failingRounds))
+          else request = yolo && status === "needs_approval" ? { approval: "approve" } : undefined
         }
       } catch (error) {
         const { category, message } = categorizeCloudError(error)
@@ -305,7 +319,7 @@ export function useCloudAgent({
         setPending(false)
       }
     },
-    [client, pushEvent, followPersonaSwitch, yolo, computer, runOnComputer]
+    [client, pushEvent, followPersonaSwitch, yolo, computer, resumeOnComputer]
   )
 
   // `/compact [focus]`: the server summarises the session now instead of running a turn.
