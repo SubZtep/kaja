@@ -683,6 +683,26 @@
   }
 }
 
+.flycursor {
+  cursor:
+    url("/fly1.png") 32 32,
+    auto;
+  animation: flycursor 0.8s linear infinite;
+}
+
+@keyframes flycursor {
+  0% {
+    cursor:
+      url("/fly1.png") 32 32,
+      auto;
+  }
+  80% {
+    cursor:
+      url("/fly2.png") 32 32,
+      auto;
+  }
+}
+
 pre {
   width: fit-content;
   text-align: left;

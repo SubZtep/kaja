@@ -129,7 +129,7 @@ export function Hero() {
         )}
 
         <div className="flex min-w-0 flex-col justify-center md:col-start-2 md:row-span-2 md:row-start-1">
-          <div ref={monsterRef} className="monster-glint relative mx-auto w-fit md:w-full">
+          <div ref={monsterRef} className="monster-glint flycursor relative mx-auto w-fit md:w-full">
             <img
               src="/monster.gif"
               alt={m.brand_monster_alt()}
