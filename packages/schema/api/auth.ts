@@ -23,18 +23,12 @@ export const signInCodeSchema = z.object({
     .pipe(z.string().regex(/^\d{6}$/, AUTH_MESSAGES.invalidCode))
 })
 
-/** A blank name is fine (a Google sign-in can fill it later); a given one is at least 2 characters. */
+/** A blank name is fine (sign-up leaves it to Gravatar or Google); a given one is at least 2 characters. */
 const nameSchema = z
   .string()
   .trim()
   .max(100, AUTH_MESSAGES.nameMax)
   .refine(name => name === "" || name.length >= 2, AUTH_MESSAGES.nameMin)
-
-export const registerSchema = z.object({
-  name: nameSchema,
-  email: emailSchema,
-  image: z.string()
-})
 
 export const editSchema = z.object({
   name: nameSchema,
@@ -47,6 +41,5 @@ export const editEmailSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 export type SignInCodeInput = z.infer<typeof signInCodeSchema>
-export type RegisterInput = z.infer<typeof registerSchema>
 export type EditInput = z.infer<typeof editSchema>
 export type EditEmailInput = z.infer<typeof editEmailSchema>

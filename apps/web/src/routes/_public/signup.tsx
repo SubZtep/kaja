@@ -1,5 +1,5 @@
 import { Field } from "@base-ui/react/field"
-import { type RegisterInput, registerSchema } from "@kaja/schema/api"
+import { loginSchema } from "@kaja/schema/api"
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
@@ -37,20 +37,18 @@ function SignUp() {
   const { signIn } = useAuthClient()
   const captcha = useTurnstile()
   const sendCode = useSendCode(captcha)
-  // The details a code went out for; set, the page asks for the code
-  const [details, setDetails] = useState<RegisterInput>()
+  // The address a code went out to; set, the page asks for the code
+  const [email, setEmail] = useState<string>()
 
   const form = useAppForm({
     defaultValues: {
-      name: "",
-      email: "",
-      image: ""
+      email: ""
     },
     validators: {
-      onSubmit: registerSchema
+      onSubmit: loginSchema
     },
     onSubmit: async ({ value }) => {
-      const parsed = registerSchema.safeParse(value)
+      const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
@@ -62,7 +60,7 @@ function SignUp() {
 
       try {
         setLoading(true)
-        if (await sendCode(parsed.data.email)) setDetails(parsed.data)
+        if (await sendCode(parsed.data.email)) setEmail(parsed.data.email)
       } catch {
         toast.error(m.error_generic())
       } finally {
@@ -72,17 +70,9 @@ function SignUp() {
   })
 
   const verify = async (otp: string) => {
-    if (!details) return
-    // A new address becomes an account only with `consent` (the API refuses it otherwise); an existing one just signs in.
-    const { name, email, image } = details
-    const { error, data } = await signIn.emailOtp({
-      email,
-      otp,
-      name,
-      ...(image ? { image } : {}),
-      consent: true,
-      locale: getLocale()
-    })
+    if (!email) return
+    // A new address becomes an account only with `consent` (the API refuses it otherwise); an existing one just signs in. The API fills the name and picture from Gravatar.
+    const { error, data } = await signIn.emailOtp({ email, otp, consent: true, locale: getLocale() })
     if (error) {
       toast.error(authErrorMessage(error))
       return
@@ -110,13 +100,13 @@ function SignUp() {
         }
       >
         <CaptchaAlert captcha={captcha} />
-        {details ? (
+        {email ? (
           <CodeForm
-            email={details.email}
+            email={email}
             submit={m.signup_submit()}
             verify={verify}
-            resend={() => sendCode(details.email)}
-            back={() => setDetails(undefined)}
+            resend={() => sendCode(email)}
+            back={() => setEmail(undefined)}
             disabled={!captcha.ready}
           />
         ) : (
@@ -142,17 +132,6 @@ function SignUp() {
               }}
               className="flex flex-col gap-4"
             >
-              <form.AppField name="name">
-                {field => (
-                  <field.TextField
-                    label={m.auth_field_name()}
-                    layout="stack"
-                    placeholder={m.auth_field_name_placeholder()}
-                    autoComplete="name"
-                  />
-                )}
-              </form.AppField>
-
               <form.AppField name="email">
                 {field => (
                   <field.TextField
@@ -161,16 +140,6 @@ function SignUp() {
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
-                  />
-                )}
-              </form.AppField>
-
-              <form.AppField name="image">
-                {field => (
-                  <field.TextField
-                    label={m.auth_field_image_url()}
-                    layout="stack"
-                    placeholder={m.auth_field_image_url_placeholder()}
                   />
                 )}
               </form.AppField>

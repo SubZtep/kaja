@@ -12,6 +12,7 @@ import { isRateLimitEnabled } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
+import { copyGooglePicture, fillFromGravatar } from "./avatar"
 import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
 function deviceVerificationUrl() {
@@ -186,8 +187,9 @@ export const auth = betterAuth({
       if (!user) return
       const accounts = await ctx.context.internalAdapter.findAccounts(user.id)
       const google = accounts.find(account => account.providerId === "google")
-      const fill = blankProfileFields(user, googleProfileFromIdToken(google?.idToken))
+      const { image, ...fill } = blankProfileFields(user, googleProfileFromIdToken(google?.idToken))
       if (Object.keys(fill).length > 0) await ctx.context.internalAdapter.updateUser(user.id, fill)
+      if (image && !env.BUN_TEST) void copyGooglePicture(user.id, image, user.image ?? "")
     })
   },
   databaseHooks: {
@@ -198,6 +200,12 @@ export const auth = betterAuth({
           if (!(await signUpConsented(ctx)))
             throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up", code: "CONSENT_REQUIRED" })
           return { data: { ...user, consentedAt: new Date() } }
+        },
+        // The picture is stored, never linked: Gravatar's for a code sign-up, a copy of Google's for a Google one. In the background, so sign-up doesn't wait on them; never under bun test, which mustn't call out.
+        after: async (user, ctx) => {
+          if (env.BUN_TEST) return
+          if (ctx?.path === "/sign-in/email-otp") void fillFromGravatar(user)
+          else if (user.image) void copyGooglePicture(user.id, user.image, user.image)
         }
       },
       // The rows cascade from the user; their images in object storage don't, so they go here (self-service and admin removal alike).

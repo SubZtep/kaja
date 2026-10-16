@@ -19,6 +19,8 @@ for 10 minutes), or use Google where offered. On the sign-up page two boxes come
 and accept the [Terms](/terms) and [Privacy Policy](/privacy), and that you consent to Kaja processing any
 health information you choose to share. A new account, by email or Google, can only be created from the
 sign-up page. On the sign-in page an unknown address or Google account only gets a pointer to it.
+Signing up asks only for your email: your name and picture come from your public [Gravatar](https://gravatar.com)
+profile, or from Google, and you can change them on your profile page.
 
 The terminal's [device login](/getting-started/modes#cloud-mode) lands here too: open
 [kaja.io/device](https://kaja.io/device), sign in, and confirm the code from your terminal.

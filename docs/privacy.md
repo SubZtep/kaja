@@ -28,6 +28,8 @@ When you create or use an account, Kaja collects:
 
 - account data: your name, email address, profile picture if you set one, and account settings. Kaja has no passwords: you sign in with a code emailed to you, or with Google;
 - if you sign in with Google, the name, email address, and profile picture Google shares with Kaja;
+- if you sign up with your email address, the display name and picture of your public [Gravatar](https://gravatar.com) profile, if you have one. To look it up, Kaja sends Gravatar a one-way hash (SHA-256) of your email address, never the address itself;
+- a copy of your profile picture (Gravatar's or Google's) in Kaja's own storage, so showing it doesn't load it from Gravatar or Google each time. You can change or remove your name and picture on your profile page;
 - a record of your consent: when you confirmed you are 18 or over, accepted the Terms of Service and this policy, and gave the health data consent described below;
 - authentication data, such as login sessions, sign-in codes (stored only as a hash, and only until used or after 10 minutes), verification status, email change requests, and device authorization requests;
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
@@ -75,6 +77,7 @@ Kaja is not a medical service, and its replies are not medical advice.
 | Create and run your account, sign you in, send account emails | account, authentication, and email data | contract (Article 6(1)(b)) |
 | Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers, ability settings and keys | contract (Article 6(1)(b)) |
 | Health information you choose to share | conversation content and memory notes about your health | explicit consent (Article 9(2)(a)) |
+| Fill in your name and picture from your public Gravatar profile when you sign up with your email address | a hash of your email address; the profile's display name and picture | legitimate interests (Article 6(1)(f)) — so you don't have to type them; you can change or remove them at any time |
 | Link the Telegram bot to your account | Telegram user id | contract (Article 6(1)(b)) |
 | Keep the service secure: rate limiting, abuse prevention, bot checks on the sign-in and sign-up forms, error monitoring, debugging | technical data, IP addresses, browser signals, error logs | legitimate interests (Article 6(1)(f)) — running a service that works and isn't abused |
 | Keep a record of your consent | consent timestamp | legal obligation (Article 6(1)(c)) — to be able to show consent was given |
@@ -113,6 +116,7 @@ Some conversations are answered by models Kaja runs itself, on its own servers i
 These parties also receive data, but under their own terms as independent controllers, because you choose to use them:
 
 - **Google**, if you use Google sign-in;
+- **Gravatar** (Automattic Inc., United States), which receives a hash of your email address when you sign up with it, under the [Automattic Privacy Policy](https://automattic.com/privacy/);
 - **Cloudflare**, which also uses the browser signals from the bot check, on its own account, to improve how it detects bots (under its legitimate interests), as described in the [Turnstile Privacy Addendum](https://www.cloudflare.com/turnstile-privacy-policy/);
 - **Telegram**, if you chat with the Kaja Telegram bot — those messages pass through Telegram's servers;
 - **the services behind abilities you use** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. In the cloud, websites and services a tool reaches for you (a page the assistant fetches, an HTTP tool's API, pages a browser opens) get the request from a sandbox's address rather than yours; in a shared sandbox, its operator can see them too.

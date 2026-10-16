@@ -94,6 +94,9 @@ latencies and per-reply numbers only exist for replies saved after they were rec
 Better Auth handles passwordless sign-in with emailed 6-digit codes (the `emailOTP` plugin, codes stored
 hashed; a new address becomes an account only with the sign-up page's `consent`), Google, admin roles, and the
 **device authorization grant** the CLI uses. Session cookies are prefixed `kaja`, and the CLI holds a bearer token instead.
+A new account's picture is stored in the images bucket (`images/<userId>/avatar/`), never linked: a code sign-up
+fills a blank name and picture from Gravatar, and a Google one gets a copy of Google's picture (`features/auth/avatar.ts`,
+in the background after the user row is created; skipped under `bun test`).
 
 ```mermaid
 ---
