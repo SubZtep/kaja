@@ -28,10 +28,11 @@ export const NasiClientSkillSchema = z.object({
   body: z.string().max(65_536).optional()
 })
 
-/** The client's answer to one `client_tool_calls` call: its text, and any images it returned (base64). */
+/** The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned (base64). */
 export const NasiToolResultSchema = z.object({
   id: z.string().min(1).max(256),
   text: z.string().max(262_144),
+  status: z.enum(["ok", "error", "declined"]).optional(),
   images: z
     .array(z.object({ data: z.string().max(4_000_000), mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/) }))
     .max(4)

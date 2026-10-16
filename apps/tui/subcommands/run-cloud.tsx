@@ -146,8 +146,8 @@ export async function resolveToken(apiUrl: string): Promise<string> {
  * Cloud path: reached via `--cloud`, or by default when no local config
  * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
  * credentials, or device login), then renders App in cloud mode, against
- * cloud Nasi. No local agent, no sqlite, no MCP, no shell tools — talks to
- * `<apiUrl>/nasi/*` over SSE.
+ * cloud Nasi over SSE (`<apiUrl>/nasi/*`). No local agent loop or sqlite; this
+ * computer's own tools (lib/cloud/computer.ts) run the calls cloud turns hand it.
  */
 export async function runCloudSubcommand() {
   const apiUrl = getApiBaseUrl()
@@ -163,6 +163,11 @@ export async function runCloudSubcommand() {
     const computer = openComputer().catch(error => {
       log.warn("This computer's tools couldn't be opened for cloud chat", { error })
       return undefined
+    })
+    // As in local mode: quitting kills a running command and closes the MCP servers, even on SIGTERM or a hung server.
+    const { installShutdownHandlers } = await import("../lib/cli/headless")
+    const shutdown = installShutdownHandlers(async () => {
+      await (await computer)?.close()
     })
 
     const { waitUntilExit } = render(
@@ -181,8 +186,11 @@ export async function runCloudSubcommand() {
         }
       }
     )
-    await waitUntilExit()
-    await (await computer)?.close()
+    try {
+      await waitUntilExit()
+    } finally {
+      await shutdown()
+    }
     console.log(t("cli.bye"))
   } catch (error) {
     const text = error instanceof Error ? error.message : String(error)

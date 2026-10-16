@@ -128,6 +128,22 @@ test("with an MCP sandbox, only the stdio abilities `sandboxed` names go there; 
   expect(loaded.missingRunners).toEqual([])
 })
 
+test("a local-only stdio ability starts here even when `sandboxed` names it", async () => {
+  const files = parseMcp({
+    name: "files",
+    description: "files",
+    transport: "stdio",
+    command: "files-mcp",
+    localOnly: true
+  })
+  const loaded = await loadAbilities(storeWith([], [files]), {
+    mcpSandbox: { fetch: async () => new Response() },
+    sandboxed: () => true,
+    launch: { which: (p: string) => p }
+  })
+  expect(loaded.mcp.map(target => [target.name, target.sandboxed ?? false])).toEqual([["files", false]])
+})
+
 test("a stdio ability nothing here can start is left out and reported, only when a persona uses it", async () => {
   const time = parseMcp({
     name: "time",

@@ -83,7 +83,7 @@
       "type": "object",
       "properties": {
         "hosts": {
-          "description": "Where each stdio MCP ability runs in local mode, by name: \"computer\" (default) or \"sandbox\" (needs a Kaja cloud sign-in)",
+          "description": "Where each stdio MCP ability runs, by name: \"computer\" or \"sandbox\"; the default follows the mode (local: computer, cloud: sandbox). Local \"sandbox\" needs a Kaja cloud sign-in; cloud \"computer\" has the terminal run it. shell = \"computer\" lets cloud chat use this shell",
           "type": "object",
           "propertyNames": {
             "type": "string",

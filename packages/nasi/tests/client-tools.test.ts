@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
-import { CLIENT_GONE } from "../src/abilities/client"
+import { answerClientCalls, CLIENT_GONE } from "../src/abilities/client"
 import type { AbilityStore } from "../src/abilities/types"
+import type { Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
 import { mcpAbility } from "./fixtures/abilities"
@@ -144,4 +145,19 @@ test("the cloud's copy of an ability the client declares is left out, and load_s
     calls: [{ name: "load_skill" }]
   })
   await nasi.close()
+})
+
+test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", () => {
+  const session: Session = { messages: [], pendingClientCalls: ["a", "b", "c", "d"] }
+  answerClientCalls(session, [
+    { id: "a", text: "fine" },
+    { id: "b", text: "Error: no such file", status: "error" },
+    { id: "c", text: "User declined this request.", status: "declined" }
+  ])
+  expect(session.telemetry?.calls).toEqual({
+    a: { status: "ok" },
+    b: { status: "error" },
+    c: { status: "declined", approval: "declined" },
+    d: { status: "skipped" }
+  })
 })

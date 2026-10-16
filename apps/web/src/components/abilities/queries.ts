@@ -13,8 +13,6 @@ const SCOPES = {
   service: { list: "/admin/abilities/keys", keys: "/admin/abilities/keys", queryKey: ["abilities", "service-keys"] }
 } as const
 
-export const ABILITY_KEYS_QUERY_KEY = [...SCOPES.user.queryKey]
-
 /** Where an ability's key is saved or removed in `scope`. */
 export function keyPath(scope: KeyScope, name: string) {
   return `${SCOPES[scope].keys}/${encodeURIComponent(name)}`

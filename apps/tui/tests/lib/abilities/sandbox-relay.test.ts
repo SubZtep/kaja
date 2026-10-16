@@ -1,6 +1,28 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { SANDBOX_ORIGIN } from "@kaja/nasi"
-import { relayTo, signedOutSandbox } from "../../../lib/abilities/sandbox-relay"
+
+process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-sandbox-relay`
+
+const { getConfigDir, invalidateConfigCache } = await import("../../../lib/config/config")
+const { relayTo, sandboxedAbilities, signedOutSandbox } = await import("../../../lib/abilities/sandbox-relay")
+
+afterEach(() => {
+  rmSync(getConfigDir(), { recursive: true, force: true })
+  invalidateConfigCache()
+})
+
+test("the abilities set to a sandbox, without the shell's key", async () => {
+  mkdirSync(getConfigDir(), { recursive: true })
+  writeFileSync(
+    join(getConfigDir(), "settings.toml"),
+    `[tools.hosts]\nchrome-devtools = "sandbox"\ntime = "computer"\nshell = "sandbox"\n`
+  )
+  invalidateConfigCache()
+  expect(await sandboxedAbilities()).toEqual(["chrome-devtools"])
+})
 
 test("a sandboxed target's request goes to the API's relay, signed in, with the ability's key", async () => {
   const sent: { url: string; headers: Headers; body: string }[] = []

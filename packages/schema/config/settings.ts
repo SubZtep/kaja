@@ -95,7 +95,7 @@ export const KajaContextSchema = z.object({
     )
 })
 
-/** Where an ability runs in local mode: on this computer, or a Kaja sandbox reached through the Kaja API. */
+/** Where an ability runs: on this computer, or a Kaja sandbox (from local mode, reached through the Kaja API). */
 export const ToolHostSchema = z.enum(["computer", "sandbox"])
 
 export const KajaToolsSchema = z.object({
@@ -103,7 +103,7 @@ export const KajaToolsSchema = z.object({
     .record(z.string().min(1), ToolHostSchema)
     .optional()
     .describe(
-      'Where each stdio MCP ability runs in local mode, by name: "computer" (default) or "sandbox" (needs a Kaja cloud sign-in)'
+      'Where each stdio MCP ability runs, by name: "computer" or "sandbox"; the default follows the mode (local: computer, cloud: sandbox). Local "sandbox" needs a Kaja cloud sign-in; cloud "computer" has the terminal run it. shell = "computer" lets cloud chat use this shell'
     )
 })
 

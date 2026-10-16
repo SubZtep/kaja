@@ -50,6 +50,10 @@ test("it declares the file builtins and its abilities' skills; the shell only wh
     expect(
       (await computer.run({ id: "1", name: "load_skill", arguments: '{"name":"own"}' }, async () => true)).text
     ).toContain("Use my notes.")
+    const missing = await computer.run({ id: "2", name: "load_skill", arguments: '{"name":"nope"}' }, async () => true)
+    expect(missing.status).toBe("error")
+    const unknown = await computer.run({ id: "3", name: "not_here", arguments: "{}" }, async () => true)
+    expect(unknown.status).toBe("error")
   } finally {
     await computer.close()
   }
@@ -67,12 +71,13 @@ test("an opted-in shell runs safe commands straight away and asks first for the 
     expect(computer.tools.map(tool => tool.name)).toContain("run_command")
     const safe = await computer.run({ id: "1", name: "run_command", arguments: '{"command":"pwd"}' }, decline)
     expect(safe.text).not.toContain("declined")
+    expect(safe.status).toBeUndefined()
     expect(asked).toEqual([])
     const risky = await computer.run(
       { id: "2", name: "run_command", arguments: '{"command":"rm -rf /tmp/x"}' },
       decline
     )
-    expect(risky.text).toBe("User declined to run this command.")
+    expect(risky).toMatchObject({ text: "User declined to run this command.", status: "declined" })
     expect(asked).toEqual(["rm -rf /tmp/x"])
   } finally {
     await computer.close()

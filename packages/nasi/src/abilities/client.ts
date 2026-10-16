@@ -1,5 +1,6 @@
 import type { NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
 import type { Session } from "../agent/agent"
+import { recordCall } from "../agent/telemetry"
 import { type Tool, tool } from "../agent/tools"
 import type { ToolGroup } from "../tools/registry"
 import type { AbilityStore } from "./types"
@@ -69,7 +70,8 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
 
 /**
  * Answers the calls the session waits on with the client's results, in the order the model made them; a call without
- * one gets {@link CLIENT_GONE}. Images follow as one user message, since a tool message can't carry them.
+ * one gets {@link CLIENT_GONE}. Images follow as one user message, since a tool message can't carry them. Each call's
+ * status is recorded as the client reports it (a missing one as skipped).
  */
 export function answerClientCalls(session: Session, results: NasiToolResult[] = []): void {
   const pending = session.pendingClientCalls
@@ -79,6 +81,8 @@ export function answerClientCalls(session: Session, results: NasiToolResult[] = 
   for (const id of pending) {
     const result = byId.get(id)
     session.messages.push({ role: "tool", tool_call_id: id, content: result?.text ?? CLIENT_GONE })
+    const status = result ? (result.status ?? "ok") : "skipped"
+    recordCall(session, id, status === "declined" ? { status, approval: "declined" } : { status })
     for (const image of result?.images ?? []) images.push(`data:${image.mimeType};base64,${image.data}`)
   }
   if (images.length)

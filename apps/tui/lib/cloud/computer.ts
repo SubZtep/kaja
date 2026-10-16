@@ -3,7 +3,7 @@ import type { AbilityStore, Tool } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiClientCall, NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
 import { getMarketplaceDir, ownAbilities } from "../abilities/abilities-file"
-import { toolHosts } from "../abilities/sandbox-relay"
+import { SHELL_HOST_KEY, toolHosts } from "../abilities/sandbox-relay"
 import { secrets } from "../config/secrets"
 import { log } from "../logger"
 import { getBackupDir, getPaths } from "../paths"
@@ -12,8 +12,6 @@ import { loadPersonas } from "../personas/personas"
 /** Builtins a cloud turn may run here: files always, the shell only when settings.toml's `[tools.hosts] shell = "computer"`. */
 const FILE_BUILTINS = ["read_file", "list_files", "view_image"]
 const SHELL = "run_command"
-/** The `[tools.hosts]` key that lets the cloud's model use this computer's shell. */
-export const SHELL_HOST_KEY = "shell"
 
 /** What a run asks the user before it goes ahead: a shell command or a tool's request summary; resolves to their answer. */
 export type Approve = (
@@ -99,9 +97,10 @@ export async function openComputer(): Promise<Computer> {
         ?.source?.slice("ability:".length)
       // A roots-taking server gets the turn's persona's folders before it runs.
       if (ability) tools = await created.ensureAbilities([ability], personaId)
-      if (call.name === "load_skill") return { id: call.id, text: await loadSkillText(store, call.arguments) }
+      if (call.name === "load_skill") return { id: call.id, ...(await loadSkillText(store, call.arguments)) }
       const target = declared().find(tool => toolName(tool) === call.name)
-      if (!target) return { id: call.id, text: `Error: ${call.name} isn't available on this computer.` }
+      if (!target)
+        return { id: call.id, text: `Error: ${call.name} isn't available on this computer.`, status: "error" }
       return { id: call.id, ...(await runHere(target, call, approve)) }
     },
     close: created.closeTools
@@ -133,11 +132,16 @@ async function declareSkill(
 }
 
 // load_skill for one of this computer's skills: its body, or one of its files.
-async function loadSkillText(store: AbilityStore, argumentsJson: string): Promise<string> {
+async function loadSkillText(store: AbilityStore, argumentsJson: string): Promise<Omit<NasiToolResult, "id">> {
   const args = parseArgs(argumentsJson) as { name?: string; file?: string } | undefined
-  if (!args?.name) return "Error: load_skill needs a skill name."
-  const text = await store.readSkill(args.name, args.file).catch(error => `Error: ${(error as Error).message}`)
-  return text ?? `No skill or file named "${args.file ?? args.name}" on this computer.`
+  if (!args?.name) return { text: "Error: load_skill needs a skill name.", status: "error" }
+  try {
+    const text = await store.readSkill(args.name, args.file)
+    if (text !== undefined) return { text }
+    return { text: `No skill or file named "${args.file ?? args.name}" on this computer.`, status: "error" }
+  } catch (error) {
+    return { text: `Error: ${(error as Error).message}`, status: "error" }
+  }
 }
 
 function parseArgs(json: string): Record<string, unknown> | undefined {
@@ -153,13 +157,13 @@ function parseArgs(json: string): Record<string, unknown> | undefined {
 async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Promise<Omit<NasiToolResult, "id">> {
   const { checkToolArgs } = await import("@kaja/nasi")
   const args = parseArgs(call.arguments)
-  if (!args) return { text: `Error: the arguments for ${call.name} aren't valid JSON.` }
-  if (call.name === SHELL) return { text: await runCommandHere(args, approve) }
+  if (!args) return { text: `Error: the arguments for ${call.name} aren't valid JSON.`, status: "error" }
+  if (call.name === SHELL) return runCommandHere(args, approve)
   const checked = checkToolArgs(target, args)
-  if (!checked.ok) return { text: `Error: ${checked.error}` }
+  if (!checked.ok) return { text: `Error: ${checked.error}`, status: "error" }
   const summary = target.approval?.(checked.args)
   if (summary !== undefined && !(await approve({ kind: "tool", name: call.name, summary })))
-    return { text: "User declined this request." }
+    return { text: "User declined this request.", status: "declined" }
   try {
     const result = await target.execute(checked.args)
     if (typeof result === "string") return { text: result }
@@ -172,17 +176,18 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
     return { text: result.text, ...(images.length ? { images: images.slice(0, 4) } : {}) }
   } catch (error) {
     log.warn("A cloud turn's call failed on this computer", { tool: call.name, error })
-    return { text: `Error: ${error instanceof Error ? error.message : String(error)}` }
+    return { text: `Error: ${error instanceof Error ? error.message : String(error)}`, status: "error" }
   }
 }
 
 // run_command here: commands.toml's safe list runs at once, anything else asks first.
-async function runCommandHere(args: Record<string, unknown>, approve: Approve): Promise<string> {
+async function runCommandHere(args: Record<string, unknown>, approve: Approve): Promise<Omit<NasiToolResult, "id">> {
   const { isSafeCommand, runShellCommand } = await import("@kaja/nasi")
   const command = typeof args.command === "string" ? args.command : ""
-  if (!command) return "Invalid run_command arguments."
+  if (!command) return { text: "Invalid run_command arguments.", status: "error" }
   const { loadSafeCommands } = await import("../config/commands")
   const safe = isSafeCommand(command, await loadSafeCommands())
-  if (!safe && !(await approve({ kind: "command", command }))) return "User declined to run this command."
-  return runShellCommand(command)
+  if (!safe && !(await approve({ kind: "command", command })))
+    return { text: "User declined to run this command.", status: "declined" }
+  return { text: await runShellCommand(command) }
 }

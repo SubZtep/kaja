@@ -42,7 +42,7 @@ export type LoadAbilitiesOptions = {
   send?: (abilityName: string) => FetchLike
   /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
   mcpSandbox?: McpSandbox
-  /** With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability); default every one. */
+  /** With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability, never a local-only one); default every one. */
   sandboxed?: (abilityName: string) => boolean
   /** Skills the client serves (a cloud turn's own abilities): load_skill hands their calls to it. */
   clientSkills?: ReadonlySet<string>
@@ -139,8 +139,7 @@ async function loadMcpAbility(
 ): Promise<LoadedMcpAbility> {
   const apiKey = abilityKey(ability, opts, listed, missingKeys)
   if (apiKey === null) return {}
-  if (ability.transport === "stdio" && opts.mcpSandbox && (opts.sandboxed?.(ability.name) ?? true))
-    return { target: sandboxedMcpTarget(ability) }
+  if (runsOnSandbox(ability, opts)) return { target: sandboxedMcpTarget(ability) }
   if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
   const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability) : undefined
   if (roots && Object.keys(roots).length === 0) {
@@ -153,6 +152,13 @@ async function loadMcpAbility(
   } catch (error) {
     return runnerMissing(error, ability, listed)
   }
+}
+
+// Every stdio ability without `sandboxed` (the cloud); with it, the chosen ones that may leave the user's machine.
+function runsOnSandbox(ability: McpAbility, opts: LoadAbilitiesOptions): boolean {
+  if (ability.transport !== "stdio" || !opts.mcpSandbox) return false
+  if (!opts.sandboxed) return true
+  return opts.sandboxed(ability.name) && !ability.localOnly && !ability.roots
 }
 
 // An ability nothing here can start is left out, reported when a persona uses it (any, without personas); any other error is rethrown.

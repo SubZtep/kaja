@@ -11,9 +11,14 @@ export async function toolHosts(): Promise<Record<string, ToolHost>> {
   return (await readConfigLoose()).tools?.hosts ?? {}
 }
 
+/** The `[tools.hosts]` key that lets the cloud's model use this computer's shell; not an ability. */
+export const SHELL_HOST_KEY = "shell"
+
 /** The abilities settings.toml sends to a sandbox. */
 export async function sandboxedAbilities(): Promise<string[]> {
-  return Object.entries(await toolHosts()).flatMap(([name, host]) => (host === "sandbox" ? [name] : []))
+  return Object.entries(await toolHosts()).flatMap(([name, host]) =>
+    host === "sandbox" && name !== SHELL_HOST_KEY ? [name] : []
+  )
 }
 
 /**

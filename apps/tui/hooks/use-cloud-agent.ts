@@ -49,6 +49,9 @@ export type CloudPartialMessage = { reasoning: string; content: string }
 
 const DELTA_INTERVAL_MS = 80
 
+/** Rounds in a row where every call on this computer failed before the terminal stops resuming, as `--local` stops its loop. */
+const MAX_FAILING_CLIENT_ROUNDS = 3
+
 /**
  * Drives cloud Nasi over `/nasi/turn/stream` from React state — the lite
  * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
@@ -72,6 +75,8 @@ export function useCloudAgent({
 }) {
   const [client] = useState(() => createNasiClient(options))
   const sessionRef = useRef<string | undefined>(undefined)
+  // The results of the round the failure guard stopped at: they answer those calls with the next message.
+  const heldResultsRef = useRef<NasiToolResult[] | undefined>(undefined)
 
   const [events, setEvents] = useState<CloudTimelineEvent[]>([])
   const eventsRef = useRef(events)
@@ -121,6 +126,7 @@ export function useCloudAgent({
     (next: { id: string; label: string }) => {
       if (pending) return
       sessionRef.current = undefined
+      heldResultsRef.current = undefined
       eventsRef.current = []
       setEvents([])
       setPartial(null)
@@ -169,7 +175,11 @@ export function useCloudAgent({
         pushEvent({ type: "tool_call", name: call.name, arguments: call.arguments })
         const result = here
           ? await here.run(call, approve, personaIdRef.current ?? info?.persona.id)
-          : { id: call.id, text: "Error: this terminal can't run tools on the user's computer." }
+          : {
+              id: call.id,
+              text: "Error: this terminal can't run tools on the user's computer.",
+              status: "error" as const
+            }
         for (const image of result.images ?? [])
           pushEvent({
             type: "tool_image",
@@ -241,8 +251,14 @@ export function useCloudAgent({
       const declared: Partial<NasiTurnRequest> = here
         ? { clientTools: here.tools, clientSkills: here.skills, clientPersonas: here.personas }
         : {}
+      const held = "message" in first ? heldResultsRef.current : undefined
+      heldResultsRef.current = undefined
       try {
-        let request: { message: string } | { approval: CloudApproval } | { toolResults: NasiToolResult[] } = first
+        let request:
+          | { message: string; toolResults?: NasiToolResult[] }
+          | { approval: CloudApproval }
+          | { toolResults: NasiToolResult[] } = held ? { ...first, toolResults: held } : first
+        let failingRounds = 0
         while (true) {
           clientCalls = []
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
@@ -263,7 +279,19 @@ export function useCloudAgent({
           }
           sessionRef.current = next.value.session
           if (next.value.status === "needs_client_tool") {
-            request = { toolResults: await runOnComputer(clientCalls) }
+            const results = await runOnComputer(clientCalls)
+            const allFailed = results.length > 0 && results.every(result => result.status === "error")
+            failingRounds = allFailed ? failingRounds + 1 : 0
+            if (failingRounds >= MAX_FAILING_CLIENT_ROUNDS) {
+              heldResultsRef.current = results
+              pushEvent({
+                type: "error",
+                text: t("timeline.computerStopped", { count: MAX_FAILING_CLIENT_ROUNDS }),
+                category: "tool"
+              })
+              break
+            }
+            request = { toolResults: results }
             continue
           }
           if (!yolo || next.value.status !== "needs_approval") break
