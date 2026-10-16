@@ -37,5 +37,5 @@ await useTestDatabase()
 // After the env is loaded: core/files reads it on import
 await (await import("../src/core/files")).prepareBucket()
 
-// Bun's 5 s default fails real Postgres calls, password hashing and spawned MCP servers on a busy machine; a real hang still fails, just later.
+// Bun's 5 s default fails real Postgres calls and spawned MCP servers on a busy machine; a real hang still fails, just later.
 jest.setTimeout(15_000)
