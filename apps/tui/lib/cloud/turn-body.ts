@@ -30,7 +30,8 @@ function withNote(result: NasiToolResult & { images: NonNullable<NasiToolResult[
   const { images, ...rest } = result
   const kept = images.length ? { images } : {}
   if (dropped === 0) return { ...rest, ...kept }
-  const note = `(${dropped === 1 ? "1 image" : `${dropped} images`} left out: this turn's request would be too large)`
+  const leftOut = dropped === 1 ? "1 image" : `${dropped} images`
+  const note = `(${leftOut} left out: this turn's request would be too large)`
   const text = capText(result.text, TOOL_RESULT_TEXT_MAX - note.length - 2)
   return { ...rest, ...kept, text: text ? `${text}\n\n${note}` : note }
 }

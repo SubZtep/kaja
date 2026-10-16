@@ -407,7 +407,13 @@ export function createSqliteStore(dbPath: string): NasiStore {
     return { ...data, session: { ...session, messages } }
   }
 
-  async function hydrate(row: SessionRow): Promise<PersistedSession | undefined> {
+  /** A stored row's session (reading one is not async; the store's interface is). */
+  function hydrate(row: SessionRow): Promise<PersistedSession | undefined> {
+    return Promise.resolve(readSession(row))
+  }
+
+  /** A stored session as it was written, or undefined when it doesn't parse or validate (the row is kept either way). */
+  function readSession(row: SessionRow): PersistedSession | undefined {
     try {
       const messageRows = db
         .query("SELECT role, content, parts, reasoning, toolCallId FROM messages WHERE sessionId = $id ORDER BY seq")

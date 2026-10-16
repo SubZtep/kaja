@@ -12,6 +12,13 @@ const bucket = new Bun.S3Client({ bucket: env.STORAGE_BUCKET, endpoint, region, 
 /** What anyone may read: the images, never a listing (see {@link prepareBucket}). */
 const PUBLIC_PREFIX = "images/"
 
+/** The endpoint without its trailing slashes, so the key path below adds exactly one (a regex would backtrack on a run of them). */
+function withoutTrailingSlashes(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "/") end -= 1
+  return value.slice(0, end)
+}
+
 /**
  * An object's public URL, which needs no signing: `images/` is public-read. Path-style on a server of our own
  * (`STORAGE_PUBLIC_ENDPOINT` as clients reach it, else `STORAGE_ENDPOINT`), Hetzner's virtual-hosted form otherwise.
@@ -19,7 +26,7 @@ const PUBLIC_PREFIX = "images/"
 export function imageUrl(key: string): string {
   const path = key.split("/").map(encodeURIComponent).join("/")
   const base = env.STORAGE_PUBLIC_ENDPOINT ?? env.STORAGE_ENDPOINT
-  if (base) return `${base.replace(/\/+$/, "")}/${env.STORAGE_BUCKET}/${path}`
+  if (base) return `${withoutTrailingSlashes(base)}/${env.STORAGE_BUCKET}/${path}`
   return `https://${env.STORAGE_BUCKET}.${env.STORAGE_REGION}.your-objectstorage.com/${path}`
 }
 

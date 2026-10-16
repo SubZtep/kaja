@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import {
+  type AgentEvent,
   categorizeError,
   dataUrlBytes,
   type FinalizedAgentEvent,
@@ -206,6 +207,28 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     )
   }
 
+  /** Reads a turn's events to the end, handling each as it arrives. */
+  async function readTurn(
+    turn: AsyncIterable<AgentEvent>,
+    chatId: number,
+    reply: Reply,
+    language: BotLanguage
+  ): Promise<void> {
+    let ended = false
+    const photos = new Map<string, number>()
+    for await (const event of turn) {
+      // Read to the end even after the reply is out: the turn is only saved once the generator finishes (and a
+      // tool image's description, written by then, still reaches its photo's caption).
+      if (ended && event.type !== "image_described") continue
+      if (event.type === "delta") {
+        if (event.channel === "content") reply.append(event.text)
+        continue
+      }
+      if (event.type === "usage") continue
+      ended = (await handleFinalizedEvent(reply, chatId, event, language, photos)) || ended
+    }
+  }
+
   async function runTurnLocked(
     ownerUserId: string,
     owner: string,
@@ -243,20 +266,12 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
       })
       try {
-        let ended = false
-        const photos = new Map<string, number>()
-        const turn = nasi.turn({ session: resumeRow?.id, ...input, onSession: id => (sessionId = id) })
-        for await (const event of turn) {
-          // Read to the end even after the reply is out: the turn is only saved once the generator finishes (and a
-          // tool image's description, written by then, still reaches its photo's caption).
-          if (ended && event.type !== "image_described") continue
-          if (event.type === "delta") {
-            if (event.channel === "content") reply.append(event.text)
-            continue
-          }
-          if (event.type === "usage") continue
-          ended = (await handleFinalizedEvent(reply, chatId, event, language, photos)) || ended
-        }
+        await readTurn(
+          nasi.turn({ session: resumeRow?.id, ...input, onSession: id => (sessionId = id) }),
+          chatId,
+          reply,
+          language
+        )
       } finally {
         await nasi.close()
       }

@@ -9,11 +9,15 @@ function pngChunk(type: string, data: Buffer): Buffer {
   return Buffer.concat([length, body, crc])
 }
 
-/** A real PNG of one colour (RGB, or RGBA with `alpha`), built in memory; `noise` makes it compress badly. */
-export function png(width: number, height: number, opts: { alpha?: number; noise?: boolean } = {}): Uint8Array {
-  const channels = opts.alpha === undefined ? 3 : 4
-  const row = width * channels + 1
-  const raw = Buffer.alloc(row * height)
+/** Fills `raw`'s scanlines with one colour each: flat, or `noise`'s per-pixel shade (an alpha one gets a fourth channel). */
+function fillPixels(
+  raw: Buffer,
+  width: number,
+  height: number,
+  opts: { alpha?: number; noise?: boolean },
+  channels: number,
+  row: number
+): void {
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const at = y * row + 1 + x * channels
@@ -23,6 +27,14 @@ export function png(width: number, height: number, opts: { alpha?: number; noise
       raw[at + 2] = opts.noise ? (shade * 5) % 256 : 30
       if (opts.alpha !== undefined) raw[at + 3] = opts.alpha
     }
+}
+
+/** A real PNG of one colour (RGB, or RGBA with `alpha`), built in memory; `noise` makes it compress badly. */
+export function png(width: number, height: number, opts: { alpha?: number; noise?: boolean } = {}): Uint8Array {
+  const channels = opts.alpha === undefined ? 3 : 4
+  const row = width * channels + 1
+  const raw = Buffer.alloc(row * height)
+  fillPixels(raw, width, height, opts, channels, row)
   const header = Buffer.alloc(13)
   header.writeUInt32BE(width, 0)
   header.writeUInt32BE(height, 4)

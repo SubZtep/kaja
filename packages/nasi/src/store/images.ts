@@ -108,11 +108,11 @@ export function objectSessionImages(objects: ObjectStore, prefix: string): Sessi
 
 /** No store to keep them: an image stays in its message as a data URL. */
 export const inlineImages: SessionImages = {
-  put: async image => ({ ref: imageDataUrl(image) }),
-  get: async () => undefined,
-  describe: async () => {},
-  description: async () => undefined,
-  clear: async () => {}
+  put: image => Promise.resolve({ ref: imageDataUrl(image) }),
+  get: () => Promise.resolve(undefined),
+  describe: () => Promise.resolve(),
+  description: () => Promise.resolve(undefined),
+  clear: () => Promise.resolve()
 }
 
 type ImagePart = { type: "image_url"; image_url: { url: string } }

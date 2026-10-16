@@ -71,7 +71,7 @@ function isNormalized(bytes: Uint8Array, meta: Metadata): meta is Metadata & { f
 
 // A WebP's alpha: the extended header's flag, or a lossless image's alpha_is_used bit.
 function webpHasAlpha(bytes: Uint8Array): boolean {
-  const chunk = String.fromCharCode(...bytes.subarray(12, 16))
+  const chunk = String.fromCodePoint(...bytes.subarray(12, 16))
   if (chunk === "VP8X") return ((bytes[20] ?? 0) & 0x10) !== 0
   if (chunk === "VP8L" && bytes.length >= 25) {
     const bits = new DataView(bytes.buffer, bytes.byteOffset).getUint32(21, true)

@@ -46,7 +46,7 @@ export function clientToolGroups(client: NasiClient): ToolGroup[] {
     // view_image's files are on the computer, the conversation's own images (by link) here.
     if (!declared.ability && declared.name === toolName(viewLinkedImageTool)) {
       stub.execute = viewLinkedImageTool.execute
-      stub.runsOnClient = (args: Record<string, unknown>) => !imageRefId(String(args.path ?? ""))
+      stub.runsOnClient = (args: Record<string, unknown>) => !imageRefId(typeof args.path === "string" ? args.path : "")
     }
     byAbility.set(declared.ability, [...(byAbility.get(declared.ability) ?? []), stub])
   }
@@ -113,11 +113,17 @@ export async function answerClientCalls(
   const pending = session.pendingClientCalls
   if (!pending?.length) return
   const byId = new Map(results.map(result => [result.id, result]))
+  // Every call's images are kept alongside the others, then the answers go to the session in the order the model made them.
+  const answered = await Promise.all(
+    pending.map(async id => {
+      const result = byId.get(id)
+      const alt = altFrom(result?.text, "an image from the user's computer")
+      const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"), alt)))
+      return { id, result, kept }
+    })
+  )
   const parts: ImageParts[number][] = []
-  for (const id of pending) {
-    const result = byId.get(id)
-    const alt = altFrom(result?.text, "an image from the user's computer")
-    const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"), alt)))
+  for (const { id, result, kept } of answered) {
     const refused = kept.flatMap(image => ("error" in image ? [image.error] : []))
     const text = result ? withImageNote(result.text, refused) : CLIENT_GONE
     session.messages.push({ role: "tool", tool_call_id: id, content: text })

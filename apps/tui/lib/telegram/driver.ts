@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import {
+  type AgentEvent,
   compact,
   dataUrlBytes,
   dropImages,
@@ -355,65 +356,83 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     reply: Reply,
     event: Exclude<FinalizedAgentEvent, { type: "usage" }>
   ): Promise<boolean> {
-    if (event.type === "compacted") {
-      await sender.sendMessage(chatId, compactedLine(event, t))
-      return false
-    }
+    switch (event.type) {
+      case "compacted":
+        await sender.sendMessage(chatId, compactedLine(event, t))
+        return false
 
-    if (event.type === "persona_switch") {
-      // run() already mutated the agent via applyPersona — mirror it into UserState so persistSession writes the new persona id.
-      const next = personas.find(p => p.id === event.personaId)
-      if (next) state.persona = next
-      return false
-    }
-
-    if (event.type === "tool_image") {
-      const data = await toolImageBytes(state, event.ref)
-      const sent = data && (await sendPhotoSafely(chatId, { data }, event.alt))
-      if (sent) state.photos.set(event.ref, sent.messageId)
-      return false
-    }
-
-    if (event.type === "image_described") {
-      state.events = withDescription(state.events, event.ref, event.description)
-      const messageId = state.photos.get(event.ref)
-      if (messageId === undefined) return false
-      try {
-        await sender.editCaption(chatId, messageId, event.description)
-      } catch (error) {
-        log.warn("Telegram caption edit failed", { error })
+      case "persona_switch": {
+        // run() already mutated the agent via applyPersona — mirror it into UserState so persistSession writes the new persona id.
+        const next = personas.find(p => p.id === event.personaId)
+        if (next) state.persona = next
+        return false
       }
-      return false
-    }
 
-    if (event.type === "display_image") {
-      await sendPhotoSafely(chatId, { url: event.url }, event.alt)
-      return false
-    }
+      case "tool_image": {
+        const data = await toolImageBytes(state, event.ref)
+        const sent = data && (await sendPhotoSafely(chatId, { data }, event.alt))
+        if (sent) state.photos.set(event.ref, sent.messageId)
+        return false
+      }
 
-    if (event.type === "confirm_command") {
-      await reply.settle()
-      await sendConfirmCommand(chatId, state, event)
-      return true
-    }
+      case "image_described": {
+        state.events = withDescription(state.events, event.ref, event.description)
+        const messageId = state.photos.get(event.ref)
+        if (messageId === undefined) return false
+        try {
+          await sender.editCaption(chatId, messageId, event.description)
+        } catch (error) {
+          log.warn("Telegram caption edit failed", { error })
+        }
+        return false
+      }
 
-    if (event.type === "confirm_tool") {
-      await reply.settle()
-      await sendConfirmTool(chatId, state, event)
-      return true
-    }
+      case "display_image":
+        await sendPhotoSafely(chatId, { url: event.url }, event.alt)
+        return false
 
-    if (event.type === "ask_user") {
-      await reply.finish(withQuestion(reply.streamed, event.question))
-      return true
-    }
+      case "confirm_command":
+        await reply.settle()
+        await sendConfirmCommand(chatId, state, event)
+        return true
 
-    if (event.type === "final") {
-      await reply.finish(event.content ?? "")
-      return true
-    }
+      case "confirm_tool":
+        await reply.settle()
+        await sendConfirmTool(chatId, state, event)
+        return true
 
-    return false
+      case "ask_user":
+        await reply.finish(withQuestion(reply.streamed, event.question))
+        return true
+
+      case "final":
+        await reply.finish(event.content ?? "")
+        return true
+
+      // A delta (the caller's own are handled before they get here) ends nothing.
+      default:
+        return false
+    }
+  }
+
+  /** Reads a turn's events to the end: the reply as it streams, the timeline until the turn has ended. */
+  async function readTurn(events: AsyncIterable<AgentEvent>, chatId: number, state: UserState, reply: Reply) {
+    let ended = false
+    for await (const event of events) {
+      // Read to the end even after the reply is out: a tool image's description, written by then, still reaches its photo's caption.
+      if (ended && event.type !== "image_described") continue
+      if (event.type === "delta") {
+        // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
+        if (event.channel === "content") reply.append(event.text)
+        continue
+      }
+
+      if (event.type === "usage") continue
+
+      if (event.type !== "image_described") state.events.push(timelineEvent(event))
+
+      if (await handleFinalizedEvent(chatId, state, reply, event)) ended = true
+    }
   }
 
   /** Records a failed turn and returns what the reply should say instead. */
@@ -454,22 +473,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     })
 
     try {
-      let ended = false
-      for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId), images)) {
-        // Read to the end even after the reply is out: a tool image's description, written by then, still reaches its photo's caption.
-        if (ended && event.type !== "image_described") continue
-        if (event.type === "delta") {
-          // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
-          if (event.channel === "content") reply.append(event.text)
-          continue
-        }
-
-        if (event.type === "usage") continue
-
-        if (event.type !== "image_described") state.events.push(timelineEvent(event))
-
-        if (await handleFinalizedEvent(chatId, state, reply, event)) ended = true
-      }
+      await readTurn(run(state.agent, prompt, state.session, telegramOwner(userId), images), chatId, state, reply)
     } catch (error) {
       await reply.fail(turnFailure(state, error, images.length > 0, turnStart))
     } finally {

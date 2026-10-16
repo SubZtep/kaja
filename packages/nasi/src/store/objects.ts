@@ -17,13 +17,16 @@ export type ObjectStore = {
 export function memoryObjects(): ObjectStore {
   const objects = new Map<string, Uint8Array>()
   return {
-    put: async (key, data) => {
+    put: (key, data) => {
       objects.set(key, typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data))
+      return Promise.resolve()
     },
-    get: async key => objects.get(key),
-    exists: async key => objects.has(key),
-    deletePrefix: async prefix => {
-      for (const key of [...objects.keys()]) if (key.startsWith(prefix)) objects.delete(key)
+    get: key => Promise.resolve(objects.get(key)),
+    exists: key => Promise.resolve(objects.has(key)),
+    deletePrefix: prefix => {
+      // Deleting the key an iteration just read is safe on a Map, so no snapshot is needed.
+      for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key)
+      return Promise.resolve()
     }
   }
 }

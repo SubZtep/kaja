@@ -114,43 +114,67 @@ async function* handleSwitchPersonaCall(
   record(call.id, { status: target ? "ok" : "error" })
 }
 
-async function* handleToolCall(
-  agent: Agent,
-  session: Session,
-  toolsByName: Map<string, Tool>,
+/** Answers a call that never ran with the reason why, as the model sees it. */
+function toolCallFailed(
   messages: ChatCompletionMessageParam[],
-  owner: string | null,
   call: FunctionToolCall,
   record: RecordCall,
-  onModelCall: (usage: ModelCallUsage) => void
+  content: string
+): void {
+  messages.push({ role: "tool", tool_call_id: call.id, content })
+  record(call.id, { status: "error" })
+}
+
+/** A call's images as the turn's: an event and a user message each, so the session keeps them; the ones that couldn't be kept are noted in the call's text. */
+function* yieldStoredImages(
+  stored: Awaited<ReturnType<typeof storeImage>>[],
+  alt: string,
+  messages: ChatCompletionMessageParam[]
+): Generator<AgentEvent, void, void> {
+  for (const image of stored) {
+    if ("error" in image) continue
+    const { ref, key, original, mimeType } = image
+    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}), ...(original ? { original } : {}) }
+    messages.push({ role: "user", content: image.parts })
+  }
+}
+
+async function* handleToolCall(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  owner: string | null,
+  toolsByName: Map<string, Tool>,
+  call: FunctionToolCall,
+  {
+    session,
+    record,
+    onModelCall
+  }: { session: Session; record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<AgentEvent, void, void> {
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
   if (!t) {
     // A tool another persona has (the model may remember it from before a switch) gets a reason, not "unknown".
     const elsewhere = agent.tools.some(other => toolName(other) === call.function.name)
-    const content = elsewhere
-      ? `Error: "${call.function.name}" isn't available to the current persona (${agent.personaId}).`
-      : `Error: unknown tool "${call.function.name}"`
-    messages.push({ role: "tool", tool_call_id: call.id, content })
-    record(call.id, { status: "error" })
+    toolCallFailed(
+      messages,
+      call,
+      record,
+      elsewhere
+        ? `Error: "${call.function.name}" isn't available to the current persona (${agent.personaId}).`
+        : `Error: unknown tool "${call.function.name}"`
+    )
     return
   }
   const args = parseToolArgs(call.function.arguments)
   if (args === null) {
-    messages.push({
-      role: "tool",
-      tool_call_id: call.id,
-      content: "Invalid JSON in tool arguments."
-    })
-    record(call.id, { status: "error" })
+    toolCallFailed(messages, call, record, "Invalid JSON in tool arguments.")
     return
   }
   // Arguments that don't fit the tool's schema go back to the model to fix, like invalid JSON, instead of reaching execute.
   const checked = checkToolArgs(t, args)
   if (!checked.ok) {
-    messages.push({ role: "tool", tool_call_id: call.id, content: checked.error })
-    record(call.id, { status: "error" })
+    toolCallFailed(messages, call, record, checked.error)
     return
   }
   const startedAt = performance.now()
@@ -183,12 +207,7 @@ async function* handleToolCall(
   const refused = images.flatMap(image => ("error" in image ? [image.error] : []))
   messages.push({ role: "tool", tool_call_id: call.id, content: withImageNote(result.text, refused) })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
-  for (const stored of images) {
-    if ("error" in stored) continue
-    const { ref, key, original, mimeType } = stored
-    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}), ...(original ? { original } : {}) }
-    messages.push({ role: "user", content: stored.parts })
-  }
+  yield* yieldStoredImages(images, alt, messages)
 }
 
 type StreamedRound = {
@@ -413,7 +432,7 @@ async function* handleToolCalls(
       continue
     }
 
-    yield* handleToolCall(agent, session, toolsByName, messages, owner, call, record, onModelCall)
+    yield* handleToolCall(agent, messages, owner, toolsByName, call, { session, record, onModelCall })
   }
   return settlePauses(messages, record, { ask, confirm, approval, clientCalls })
 }

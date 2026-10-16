@@ -189,18 +189,22 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
 // A tool's images, made model-sized here (the turn's request has a size limit); one that can't be used is named in `refused`.
 async function normalizedImages(found: { data: Uint8Array }[]) {
   const { ImageError, normalizeImage } = await import("@kaja/nasi")
-  const images: NonNullable<NasiToolResult["images"]> = []
-  const refused: string[] = []
-  for (const image of found) {
-    try {
-      const normalized = await normalizeImage(image.data)
-      images.push({ data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType })
-    } catch (error) {
-      if (!(error instanceof ImageError)) throw error
-      refused.push(error.message)
-    }
+  // One image's failure doesn't hold up the others, so they are normalised together and put back in the order they came in.
+  const normalised: ({ data: string; mimeType: string } | { refused: string })[] = await Promise.all(
+    found.map(async image => {
+      try {
+        const normalized = await normalizeImage(image.data)
+        return { data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType }
+      } catch (error) {
+        if (!(error instanceof ImageError)) throw error
+        return { refused: error.message }
+      }
+    })
+  )
+  return {
+    images: normalised.flatMap(image => ("refused" in image ? [] : [image])),
+    refused: normalised.flatMap(image => ("refused" in image ? [image.refused] : []))
   }
-  return { images, refused }
 }
 
 /**
@@ -213,8 +217,11 @@ export async function clampResult(result: NasiToolResult): Promise<NasiToolResul
   const fitting = images.filter(image => image.data.length <= TOOL_RESULT_IMAGE_BASE64_MAX)
   const kept = fitting.slice(0, TOOL_RESULT_IMAGES_MAX)
   const refused = [
-    ...Array<string>(images.length - fitting.length).fill("too large to send"),
-    ...Array<string>(fitting.length - kept.length).fill(`only ${TOOL_RESULT_IMAGES_MAX} images go with one result`)
+    ...Array.from({ length: images.length - fitting.length }, () => "too large to send"),
+    ...Array.from(
+      { length: fitting.length - kept.length },
+      () => `only ${TOOL_RESULT_IMAGES_MAX} images go with one result`
+    )
   ]
   const note = imageNote(refused)
   const room = TOOL_RESULT_TEXT_MAX - (note ? note.length + 2 : 0)
