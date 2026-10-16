@@ -176,6 +176,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 - CLI has a large unit suite under `apps/tui/tests/`
 - CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
+- Docker Scout (`.github/workflows/scout.yaml`) runs on every PR: it reads `apps/sandbox` as the PR has it (`fs://`, no image build) and comments a quickview plus the critical and high CVEs on the PR, and repeats it in the run summary. A fork's PR has no secrets and a read-only token, so there it only logs in anonymously and leaves the report in the summary
 
 ## Import Aliases
 

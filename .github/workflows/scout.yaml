@@ -1,0 +1,43 @@
+name: Docker Scout
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# A newer push to a PR supersedes its running check
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sandbox:
+    name: Sandbox Image
+    permissions:
+      contents: read
+      # Scout writes its report as a PR comment (it keeps one, updated per run)
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # The same Docker Hub credentials the release pushes with; without them Scout reads the public base images
+      # anonymously. A fork's PR has neither the secrets nor a token that can comment, so it only gets the summary.
+      - name: Log in to Docker Hub
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Reads apps/sandbox as the PR has it, no image build: quickview (packages, CVEs, base image, recommendations)
+      # then the critical and high CVEs behind it. Everything goes to the run summary too, forks included.
+      - name: Scout the sandbox
+        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        with:
+          command: quickview,cves
+          image: fs://./apps/sandbox
+          only-severities: critical,high
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          write-comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}

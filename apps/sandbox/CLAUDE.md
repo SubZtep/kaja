@@ -75,6 +75,8 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 `.github/workflows/dockerhub.yaml` (`release_sandbox`; Automatic Versioning dispatches it whenever it bumps the sandbox) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
 
+`.github/workflows/scout.yaml` tells a PR what its half of the image would look like to Docker Scout before it is ever built: Scout reads `apps/sandbox` from the checkout (`fs://`, with the Docker Hub credentials the release pushes with) and comments a quickview – packages, CVEs, base image, recommendations – plus the critical and high CVEs, updated on every push. Nothing fails the run over a finding; a fork's PR (no secrets, read-only token) keeps the same output in the run summary instead.
+
 ## Testing
 
 `bun test apps/sandbox/tests` runs a fixture stdio server (`tests/fixtures/counter-server.ts`) through the real relay and the API's `SandboxTunnel`, wired in-process; the API's `sandbox.test.ts`, `admin-sandbox.test.ts` and `ability-mcp.test.ts` connect real sandboxes over the WebSocket (`tests/integration/sandbox-helpers.ts`).
