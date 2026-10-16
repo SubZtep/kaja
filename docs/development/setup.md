@@ -73,7 +73,7 @@ bun typecheck            # tsc --noEmit across every workspace
 bun test                 # API integration + CLI unit tests
 bun docs                 # this site, with Jekyll (needs Ruby and `bundle install` in docs/)
 
-bun run ./scripts/mass_user_create.ts [n]   # create n random local users (default 10)
+bun --env-file=apps/api/.env scripts/mass_user_create.ts [n]   # create n random local users (default 10)
 bun run scripts/barkochba.ts ["secret"]     # self-play the barkochba persona against a thinker
 ```
 

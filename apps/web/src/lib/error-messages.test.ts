@@ -5,7 +5,7 @@ import { authErrorMessage, VALIDATION, validationMessage } from "./error-message
 
 test("every schema validation message has a translation", () => {
   for (const message of Object.values(AUTH_MESSAGES)) expect(VALIDATION[message]).toBeFunction()
-  expect(validationMessage(AUTH_MESSAGES.passwordUppercase)).toBe(m.validation_password_uppercase())
+  expect(validationMessage(AUTH_MESSAGES.invalidCode)).toBe(m.validation_invalid_code())
 })
 
 test("a validation message the web doesn't know stays as it is", () => {
@@ -14,9 +14,7 @@ test("a validation message the web doesn't know stays as it is", () => {
 })
 
 test("a known Better Auth code or a rate limit gets its translation", () => {
-  expect(authErrorMessage({ code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" })).toBe(
-    m.auth_error_invalid_credentials()
-  )
+  expect(authErrorMessage({ code: "INVALID_OTP", message: "Invalid OTP" })).toBe(m.auth_error_invalid_code())
   expect(authErrorMessage({ status: 429, statusText: "Too Many Requests" })).toBe(m.auth_error_rate_limited())
 })
 

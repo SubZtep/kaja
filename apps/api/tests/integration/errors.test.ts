@@ -8,7 +8,6 @@ import { signUpAndSignIn } from "./helpers"
 
 describe("error responses", () => {
   const email = faker.internet.email()
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string
   const post = (path: string) =>
     app.request(path, {
@@ -18,7 +17,7 @@ describe("error responses", () => {
     })
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(email, password, "Errors Tester")
+    token = await signUpAndSignIn(email, "Errors Tester")
   })
 
   afterAll(() => {

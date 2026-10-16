@@ -3,7 +3,7 @@ import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { locales } from "@kaja/shared/locale"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
-import { admin, bearer, captcha, deviceAuthorization, openAPI } from "better-auth/plugins"
+import { admin, bearer, captcha, deviceAuthorization, emailOTP, openAPI } from "better-auth/plugins"
 import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
@@ -30,13 +30,19 @@ function deviceVerificationUrl() {
  */
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   void sendEmail(args).catch(err => {
-    reportError("Failed to send auth email", err, { type: args.type, userId: args.payload.user.id })
+    const userId = args.type === "signInCode" ? undefined : args.payload.user.id
+    reportError("Failed to send auth email", err, { type: args.type, userId })
   })
 }
 
-/** True when a new account comes from the sign-up page with its consent boxes ticked: an email sign-up's body, or a Google sign-up's OAuth state (the page passes both). */
+/** The language a sign-in code email goes out in when the address has no account yet: the web sends its page locale as `Accept-Language`. */
+function requestLocale(request: Request | undefined): string | undefined {
+  return request?.headers.get("accept-language")?.split(/[,;]/)[0]?.trim()
+}
+
+/** True when a new account comes from the sign-up page with its consent boxes ticked: an email code sign-in's body, or a Google sign-up's OAuth state (the page passes both). */
 async function signUpConsented(ctx: { path?: string; body?: unknown } | null | undefined): Promise<boolean> {
-  if (ctx?.path === "/sign-up/email") return (ctx.body as { consent?: unknown } | undefined)?.consent === true
+  if (ctx?.path === "/sign-in/email-otp") return (ctx.body as { consent?: unknown } | undefined)?.consent === true
   const state = await getOAuthState()
   return state?.requestSignUp === true && state.consent === true
 }
@@ -69,6 +75,22 @@ const plugins: BetterAuthPlugin[] = [
     },
     verificationUri: deviceVerificationUrl(),
     validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID
+  }),
+  // Passwordless: an emailed code signs in, and creates the account when the sign-up page sent its consent.
+  emailOTP({
+    expiresIn: 600,
+    storeOTP: "hashed",
+    // Per IP, and many people share one; guessing is capped per code anyway (3 tries), and sending needs Turnstile.
+    rateLimit: { window: 60, max: 20 },
+    // Only sign-in codes are made (the before hook refuses other types), so this only ever sends those.
+    sendVerificationOTP: async ({ email, otp }, ctx) => {
+      const user = await ctx?.context.internalAdapter.findUserByEmail(email)
+      const saved = user?.user as { name: string; locale?: string | null } | undefined
+      sendAuthEmail({
+        type: "signInCode",
+        payload: { email, otp, name: saved?.name ?? "", locale: saved?.locale ?? requestLocale(ctx?.request) }
+      })
+    }
   })
 ]
 
@@ -90,11 +112,22 @@ if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
     captcha({
       provider: "cloudflare-turnstile",
       secretKey: env.TURNSTILE_SECRET,
-      endpoints: ["/sign-up/email", "/sign-in/email", "/request-password-reset", "/sign-in/social"],
+      endpoints: ["/email-otp/send-verification-otp", "/sign-in/social"],
       ...(testSecret ? {} : { expectedAction: "auth", allowedHostnames })
     })
   )
 }
+
+// The plugin's other code flows. Kaja never emails their codes, yet verify-email would sign in on a guessed one (autoSignInAfterVerification), so none of them is served.
+const UNUSED_OTP_PATHS = [
+  "/email-otp/check-verification-otp",
+  "/email-otp/verify-email",
+  "/email-otp/request-password-reset",
+  "/email-otp/reset-password",
+  "/forget-password/email-otp",
+  "/email-otp/request-email-change",
+  "/email-otp/change-email"
+]
 
 /** Prefix of Better Auth's cookies (`kaja.session_token`, or `__Secure-kaja.session_token` over HTTPS). */
 export const AUTH_COOKIE_PREFIX = "kaja"
@@ -139,7 +172,13 @@ export const auth = betterAuth({
   database: pool,
   basePath: "/auth",
   plugins,
+  disabledPaths: UNUSED_OTP_PATHS,
   hooks: {
+    // Another type's code would only sit unused, its endpoints being off
+    before: createAuthMiddleware(async ctx => {
+      if (ctx.path === "/email-otp/send-verification-otp" && ctx.body?.type !== "sign-in")
+        throw new APIError("BAD_REQUEST", { message: "Only sign-in codes are sent" })
+    }),
     // A Google sign-in fills a blank name or avatar (say, an email account that linked Google) but never overwrites what the user set.
     after: createAuthMiddleware(async ctx => {
       if (ctx.path !== "/callback/:id" || ctx.params?.id !== "google") return
@@ -154,10 +193,10 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        // No account without the sign-up page's consent (18+, Terms and Privacy Policy, health data); the time is the consent record.
+        // No account without the sign-up page's consent (18+, Terms and Privacy Policy, health data); the time is the consent record. The code tells the sign-in page the address has no account yet.
         before: async (user, ctx) => {
           if (!(await signUpConsented(ctx)))
-            throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up" })
+            throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up", code: "CONSENT_REQUIRED" })
           return { data: { ...user, consentedAt: new Date() } }
         }
       },
@@ -188,21 +227,13 @@ export const auth = betterAuth({
         }
       }
     : {}),
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true,
-    sendResetPassword: async ({ user, url }) => {
-      sendAuthEmail({ type: "resetPassword", payload: { user, url } })
-    }
-  },
+  // Only an email change verifies an address by link now; a sign-in code proves the address itself.
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: Readonly<EmailPayload>) => {
       const urlObj = new URL(url)
       urlObj.searchParams.set("callbackURL", new URL("/dashboard", env.CORS_ORIGIN).toString())
       sendAuthEmail({ type: "verification", payload: { user, url: urlObj.toString() } })
     },
-    sendOnSignUp: true,
-    sendOnSignIn: true,
     autoSignInAfterVerification: true,
     expiresIn: 3600 * 24 // 1 day
   },

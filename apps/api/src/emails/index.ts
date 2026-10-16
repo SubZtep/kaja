@@ -2,7 +2,7 @@ import nodemailer from "nodemailer"
 import { env } from "../core/env"
 import { toLocale, translator } from "../core/i18n"
 import { getChangeEmailHtml } from "./ChangeEmail"
-import { getResetPasswordHtml } from "./ResetPassword"
+import { getSignInCodeHtml } from "./SignInCode"
 import type { SendEmailArgs } from "./template"
 import { getVerificationHtml } from "./Verification"
 
@@ -28,10 +28,10 @@ if (!env.CI) {
 
 export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
   const from = "kaja[bot] <noreply@kaja.io>"
-  const to = payload.user.email
-  const locale = toLocale(payload.user.locale)
+  const to = type === "signInCode" ? payload.email : payload.user.email
+  const locale = toLocale(type === "signInCode" ? payload.locale : payload.user.locale)
   const language = { locale, t: translator(locale) }
-  const subject = language.t(`email.${type}Subject`)
+  const subject = language.t(`email.${type}Subject`, type === "signInCode" ? { otp: payload.otp } : undefined)
   let html: string
 
   switch (type) {
@@ -41,8 +41,8 @@ export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
     case "verification":
       html = await getVerificationHtml(payload, language)
       break
-    case "resetPassword":
-      html = await getResetPasswordHtml(payload, language)
+    case "signInCode":
+      html = await getSignInCodeHtml(payload, language)
       break
   }
 

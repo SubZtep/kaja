@@ -59,11 +59,7 @@ describe("a terminal's client tools", () => {
     })
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(
-      faker.internet.email(),
-      faker.internet.password({ length: 8, prefix: "P4$s" }),
-      "Client"
-    )
+    token = await signUpAndSignIn(faker.internet.email(), "Client")
   })
   afterAll(() => setNasiChatResolver(undefined))
 

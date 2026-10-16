@@ -17,8 +17,8 @@ let server: ReturnType<typeof serveApi>
 let sandbox: TestSandbox
 
 beforeAll(async () => {
-  adminToken = await signUpAndSignIn(adminEmail, "password123!", "Sandbox Admin")
-  userToken = await signUpAndSignIn(userEmail, "password123!", "Sandbox User")
+  adminToken = await signUpAndSignIn(adminEmail, "Sandbox Admin")
+  userToken = await signUpAndSignIn(userEmail, "Sandbox User")
   await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
   userId = (await pool.query<{ id: string }>('SELECT id FROM "user" WHERE email = $1', [userEmail])).rows[0]!.id
   server = serveApi()

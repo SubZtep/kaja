@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { baseLocale, locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
+import { getSignInCodeHtml } from "../../src/emails/SignInCode"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
@@ -45,6 +46,14 @@ test("an email renders in the user's language", async () => {
   expect(html).toContain('lang="hu-HU"')
   expect(html).toContain(translator("hu-HU")("email.changeEmailLink"))
   expect(html).not.toContain(translator("en-GB")("email.changeEmailLink"))
+})
+
+test("a sign-in code email carries the code, in the language asked for", async () => {
+  const t = translator("hu-HU")
+  const html = await getSignInCodeHtml({ email: "new@example.com", name: "", otp: "482913" }, { locale: "hu-HU", t })
+  expect(html).toContain('lang="hu-HU"')
+  expect(html).toContain("482913")
+  expect(t("email.signInCodeSubject", { otp: "482913" })).toContain("482913")
 })
 
 test("a Telegram app language maps to a supported locale", () => {

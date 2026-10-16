@@ -11,7 +11,7 @@ const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function",
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
-  const token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), name)
+  const token = await signUpAndSignIn(email, name)
   const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
   return { token, userId }
 }

@@ -7,7 +7,7 @@ import { signUpAndSignIn } from "./helpers"
 
 test("the web sees whether the account is linked to Telegram, and can disconnect it", async () => {
   const email = faker.internet.email().toLowerCase()
-  const token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Link")
+  const token = await signUpAndSignIn(email, "Link")
   const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
   const headers = { Authorization: `Bearer ${token}` }
   const status = async () => (await app.request("/telegram/admin/link", { headers })).json()

@@ -10,7 +10,7 @@ import { signUpAndSignIn } from "./helpers"
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
-  await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), name)
+  await signUpAndSignIn(email, name)
   return (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
 }
 

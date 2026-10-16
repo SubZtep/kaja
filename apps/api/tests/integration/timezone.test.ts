@@ -125,7 +125,7 @@ describe("the API hands times out as UTC", () => {
   let userId: string
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Zone Tester")
+    token = await signUpAndSignIn(email, "Zone Tester")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email.toLowerCase()])).rows[0].id
   })
 
@@ -170,7 +170,7 @@ describe("stats days follow the viewer's timezone", () => {
   const startedOn = (body: UsageStatsResponse) => body.perDay.filter(day => day.started > 0).map(day => day.date)
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Zone Stats")
+    token = await signUpAndSignIn(email, "Zone Stats")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email.toLowerCase()])).rows[0].id
     const id = await createPostgresStore(pool, userId).createSession({
       persona: "default",

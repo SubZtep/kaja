@@ -5,31 +5,23 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { objects } from "../../src/core/files"
-import { signUpAndSignIn, verifyEmail } from "./helpers"
+import { signInCode, signInWithCode, signUpAndSignIn } from "./helpers"
 
 describe("authentication flow", () => {
   const firstName = faker.person.firstName()
   const lastName = faker.person.lastName()
   const email = faker.internet.email({ firstName, lastName })
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
 
   describe("registration", () => {
-    test("with email", async () => {
-      const res = await app.request("/auth/sign-up/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: `${firstName} ${lastName}`, consent: true })
-      })
-      expect(res.ok).toBeTrue()
+    test("with an emailed code", async () => {
+      const res = await signInWithCode(email, { name: `${firstName} ${lastName}`, consent: true })
       expect(res.status).toBe(200)
+      // The code proved the address, so there's no separate verification step
+      expect((await res.json()).user.emailVerified).toBeTrue()
     })
 
-    test("with email and a blank name", async () => {
-      const res = await app.request("/auth/sign-up/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: faker.internet.email(), password, name: "", consent: true })
-      })
+    test("with a blank name", async () => {
+      const res = await signInWithCode(faker.internet.email(), { name: "", consent: true })
       expect(res.status).toBe(200)
       expect((await res.json()).user.name).toBe("")
     })
@@ -41,13 +33,22 @@ describe("authentication flow", () => {
 
     test("is refused without the sign-up page's consent", async () => {
       const refused = faker.internet.email()
+      const res = await signInWithCode(refused, { name: "" })
+      expect(res.status).toBe(400)
+      expect((await res.json()).code).toBe("CONSENT_REQUIRED")
+      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [refused])
+      expect(rowCount).toBe(0)
+    })
+
+    test("passwords are gone", async () => {
+      const passwordEmail = faker.internet.email()
       const res = await app.request("/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: refused, password, name: "" })
+        body: JSON.stringify({ email: passwordEmail, password: "P4$sword", name: "", consent: true })
       })
-      expect(res.status).toBe(400)
-      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [refused])
+      expect(res.ok).toBeFalse()
+      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [passwordEmail])
       expect(rowCount).toBe(0)
     })
   })
@@ -55,23 +56,46 @@ describe("authentication flow", () => {
   describe("bearer token", () => {
     let token: string
 
-    test("sign in is refused until the email is verified", async () => {
-      const res = await app.request("/auth/sign-in/email", {
+    test("a wrong code is refused", async () => {
+      const code = await signInCode(email)
+      const res = await app.request("/auth/sign-in/email-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, otp: code === "000000" ? "111111" : "000000" })
       })
-      expect(res.status).toBe(403)
-      await verifyEmail(email)
+      expect(res.status).toBe(400)
+      expect((await res.json()).code).toBe("INVALID_OTP")
+    })
+
+    test("a code works once", async () => {
+      const otp = await signInCode(email)
+      const signIn = () =>
+        app.request("/auth/sign-in/email-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp })
+        })
+      expect((await signIn()).status).toBe(200)
+      expect((await signIn()).status).toBe(400)
+    })
+
+    test("only sign-in codes are sent, and the plugin's other code flows are off", async () => {
+      const post = (path: string, body: object) =>
+        app.request(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        })
+      expect((await post("/auth/email-otp/send-verification-otp", { email, type: "email-verification" })).status).toBe(
+        400
+      )
+      expect((await post("/auth/email-otp/send-verification-otp", { email, type: "forget-password" })).status).toBe(400)
+      expect((await post("/auth/email-otp/verify-email", { email, otp: "123456" })).status).toBe(404)
+      expect((await post("/auth/email-otp/reset-password", { email, otp: "123456", password: "x" })).status).toBe(404)
     })
 
     test("sign in", async () => {
-      const res = await app.request("/auth/sign-in/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      })
-      expect(res.ok).toBeTrue()
+      const res = await signInWithCode(email)
       expect(res.status).toBe(200)
       token = (await res.json()).token
       expect(token).not.toBeEmpty()
@@ -96,7 +120,7 @@ describe("authentication flow", () => {
   describe("account deletion", () => {
     test("a freshly signed-in user can delete their own account", async () => {
       const doomed = faker.internet.email().toLowerCase()
-      const token = await signUpAndSignIn(doomed, password, "")
+      const token = await signUpAndSignIn(doomed, "")
       const { rows } = await pool.query('SELECT id FROM "user" WHERE email = $1', [doomed])
       // Their images in object storage go with them: a session's, and its description beside it
       const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${userImagePrefix(rows[0].id)}/session/abc.json`]

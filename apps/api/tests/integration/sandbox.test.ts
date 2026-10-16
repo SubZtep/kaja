@@ -56,8 +56,8 @@ const rowOf = async (id: string) =>
   ).rows[0]
 
 beforeAll(async () => {
-  tokenA = await signUpAndSignIn(emails[0]!, "password123!", "Sandbox A")
-  tokenB = await signUpAndSignIn(emails[1]!, "password123!", "Sandbox B")
+  tokenA = await signUpAndSignIn(emails[0]!, "Sandbox A")
+  tokenB = await signUpAndSignIn(emails[1]!, "Sandbox B")
   userA = (await pool.query<{ id: string }>('SELECT id::text FROM "user" WHERE email = $1', [emails[0]])).rows[0]!.id
   server = serveApi()
   apiUrl = `http://127.0.0.1:${server.port}`

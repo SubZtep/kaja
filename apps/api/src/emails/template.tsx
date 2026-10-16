@@ -3,7 +3,7 @@ import { Body, Container, Font, Head, Html } from "@react-email/components"
 import type { User } from "better-auth"
 import type { Translate } from "../core/i18n"
 
-export type EmailType = "verification" | "changeEmail" | "resetPassword"
+export type EmailType = "verification" | "changeEmail" | "signInCode"
 
 export interface EmailPayload {
   /** Better Auth hands over the stored user, so it carries the saved `locale` too. */
@@ -16,10 +16,18 @@ export interface ChangeEmailPayload extends EmailPayload {
   newEmail: string
 }
 
+/** A sign-in code goes to an address that may have no account yet, so it carries what a stored user would. */
+export interface SignInCodePayload {
+  email: string
+  name: string
+  locale?: string | null
+  otp: string
+}
+
 export type SendEmailArgs =
   | { type: "changeEmail"; payload: ChangeEmailPayload }
   | { type: "verification"; payload: EmailPayload }
-  | { type: "resetPassword"; payload: EmailPayload }
+  | { type: "signInCode"; payload: SignInCodePayload }
 
 /** What every template renders with: the user's language and its strings. */
 export type EmailLanguage = {

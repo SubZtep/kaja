@@ -60,11 +60,7 @@ describe("personas in the cloud", () => {
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-personas-test-"))
-    token = await signUpAndSignIn(
-      faker.internet.email().toLowerCase(),
-      faker.internet.password({ length: 8, prefix: "P4$s" }),
-      "Personas"
-    )
+    token = await signUpAndSignIn(faker.internet.email().toLowerCase(), "Personas")
     ;({ providerId } = await seedModel("personas-test"))
   })
 

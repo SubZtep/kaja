@@ -17,7 +17,6 @@ import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
-import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
 import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin/index'
@@ -70,11 +69,6 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
 const PublicDeviceRoute = PublicDeviceRouteImport.update({
   id: '/device',
   path: '/device',
-  getParentRoute: () => PublicRoute,
-} as any)
-const PublicResetPasswordRoute = PublicResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicSigninRoute = PublicSigninRouteImport.update({
@@ -161,7 +155,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AdminDashboardRouteWithChildren
   '/profile': typeof AdminProfileRoute
   '/device': typeof PublicDeviceRouteWithChildren
-  '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
   '/agent/sandbox': typeof AdminAgentSandboxRoute
@@ -181,7 +174,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/profile': typeof AdminProfileRoute
-  '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
   '/agent/sandbox': typeof AdminAgentSandboxRoute
@@ -207,7 +199,6 @@ export interface FileRoutesById {
   '/_admin/dashboard': typeof AdminDashboardRouteWithChildren
   '/_admin/profile': typeof AdminProfileRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
-  '/_public/reset-password': typeof PublicResetPasswordRoute
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/': typeof PublicIndexRoute
@@ -234,7 +225,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/device'
-    | '/reset-password'
     | '/signin'
     | '/signup'
     | '/agent/sandbox'
@@ -254,7 +244,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/profile'
-    | '/reset-password'
     | '/signin'
     | '/signup'
     | '/agent/sandbox'
@@ -279,7 +268,6 @@ export interface FileRouteTypes {
     | '/_admin/dashboard'
     | '/_admin/profile'
     | '/_public/device'
-    | '/_public/reset-password'
     | '/_public/signin'
     | '/_public/signup'
     | '/_public/'
@@ -359,13 +347,6 @@ declare module '@tanstack/react-router' {
       path: '/device'
       fullPath: '/device'
       preLoaderRoute: typeof PublicDeviceRouteImport
-      parentRoute: typeof PublicRoute
-    }
-    '/_public/reset-password': {
-      id: '/_public/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof PublicResetPasswordRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/signin': {
@@ -560,7 +541,6 @@ const PublicDeviceRouteWithChildren = PublicDeviceRoute._addFileChildren(
 
 interface PublicRouteChildren {
   PublicDeviceRoute: typeof PublicDeviceRouteWithChildren
-  PublicResetPasswordRoute: typeof PublicResetPasswordRoute
   PublicSigninRoute: typeof PublicSigninRoute
   PublicSignupRoute: typeof PublicSignupRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -568,7 +548,6 @@ interface PublicRouteChildren {
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicDeviceRoute: PublicDeviceRouteWithChildren,
-  PublicResetPasswordRoute: PublicResetPasswordRoute,
   PublicSigninRoute: PublicSigninRoute,
   PublicSignupRoute: PublicSignupRoute,
   PublicIndexRoute: PublicIndexRoute,

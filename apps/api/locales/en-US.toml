@@ -1,14 +1,14 @@
 [email]
-greeting             = "Hey-ho{name} 👋"
-verificationSubject  = "[kaja.io] Verify your email address"
-verificationText     = "Click the link to verify your email:"
-verificationLink     = "Verify Email Link"
-resetPasswordSubject = "[kaja.io] Reset your password"
-resetPasswordText    = "Click the link to reset your password:"
-resetPasswordLink    = "Reset Password Link"
-changeEmailSubject   = "[kaja.io] Change your email address"
-changeEmailText      = "Click the link to approve the change from {oldEmail} to {newEmail}:"
-changeEmailLink      = "Change Email Link"
+greeting            = "Hey-ho{name} 👋"
+verificationSubject = "[kaja.io] Verify your email address"
+verificationText    = "Click the link to verify your email:"
+verificationLink    = "Verify Email Link"
+signInCodeSubject   = "[en-US] lorem ipsum dolor sit {otp}"
+signInCodeText      = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+signInCodeIgnore    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailSubject  = "[kaja.io] Change your email address"
+changeEmailText     = "Click the link to approve the change from {oldEmail} to {newEmail}:"
+changeEmailLink     = "Change Email Link"
 
 
 [telegram]

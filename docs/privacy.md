@@ -6,7 +6,7 @@ nav_exclude: true
 
 # Privacy Policy
 
-Effective date: 15 October 2026
+Effective date: 16 October 2026
 
 Kaja is operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project. For the cloud service described below, he is the data controller. This policy explains what personal data Kaja collects, why, on what legal basis, who receives it, and what rights you have.
 
@@ -26,13 +26,13 @@ Kaja can run two ways, and the difference matters here.
 
 When you create or use an account, Kaja collects:
 
-- account data: your name, email address, password (stored only as a hash), profile picture if you set one, and account settings;
+- account data: your name, email address, profile picture if you set one, and account settings. Kaja has no passwords: you sign in with a code emailed to you, or with Google;
 - if you sign in with Google, the name, email address, and profile picture Google shares with Kaja;
 - a record of your consent: when you confirmed you are 18 or over, accepted the Terms of Service and this policy, and gave the health data consent described below;
-- authentication data, such as login sessions, verification status, password reset requests, email change requests, and device authorization requests;
+- authentication data, such as login sessions, sign-in codes (stored only as a hash, and only until used or after 10 minutes), verification status, email change requests, and device authorization requests;
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
-- when you open the sign-in, sign-up, or password reset forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
-- email data needed to send account emails, such as verification, password reset, and email change messages;
+- when you open the sign-in or sign-up forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
+- email data needed to send account emails, such as sign-in codes, verification, and email change messages;
 - if you link Telegram, your Telegram user id, so the bot knows which account you are;
 - which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
 
@@ -100,7 +100,7 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 |---|---|---|
 | Hetzner Online GmbH | everything stored in cloud mode (hosting, database and image storage) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
-| Cloudflare | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in, sign-up, and password reset forms and the Google sign-in buttons check you're not a bot | United States and EU |
+| Cloudflare | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in and sign-up forms and the Google sign-in buttons check you're not a bot | United States and EU |
 | Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
@@ -150,7 +150,7 @@ You can ask for details of the safeguard for any provider by email.
 
 ## Security
 
-Kaja uses reasonable technical and organizational measures to protect personal data, including hashed passwords, encrypted ability keys, protected session cookies, rate limiting, and limited access to production systems.
+Kaja uses reasonable technical and organizational measures to protect personal data, including passwordless sign-in with short-lived hashed codes, encrypted ability keys, protected session cookies, rate limiting, and limited access to production systems.
 
 No online service can guarantee perfect security. If a personal data breach puts your rights at risk, Kaja will tell you and the regulator as the law requires. If you believe you found a security issue, contact subztep@gmail.com.
 

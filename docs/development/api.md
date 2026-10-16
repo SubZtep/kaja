@@ -19,7 +19,7 @@ That's the authoritative, always-current list. This page is the map.
 
 | Prefix | Auth | What |
 | --- | --- | --- |
-| `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
+| `/auth/*` | Better Auth | emailed sign-in codes (which also sign up), Google, email change, device authorization |
 | `/admin/*` | session + `admin` role | providers, models, marketplace sync, every MCP sandbox with live stats |
 | `/widget/admin/*` | session | list, create, edit and revoke [widget](/using/widget) keys |
 | `/abilities/me/*` | session | the user's write-only ability API keys |
@@ -91,8 +91,9 @@ latencies and per-reply numbers only exist for replies saved after they were rec
 
 ## Auth
 
-Better Auth handles email/password with verification and reset, admin roles, and the **device authorization
-grant** the CLI uses. Session cookies are prefixed `kaja`, and the CLI holds a bearer token instead.
+Better Auth handles passwordless sign-in with emailed 6-digit codes (the `emailOTP` plugin, codes stored
+hashed; a new address becomes an account only with the sign-up page's `consent`), Google, admin roles, and the
+**device authorization grant** the CLI uses. Session cookies are prefixed `kaja`, and the CLI holds a bearer token instead.
 
 ```mermaid
 ---

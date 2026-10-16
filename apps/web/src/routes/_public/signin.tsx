@@ -3,7 +3,6 @@ import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
-import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
 import { CaptchaAlert, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
@@ -15,6 +14,7 @@ import { m } from "../../paraglide/messages.js"
 import { localizeHref } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
+import { CodeForm, useSendCode } from "./-components/email-code"
 import { GoogleButton } from "./-components/google-button"
 
 const signinSearchSchema = (search: Record<string, unknown>): { redirect?: string; error?: string } => ({
@@ -36,43 +36,50 @@ function SignIn() {
   const { redirect, error } = useSearch({ from: "/_public/signin" })
   const authClient = useAuthClient()
   const captcha = useTurnstile()
+  const sendCode = useSendCode(captcha)
   const [loading, setLoading] = useState(false)
+  // The address a code went to; set, the page asks for the code
+  const [email, setEmail] = useState<string>()
+  const [noAccount, setNoAccount] = useState(false)
 
   const form = useAppForm({
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: true
-    },
-    validators: {
-      onSubmit: loginSchema
-    },
+    defaultValues: { email: "" },
+    validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
-
+      setLoading(true)
       try {
-        setLoading(true)
-        const { error: authError } = await authClient.signIn.email({
-          ...parsed.data,
-          callbackURL: localizeHref(redirect ?? "/dashboard"),
-          fetchOptions: await captcha.fetchOptions()
-        })
-        if (authError) {
-          toast.error(authErrorMessage(authError))
+        if (await sendCode(parsed.data.email)) {
+          setNoAccount(false)
+          setEmail(parsed.data.email)
         }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : m.signin_error_generic())
+      } catch {
+        toast.error(m.signin_error_generic())
       } finally {
         setLoading(false)
       }
-
-      document.body.classList.add("bg-drift")
     }
   })
+
+  const verify = async (otp: string) => {
+    if (!email) return
+    const { error: authError } = await authClient.signIn.emailOtp({ email, otp })
+    if (authError) {
+      // A new address can only become an account on the sign-up page, with its consent boxes
+      if (authError.code === "CONSENT_REQUIRED") {
+        setNoAccount(true)
+        setEmail(undefined)
+      } else toast.error(authErrorMessage(authError))
+      return
+    }
+    document.body.classList.add("bg-drift")
+    // A full load, so the root loader starts with the new session
+    window.location.assign(localizeHref(redirect ?? "/dashboard"))
+  }
 
   return (
     <AuthShell>
@@ -88,73 +95,62 @@ function SignIn() {
           </>
         }
       >
-        {error === "signup_disabled" ? (
+        {error === "signup_disabled" || noAccount ? (
           <p className="mb-5 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
-            {m.signin_google_no_account()}{" "}
+            {noAccount ? m.signin_email_no_account() : m.signin_google_no_account()}{" "}
             <Link to="/signup" className="font-medium text-neon hover:text-neon-hi">
               {m.signin_create_one()}
             </Link>
           </p>
         ) : null}
         <CaptchaAlert captcha={captcha} />
-        <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
-        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
-          {m.auth_or_email()}
-        </p>
-        <form
-          noValidate
-          onSubmit={event => {
-            event.preventDefault()
-            const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement
-            form.handleSubmit({ action: submitter?.value })
-          }}
-          className="flex flex-col gap-4"
-        >
-          <form.AppField name="email">
-            {field => (
-              <field.TextField
-                label={m.auth_field_email()}
-                layout="stack"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-              />
-            )}
-          </form.AppField>
+        {email ? (
+          <CodeForm
+            email={email}
+            submit={m.signin_submit()}
+            verify={verify}
+            resend={() => sendCode(email)}
+            back={() => setEmail(undefined)}
+            disabled={!captcha.ready}
+          />
+        ) : (
+          <>
+            <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
+            <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+              {m.auth_or_email()}
+            </p>
+            <form
+              noValidate
+              onSubmit={event => {
+                event.preventDefault()
+                form.handleSubmit()
+              }}
+              className="flex flex-col gap-4"
+            >
+              <form.AppField name="email">
+                {field => (
+                  <field.TextField
+                    label={m.auth_field_email()}
+                    layout="stack"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                  />
+                )}
+              </form.AppField>
 
-          <form.AppField name="password">
-            {field => (
-              <field.TextField
-                label={m.auth_field_password()}
-                layout="stack"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-              />
-            )}
-          </form.AppField>
-
-          <div className="flex items-center justify-between gap-3">
-            <form.AppField name="rememberMe">
-              {field => <field.CheckboxField label={m.auth_field_remember_me()} className="text-[13px] text-muted" />}
-            </form.AppField>
-
-            <ForgotPassword getEmail={() => form.state.values.email} captcha={captcha}>
               <Button
-                size="sm"
-                variant="link"
-                disabled={loading || !captcha.ready}
-                className="mx-0 text-[13px] text-muted hover:text-neon"
+                type="submit"
+                variant="primary"
+                loading={loading}
+                disabled={!captcha.ready}
+                className="mt-1 w-full"
               >
-                {m.auth_field_forgot_password()}
+                {m.auth_send_code()}
               </Button>
-            </ForgotPassword>
-          </div>
-
-          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
-            {m.signin_submit()}
-          </Button>
-        </form>
+            </form>
+          </>
+        )}
       </AuthCard>
     </AuthShell>
   )

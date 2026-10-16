@@ -70,11 +70,7 @@ describe("abilities", () => {
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-abilities-test-"))
-    token = await signUpAndSignIn(
-      faker.internet.email(),
-      faker.internet.password({ length: 8, prefix: "P4$s" }),
-      "Ability"
-    )
+    token = await signUpAndSignIn(faker.internet.email(), "Ability")
   })
 
   afterAll(async () => {

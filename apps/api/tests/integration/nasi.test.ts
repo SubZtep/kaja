@@ -75,7 +75,6 @@ async function withStubbedResolver<T>(client: unknown, fn: () => Promise<T>) {
 
 describe("nasi", () => {
   const email = faker.internet.email()
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string
 
   beforeAll(async () => {
@@ -83,7 +82,7 @@ describe("nasi", () => {
       client: fakeChatClient("hello from nasi") as never,
       model: "fake-model"
     }))
-    token = await signUpAndSignIn(email, password, "Nasi Tester")
+    token = await signUpAndSignIn(email, "Nasi Tester")
   })
 
   afterAll(() => {

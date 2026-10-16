@@ -82,7 +82,7 @@ bun run --filter @kaja/sandbox build
 
 ### Authentication
 
-- Better Auth (email/password, optional Google sign-in via `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, verification, reset, admin roles, device authorization)
+- Better Auth, passwordless: emailed 6-digit sign-in codes (`emailOTP`; sign-up is a code sign-in with the page's `consent`), optional Google sign-in via `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, email change, admin roles, device authorization
 - CLI client id: `KAJA_TUI_CLIENT_ID` from `@kaja/schema` (`"kaja-tui"`)
 - Device approval UI: web `/device`
 - Session cookies prefixed with `kaja`
