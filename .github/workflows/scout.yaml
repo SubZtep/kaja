@@ -22,6 +22,14 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      # Scout reads images, it never builds one: fs:// would read apps/sandbox as a plain directory (its SBOM,
+      # no base image, which quickview rejects), so the image the PR would release is built here first and Scout
+      # reads it out of the runner's local image store. A plain docker build loads the image into that store as
+      # it goes, which is all Scout needs, so there is nothing to load or to configure afterwards. It costs a few
+      # minutes per run (the Chrome download is most of it) as nothing is cached between them.
+      - name: Build the sandbox image
+        run: docker build --file apps/sandbox/Dockerfile --tag kaja-sandbox:pr .
+
       # The same Docker Hub credentials the release pushes with; without them Scout reads the public base images
       # anonymously. A fork's PR has neither the secrets nor a token that can comment, so it only gets the summary.
       - name: Log in to Docker Hub
@@ -31,13 +39,13 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Reads apps/sandbox as the PR has it, no image build: quickview (packages, CVEs, base image, recommendations)
-      # then the critical and high CVEs behind it. Everything goes to the run summary too, forks included.
+      # quickview (packages, CVEs, base image, recommendations) then the critical and high CVEs behind it.
+      # Everything goes to the run summary too, forks included.
       - name: Scout the sandbox
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
           command: quickview,cves
-          image: fs://./apps/sandbox
+          image: local://kaja-sandbox:pr
           only-severities: critical,high
           github-token: ${{ secrets.GITHUB_TOKEN }}
           write-comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}

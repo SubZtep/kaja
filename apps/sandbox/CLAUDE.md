@@ -75,7 +75,7 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 `.github/workflows/dockerhub.yaml` (`release_sandbox`; Automatic Versioning dispatches it whenever it bumps the sandbox) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
 
-`.github/workflows/scout.yaml` tells a PR what its half of the image would look like to Docker Scout before it is ever built: Scout reads `apps/sandbox` from the checkout (`fs://`, with the Docker Hub credentials the release pushes with) and comments a quickview – packages, CVEs, base image, recommendations – plus the critical and high CVEs, updated on every push. Nothing fails the run over a finding; a fork's PR (no secrets, read-only token) keeps the same output in the run summary instead.
+`.github/workflows/scout.yaml` has every PR build this Dockerfile (repo root context) into the runner's local image store – the same image `dockerhub.yaml` would push, a few minutes per run since nothing is cached between them – and hands it to Scout (`local://`; Scout reads images, it never builds them, and `fs://` on the directory would only index a lockless SBOM with no base image for `quickview` to report on). It comments a quickview – packages, CVEs, base image, recommendations – plus the critical and high CVEs, updated on every push, with the Docker Hub credentials the release pushes with. Nothing fails the run over a finding; a fork's PR (no secrets, read-only token) keeps the same output in the run summary instead.
 
 ## Testing
 
