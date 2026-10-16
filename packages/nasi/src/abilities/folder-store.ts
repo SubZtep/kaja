@@ -295,6 +295,8 @@ export type McpScanEntry = {
   needs?: string[]
   /** Programs a stdio server drives that aren't installed (its manifest's `requires`), e.g. Chrome. */
   requires?: string[]
+  /** Only ever runs on the user's own machine (`localOnly`, or `roots`): never on a sandbox. */
+  localOnly?: boolean
   auth?: AbilityKeyNeed
   error?: string
 }
@@ -311,6 +313,7 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
           tools: ability.tools?.map(tool => ({ name: tool, description: ability.toolDescriptions?.[tool] })),
           transport: ability.transport,
           ...(ability.url ? { domain: new URL(ability.url).host } : stdioCommand(ability)),
+          ...(ability.localOnly || ability.roots ? { localOnly: true } : {}),
           auth:
             ability.auth.type === "apiKey"
               ? { in: ability.auth.in, name: ability.auth.name, keyless: ability.auth.keyless }

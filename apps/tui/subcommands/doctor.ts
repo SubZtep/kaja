@@ -118,6 +118,10 @@ export async function runDoctorSubcommand() {
   console.log()
 
   const outcomes = await checkCredentials()
+  if (process.stdin.isTTY) {
+    const { offerAbilityHosts } = await import("../lib/abilities/hosts")
+    await offerAbilityHosts(line => console.log(line))
+  }
 
   const { models, tools, skipped, mcpServers, missingRunners, missingRoots, closeTools } =
     await bootstrapLocalAgentDeps({
