@@ -141,7 +141,10 @@ other projects. The server must be amd64: the Chrome headless shell has no Linux
   places each sandbox by its public IP when it connects; without it sandboxes register without a location.
 - Optionally set `WEB_PROXY` (`http://` only, credentials allowed) so the browsers' and tools' traffic
   leaves through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any
-  port. Production uses [Webshare](https://www.webshare.io).
+  port. Production uses [Webshare](https://www.webshare.io). To see whether requests get out, run one
+  through it on the box:
+  `disco run --project kaja-sandbox --service worker "bun sandbox.js egress-check <url>"`
+  ([how to read it](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#checking-the-egress)).
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
   the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
   with their last stderr lines; no tracing, and request headers are dropped.
