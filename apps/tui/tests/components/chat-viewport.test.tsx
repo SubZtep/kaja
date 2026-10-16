@@ -114,7 +114,7 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   await t.waitUntilExit()
 })
 
-test("blank lines around the user's messages and the agent's words; tool lines stack under what they follow", async () => {
+test("blank lines around the user's messages and the agent's words; tool lines stack under what they follow, even a user message", async () => {
   const events: TimelineEvent[] = [
     { type: "user", text: "first" },
     { type: "reasoning", text: "hidden" },
@@ -148,7 +148,6 @@ test("blank lines around the user's messages and the agent's words; tool lines s
   const to = lines.findIndex(line => line.includes("second"))
   expect(lines.slice(from, to + 1).map(line => (line === "" ? "" : line.replace(/^\W+/, "").split(" ")[0]))).toEqual([
     "first",
-    "",
     "Searching",
     "",
     "middle",
