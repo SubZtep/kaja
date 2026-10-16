@@ -50,7 +50,8 @@ type Choice = "skip" | "uv" | "chrome" | "sandbox"
 export async function offerAbilityHosts(print: (line: string) => void): Promise<void> {
   const { askPick } = await import("../doctor/prompt")
   const asked = new Set<string>()
-  for (;;) {
+  // One ability at a time, scanning again after each: an install may have covered the next one.
+  const offerNext = async (): Promise<void> => {
     const next = (await unrunnableAbilities()).find(ability => !asked.has(ability.name))
     if (!next) return
     asked.add(next.name)
@@ -78,7 +79,9 @@ export async function offerAbilityHosts(print: (line: string) => void): Promise<
         )) ?? 0
       ]!
     await apply(picked, next, print)
+    return offerNext()
   }
+  return offerNext()
 }
 
 async function apply(choice: Choice, ability: Unrunnable, print: (line: string) => void) {

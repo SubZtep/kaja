@@ -165,21 +165,24 @@ export function useCloudAgent({
   const runOnComputer = useCallback(
     async (calls: NasiClientCall[]): Promise<NasiToolResult[]> => {
       const here = await computer
-      const results: NasiToolResult[] = []
-      for (const call of calls) {
+      const runOne = async (call: NasiClientCall): Promise<NasiToolResult> => {
         pushEvent({ type: "tool_call", name: call.name, arguments: call.arguments })
         const result = here
           ? await here.run(call, approve, personaIdRef.current ?? info?.persona.id)
           : { id: call.id, text: "Error: this terminal can't run tools on the user's computer." }
-        results.push(result)
         for (const image of result.images ?? [])
           pushEvent({
             type: "tool_image",
             path: `data:${image.mimeType};base64,${image.data}`,
             mimeType: image.mimeType
           })
+        return result
       }
-      return results
+      // Chained, each finished before the next starts: a call may stop to ask the user.
+      return calls.reduce<Promise<NasiToolResult[]>>(
+        (done, call) => done.then(async results => [...results, await runOne(call)]),
+        Promise.resolve([])
+      )
     },
     [computer, approve, pushEvent, info]
   )
