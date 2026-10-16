@@ -114,6 +114,7 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",
+  client_tool_calls: "client_tool_calls",
   compacted: "compacted",
   condensed: "condensed",
   usage: "usage",

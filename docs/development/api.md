@@ -44,7 +44,7 @@ login.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/nasi/turn` | run one turn, buffered: returns the whole response |
+| `POST` | `/nasi/turn` | run one turn, buffered: returns the whole response. A terminal adds the tools, skills and personas it runs on the user's computer, and answers paused calls with `toolResults` ([Client tools](/development/nasi#client-tools)); these two routes take bodies up to 16 MB for result images, the rest 1 MB |
 | `POST` | `/nasi/turn/stream` | the same turn as SSE, with token deltas and a heartbeat |
 | `POST` | `/nasi/compact` | summarise a session now (`/compact`), keeping its latest turn. `compacted` is null when there was nothing to summarise |
 | `GET` | `/nasi/info` | which persona, model and tools this account resolves to |

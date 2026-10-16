@@ -31,14 +31,17 @@ describe("error responses", () => {
     expect(await res.json()).toEqual({ error: "Not found" })
   })
 
-  test("a body over 1 MB is refused before any route reads it", async () => {
-    const res = await app.request("/nasi/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ message: "x".repeat(1024 * 1024) })
-    })
-    expect(res.status).toBe(413)
-    expect(await res.json()).toEqual({ error: "Request body too large" })
+  test("a body over 1 MB is refused before any route reads it; a turn, carrying result images, gets 16 MB", async () => {
+    const send = (path: string, method: string, megabytes: number) =>
+      app.request(path, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "x".repeat(megabytes * 1024 * 1024) })
+      })
+    const small = await send("/abilities/me/keys/web-search", "PUT", 1)
+    expect(small.status).toBe(413)
+    expect(await small.json()).toEqual({ error: "Request body too large" })
+    expect((await send("/nasi/turn", "POST", 16)).status).toBe(413)
   })
 
   test("no model to run a turn with is 503, in the buffered and the streamed turn", async () => {
