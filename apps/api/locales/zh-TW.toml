@@ -1,14 +1,17 @@
 [email]
 greeting            = "嘿{name} 👋"
 verificationSubject = "[kaja.io] 驗證你的電子郵件"
-verificationText    = "點擊以下連結驗證你的電子郵件："
-verificationLink    = "驗證電子郵件"
+verificationText    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+verificationLink    = "[zh-TW] lorem"
 signInCodeSubject   = "[zh-TW] lorem ipsum dolor sit {otp}"
 signInCodeText      = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
 signInCodeIgnore    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
 changeEmailSubject  = "[kaja.io] 更改你的電子郵件"
-changeEmailText     = "點擊以下連結批准將你的電子郵件從 {oldEmail} 更改為 {newEmail}："
-changeEmailLink     = "更改電子郵件"
+changeEmailText     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua {oldEmail} {newEmail}"
+changeEmailLink     = "[zh-TW] lorem ipsum"
+ignore              = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+linkFallback        = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+footer              = "[zh-TW] lorem ipsum dolor sit amet consectetur"
 
 
 [telegram]

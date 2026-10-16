@@ -1,7 +1,14 @@
 import { getFirstName } from "@kaja/shared/text"
-import { Heading, Link, Text } from "@react-email/components"
 import { render } from "@react-email/render"
-import { EmailContainer, type EmailLanguage, type EmailPayload } from "./template"
+import {
+  EmailButton,
+  EmailContainer,
+  EmailHeading,
+  type EmailLanguage,
+  type EmailPayload,
+  EmailRule,
+  EmailText
+} from "./template"
 
 export function Verification({
   user,
@@ -9,13 +16,14 @@ export function Verification({
   language: { locale, t }
 }: Readonly<EmailPayload & { language: EmailLanguage }>) {
   return (
-    <EmailContainer locale={locale}>
-      <Heading as="h2">{t("email.greeting", { name: getFirstName(user.name) })}</Heading>
-      <Text>
-        {t("email.verificationText")}
-        <br />
-        <Link href={url}>{t("email.verificationLink")}</Link>
-      </Text>
+    <EmailContainer locale={locale} t={t} preview={t("email.verificationText")}>
+      <EmailHeading>{t("email.greeting", { name: getFirstName(user.name) })}</EmailHeading>
+      <EmailText>{t("email.verificationText")}</EmailText>
+      <EmailButton href={url} t={t}>
+        {t("email.verificationLink")}
+      </EmailButton>
+      <EmailRule />
+      <EmailText small>{t("email.ignore")}</EmailText>
     </EmailContainer>
   )
 }

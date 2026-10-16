@@ -1,14 +1,17 @@
 [email]
 greeting            = "Hey-ho{name} 👋"
 verificationSubject = "[kaja.io] Verify your email address"
-verificationText    = "Click the link to verify your email:"
-verificationLink    = "Verify Email Link"
+verificationText    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+verificationLink    = "[en-US] lorem"
 signInCodeSubject   = "[en-US] lorem ipsum dolor sit {otp}"
 signInCodeText      = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
 signInCodeIgnore    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
 changeEmailSubject  = "[kaja.io] Change your email address"
-changeEmailText     = "Click the link to approve the change from {oldEmail} to {newEmail}:"
-changeEmailLink     = "Change Email Link"
+changeEmailText     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua {oldEmail} {newEmail}"
+changeEmailLink     = "[en-US] lorem ipsum"
+ignore              = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+linkFallback        = "[en-US] lorem ipsum dolor sit amet consectetur"
+footer              = "[en-US] lorem ipsum dolor sit amet consectetur"
 
 
 [telegram]

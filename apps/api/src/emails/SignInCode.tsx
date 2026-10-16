@@ -1,7 +1,14 @@
 import { getFirstName } from "@kaja/shared/text"
-import { Heading, Text } from "@react-email/components"
 import { render } from "@react-email/render"
-import { EmailContainer, type EmailLanguage, type SignInCodePayload } from "./template"
+import {
+  EmailCode,
+  EmailContainer,
+  EmailHeading,
+  type EmailLanguage,
+  EmailRule,
+  EmailText,
+  type SignInCodePayload
+} from "./template"
 
 export function SignInCode({
   name,
@@ -9,13 +16,12 @@ export function SignInCode({
   language: { locale, t }
 }: Readonly<SignInCodePayload & { language: EmailLanguage }>) {
   return (
-    <EmailContainer locale={locale}>
-      <Heading as="h2">{t("email.greeting", { name: getFirstName(name) })}</Heading>
-      <Text>{t("email.signInCodeText")}</Text>
-      <Heading as="h1" style={{ letterSpacing: "8px" }}>
-        {otp}
-      </Heading>
-      <Text>{t("email.signInCodeIgnore")}</Text>
+    <EmailContainer locale={locale} t={t} preview={t("email.signInCodeText")}>
+      <EmailHeading>{t("email.greeting", { name: getFirstName(name) })}</EmailHeading>
+      <EmailText>{t("email.signInCodeText")}</EmailText>
+      <EmailCode code={otp} />
+      <EmailRule />
+      <EmailText small>{t("email.signInCodeIgnore")}</EmailText>
     </EmailContainer>
   )
 }

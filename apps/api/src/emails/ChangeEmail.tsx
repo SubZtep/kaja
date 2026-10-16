@@ -1,7 +1,14 @@
 import { getFirstName } from "@kaja/shared/text"
-import { Heading, Link, Text } from "@react-email/components"
 import { render } from "@react-email/render"
-import { type ChangeEmailPayload, EmailContainer, type EmailLanguage } from "./template"
+import {
+  type ChangeEmailPayload,
+  EmailButton,
+  EmailContainer,
+  EmailHeading,
+  type EmailLanguage,
+  EmailRule,
+  EmailText
+} from "./template"
 
 export function ChangeEmail({
   user,
@@ -9,14 +16,16 @@ export function ChangeEmail({
   newEmail,
   language: { locale, t }
 }: Readonly<ChangeEmailPayload & { language: EmailLanguage }>) {
+  const text = t("email.changeEmailText", { oldEmail: user.email, newEmail })
   return (
-    <EmailContainer locale={locale}>
-      <Heading as="h2">{t("email.greeting", { name: getFirstName(user.name) })}</Heading>
-      <Text>
-        {t("email.changeEmailText", { oldEmail: user.email, newEmail })}
-        <br />
-        <Link href={url}>{t("email.changeEmailLink")}</Link>
-      </Text>
+    <EmailContainer locale={locale} t={t} preview={text}>
+      <EmailHeading>{t("email.greeting", { name: getFirstName(user.name) })}</EmailHeading>
+      <EmailText>{text}</EmailText>
+      <EmailButton href={url} t={t}>
+        {t("email.changeEmailLink")}
+      </EmailButton>
+      <EmailRule />
+      <EmailText small>{t("email.ignore")}</EmailText>
     </EmailContainer>
   )
 }
