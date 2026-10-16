@@ -35,7 +35,7 @@
         "grammy": "^1.46.0",
         "hono": "^4.13.13",
         "hono-rate-limiter": "^0.5.4",
-        "nodemailer": "^10.1.1",
+        "nodemailer": "^10.1.2",
         "pg": "^8.23.1",
         "react": "^19.3.1",
         "zod": "^4.6.7",
@@ -112,7 +112,7 @@
         "@tanstack/react-start": "^1.169.2",
         "@tanstack/react-table": "^9.3.1",
         "better-auth": "^1.7.10",
-        "lucide-react": "^1.57.0",
+        "lucide-react": "^1.58.0",
         "nitro": "npm:nitro-nightly@3.0.1-20261015-090459-9d34a3c1",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
@@ -1299,7 +1299,7 @@
 
     "lru-cache": ["lru-cache@11.5.3", "", {}, "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg=="],
 
-    "lucide-react": ["lucide-react@1.57.0", "", { "peerDependencies": { "@types/react": "*", "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-bXFZEucYhAzLD62Jse76AbTR6LiSLTn3Tqir2f1n8rZrWAdLodYy7jnRZSPIT89dRLk/IseMOUWG82wJtTyTTw=="],
+    "lucide-react": ["lucide-react@1.58.0", "", { "peerDependencies": { "@types/react": "*", "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-hXaFNm6mk6QVtBnDGBn1YAs8j2tGUk0A4s/CpclIcczfxeXiW1rdOLVo6zCsoIih9XXsGvDODQerl749a2n7bA=="],
 
     "magic-string": ["magic-string@0.30.21", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
 
@@ -1347,7 +1347,7 @@
 
     "node-releases": ["node-releases@2.0.57", "", {}, "sha512-kQK9LGGFiHtrWiNhZtA7Qbw17AQz+dmsEKODRIVTXA9+e5MS/2gZEBhYJt13GrAz5/IOZKddH/0Z3TP/Zgo+yw=="],
 
-    "nodemailer": ["nodemailer@10.1.1", "", {}, "sha512-pbqZRoeYUO+1E8TJ/11WeY4D2EVujj1hsYjz3qff/vUFDtGnmi7p3iqzTFslYOfQ6PnjVcWxx/CIUSHCSrO/QA=="],
+    "nodemailer": ["nodemailer@10.1.2", "", {}, "sha512-rnQn9Rzh8RAwcp42MVsIvxbsv6YZ2a2/av+uyJ/LPU1+2QSlrRgFsWWZTKenyRUqkIl8urOI0c4+CEcmFdsvQw=="],
 
     "npm-run-path": ["npm-run-path@4.0.1", "", { "dependencies": { "path-key": "^3.0.0" } }, "sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw=="],
 
