@@ -94,16 +94,20 @@ export function pageMarkdown(html: string, url: string, opts: Omit<FetchArgs, "u
     prepareDocument(document, base)
     const article = new Readability(document).parse()
     if (article?.content && (article.textContent?.trim().length ?? 0) >= MIN_ARTICLE_CHARS) {
-      const title = article.title?.trim()
-      return tidy(`${title ? `# ${title}\n\n` : ""}${toMarkdown(article.content, opts)}`)
+      return tidy(withTitle(article.title, toMarkdown(article.content, opts)))
     }
   }
   // Readability changes the document it reads, so the body comes from a fresh parse
   const { document } = parseHTML(html)
   prepareDocument(document, base)
   for (const node of document.querySelectorAll(CHROME_SELECTOR)) node.remove()
-  const title = document.querySelector("title")?.textContent?.trim()
-  return tidy(`${title ? `# ${title}\n\n` : ""}${toMarkdown(document.body?.innerHTML ?? "", opts)}`)
+  const title = document.querySelector("title")?.textContent
+  return tidy(withTitle(title, toMarkdown(document.body?.innerHTML ?? "", opts)))
+}
+
+function withTitle(title: string | null | undefined, markdown: string): string {
+  const heading = title?.trim()
+  return heading ? `# ${heading}\n\n${markdown}` : markdown
 }
 
 // The page's own <base href>, else where it was fetched from
@@ -135,8 +139,8 @@ function prepareDocument(document: Document, base: string) {
   }
   for (const picture of document.querySelectorAll("picture")) {
     const img = picture.querySelector("img")
-    const srcset = [...picture.querySelectorAll("source[srcset], source[data-srcset]")]
-      .map(source => source.getAttribute("srcset") ?? source.getAttribute("data-srcset"))
+    const srcset = [...picture.querySelectorAll<HTMLElement>("source[srcset], source[data-srcset]")]
+      .map(source => source.getAttribute("srcset") ?? source.dataset.srcset)
       .find(Boolean)
     if (img && srcset && !img.getAttribute("srcset")) img.setAttribute("srcset", srcset)
   }
@@ -163,9 +167,9 @@ function nearHeading(img: Element): string | undefined {
 }
 
 // The image's real source: a lazy-load attribute, a srcset's largest, then src; never an SVG or inline data
-function imageSource(img: Element, base: string): string | undefined {
-  const lazy = ["data-src", "data-lazy-src", "data-original"].map(attr => img.getAttribute(attr)).find(Boolean)
-  const srcset = img.getAttribute("srcset") ?? img.getAttribute("data-srcset")
+function imageSource(img: HTMLElement, base: string): string | undefined {
+  const lazy = img.dataset.src || img.dataset.lazySrc || img.dataset.original
+  const srcset = img.getAttribute("srcset") ?? img.dataset.srcset
   const candidate = lazy ?? (srcset ? largestInSrcset(srcset) : undefined) ?? img.getAttribute("src")
   if (!candidate || candidate.startsWith("data:")) return undefined
   const src = absolute(candidate, base)
@@ -219,7 +223,9 @@ function toMarkdown(html: string, opts: Omit<FetchArgs, "url">): string {
 // Blank lines and stray spaces from the page's own indentation, collapsed
 function tidy(markdown: string): string {
   return markdown
-    .replace(/[ \t]+\n/g, "\n")
+    .split("\n")
+    .map(line => line.trimEnd())
+    .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
 }
