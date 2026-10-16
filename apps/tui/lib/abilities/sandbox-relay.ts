@@ -3,12 +3,12 @@ import { SANDBOX_RELAY_KEY_HEADER } from "@kaja/schema/api"
 import type { ToolHost } from "@kaja/schema/config"
 import { loadToken } from "../auth/credentials"
 import { getApiBaseUrl } from "../config/api-url"
-import { config } from "../config/config"
+import { readConfigLoose } from "../config/config"
 import { log } from "../logger"
 
-/** Each ability's host from settings.toml's `[tools.hosts]`; one that isn't listed runs on this computer. */
+/** Each ability's host from settings.toml's `[tools.hosts]`; one that isn't listed follows the mode. Tolerant: none before setup, or with a broken file. */
 export async function toolHosts(): Promise<Record<string, ToolHost>> {
-  return (await config()).tools?.hosts ?? {}
+  return (await readConfigLoose()).tools?.hosts ?? {}
 }
 
 /** The abilities settings.toml sends to a sandbox. */
