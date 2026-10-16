@@ -283,34 +283,37 @@ export function useCloudAgent({
       const declared: Partial<NasiTurnRequest> = here
         ? { clientTools: here.tools, clientSkills: here.skills, clientPersonas: here.personas }
         : {}
-      let request: TurnRequest | undefined = withHeldResults(first, heldResultsRef.current)
+      // One request at a time, the next sent once this one's stream ended: how it ended decides what comes next.
+      const sendFrom = async (request: TurnRequest, failingRounds: number): Promise<void> => {
+        clientCalls = []
+        // TODO: forward includeThinking (from the thinking preference) once something depends on the request
+        // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
+        // display is already gated client-side by the `thinking` prop threaded through Chrome.
+        const gen = client.turn_stream({
+          session: sessionRef.current,
+          ...declared,
+          ...request,
+          language: getLanguage(),
+          personaId: personaIdRef.current
+        })
+        let next = await gen.next()
+        while (!next.done) {
+          const event = next.value
+          handleStreamEvent(event)
+          next = await gen.next()
+        }
+        sessionRef.current = next.value.session
+        const status = next.value.status
+        if (status === "needs_client_tool") {
+          const resumed = await resumeOnComputer(clientCalls, failingRounds)
+          if (resumed.request) return sendFrom(resumed.request, resumed.failingRounds)
+        } else if (yolo && status === "needs_approval") return sendFrom({ approval: "approve" }, failingRounds)
+      }
+
+      const request = withHeldResults(first, heldResultsRef.current)
       heldResultsRef.current = undefined
       try {
-        let failingRounds = 0
-        while (request) {
-          clientCalls = []
-          // TODO: forward includeThinking (from the thinking preference) once something depends on the request
-          // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
-          // display is already gated client-side by the `thinking` prop threaded through Chrome.
-          const gen = client.turn_stream({
-            session: sessionRef.current,
-            ...declared,
-            ...request,
-            language: getLanguage(),
-            personaId: personaIdRef.current
-          })
-          let next = await gen.next()
-          while (!next.done) {
-            const event = next.value
-            handleStreamEvent(event)
-            next = await gen.next()
-          }
-          sessionRef.current = next.value.session
-          const status = next.value.status
-          if (status === "needs_client_tool")
-            ({ request, failingRounds } = await resumeOnComputer(clientCalls, failingRounds))
-          else request = yolo && status === "needs_approval" ? { approval: "approve" } : undefined
-        }
+        await sendFrom(request, 0)
       } catch (error) {
         const { category, message } = categorizeCloudError(error)
         pushEvent({ type: "error", text: message, category })
