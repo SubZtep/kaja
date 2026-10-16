@@ -6,11 +6,13 @@ import {
   sandboxSettingsPatchSchema,
   sandboxSettingsSchema
 } from "@kaja/schema/api"
+import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import { sandboxService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { notFound } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
 import { sandboxConnect, sandboxOwnerMiddleware } from "./connect"
+import { relayMcp } from "./relay"
 
 export {
   egressFor,
@@ -44,6 +46,9 @@ const publicRoute = createRoute({
 })
 
 sandboxRoutes.openapi(publicRoute, async c => c.json(await sandboxService.onlineByCountry(), 200))
+
+// A local client's stdio abilities on a sandbox (sandboxes only dial out, so the API carries the requests).
+sandboxRoutes.all("/relay/mcp/:ability", requireAuthMiddleware, nasiTurnRateLimiter, relayMcp)
 
 sandboxRoutes.use("/", requireAuthMiddleware)
 sandboxRoutes.use("/key", requireAuthMiddleware)

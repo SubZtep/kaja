@@ -15,6 +15,7 @@ import {
   pickSandbox,
   type SandboxKeys
 } from "../../src/features/sandbox/registry"
+import { closeRelays, RELAY_KEY_HEADER } from "../../src/features/sandbox/relay"
 import { abilityService, sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
@@ -352,4 +353,74 @@ describe("egress", () => {
       await own.close()
     }
   }, 30_000)
+})
+
+describe("relay", () => {
+  const relay = (name: string, init: RequestInit, token?: string, key?: string) =>
+    app.request(`/sandbox/relay/mcp/${name}`, {
+      ...init,
+      headers: {
+        ...(init.headers as Record<string, string>),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(key ? { [RELAY_KEY_HEADER]: key } : {})
+      }
+    })
+
+  afterAll(closeRelays)
+
+  test("a signed-in local client reaches its stdio ability on a sandbox, one MCP session across requests", async () => {
+    const relayed = `relayed-${tag}`
+    const own = await startSandbox({ apiUrl, abilities: [relayed], key: await newKey(tokenA) })
+    try {
+      expect((await relay(relayed, initialize)).status).toBe(401)
+      const started = await relay(relayed, initialize, tokenA)
+      expect(started.status).toBe(200)
+      const session = started.headers.get("mcp-session-id")
+      expect(session).toBeTruthy()
+      await started.body?.cancel()
+
+      const listed = await relay(
+        relayed,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json, text/event-stream",
+            "mcp-session-id": session!,
+            "mcp-protocol-version": "2025-06-18"
+          },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })
+        },
+        tokenA
+      )
+      expect(listed.status).toBe(200)
+      expect(await listed.text()).toContain('"count"')
+    } finally {
+      await own.close()
+    }
+  }, 30_000)
+
+  test("a key the client sends is the user's own: it goes to their own sandbox with the request", async () => {
+    const keyedRelayed = `keyed-relayed-${tag}`
+    const own = await startSandbox({
+      apiUrl,
+      abilities: [keyedRelayed],
+      keyed: [keyedRelayed],
+      key: await newKey(tokenA)
+    })
+    try {
+      await closeRelays()
+      expect((await relay(keyedRelayed, initialize, tokenA)).status).toBe(400)
+      const started = await relay(keyedRelayed, initialize, tokenA, "k1")
+      expect(started.status).toBe(200)
+      await started.body?.cancel()
+    } finally {
+      await own.close()
+    }
+  }, 30_000)
+
+  test("with no sandbox online the client gets a 503", async () => {
+    await closeRelays()
+    expect((await relay(`nowhere-${tag}`, initialize, tokenB)).status).toBe(503)
+  })
 })

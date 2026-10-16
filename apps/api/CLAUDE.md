@@ -43,7 +43,7 @@ src/
     config-export/       # /config/export — the admin-managed models bundle `kaja config fetch|diff` reads
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
     abilities/            # /abilities/me — the user's write-only ability keys (every ability is on for everyone)
-    sandbox/             # /sandbox — sandboxes' WebSocket (/sandbox/connect), routing, users' sandbox keys and settings
+    sandbox/             # /sandbox — sandboxes' WebSocket (/sandbox/connect), routing, users' sandbox keys and settings, the --local relay (relay.ts)
     stats/               # /stats — a user's own activity numbers
     telegram/            # the cloud Telegram bot (not a route)
     telegram-admin/      # /telegram/admin — Telegram account linking

@@ -28,6 +28,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/sandbox/connect` | sandbox key or none | a sandbox's WebSocket: it registers, then serves the MCP and tool requests tunnelled to it |
 | `/sandbox`, `/sandbox/key`, `/sandbox/settings` | session | the user's own sandboxes, their sandbox key, and whether they share or use shared ones |
 | `/sandbox/public` | none | how many sandboxes are online, by country |
+| `/sandbox/relay/mcp/{ability}` | session | a `--local` terminal's stdio ability on a sandbox: MCP requests carried to the sandbox the same rules pick for a cloud turn (a key in `X-Kaja-Ability-Key` counts as the user's own), one relay per user kept until 15 minutes idle |
 | `/telegram/admin/link` | session | `POST` starts linking a Telegram account to the cloud bot (returns a one-time deep link), `GET` says whether it's linked and since when, `DELETE` disconnects it |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |
