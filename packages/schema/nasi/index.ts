@@ -144,8 +144,17 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("condensed"), tool: z.string(), beforeTokens: z.number(), afterTokens: z.number() }),
   z.object({ type: z.literal("usage"), ...NasiUsageSchema.shape }),
   z.object({ type: z.literal("final"), content: z.string().nullable() }),
-  /** An image a tool returned (a screenshot, say), as its public (or data) URL; `original` is what a viewer opens, the untouched image when one was kept. */
-  z.object({ type: z.literal("tool_image"), mimeType: z.string(), url: z.string(), original: z.string().optional() })
+  /** An image a tool returned (a screenshot, say), as its public (or data) URL; `original` is what a viewer opens, the untouched image when one was kept; `alt` its text until `image_described` replaces it. */
+  z.object({
+    type: z.literal("tool_image"),
+    mimeType: z.string(),
+    url: z.string(),
+    original: z.string().optional(),
+    ref: z.string().optional(),
+    alt: z.string().optional()
+  }),
+  /** The image `ref` (a `tool_image`'s) has its description now. */
+  z.object({ type: z.literal("image_described"), ref: z.string(), description: z.string() })
 ])
 
 /** The stream's closing `done` event. */

@@ -3,9 +3,12 @@ import {
   categorizeError,
   dataUrlBytes,
   type FinalizedAgentEvent,
+  imageKey,
+  imageRefId,
   isImageRejection,
   type NasiTurnInput,
   pendingToolCall,
+  sessionImagePrefix,
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
@@ -43,7 +46,9 @@ export type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
   /** Sends a photo by URL (Telegram fetches it) or as the image's bytes, with an optional plain-text caption. */
-  sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<void>
+  sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<{ messageId: number }>
+  /** Replaces a sent photo's caption (a tool image's alt text, once its description is written). */
+  editCaption(chatId: number, messageId: number, caption: string): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -79,13 +84,24 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /** A tool's image as a photo: by its public URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
-  async function sendToolImage(chatId: number, image: { ref: string; key?: string }) {
+  async function sendToolImage(chatId: number, image: { ref: string; key?: string; alt: string }) {
     try {
-      if (image.key && isPublicHttpUrl(imageUrl(image.key))) return await sender.sendPhoto(chatId, imageUrl(image.key))
+      if (image.key && isPublicHttpUrl(imageUrl(image.key)))
+        return await sender.sendPhoto(chatId, imageUrl(image.key), image.alt)
       const bytes = image.key ? await objects.get(image.key) : dataUrlBytes(image.ref)
-      if (bytes) await sender.sendPhoto(chatId, bytes)
+      if (bytes) return await sender.sendPhoto(chatId, bytes, image.alt)
     } catch (error) {
       console.warn("Telegram tool image send failed", { error })
+    }
+  }
+
+  /** A tool image's description, written after its photo went out, becomes the photo's caption. */
+  async function describePhoto(chatId: number, messageId: number | undefined, description: string) {
+    if (messageId === undefined) return
+    try {
+      await sender.editCaption(chatId, messageId, description)
+    } catch (error) {
+      console.warn("Telegram caption edit failed", { error })
     }
   }
 
@@ -118,7 +134,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     reply: Reply,
     chatId: number,
     event: FinalizedAgentEvent,
-    language: BotLanguage
+    language: BotLanguage,
+    photos: Map<string, number>
   ): Promise<boolean> {
     if (event.type === "ask_user") {
       await reply.finish(withQuestion(reply.streamed, event.question))
@@ -133,7 +150,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return true
     }
     if (event.type === "compacted") await sender.sendMessage(chatId, compactedLine(event, language.t))
-    else if (event.type === "tool_image") await sendToolImage(chatId, event)
+    else if (event.type === "tool_image") {
+      const sent = await sendToolImage(chatId, event)
+      if (sent) photos.set(event.ref, sent.messageId)
+    } else if (event.type === "image_described") await describePhoto(chatId, photos.get(event.ref), event.description)
     return false
   }
 
@@ -194,12 +214,20 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     resume: boolean,
     language: BotLanguage
   ) {
+    // The turn's session, once Nasi has it: a reply's kaja-image: links are its images.
+    let sessionId: string | undefined
     const reply = await openReply({
       send: text => sender.sendMessage(chatId, text),
       edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
-      sendPhoto: (url: string, caption) => sender.sendPhoto(chatId, url, caption),
-      // Public URLs only, never a server path
-      photoSource: src => (isPublicHttpUrl(src) ? src : undefined),
+      sendPhoto: async (url: string, caption) => {
+        await sender.sendPhoto(chatId, url, caption)
+      },
+      // Public URLs only, never a server path; an image of this conversation by its link, at its public URL
+      photoSource: src => {
+        const id = imageRefId(src)
+        const url = id && sessionId ? imageUrl(imageKey(sessionImagePrefix(sessionId, ownerUserId), id)) : src
+        return isPublicHttpUrl(url) ? url : undefined
+      },
       emptyReply: language.t("telegram.emptyResponse"),
       warn: (message, error) => console.warn(message, { error })
     })
@@ -216,15 +244,18 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       })
       try {
         let ended = false
-        for await (const event of nasi.turn({ session: resumeRow?.id, ...input })) {
-          // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
-          if (ended) continue
+        const photos = new Map<string, number>()
+        const turn = nasi.turn({ session: resumeRow?.id, ...input, onSession: id => (sessionId = id) })
+        for await (const event of turn) {
+          // Read to the end even after the reply is out: the turn is only saved once the generator finishes (and a
+          // tool image's description, written by then, still reaches its photo's caption).
+          if (ended && event.type !== "image_described") continue
           if (event.type === "delta") {
             if (event.channel === "content") reply.append(event.text)
             continue
           }
           if (event.type === "usage") continue
-          ended = await handleFinalizedEvent(reply, chatId, event, language)
+          ended = (await handleFinalizedEvent(reply, chatId, event, language, photos)) || ended
         }
       } finally {
         await nasi.close()

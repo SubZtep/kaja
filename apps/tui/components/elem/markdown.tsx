@@ -7,6 +7,7 @@ import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { type Palette, paint, usePalette } from "../theme"
 import { type CodeView, CodeViewContext, useReportOverflow } from "./code-expand"
+import { useImageLink } from "./image-links"
 import { TerminalImage } from "./terminal-image"
 
 // cli-highlight's token colours from the palette, in the spirit of its default theme
@@ -161,6 +162,13 @@ export function splitSegments(source: string): Segment[] {
   return segments
 }
 
+// A reply's image; a kaja-image: link is drawn from where the host places it, else (a reply still streaming in the cloud, before the API swaps in its URL) it's just its alt text.
+function ReplyImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
+  const placed = useImageLink()(href)
+  if (href.startsWith("kaja-image:") && !placed) return <Text dimColor>{alt || "[image]"}</Text>
+  return <TerminalImage href={placed ?? href} alt={alt} />
+}
+
 // memo() so scroll ticks (which re-render mounted subtrees) skip items
 // whose text is unchanged entirely.
 export default memo(function Markdown({ children }: { children: string }) {
@@ -175,7 +183,7 @@ export default memo(function Markdown({ children }: { children: string }) {
         segment.type === "text" ? (
           <Text key={segmentKey(segment, i)}>{rendered[i]!.text}</Text>
         ) : (
-          <TerminalImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
+          <ReplyImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
         )
       )}
     </Box>

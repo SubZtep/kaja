@@ -1,4 +1,3 @@
-import { isAbsolute } from "node:path"
 import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
 import { Box, Text, type TextProps } from "ink"
 import { memo } from "react"
@@ -7,6 +6,7 @@ import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
 import type { DisplayEvent } from "../lib/tool-summary"
 import { CodePreview } from "./elem/code-preview"
+import { ImageRow } from "./elem/image-row"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
 import { TerminalImage } from "./elem/terminal-image"
@@ -96,8 +96,7 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
     case "tool_image":
-      // A cloud image arrives as a signed URL, too long to show as its caption; a local one is a file path.
-      return <TerminalImage href={item.path} alt={isAbsolute(item.path) ? `[image: ${item.path}]` : "[image]"} />
+      return <ImageRow path={item.path} text={item.description ?? item.alt} original={item.original} />
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":

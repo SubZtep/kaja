@@ -25,6 +25,18 @@ export function imageRefId(url: string): string | undefined {
   return url.startsWith(IMAGE_REF_PREFIX) ? url.slice(IMAGE_REF_PREFIX.length) : undefined
 }
 
+const IMAGE_LINK = /\]\(kaja-image:([0-9a-f]{16})\)/g
+
+/** `text` with each Markdown image's `kaja-image:` link swapped for where `url` says it is; one it can't place stays as it is. */
+export function resolveImageLinks(text: string, url: (id: string) => string | undefined): string {
+  return text.includes("kaja-image:")
+    ? text.replace(IMAGE_LINK, (link, id: string) => {
+        const resolved = url(id)
+        return resolved ? `](${resolved})` : link
+      })
+    : text
+}
+
 export type SessionImage = { data: Uint8Array; mimeType: string }
 
 /** One session's images: put when they arrive (already normalised), got back when a model request needs the bytes. */

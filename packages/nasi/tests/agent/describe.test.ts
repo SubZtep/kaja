@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test"
-import { Agent, seesImages } from "../../src/agent/agent"
+import { z } from "zod"
+import { Agent, type AgentEvent, createSession, seesImages, tool } from "../../src/agent/agent"
+import { run } from "../../src/agent/run"
 import { Nasi } from "../../src/nasi"
-import { createMemoryStore, IMAGE_REF_PREFIX, imageId } from "../../src/store"
+import { createMemoryStore, IMAGE_REF_PREFIX, imageId, resolveImageLinks } from "../../src/store"
 import { TINY_PNG, TINY_PNG_BASE64 } from "../fixtures/images"
 
 type SentMessage = { role: string; content?: unknown }
@@ -102,4 +104,59 @@ test("a chat model sees images when its models.toml entry lists vision; with no 
   expect(seesImages(agent([entry("chat"), entry("vision")]))).toBe(true)
   expect(seesImages(agent([]))).toBe(true)
   expect(seesImages(new Agent({ model: "m", tools: [], chatSeesImages: false }))).toBe(false)
+})
+
+test("a tool image's event carries its alt text, and an image_described event follows once its description is in", async () => {
+  const { describer: vision } = describer()
+  const snap = tool({
+    name: "snap",
+    description: "Takes a picture",
+    schema: z.object({}),
+    execute: async () => ({
+      text: "Took a screenshot of the page",
+      images: [{ data: TINY_PNG, mimeType: "image/png" }]
+    })
+  })
+  const replies = [
+    { content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "snap", arguments: "{}" } }] },
+    { content: "Done." }
+  ]
+  let i = 0
+  const client = {
+    chat: {
+      completions: {
+        stream: () => {
+          const message = replies[i++]!
+          return {
+            async *[Symbol.asyncIterator]() {},
+            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
+          }
+        }
+      }
+    }
+  }
+  const agent = new Agent({
+    model: "m",
+    client: client as never,
+    tools: [snap],
+    describer: vision,
+    store: createMemoryStore()
+  })
+  const events: AgentEvent[] = []
+  for await (const event of run(agent, "take one", createSession())) events.push(event)
+  expect(events.find(event => event.type === "tool_image")).toMatchObject({
+    ref: LINK,
+    alt: "Took a screenshot of the page"
+  })
+  expect(events.filter(event => event.type === "image_described")).toEqual([
+    { type: "image_described", ref: LINK, description: DESCRIPTION }
+  ])
+})
+
+test("a reply's kaja-image: links become their images' URLs; one with nowhere to go stays as it is", () => {
+  const text = `Here: ![a cat](kaja-image:0123456789abcdef) and ![a dog](kaja-image:fedcba9876543210)`
+  const url = (id: string) => (id === "0123456789abcdef" ? `https://img/${id}` : undefined)
+  expect(resolveImageLinks(text, url)).toBe(
+    "Here: ![a cat](https://img/0123456789abcdef) and ![a dog](kaja-image:fedcba9876543210)"
+  )
 })

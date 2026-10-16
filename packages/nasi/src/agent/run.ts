@@ -186,7 +186,7 @@ async function* handleToolCall(
   for (const stored of images) {
     if ("error" in stored) continue
     const { ref, key, original, mimeType } = stored
-    yield { type: "tool_image", ref, mimeType, ...(key ? { key } : {}), ...(original ? { original } : {}) }
+    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}), ...(original ? { original } : {}) }
     messages.push({ role: "user", content: stored.parts })
   }
 }
@@ -670,13 +670,13 @@ async function* streamRoundFitting(
 ): AsyncGenerator<AgentEvent, StreamedRound, void> {
   // A model that can't see gets the images' labels only, so it waits for their descriptions; one that can gets those written so far.
   const sees = seesImages(agent)
-  const sendable = async () => {
-    await applyDescriptions(session, !sees)
+  async function* sendable(): AsyncGenerator<AgentEvent, ChatCompletionMessageParam[], void> {
+    yield* described(await applyDescriptions(session, !sees))
     const messages = contextMessages(session)
-    return sees ? resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
+    return sees ? await resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
   }
   try {
-    return yield* streamRound(agent, await sendable(), definitions)
+    return yield* streamRound(agent, yield* sendable(), definitions)
   } catch (error) {
     if (!(error instanceof ModelUnavailableError && error.contextOverflow)) throw error
     const sent = Math.round(estimateTokens(contextMessages(session), definitions) * estimateScale)
@@ -685,7 +685,7 @@ async function* streamRoundFitting(
     const entry = agent.models?.find(m => m.task === "chat" && m.model === agent.model)
     if (entry) lowerContextWindow(entry, smaller)
     if (!(yield* compactIfNeeded(agent, session, definitions, estimateScale, true))) throw error
-    return yield* streamRound(agent, await sendable(), definitions)
+    return yield* streamRound(agent, yield* sendable(), definitions)
   }
 }
 
@@ -734,10 +734,18 @@ export async function* run(
 ): AsyncGenerator<AgentEvent, void, void> {
   try {
     yield* runTurn(agent, prompt, session, owner, images)
-  } finally {
     // A turn ends with its images' descriptions in, so the session the host saves keeps them.
-    await applyDescriptions(session, true)
+    yield* described(await applyDescriptions(session, true))
+  } finally {
+    // A turn that ended early (an error, the host stopped reading) takes the descriptions written so far, without
+    // waiting for the rest, which are still kept beside their images.
+    await applyDescriptions(session, false)
   }
+}
+
+// The descriptions just put into labels, as events for the hosts' image rows.
+function* described(descriptions: { ref: string; description: string }[]): Generator<AgentEvent, void, void> {
+  for (const { ref, description } of descriptions) yield { type: "image_described", ref, description }
 }
 
 async function* runTurn(

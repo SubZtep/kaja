@@ -90,7 +90,17 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       },
       async sendPhoto(chatId, photo, caption) {
         const input = typeof photo === "string" ? photo : new InputFile(photo)
-        await withRateLimitRetry(() => bot.api.sendPhoto(chatId, input, caption ? { caption } : undefined))
+        const message = await withRateLimitRetry(() =>
+          bot.api.sendPhoto(chatId, input, caption ? { caption } : undefined)
+        )
+        return { messageId: message.message_id }
+      },
+      async editCaption(chatId, messageId, caption) {
+        try {
+          await withRateLimitRetry(() => bot.api.editMessageCaption(chatId, messageId, { caption }))
+        } catch (error) {
+          if (!isNotModifiedError(error)) throw error
+        }
       }
     }
   })

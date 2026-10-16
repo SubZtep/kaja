@@ -57,7 +57,11 @@ export type NasiOpenOptions = {
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
 /** A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the message. */
-export type NasiTurnInput = NasiTurnRequest & { images?: string[] }
+export type NasiTurnInput = NasiTurnRequest & {
+  images?: string[]
+  /** Hears the turn's session id once it's known (a new session's is minted as the turn opens), e.g. to resolve the `kaja-image:` links of its replies. */
+  onSession?: (sessionId: string) => void
+}
 
 /** How a message sent with a photo shows in history and titles: "📷", then its caption. */
 export function photoLabel(caption: string): string {
@@ -396,6 +400,7 @@ export class Nasi {
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     const loaded = await this.loadTurn(input)
+    if (loaded.session.id) input.onSession?.(loaded.session.id)
     // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
     await syncPersonaTools(loaded.agent)
     const { prompt, images = [] } = await this.promptFor(loaded.agent, loaded.session, input)

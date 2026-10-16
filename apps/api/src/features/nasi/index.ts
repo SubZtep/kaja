@@ -3,11 +3,14 @@ import {
   type AgentDelta,
   categorizeError,
   type FinalizedAgentEvent,
+  imageKey,
   LOAD_SKILL_TOOL,
   listCloudToolNames,
   personaAbilities,
   personaGetsBuiltin,
-  personaLoadsSkills
+  personaLoadsSkills,
+  resolveImageLinks,
+  sessionImagePrefix
 } from "@kaja/nasi"
 import {
   NasiCompactRequestSchema,
@@ -119,19 +122,21 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   condensed: "condensed",
   usage: "usage",
   final: "final",
-  tool_image: "tool_image"
+  tool_image: "tool_image",
+  image_described: "image_described"
 }
 
-/** What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL (and its original's, for a viewer to open). */
-function sseEvent(event: FinalizedAgentEvent | AgentDelta): object {
+/**
+ * What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL (and its
+ * original's, for a viewer to open), and a reply's `kaja-image:` links, which become their images' public URLs.
+ */
+function sseEvent(event: FinalizedAgentEvent | AgentDelta, imageAt: (id: string) => string | undefined): object {
+  if (event.type === "message") return { ...event, content: resolveImageLinks(event.content, imageAt) }
+  if (event.type === "final" && event.content) return { ...event, content: resolveImageLinks(event.content, imageAt) }
   if (event.type !== "tool_image") return event
-  const { mimeType, key, original, ref } = event
-  return {
-    type: "tool_image",
-    mimeType,
-    url: key ? imageUrl(key) : ref,
-    ...(original ? { original: imageUrl(original) } : {})
-  }
+  const { mimeType, key, original, ref, alt } = event
+  const url = key ? imageUrl(key) : ref
+  return { type: "tool_image", mimeType, url, ref, alt, ...(original ? { original: imageUrl(original) } : {}) }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */
@@ -158,14 +163,19 @@ nasiRoutes.post("/turn/stream", async c => {
     stream.onAbort(() => clearInterval(heartbeat))
 
     try {
-      const gen = openUserTurnStream(user.id, body)
+      let sessionId = body.session
+      const imageAt = (id: string) =>
+        sessionId ? imageUrl(imageKey(sessionImagePrefix(sessionId, user.id), id)) : undefined
+      const gen = openUserTurnStream(user.id, body, id => {
+        sessionId = id
+      })
       let next = await gen.next()
       while (!next.done) {
         const name = SSE_EVENT_NAME[next.value.type]
         if (name)
           await stream.writeSSE({
             event: name,
-            data: JSON.stringify(sseEvent(next.value))
+            data: JSON.stringify(sseEvent(next.value, imageAt))
           })
         next = await gen.next()
       }

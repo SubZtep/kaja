@@ -82,7 +82,9 @@ test("an image that can't load says why after its caption", async () => {
   )
   for (let i = 0; i < 100 && !t.output().includes("HTTP 404"); i++) await t.tick()
   expect(t.output()).toContain("A cat (couldn't load: HTTP 404)")
-  expect(t.output()).toContain(`[image: ${missing}] (couldn't load: file not found)`)
+  // A tool image's row says why, and still offers its file to open
+  expect(t.output()).toContain("couldn't load: file not found")
+  expect(t.output()).toContain(`\u001B]8;;file://${missing}\u0007↗ open`)
   t.unmount()
   await t.waitUntilExit()
   await server.stop(true)
@@ -147,4 +149,24 @@ test("code longer than the preview registers for the expand button, and withdraw
   t.unmount()
   await t.waitUntilExit()
   expect(active).toBe(0)
+})
+
+test("a tool image's row shows its alt text, then its description once written, beside the picture or under it", async () => {
+  const row = (description?: string) => ({
+    type: "tool_image" as const,
+    path: join(tmpdir(), "kaja-timeline-none.png"),
+    mimeType: "image/png",
+    ref: "kaja-image:0123456789abcdef",
+    alt: "Took a screenshot",
+    ...(description ? { description } : {})
+  })
+  const wide = renderForTest(<TimelineItem item={row()} thinking={true} />, { columns: 120 })
+  await wide.tick()
+  expect(wide.output()).toContain("Took a screenshot")
+  wide.rerender(<TimelineItem item={row("A login form with a red error banner.")} thinking={true} />)
+  await wide.tick()
+  expect(wide.lastFrame()).toContain("A login form with a red error banner.")
+  expect(wide.lastFrame()).not.toContain("Took a screenshot")
+  wide.unmount()
+  await wide.waitUntilExit()
 })

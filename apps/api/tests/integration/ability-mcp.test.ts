@@ -11,7 +11,7 @@ import {
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiDescriberResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
@@ -316,6 +316,14 @@ describe("MCP servers in the cloud", () => {
         model: "fake-model"
       }))
       const photos: (string | Uint8Array)[] = []
+      const captions: (string | undefined)[] = []
+      // A vision model describes it; the photo goes out with its alt text, then takes the description as its caption
+      setNasiDescriberResolver(async () => ({
+        client: {
+          chat: { completions: { create: async () => ({ choices: [{ message: { content: "A tiny picture." } }] }) } }
+        } as never,
+        model: "vision-m"
+      }))
       const driver = createCloudTelegramDriver({
         resolveLinkedUser: async () => ({ userId: user.id, locale: null }),
         sender: {
@@ -323,8 +331,13 @@ describe("MCP servers in the cloud", () => {
             return { messageId: 1 }
           },
           async editMessageText() {},
-          async sendPhoto(_chatId, photo) {
+          async sendPhoto(_chatId, photo, caption) {
             photos.push(photo)
+            captions.push(caption)
+            return { messageId: 7 }
+          },
+          async editCaption(_chatId, messageId, caption) {
+            captions.push(`${messageId}: ${caption}`)
           }
         }
       })
@@ -332,6 +345,8 @@ describe("MCP servers in the cloud", () => {
       expect(photos).toHaveLength(1)
       expect(photos[0]).toBeInstanceOf(Uint8Array)
       expect(Buffer.from(photos[0] as Uint8Array).toString("base64")).toStartWith("iVBOR")
+      expect(captions).toEqual(["a picture", "7: A tiny picture."])
+      setNasiDescriberResolver(undefined)
     } finally {
       await sandbox.close()
       server.stop(true)

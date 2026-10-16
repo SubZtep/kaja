@@ -5,6 +5,7 @@ export {
   imageRefId,
   inlineImages,
   objectSessionImages,
+  resolveImageLinks,
   type SessionImage,
   type SessionImages,
   sessionImagePrefix,

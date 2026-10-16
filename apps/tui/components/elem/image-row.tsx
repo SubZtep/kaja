@@ -1,0 +1,56 @@
+import { pathToFileURL } from "node:url"
+import { Box, type DOMElement, Text, useWindowSize } from "ink"
+import { useRef, useState } from "react"
+import { t } from "../../lib/i18n"
+import { openImage } from "../../lib/image/open-image"
+import { useKajaTheme } from "../theme"
+import { TerminalImage } from "./terminal-image"
+import { useClick } from "./use-click"
+
+/** Below this many columns the text goes under the image: beside it, it would wrap to a few words a line. */
+export const IMAGE_ROW_MIN_COLUMNS = 100
+
+/** An OSC 8 link: terminals that know it open `target` on click; a local path becomes a file:// URL. */
+const terminalLink = (text: string, target: string) => {
+  const url = /^[a-z]+:/i.test(target) ? target : pathToFileURL(target).href
+  return `\u001B]8;;${url}\u0007${text}\u001B]8;;\u0007`
+}
+
+// "↗ open": a click opens the image in the system's viewer; when nothing could, the plain link shows instead.
+function OpenLink({ target }: Readonly<{ target: string }>) {
+  const { accent, muted } = useKajaTheme()
+  const ref = useRef<DOMElement>(null)
+  const [failed, setFailed] = useState(false)
+  useClick(ref, () => {
+    void openImage(target).then(opened => setFailed(!opened))
+  })
+  return (
+    <Box ref={ref} flexDirection="column">
+      <Text {...accent()}>{terminalLink(`↗ ${t("timeline.openImage")}`, target)}</Text>
+      {failed && <Text {...muted()}>{terminalLink(target, target)}</Text>}
+    </Box>
+  )
+}
+
+/**
+ * A tool's image with what it shows (its alt text, then its description once written) and a way to open it (the
+ * original when one was kept): beside the picture on a wide terminal, under it on a narrow one.
+ */
+export function ImageRow({ path, text, original }: Readonly<{ path: string; text?: string; original?: string }>) {
+  const { columns } = useWindowSize()
+  const { muted } = useKajaTheme()
+  const wide = columns >= IMAGE_ROW_MIN_COLUMNS
+  // A data URL has nothing to open; a stored file or a URL does.
+  const target = original ?? (path.startsWith("data:") ? undefined : path)
+  return (
+    <Box flexDirection={wide ? "row" : "column"} columnGap={2}>
+      <Box flexShrink={0} width={wide ? "60%" : "100%"}>
+        <TerminalImage href={path} alt="" />
+      </Box>
+      <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+        {text && <Text {...muted()}>{text}</Text>}
+        {target && <OpenLink target={target} />}
+      </Box>
+    </Box>
+  )
+}

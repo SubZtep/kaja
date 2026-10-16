@@ -66,13 +66,16 @@ export function describeInBackground(
 }
 
 /**
- * Puts the descriptions written so far into their images' labels. With `wait`, first waits for the ones still being
+ * Puts the descriptions written so far into their images' labels, and says which (for the hosts' image rows). With `wait`, first waits for the ones still being
  * written (at most {@link DESCRIBE_TIMEOUT_MS}): a chat model that can't see has nothing else to go on, and a turn
  * ends with them in, so the saved session keeps them.
  */
-export async function applyDescriptions(session: Session, wait: boolean): Promise<void> {
+export async function applyDescriptions(
+  session: Session,
+  wait: boolean
+): Promise<{ ref: string; description: string }[]> {
   const pending = pendingBySession.get(session)
-  if (!pending?.length) return
+  if (!pending?.length) return []
   if (wait) {
     let timer: ReturnType<typeof setTimeout> | undefined
     const timeout = new Promise<void>(resolve => {
@@ -87,6 +90,7 @@ export async function applyDescriptions(session: Session, wait: boolean): Promis
   const left = wait ? [] : pending.filter(entry => entry.text === undefined)
   if (left.length) pendingBySession.set(session, left)
   else pendingBySession.delete(session)
+  return ready.map(entry => ({ ref: entry.ref, description: entry.text! }))
 }
 
 function relabel(messages: ChatCompletionMessageParam[], ref: string, label: string): void {

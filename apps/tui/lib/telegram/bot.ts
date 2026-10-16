@@ -83,13 +83,21 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
         await bot.api.answerCallbackQuery(callbackQueryId, { text: opts?.text })
       },
       async sendPhoto(chatId, photo, opts) {
-        await withRateLimitRetry(() =>
+        const message = await withRateLimitRetry(() =>
           bot.api.sendPhoto(
             chatId,
             "data" in photo ? new InputFile(photo.data) : "path" in photo ? new InputFile(photo.path) : photo.url,
             opts?.caption ? { caption: opts.caption } : undefined
           )
         )
+        return { messageId: message.message_id }
+      },
+      async editCaption(chatId, messageId, caption) {
+        try {
+          await withRateLimitRetry(() => bot.api.editMessageCaption(chatId, messageId, { caption }))
+        } catch (error) {
+          if (!isNotModifiedError(error)) throw error
+        }
       }
     }
   })

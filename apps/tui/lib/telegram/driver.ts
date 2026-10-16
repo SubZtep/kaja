@@ -5,13 +5,15 @@ import {
   dataUrlBytes,
   dropImages,
   type FinalizedAgentEvent,
+  imageKey,
   imageRefId,
   isImageRejection,
   personaAbilities,
   photoLabel,
   recordPausedCall,
   runApprovedTool,
-  samplingOf
+  samplingOf,
+  sessionImagePrefix
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
@@ -33,7 +35,9 @@ import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
 import { timelineEvent } from "../agent/timeline"
 import { t } from "../i18n"
+import { withDescription } from "../image/rows"
 import { log } from "../logger"
+import { storedImagePath } from "../memory/store"
 import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 
@@ -66,6 +70,13 @@ function photoSource(src: string): { url: string } | { path: string } | undefine
   return { path }
 }
 
+// An image of this conversation by its kaja-image: link: the session's stored file.
+function storedPhoto(state: { session: { id?: string } }, src: string): { path: string } | undefined {
+  const id = imageRefId(src)
+  const path = id && state.session.id && storedImagePath(imageKey(sessionImagePrefix(state.session.id), id))
+  return path && existsSync(path) ? { path } : undefined
+}
+
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6
 
@@ -92,7 +103,9 @@ export type TelegramSender = {
     chatId: number,
     photo: { data: Uint8Array } | { path: string } | { url: string },
     opts?: { caption?: string }
-  ): Promise<void>
+  ): Promise<{ messageId: number }>
+  /** Replaces a sent photo's caption (a tool image's alt text, once its description is written). */
+  editCaption(chatId: number, messageId: number, caption: string): Promise<void>
 }
 
 export type TelegramDriverConfig = {
@@ -139,6 +152,8 @@ type UserState = {
   persistChain: Promise<void>
   pendingCommand: PendingCommand | undefined
   busy: boolean
+  /** Tool images sent as photos, by ref, so a description written later can become the photo's caption. */
+  photos: Map<string, number>
 }
 
 export function createTelegramDriver(config: TelegramDriverConfig) {
@@ -183,6 +198,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       persona,
       persistChain: Promise.resolve(),
       pendingCommand: undefined,
+      photos: new Map(),
       busy: false
     }
   }
@@ -247,7 +263,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     caption?: string
   ) {
     try {
-      await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
+      return await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
     } catch (error) {
       log.warn("Telegram photo send failed", { error })
     }
@@ -353,7 +369,20 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
     if (event.type === "tool_image") {
       const data = await toolImageBytes(state, event.ref)
-      if (data) await sendPhotoSafely(chatId, { data })
+      const sent = data && (await sendPhotoSafely(chatId, { data }, event.alt))
+      if (sent) state.photos.set(event.ref, sent.messageId)
+      return false
+    }
+
+    if (event.type === "image_described") {
+      state.events = withDescription(state.events, event.ref, event.description)
+      const messageId = state.photos.get(event.ref)
+      if (messageId === undefined) return false
+      try {
+        await sender.editCaption(chatId, messageId, event.description)
+      } catch (error) {
+        log.warn("Telegram caption edit failed", { error })
+      }
       return false
     }
 
@@ -416,15 +445,19 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const reply = await openReply({
       send: text => sender.sendMessage(chatId, text),
       edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
-      sendPhoto: (photo: { path: string } | { url: string }, caption) =>
-        sender.sendPhoto(chatId, photo, caption ? { caption } : undefined),
-      photoSource,
+      sendPhoto: async (photo: { path: string } | { url: string }, caption) => {
+        await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
+      },
+      photoSource: src => storedPhoto(state, src) ?? photoSource(src),
       emptyReply: t("telegram.emptyResponse"),
       warn: (message, error) => log.warn(message, { error })
     })
 
     try {
+      let ended = false
       for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId), images)) {
+        // Read to the end even after the reply is out: a tool image's description, written by then, still reaches its photo's caption.
+        if (ended && event.type !== "image_described") continue
         if (event.type === "delta") {
           // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
           if (event.channel === "content") reply.append(event.text)
@@ -433,10 +466,9 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
         if (event.type === "usage") continue
 
-        state.events.push(timelineEvent(event))
+        if (event.type !== "image_described") state.events.push(timelineEvent(event))
 
-        const done = await handleFinalizedEvent(chatId, state, reply, event)
-        if (done) return
+        if (await handleFinalizedEvent(chatId, state, reply, event)) ended = true
       }
     } catch (error) {
       await reply.fail(turnFailure(state, error, images.length > 0, turnStart))

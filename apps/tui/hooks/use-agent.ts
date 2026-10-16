@@ -1,4 +1,13 @@
-import { compact, recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
+import {
+  compact,
+  imageKey,
+  imageRefId,
+  recordPausedCall,
+  replyLanguageInstructionFor,
+  runApprovedTool,
+  samplingOf,
+  sessionImagePrefix
+} from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { commandArgument } from "@kaja/shared/telegram"
@@ -17,8 +26,9 @@ import { categorizeError, type ErrorCategory } from "../lib/agent/error-category
 import { runShellCommand } from "../lib/agent/run-command"
 import { timelineEvent } from "../lib/agent/timeline"
 import { getLanguage, t } from "../lib/i18n"
+import { withDescription } from "../lib/image/rows"
 import { log } from "../lib/logger"
-import { peekStore } from "../lib/memory/store"
+import { peekStore, storedImagePath } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
 
@@ -32,9 +42,22 @@ export type TimelineEvent =
   | { type: "error"; text: string; category: ErrorCategory }
   /** A line from the app itself, e.g. that `/compact` found nothing to do. */
   | { type: "notice"; text: string }
-  /** A tool's image: `path` shows it (its stored file, a URL, or a data URL), `original` is what opening it opens; `key`/`originalKey` are the stored objects a saved timeline keeps. */
-  | { type: "tool_image"; path: string; mimeType: string; original?: string; key?: string; originalKey?: string }
-  | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" }>
+  /**
+   * A tool's image: `path` shows it (its stored file, a URL, or a data URL), `original` is what opening it opens,
+   * `alt` its text until `description` is written; `key`/`originalKey` are the stored objects a saved timeline keeps.
+   */
+  | {
+      type: "tool_image"
+      path: string
+      mimeType: string
+      ref?: string
+      alt?: string
+      description?: string
+      original?: string
+      key?: string
+      originalKey?: string
+    }
+  | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" | "image_described" }>
 
 /**
  * The message currently streaming in, accumulated from delta events. Cleared
@@ -207,6 +230,11 @@ export function useAgent(
   const handleFinalizedEvent = useCallback(
     (event: Exclude<FinalizedAgentEvent, { type: "usage" | "delta" }>) => {
       if (event.type === "persona_switch") applyPersonaSwitch(event.personaId)
+      if (event.type === "image_described") {
+        eventsRef.current = withDescription(eventsRef.current, event.ref, event.description)
+        setEvents(eventsRef.current)
+        return
+      }
       setPartial(null)
       pushEvent(timelineEvent(event))
     },
@@ -331,8 +359,16 @@ export function useAgent(
     [agent, send, runningCommand]
   )
 
+  // A reply's kaja-image: link, as the current session's stored file.
+  const imageLink = useCallback((ref: string) => {
+    const id = imageRefId(ref)
+    const session = sessionRef.current?.id
+    return id && session ? storedImagePath(imageKey(sessionImagePrefix(session), id)) : undefined
+  }, [])
+
   return {
     agent,
+    imageLink,
     model,
     /** Provider-reported model from the last completion; falls back to the request model when none yet. */
     displayModel: responseModel ?? model,

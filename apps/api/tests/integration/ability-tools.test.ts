@@ -317,7 +317,10 @@ describe("HTTP tools in the cloud", () => {
         async editMessageText(_chatId, messageId, text) {
           edits.push({ id: messageId, text })
         },
-        async sendPhoto() {}
+        async sendPhoto() {
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 
@@ -367,7 +370,9 @@ describe("HTTP tools in the cloud", () => {
         },
         async sendPhoto(_chatId, url, caption) {
           photos.push({ url, caption })
-        }
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 
@@ -392,7 +397,10 @@ describe("HTTP tools in the cloud", () => {
           return { messageId: 1 }
         },
         async editMessageText() {},
-        async sendPhoto() {}
+        async sendPhoto() {
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 

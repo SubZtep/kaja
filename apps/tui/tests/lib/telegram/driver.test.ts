@@ -123,6 +123,7 @@ function fakeSender() {
     photo: { data: Uint8Array } | { path: string } | { url: string }
     caption?: string
   }[] = []
+  const captions: { chatId: number; messageId: number; caption: string }[] = []
   const sender: TelegramSender = {
     async sendMessage(chatId, text, opts) {
       const messageId = nextMessageId++
@@ -137,9 +138,13 @@ function fakeSender() {
     },
     async sendPhoto(chatId, photo, opts) {
       photos.push({ chatId, photo, caption: opts?.caption })
+      return { messageId: 100 + photos.length }
+    },
+    async editCaption(chatId, messageId, caption) {
+      captions.push({ chatId, messageId, caption })
     }
   }
-  return { sender, sent, edited, answered, photos }
+  return { sender, sent, edited, answered, photos, captions }
 }
 
 /** One driver, one scripted fake LLM conversation. */
@@ -681,4 +686,42 @@ test("/abilities lists what each persona uses, and how to change it", async () =
   )
   expect(text).toContain(t("telegram.abilitiesPersonaNone", { persona: "Kaja" }))
   expect(text).toContain("kaja abilities")
+})
+
+test("a tool image goes out captioned with its alt text, and takes its description as its caption once written", async () => {
+  const { createMemoryStore } = await import("@kaja/nasi")
+  const imageTool = tool<Record<string, never>>({
+    name: "make_picture",
+    description: "test tool that returns images",
+    parameters: { type: "object", properties: {} },
+    execute: async () => ({ text: "Made a picture", images: [{ data: TINY_PNG, mimeType: "image/png" }] })
+  })
+  const describer = {
+    client: {
+      chat: { completions: { create: async () => ({ choices: [{ message: { content: "A tiny square." } }] }) } }
+    },
+    model: "vision-m"
+  }
+  const { sender, photos, captions } = fakeSender()
+  const script: FakeMessage[] = [
+    {
+      content: null,
+      tool_calls: [{ id: "call_1", type: "function", function: { name: "make_picture", arguments: "{}" } }]
+    },
+    { content: "Here." }
+  ]
+  const driver = createTelegramDriver({
+    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool] },
+    personas: [persona],
+    models: [],
+    sender,
+    createAgent: () =>
+      ({ ...fakeAgent(script, [imageTool]), store: createMemoryStore(), describer }) as unknown as Agent
+  })
+
+  await driver.handleMessage(42, 100, "draw me something")
+
+  expect(photos).toHaveLength(1)
+  expect(photos[0]!.caption).toBe("Made a picture")
+  expect(captions).toEqual([{ chatId: 100, messageId: 101, caption: "A tiny square." }])
 })

@@ -241,14 +241,10 @@ type MessageDbRow = {
 
 // A saved timeline keeps a stored tool image by its object keys; the paths it was shown and opened from are worked out again on load.
 function storedEvent(event: unknown): unknown {
-  const image = event as { type?: string; key?: string; originalKey?: string; mimeType?: string }
+  const image = event as { type?: string; key?: string; path?: string; original?: string }
   if (image.type !== "tool_image" || !image.key) return event
-  return {
-    type: image.type,
-    key: image.key,
-    mimeType: image.mimeType,
-    ...(image.originalKey ? { originalKey: image.originalKey } : {})
-  }
+  const { path: _path, original: _original, ...kept } = image
+  return kept
 }
 
 /** The folder the session images are kept in, beside the database. */

@@ -181,6 +181,7 @@ export {
   objectSessionImages,
   type PendingKind,
   requireStore,
+  resolveImageLinks,
   type SessionImage,
   type SessionImages,
   type SessionWrite,
