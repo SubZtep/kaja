@@ -212,7 +212,7 @@ export const auth = betterAuth({
       if (ctx.body?.type === "email-verification") {
         // Through auth.api, since a hook sees the request before the bearer plugin turns a token into a session
         const session = await auth.api.getSession({ headers: ctx.headers ?? new Headers() })
-        if (session && session.user.email.toLowerCase() === String(ctx.body.email).toLowerCase()) return
+        if (session?.user.email.toLowerCase() === String(ctx.body.email).toLowerCase()) return
       }
       throw new APIError("BAD_REQUEST", { message: "Only sign-in and email change codes are sent" })
     }),
@@ -238,10 +238,11 @@ export const auth = betterAuth({
           return { data: { ...user, consentedAt: new Date() } }
         },
         // The picture is stored, never linked: Gravatar's for a code sign-up, a copy of Google's for a Google one. In the background, so sign-up doesn't wait on them; never under bun test, which mustn't call out.
-        after: async (user, ctx) => {
-          if (env.BUN_TEST) return
+        after: (user, ctx) => {
+          if (env.BUN_TEST) return Promise.resolve()
           if (ctx?.path === "/sign-in/email-otp") void fillFromGravatar(user)
           else if (user.image) void copyGooglePicture(user.id, user.image, user.image)
+          return Promise.resolve()
         }
       },
       // The rows cascade from the user; their images in object storage don't, so they go here (self-service and admin removal alike).
