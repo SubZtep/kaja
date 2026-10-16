@@ -76,7 +76,8 @@ The Kaja API keeps its own copy of the marketplace, refreshed every hour. Every 
 it, and each persona's `abilities` list picks what a chat uses, the same as locally. A change reaches a
 running conversation from its next message.
 
-The cloud has no shell and serves many people, so it offers less:
+The cloud has no shell of its own and serves many people, so it offers less (cloud chat in the terminal can
+still use your computer for the rest, see [Cloud or local](/getting-started/modes#your-computer-in-cloud-mode)):
 
 | Kind | Not offered in the cloud when |
 | --- | --- |

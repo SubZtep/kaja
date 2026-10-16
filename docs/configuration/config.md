@@ -33,6 +33,7 @@ voice = false
 
 # [tools.hosts]
 # chrome-devtools = "sandbox"
+# shell = "computer"
 
 # [stt]
 # speachesUrl = "ws://localhost:8000"
@@ -87,10 +88,17 @@ pattern that isn't a valid regex is skipped with a warning. The list applies to 
 
 ## `[tools.hosts]`
 
-Where each `stdio` [MCP ability](/abilities/mcp) runs in local mode, by name: `computer` (the default, this
-machine) or `sandbox` (a [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode), reached through the
-Kaja API). A sandbox needs a cloud sign-in (`kaja login`); signed out, those abilities are off and the chat
-says so. Network tools (`fetch_url`, HTTP tools, remote MCP servers) always run here.
+Where each `stdio` [MCP ability](/abilities/mcp) runs, by name: `computer` (this machine) or `sandbox` (a
+Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode on a sandbox.
+
+- **Local mode**, `sandbox`: a [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode), reached through
+  the Kaja API. It needs a cloud sign-in (`kaja login`); signed out, those abilities are off and the chat
+  says so. Network tools (`fetch_url`, HTTP tools, remote MCP servers) always run here.
+- **Cloud mode**, `computer`: your terminal runs it for cloud chat
+  ([Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)). Local-only abilities
+  and your own always run here anyway.
+- `shell = "computer"` lets cloud chat use your shell (`run_command`), asking first unless
+  [`commands.toml`](/configuration/commands) lists the command as safe. Off by default.
 
 ## `[context]`
 

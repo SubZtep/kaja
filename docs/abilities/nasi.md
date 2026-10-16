@@ -25,7 +25,7 @@ you.
 
 On your machine in local mode (and `kaja telegram`), and on the Kaja API for cloud mode, the cloud Telegram
 bot and the widget. It's the same brain either way. The cloud one gets a smaller toolset because it serves
-many people and has no shell. [Cloud or local](/getting-started/modes) has the full comparison.
+many people, except what your terminal runs for it on your own computer. [Cloud or local](/getting-started/modes) has the full comparison.
 
 ## What it knows when a conversation starts
 

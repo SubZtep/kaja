@@ -48,12 +48,15 @@ locale   = "en-GB"
 # [context]
 # compact_at = 0.8
 
-# Where a stdio MCP ability (a program like chrome-devtools or time) runs in local mode: "computer" (the
-# default, this machine) or "sandbox" (a Kaja sandbox, reached through the Kaja API, so it needs a cloud
-# sign-in: `kaja --cloud` once). Useful when its runner or Chrome isn't installed here; the setup wizard
-# and `kaja doctor` offer it then. Network tools (fetch_url, HTTP tools, remote MCP) always run here.
+# Where a stdio MCP ability (a program like chrome-devtools or time) runs: "computer" (this machine) or
+# "sandbox" (a Kaja sandbox). The default follows the mode: local mode runs it here, cloud mode on a sandbox.
+# In local mode "sandbox" goes through the Kaja API, so it needs a cloud sign-in (`kaja login`); the setup
+# wizard and `kaja doctor` offer it when its runner or Chrome isn't installed here. In cloud mode
+# "computer" has your terminal run it for cloud chat. shell = "computer" lets cloud chat use your shell,
+# asking first unless commands.toml lists the command as safe.
 # [tools.hosts]
 # chrome-devtools = "sandbox"
+# shell = "computer"
 
 # Speech-to-text (Speaches AI server).
 # [stt]

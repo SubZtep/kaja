@@ -102,8 +102,8 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   `list_backups` and `restore_backup`; a restore asks first and backs up the file it replaces, so it can be
   undone too.
 
-- `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
-  local-only too.
+- `localOnly = true` keeps a server off the cloud's own hosts: it only ever runs on your own machine (in cloud
+  chat, through your terminal). A `roots` one is local-only too.
 - `toolDescriptions` says in a line what each listed tool does. The web app shows it, since a server's own
   descriptions only arrive once it runs:
 
@@ -136,7 +136,9 @@ Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when the
 what a server can do is known up front, and it can't add tools later) and aren't local-only.
 
 A `stdio` ability, like `chrome-devtools`, runs in a **sandbox**, never on the API's host, and a remote one's
-requests go out through one too. That can be:
+requests go out through one too. In the terminal you can send one to your own computer instead
+(`computer` in [`[tools.hosts]`](/configuration/config#toolshosts)), and local-only ones always run there; see
+[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode). That can be:
 
 - Kaja's own sandbox;
 - one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
