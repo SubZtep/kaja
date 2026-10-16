@@ -117,7 +117,7 @@ erDiagram
     uuid user_id FK
     text provider_id "credential, google"
     text account_id
-    text password "hashed, credential accounts"
+    text password "unused: sign-in is passwordless"
     text id_token "kept from Google sign-in"
   }
 
@@ -176,7 +176,7 @@ erDiagram
   user ||--o{ user_secret : stores
 ```
 
-`verification` stands alone: Better Auth uses it for email and password-reset tokens and looks rows up by
+`verification` stands alone: Better Auth uses it for emailed codes (hashed: sign-in and email change) and looks rows up by
 `identifier`. `device_code` is the CLI's device login: the terminal polls it until a signed-in user approves
 the code on the web.
 

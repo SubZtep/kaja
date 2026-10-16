@@ -1,13 +1,13 @@
-import { changePasswordSchema, type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema/api"
+import { type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema/api"
 import { getDisplayName } from "@kaja/shared/text"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { ApiKeys } from "../../components/abilities/ApiKeys"
+import { CodeForm } from "../../components/form/CodeForm"
 import { Button } from "../../components/form/primitives/Button"
 import { Avatar } from "../../components/ui/Avatar"
-import { Badge } from "../../components/ui/Badge"
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
@@ -36,9 +36,6 @@ function Profile() {
             {m.profile_signed_in_as({ email: user.email })}
             <span aria-hidden>·</span>
             {user.role === "admin" ? m.role_admin() : m.role_user()}
-            <Badge tone={user.emailVerified ? "ice" : "muted"}>
-              {user.emailVerified ? m.profile_description_verified() : m.profile_description_unverified()}
-            </Badge>
           </span>
         }
       />
@@ -47,14 +44,9 @@ function Profile() {
         <Section title={m.profile_edit_personal_data()}>
           <EditUser user={user} />
         </Section>
-        <div className="space-y-4">
-          <Section title={m.profile_change_email()}>
-            <ChangeEmail email={user.email} />
-          </Section>
-          <Section title={m.profile_change_password()}>
-            <ChangePassword />
-          </Section>
-        </div>
+        <Section title={m.profile_change_email()}>
+          <ChangeEmail email={user.email} />
+        </Section>
         <Section className="sm:col-span-2" title={m.profile_api_keys()}>
           <p className="mt-0 mb-4 text-muted text-sm">{m.profile_api_keys_description()}</p>
           <ApiKeys />
@@ -160,9 +152,19 @@ function EditUser({ user }: Readonly<{ user: User }>) {
   )
 }
 
+/** An email change in two codes: the current address's approves it, then the new address's confirms it. */
 function ChangeEmail({ email }: Readonly<{ email: string }>) {
-  const { changeEmail } = useAuthClient()
+  const authClient = useAuthClient()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
+  // Set once the current address's code is on its way; `confirming` once the new address's is
+  const [pending, setPending] = useState<{ newEmail: string; confirming: boolean }>()
+
+  const sendCurrentCode = async () => {
+    const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: "email-verification" })
+    if (error) toast.error(authErrorMessage(error))
+    return !error
+  }
 
   const form = useAppForm({
     defaultValues: {
@@ -180,12 +182,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
 
       try {
         setLoading(true)
-        const { error, data } = await changeEmail(parsed.data)
-        if (error) toast.error(authErrorMessage(error))
-        if (data?.status) {
-          toast.success(m.profile_success_email_updated())
-          form.reset()
-        }
+        if (await sendCurrentCode()) setPending({ newEmail: parsed.data.newEmail, confirming: false })
       } catch {
         toast.error(m.error_generic())
       } finally {
@@ -193,6 +190,45 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
       }
     }
   })
+
+  const approve = async (otp: string) => {
+    if (!pending) return
+    const { error } = await authClient.emailOtp.requestEmailChange({ newEmail: pending.newEmail, otp })
+    if (error) toast.error(authErrorMessage(error))
+    else setPending({ ...pending, confirming: true })
+  }
+
+  const confirm = async (otp: string) => {
+    if (!pending) return
+    const { error } = await authClient.emailOtp.changeEmail({ newEmail: pending.newEmail, otp })
+    if (error) {
+      toast.error(authErrorMessage(error))
+      return
+    }
+    toast.success(m.profile_success_email_updated())
+    setPending(undefined)
+    form.reset()
+    await router.invalidate()
+  }
+
+  if (pending)
+    return (
+      <div className="flex flex-col gap-3">
+        <span className="font-medium text-[13px] text-muted">
+          {pending.confirming ? m.profile_email_step_new() : m.profile_email_step_current()}
+        </span>
+        {/* Keyed by step, so the second code starts from an empty field */}
+        <CodeForm
+          key={String(pending.confirming)}
+          email={pending.confirming ? pending.newEmail : email}
+          submit={pending.confirming ? m.profile_update_email() : m.profile_email_approve()}
+          verify={pending.confirming ? confirm : approve}
+          resend={pending.confirming ? undefined : sendCurrentCode}
+          back={() => setPending(undefined)}
+          backLabel={m.confirm_dialog_cancel()}
+        />
+      </div>
+    )
 
   return (
     <form
@@ -219,95 +255,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
         )}
       </form.AppField>
       <form.Subscribe selector={state => state.isDefaultValue}>
-        {unchanged => <SaveButton label={m.profile_update_email()} loading={loading} disabled={unchanged} />}
-      </form.Subscribe>
-    </form>
-  )
-}
-
-function ChangePassword() {
-  const { changePassword } = useAuthClient()
-  const [loading, setLoading] = useState(false)
-
-  const form = useAppForm({
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      revokeOtherSessions: true
-    },
-    validators: {
-      onSubmit: changePasswordSchema
-    },
-    onSubmit: async ({ value }) => {
-      const parsed = changePasswordSchema.safeParse(value)
-      if (!parsed.success) {
-        toast.error(validationMessage(parsed.error.issues[0]?.message))
-        return
-      }
-
-      try {
-        setLoading(true)
-        const { error, data } = await changePassword({
-          newPassword: parsed.data.newPassword,
-          currentPassword: parsed.data.currentPassword,
-          revokeOtherSessions: parsed.data.revokeOtherSessions
-        })
-        if (error) toast.error(authErrorMessage(error))
-        if (data?.user) {
-          toast.success(m.profile_success_password_changed())
-          form.reset()
-        }
-      } catch {
-        toast.error(m.error_generic())
-      } finally {
-        setLoading(false)
-      }
-    }
-  })
-
-  return (
-    <form
-      noValidate
-      className="flex flex-col gap-4"
-      onSubmit={e => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-    >
-      <form.AppField name="currentPassword">
-        {field => (
-          <field.TextField
-            label={m.profile_field_current_password()}
-            layout="stack"
-            type="password"
-            autoComplete="current-password"
-          />
-        )}
-      </form.AppField>
-
-      <form.AppField name="newPassword">
-        {field => (
-          <field.TextField
-            label={m.profile_field_new_password()}
-            layout="stack"
-            type="password"
-            autoComplete="new-password"
-            hint={m.profile_new_password_hint()}
-          />
-        )}
-      </form.AppField>
-
-      <form.AppField name="revokeOtherSessions">
-        {field => (
-          <div>
-            <field.CheckboxField label={m.profile_field_revoke_other_sessions()} />
-            <p className="m-0 mt-1 ml-6 text-[13px] text-muted/80">{m.profile_revoke_other_sessions_hint()}</p>
-          </div>
-        )}
-      </form.AppField>
-
-      <form.Subscribe selector={state => !state.values.currentPassword || !state.values.newPassword}>
-        {empty => <SaveButton label={m.profile_update_password()} loading={loading} disabled={empty} />}
+        {unchanged => <SaveButton label={m.auth_send_code()} loading={loading} disabled={unchanged} />}
       </form.Subscribe>
     </form>
   )

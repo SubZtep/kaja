@@ -41,7 +41,7 @@ const apiEnvFields = z.object({
   TURNSTILE_SECRET: trimmed
     .optional()
     .describe(
-      "Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token"
+      "Cloudflare Turnstile secret key; when set, emailing a sign-in code and Google sign-in need a captcha token"
     )
     .meta({ secret: true, section: "Turnstile" }),
   TURNSTILE_HOSTNAMES: trimmed

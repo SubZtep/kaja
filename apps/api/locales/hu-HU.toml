@@ -1,14 +1,15 @@
 [email]
-greeting             = "Halló{name} 👋"
-verificationSubject  = "[kaja.io] Erősítsd meg az e-mail címedet"
-verificationText     = "Az e-mail cím megerősítéséhez kattints a linkre:"
-verificationLink     = "E-mail megerősítése"
-resetPasswordSubject = "[kaja.io] Jelszó visszaállítása"
-resetPasswordText    = "Jelszavad visszaállításához kattints a linkre:"
-resetPasswordLink    = "Jelszó visszaállítása"
-changeEmailSubject   = "[kaja.io] E-mail cím módosítása"
-changeEmailText      = "Az e-mail cím módosítása ({oldEmail} → {newEmail}) jóváhagyásához kattints a linkre:"
-changeEmailLink      = "E-mail módosítása"
+greeting               = "Halló{name} 👋"
+signInCodeSubject      = "[kaja.io] {otp} a bejelentkezési kódod"
+signInCodeText         = "A kódod a Kajába való bejelentkezéshez. 10 percig érvényes:"
+signInCodeIgnore       = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül senki sem tud belépni."
+changeEmailCodeSubject = "[kaja.io] {otp} a kódod az e-mail címed módosításához"
+changeEmailCodeText    = "A kódod a Kaja e-mail címed módosításának jóváhagyásához. 10 percig érvényes:"
+changeEmailCodeIgnore  = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül a címed nem változhat meg."
+newEmailCodeSubject    = "[kaja.io] {otp} a kódod ennek az e-mail címnek a megerősítéséhez"
+newEmailCodeText       = "A kódod, hogy ez a cím legyen a Kaja e-mail címed. 10 percig érvényes:"
+newEmailCodeIgnore     = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül semmi sem változik."
+footer                 = "A Kaja szórakozásra és személyes használatra készült."
 
 
 [telegram]

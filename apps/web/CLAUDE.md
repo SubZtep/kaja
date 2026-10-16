@@ -22,7 +22,7 @@ src/
     _public.tsx                   # public shell (Header + Footer)
     _public/
       index.tsx                   # landing (/)
-      signin|signup|reset-password
+      signin|signup               # passwordless: email → emailed code (components/form/CodeForm.tsx, also the profile's email change), or Google
       device.tsx + device/        # device code approval: index, approve, done
       -components/                # landing sections + auth chrome
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)

@@ -2,6 +2,7 @@ import { expect } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
+import { auth } from "../../src/features/auth/auth"
 
 /** Inserts a provider + an enabled/free model (chat unless `tasks` says otherwise) under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
 export async function seedModel(namePrefix: string, tasks: string[] = ["chat"]) {
@@ -23,26 +24,41 @@ export async function cleanupModel(providerId: string) {
   await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
 }
 
-/** Marks an account's email as verified, standing in for clicking the link in the verification mail (sign-in is refused until then). */
-export async function verifyEmail(email: string): Promise<void> {
-  await pool.query('UPDATE "user" SET email_verified = true WHERE email = lower($1)', [email])
+// The email OTP plugin's server-only endpoint; auth.ts types its plugin list loosely, so `auth.api` doesn't infer it.
+const otpApi = auth.api as unknown as {
+  createVerificationOTP: (args: { body: { email: string; type: CodeType } }) => Promise<string>
 }
 
-/** Signs up a fresh user, verifies their email and signs back in, returning the bearer token for authenticated requests. */
-export async function signUpAndSignIn(email: string, password: string, name: string): Promise<string> {
-  const signUp = await app.request("/auth/sign-up/email", {
+type CodeType = "sign-in" | "email-verification" | "change-email"
+
+/** A fresh code of `type` for `email`, standing in for the one the email would carry; an email change's new-address code is keyed `<current>-<new>`. */
+export async function emailCode(email: string, type: CodeType): Promise<string> {
+  return await otpApi.createVerificationOTP({ body: { email, type } })
+}
+
+/** A fresh sign-in code for `email`, standing in for the one the email would carry. */
+export async function signInCode(email: string): Promise<string> {
+  return await emailCode(email, "sign-in")
+}
+
+/** Signs in with a fresh emailed code; `body` adds fields such as `consent`, which a new address needs to become an account. */
+export async function signInWithCode(
+  email: string,
+  body: Record<string, unknown> = {},
+  headers: Record<string, string> = {}
+): Promise<Response> {
+  return await app.request("/auth/sign-in/email-otp", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name, consent: true })
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ email, otp: await signInCode(email), ...body })
   })
-  expect(signUp.ok).toBeTrue()
-  await verifyEmail(email)
-  const signIn = await app.request("/auth/sign-in/email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  })
-  return (await signIn.json()).token
+}
+
+/** Signs up a fresh user with an emailed code, returning the bearer token for authenticated requests. */
+export async function signUpAndSignIn(email: string, name: string): Promise<string> {
+  const res = await signInWithCode(email, { name, consent: true })
+  expect(res.ok).toBeTrue()
+  return (await res.json()).token
 }
 
 /** Asserts a request without an Authorization header is rejected with 401. */

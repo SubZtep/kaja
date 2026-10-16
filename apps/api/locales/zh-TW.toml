@@ -1,14 +1,15 @@
 [email]
-greeting             = "嘿{name} 👋"
-verificationSubject  = "[kaja.io] 驗證你的電子郵件"
-verificationText     = "點擊以下連結驗證你的電子郵件："
-verificationLink     = "驗證電子郵件"
-resetPasswordSubject = "[kaja.io] 重設你的密碼"
-resetPasswordText    = "點擊以下連結重設你的密碼："
-resetPasswordLink    = "重設密碼"
-changeEmailSubject   = "[kaja.io] 更改你的電子郵件"
-changeEmailText      = "點擊以下連結批准將你的電子郵件從 {oldEmail} 更改為 {newEmail}："
-changeEmailLink      = "更改電子郵件"
+greeting               = "嘿{name} 👋"
+signInCodeSubject      = "[kaja.io] {otp} 是你的登入驗證碼"
+signInCodeText         = "這是你登入 Kaja 的驗證碼，10 分鐘內有效："
+signInCodeIgnore       = "不是你要求的嗎？忽略這封信即可，沒有驗證碼誰都無法登入。"
+changeEmailCodeSubject = "[kaja.io] {otp} 是你變更電子郵件的驗證碼"
+changeEmailCodeText    = "這是核准變更你 Kaja 電子郵件地址的驗證碼，10 分鐘內有效："
+changeEmailCodeIgnore  = "不是你要求的嗎？忽略這封信即可，沒有驗證碼你的地址不會變更。"
+newEmailCodeSubject    = "[kaja.io] {otp} 是確認此電子郵件的驗證碼"
+newEmailCodeText       = "這是將此地址設為你 Kaja 電子郵件的驗證碼，10 分鐘內有效："
+newEmailCodeIgnore     = "不是你要求的嗎？忽略這封信即可，沒有驗證碼什麼都不會改變。"
+footer                 = "Kaja 是為了好玩和個人使用而做的。"
 
 
 [telegram]

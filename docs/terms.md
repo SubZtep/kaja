@@ -6,7 +6,7 @@ nav_exclude: true
 
 # Terms of Service
 
-Effective date: 23 September 2026
+Effective date: 16 October 2026
 
 These Terms govern your use of Kaja, a free account-based web service operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project.
 
@@ -23,6 +23,8 @@ By creating an account or using Kaja, you agree to these Terms. If you do not ag
 Kaja is an AI assistant. These Terms cover the **cloud** service — the API, the website, cloud terminal chat, the Kaja Telegram bot, and the embeddable website widget — which is currently offered for free.
 
 Kaja is also open-source software you can run entirely on your own machine. Running it locally is governed by its licence, not by these Terms, and needs no account.
+
+Kaja is a hobby project, offered for entertainment and personal use. It is not a professional service: it is not run by a business, comes with no service levels or support commitments, and is not meant for anything you depend on, such as health, legal, financial, or safety decisions, or business-critical work.
 
 Kaja may change, suspend, or discontinue any part of the cloud service at any time. If a change materially affects users, reasonable notice will be provided where practical.
 

@@ -1,52 +1,28 @@
-import { randomBytes } from "node:crypto"
 import { faker } from "@faker-js/faker"
+import { SQL } from "bun"
 
+// Sign-in is passwordless (an emailed code), so random users go straight into the database, consented and verified.
 const count = Bun.argv[2] ?? ""
 const NUMBER_OF_USERS = /^\d+$/.test(count) ? Number.parseInt(count, 10) : 10
 
-for (let i = 0; i < NUMBER_OF_USERS; i++) {
+if (!Bun.env.DATABASE_URL) {
+  console.error("DATABASE_URL is not set; run with --env-file=apps/api/.env")
+  process.exit(1)
+}
+
+const sql = new SQL(Bun.env.DATABASE_URL)
+
+const users = Array.from({ length: NUMBER_OF_USERS }, () => {
   const firstName = faker.person.firstName()
   const lastName = faker.person.lastName()
-
-  const res = await fetch("http://localhost:3001/auth/sign-up/email", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name: faker.person.fullName({ firstName, lastName }),
-      email: faker.internet.email({ firstName, lastName }),
-      password: generatePassword()
-    })
-  })
-
-  if (!res.ok) {
-    // console.log("User add fail", await res.text())
-    process.exit(1)
+  return {
+    name: faker.person.fullName({ firstName, lastName }),
+    email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+    email_verified: true,
+    consented_at: new Date()
   }
-}
+})
+if (users.length > 0) await sql`INSERT INTO "user" ${sql(users)}`
 
+await sql.close()
 console.log(`${NUMBER_OF_USERS} user${NUMBER_OF_USERS === 1 ? "" : "s"} created`)
-process.exit(0)
-
-/** Generates a random number from 0 to 1. */
-export function random() {
-  return randomBytes(1).readUInt8(0) / 255
-}
-
-function generatePassword() {
-  const shuffle = (str: string) =>
-    str
-      .split("")
-      .sort(() => random() - 0.5)
-      .join("")
-
-  const base =
-    faker.string.alpha({ length: 1, casing: "upper" }) +
-    faker.string.alpha({ length: 1, casing: "lower" }) +
-    faker.string.numeric(1) +
-    faker.string.symbol(1) +
-    faker.string.alphanumeric({ length: faker.number.int({ min: 4, max: 68 }) })
-
-  return shuffle(base)
-}

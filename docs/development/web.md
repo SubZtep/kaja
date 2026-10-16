@@ -22,7 +22,7 @@ flowchart TD
     R --> A["_admin<br><small>auth-gated shell</small>"]
 
     P --> L["/ landing"]
-    P --> S["/signin · /signup<br>/reset-password"]
+    P --> S["/signin · /signup"]
     P --> D["/device · /device/approve<br>/device/done"]
 
     A --> DA["/dashboard<br><small>tab layout</small>"]
@@ -63,7 +63,7 @@ else to the dashboard. The menu hides the item and the layout enforces it.
 | `/dashboard/stats` | your [usage stats](/development/api#usage-stats) |
 | `/agent/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
 | `/agent/sandbox` | your sandbox key and run command, your sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |
-| `/profile` | your account: name and avatar, email, password, ability API keys, and deleting it |
+| `/profile` | your account: name and avatar, email, ability API keys, and deleting it |
 | `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandboxes (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
 | `/admin/models` | providers and their models, per task |

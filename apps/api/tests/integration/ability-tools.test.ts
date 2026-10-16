@@ -137,7 +137,7 @@ describe("HTTP tools in the cloud", () => {
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-tools-test-"))
     const email = faker.internet.email().toLowerCase()
-    token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Tools")
+    token = await signUpAndSignIn(email, "Tools")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
     secretService.setKey(TEST_SECRET_KEY)
     // With a sender set, the SSRF guard leaves DNS to it, so the fake hosts below are reachable through the faked fetch.
@@ -446,7 +446,7 @@ describe("HTTP tools in the cloud", () => {
 
   test("keys are per user: another user sees none, and a copied row doesn't decrypt for them", async () => {
     const email = faker.internet.email().toLowerCase()
-    const other = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Other")
+    const other = await signUpAndSignIn(email, "Other")
     const otherId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
     expect((await mine(other)).abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(false)
 
@@ -473,7 +473,7 @@ describe("HTTP tools in the cloud", () => {
 
   test("an admin's service key is every user's, tested and listed without its value; the user's own key still wins", async () => {
     const adminEmail = faker.internet.email().toLowerCase()
-    const adminToken = await signUpAndSignIn(adminEmail, "password123!", "Keys Admin")
+    const adminToken = await signUpAndSignIn(adminEmail, "Keys Admin")
     await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
     const serviceKey = (apiKey: string, as = adminToken) =>
       app.request(`/admin/abilities/keys/${issues}`, {

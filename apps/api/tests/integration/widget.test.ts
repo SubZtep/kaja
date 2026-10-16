@@ -6,7 +6,6 @@ import { fakeChatClient, signUpAndSignIn } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string
   let rawKey: string
   const allowedOrigin = "https://example-site.test"
@@ -16,7 +15,7 @@ describe("widget", () => {
       client: fakeChatClient("hello from widget") as never,
       model: "fake-model"
     }))
-    token = await signUpAndSignIn(email, password, "Widget Tester")
+    token = await signUpAndSignIn(email, "Widget Tester")
 
     const createKey = await app.request("/widget/admin", {
       method: "POST",
@@ -164,7 +163,7 @@ describe("widget", () => {
     expect(await renamed.json()).toMatchObject({ label: "After", config: { widgetType: "barkochba" } })
     expect((await patch(token, { config: { widgetType: "chat", persona: "no-such-persona" } })).status).toBe(400)
 
-    const otherToken = await signUpAndSignIn(faker.internet.email(), password, "Other")
+    const otherToken = await signUpAndSignIn(faker.internet.email(), "Other")
     expect((await patch(otherToken, { label: "Hijacked" })).status).toBe(404)
   })
 

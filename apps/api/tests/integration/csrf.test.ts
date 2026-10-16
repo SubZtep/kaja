@@ -2,24 +2,19 @@ import { beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { env } from "../../src/core/env"
-import { signUpAndSignIn } from "./helpers"
+import { signInWithCode, signUpAndSignIn } from "./helpers"
 
 const attacker = "https://attacker.test"
 
 describe("cross-site protection", () => {
   const email = faker.internet.email()
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string
   let cookie: string
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(email, password, "CSRF Tester")
+    token = await signUpAndSignIn(email, "CSRF Tester")
     // A second sign-in for the browser-style session cookie the web app would carry
-    const signIn = await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
+    const signIn = await signInWithCode(email)
     cookie = signIn.headers
       .getSetCookie()
       .map(c => c.split(";")[0])

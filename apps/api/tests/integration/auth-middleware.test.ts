@@ -5,22 +5,17 @@ import { app } from "../../src/app"
 import { sessionUser } from "../../src/features/auth"
 import { auth } from "../../src/features/auth/auth"
 import type { RouteVariables } from "../../src/types"
-import { signUpAndSignIn } from "./helpers"
+import { signInWithCode, signUpAndSignIn } from "./helpers"
 
 describe("session lookup", () => {
   const email = faker.internet.email()
-  const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string
   let cookie: string
   let getSession: ReturnType<typeof spyOn<typeof auth.api, "getSession">> | undefined
 
   beforeAll(async () => {
-    token = await signUpAndSignIn(email, password, "Session Tester")
-    const signIn = await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
+    token = await signUpAndSignIn(email, "Session Tester")
+    const signIn = await signInWithCode(email)
     cookie = signIn.headers
       .getSetCookie()
       .map(c => c.split(";")[0])

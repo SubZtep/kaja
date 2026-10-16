@@ -68,11 +68,7 @@ describe("datasets in the cloud", () => {
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-datasets-test-"))
-    token = await signUpAndSignIn(
-      faker.internet.email().toLowerCase(),
-      faker.internet.password({ length: 8, prefix: "P4$s" }),
-      "Datasets"
-    )
+    token = await signUpAndSignIn(faker.internet.email().toLowerCase(), "Datasets")
   })
 
   afterAll(async () => {

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { signUpAndSignIn } from "./helpers"
+import { signInWithCode, signUpAndSignIn } from "./helpers"
 
 const CLIENT_ID = "kaja-tui"
 const GRANT = "urn:ietf:params:oauth:grant-type:device_code"
@@ -16,7 +16,7 @@ const post = (path: string, body: object, token?: string) =>
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
-  const token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), name)
+  const token = await signUpAndSignIn(email, name)
   const id = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
   return { token, id }
 }
@@ -104,13 +104,8 @@ describe("Better Auth reads and writes the snake_case columns", () => {
 
   test("sessions record where they were opened from in ip_address and user_agent", async () => {
     const email = faker.internet.email().toLowerCase()
-    const password = faker.internet.password({ length: 8, prefix: "P4$s" })
-    await signUpAndSignIn(email, password, "Agent")
-    await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "User-Agent": "tz-test/1.0", "X-Forwarded-For": "203.0.113.7" },
-      body: JSON.stringify({ email, password })
-    })
+    await signUpAndSignIn(email, "Agent")
+    await signInWithCode(email, {}, { "User-Agent": "tz-test/1.0", "X-Forwarded-For": "203.0.113.7" })
     const { rows } = await pool.query(
       `SELECT s.user_agent FROM session s JOIN "user" u ON u.id = s.user_id WHERE u.email = $1 AND s.user_agent = 'tz-test/1.0'`,
       [email]

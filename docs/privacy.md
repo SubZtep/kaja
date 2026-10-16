@@ -6,7 +6,7 @@ nav_exclude: true
 
 # Privacy Policy
 
-Effective date: 15 October 2026
+Effective date: 16 October 2026
 
 Kaja is operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project. For the cloud service described below, he is the data controller. This policy explains what personal data Kaja collects, why, on what legal basis, who receives it, and what rights you have.
 
@@ -26,13 +26,15 @@ Kaja can run two ways, and the difference matters here.
 
 When you create or use an account, Kaja collects:
 
-- account data: your name, email address, password (stored only as a hash), profile picture if you set one, and account settings;
+- account data: your name, email address, profile picture if you set one, and account settings. Kaja has no passwords: you sign in with a code emailed to you, or with Google;
 - if you sign in with Google, the name, email address, and profile picture Google shares with Kaja;
+- if you sign up with your email address, the display name and picture of your public [Gravatar](https://gravatar.com) profile, if you have one. To look it up, Kaja sends Gravatar a one-way hash (SHA-256) of your email address, never the address itself;
+- a copy of your profile picture (Gravatar's or Google's) in Kaja's own storage, so showing it doesn't load it from Gravatar or Google each time. You can change or remove your name and picture on your profile page;
 - a record of your consent: when you confirmed you are 18 or over, accepted the Terms of Service and this policy, and gave the health data consent described below;
-- authentication data, such as login sessions, verification status, password reset requests, email change requests, and device authorization requests;
+- authentication data, such as login sessions, sign-in and email change codes (stored only as a hash, and only until used or after 10 minutes), verification status, and device authorization requests;
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
-- when you open the sign-in, sign-up, or password reset forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
-- email data needed to send account emails, such as verification, password reset, and email change messages;
+- when you open the sign-in or sign-up forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
+- email data needed to send account emails, such as sign-in and email change codes;
 - if you link Telegram, your Telegram user id, so the bot knows which account you are;
 - which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
 
@@ -75,6 +77,7 @@ Kaja is not a medical service, and its replies are not medical advice.
 | Create and run your account, sign you in, send account emails | account, authentication, and email data | contract (Article 6(1)(b)) |
 | Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers, ability settings and keys | contract (Article 6(1)(b)) |
 | Health information you choose to share | conversation content and memory notes about your health | explicit consent (Article 9(2)(a)) |
+| Fill in your name and picture from your public Gravatar profile when you sign up with your email address | a hash of your email address; the profile's display name and picture | legitimate interests (Article 6(1)(f)) — so you don't have to type them; you can change or remove them at any time |
 | Link the Telegram bot to your account | Telegram user id | contract (Article 6(1)(b)) |
 | Keep the service secure: rate limiting, abuse prevention, bot checks on the sign-in and sign-up forms, error monitoring, debugging | technical data, IP addresses, browser signals, error logs | legitimate interests (Article 6(1)(f)) — running a service that works and isn't abused |
 | Keep a record of your consent | consent timestamp | legal obligation (Article 6(1)(c)) — to be able to show consent was given |
@@ -100,7 +103,7 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 |---|---|---|
 | Hetzner Online GmbH | everything stored in cloud mode (hosting, database and image storage) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
-| Cloudflare | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in, sign-up, and password reset forms and the Google sign-in buttons check you're not a bot | United States and EU |
+| Cloudflare | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in and sign-up forms and the Google sign-in buttons check you're not a bot | United States and EU |
 | Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
@@ -113,6 +116,7 @@ Some conversations are answered by models Kaja runs itself, on its own servers i
 These parties also receive data, but under their own terms as independent controllers, because you choose to use them:
 
 - **Google**, if you use Google sign-in;
+- **Gravatar** (Automattic Inc., United States), which receives a hash of your email address when you sign up with it, under the [Automattic Privacy Policy](https://automattic.com/privacy/);
 - **Cloudflare**, which also uses the browser signals from the bot check, on its own account, to improve how it detects bots (under its legitimate interests), as described in the [Turnstile Privacy Addendum](https://www.cloudflare.com/turnstile-privacy-policy/);
 - **Telegram**, if you chat with the Kaja Telegram bot — those messages pass through Telegram's servers;
 - **the services behind abilities you use** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. In the cloud, websites and services a tool reaches for you (a page the assistant fetches, an HTTP tool's API, pages a browser opens) get the request from a sandbox's address rather than yours; in a shared sandbox, its operator can see them too.
@@ -150,7 +154,7 @@ You can ask for details of the safeguard for any provider by email.
 
 ## Security
 
-Kaja uses reasonable technical and organizational measures to protect personal data, including hashed passwords, encrypted ability keys, protected session cookies, rate limiting, and limited access to production systems.
+Kaja uses reasonable technical and organizational measures to protect personal data, including passwordless sign-in with short-lived hashed codes, encrypted ability keys, protected session cookies, rate limiting, and limited access to production systems.
 
 No online service can guarantee perfect security. If a personal data breach puts your rights at risk, Kaja will tell you and the regulator as the law requires. If you believe you found a security issue, contact subztep@gmail.com.
 

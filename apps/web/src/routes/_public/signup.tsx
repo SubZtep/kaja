@@ -1,8 +1,9 @@
 import { Field } from "@base-ui/react/field"
-import { registerSchema } from "@kaja/schema/api"
+import { loginSchema } from "@kaja/schema/api"
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
+import { CodeForm } from "../../components/form/CodeForm"
 import { Button } from "../../components/form/primitives/Button"
 import { Checkbox } from "../../components/form/primitives/Checkbox"
 import { useAuthClient } from "../../hooks/auth-client"
@@ -15,6 +16,7 @@ import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
+import { useSendCode } from "./-components/email-code"
 import { PRIVACY_URL, TERMS_URL } from "./-components/footer"
 import { GoogleButton } from "./-components/google-button"
 
@@ -33,21 +35,21 @@ function SignUp() {
   const consented = agreed && healthConsent
   const navigate = useNavigate()
   const router = useRouter()
-  const { signUp } = useAuthClient()
+  const { signIn } = useAuthClient()
   const captcha = useTurnstile()
+  const sendCode = useSendCode(captcha)
+  // The address a code went out to; set, the page asks for the code
+  const [email, setEmail] = useState<string>()
 
   const form = useAppForm({
     defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      image: ""
+      email: ""
     },
     validators: {
-      onSubmit: registerSchema
+      onSubmit: loginSchema
     },
     onSubmit: async ({ value }) => {
-      const parsed = registerSchema.safeParse(value)
+      const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
@@ -59,17 +61,7 @@ function SignUp() {
 
       try {
         setLoading(true)
-        // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field. The locale is saved now so the verification email is already in it.
-        const body = { ...parsed.data, consent: true, locale: getLocale() }
-        const { error, data } = await signUp.email({ ...body, fetchOptions: await captcha.fetchOptions() })
-
-        if (error) toast.error(authErrorMessage(error))
-        if (data?.user) {
-          toast.success(m.signup_success())
-          // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
-          await router.invalidate()
-          navigate({ to: "/dashboard" })
-        }
+        if (await sendCode(parsed.data.email)) setEmail(parsed.data.email)
       } catch {
         toast.error(m.error_generic())
       } finally {
@@ -78,11 +70,27 @@ function SignUp() {
     }
   })
 
+  const verify = async (otp: string) => {
+    if (!email) return
+    // A new address becomes an account only with `consent` (the API refuses it otherwise); an existing one just signs in. The API fills the name and picture from Gravatar.
+    const { error, data } = await signIn.emailOtp({ email, otp, consent: true, locale: getLocale() })
+    if (error) {
+      toast.error(authErrorMessage(error))
+      return
+    }
+    if (data?.user) {
+      toast.success(m.signup_success())
+      // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
+      await router.invalidate()
+      navigate({ to: "/dashboard" })
+    }
+  }
+
   return (
     <AuthShell>
       <AuthCard
         title={m.signup_title()}
-        description={m.seo_signup_desc()}
+        description={m.signup_disclaimer()}
         footer={
           <>
             {m.signup_have_account()}{" "}
@@ -92,82 +100,63 @@ function SignUp() {
           </>
         }
       >
-        {/* Pre-launch notice. Remove before public release. */}
-        <p className="mb-6 animate-pulse rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
-          {m.signup_prelaunch_notice()}
-        </p>
-
         <CaptchaAlert captcha={captcha} />
-        <div className="mb-5 flex flex-col gap-3 text-[13.5px]">
-          <ConsentBox checked={agreed} onChange={setAgreed}>
-            <LegalAgreement />
-          </ConsentBox>
-          <ConsentBox checked={healthConsent} onChange={setHealthConsent}>
-            {m.signup_health_consent()}
-          </ConsentBox>
-        </div>
+        {email ? (
+          <CodeForm
+            email={email}
+            submit={m.signup_submit()}
+            verify={verify}
+            resend={() => sendCode(email)}
+            back={() => setEmail(undefined)}
+            disabled={!captcha.ready}
+          />
+        ) : (
+          <>
+            <div className="mb-5 flex flex-col gap-3 text-[13.5px]">
+              <ConsentBox checked={agreed} onChange={setAgreed}>
+                <LegalAgreement />
+              </ConsentBox>
+              <ConsentBox checked={healthConsent} onChange={setHealthConsent}>
+                {m.signup_health_consent()}
+              </ConsentBox>
+            </div>
 
-        <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
-        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
-          {m.auth_or_email()}
-        </p>
-        <form
-          noValidate
-          onSubmit={e => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
-          className="flex flex-col gap-4"
-        >
-          <form.AppField name="name">
-            {field => (
-              <field.TextField
-                label={m.auth_field_name()}
-                layout="stack"
-                placeholder={m.auth_field_name_placeholder()}
-                autoComplete="name"
-              />
-            )}
-          </form.AppField>
+            <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
+            <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+              {m.auth_or_email()}
+            </p>
+            <form
+              noValidate
+              onSubmit={e => {
+                e.preventDefault()
+                form.handleSubmit()
+              }}
+              className="flex flex-col gap-4"
+            >
+              <form.AppField name="email">
+                {field => (
+                  <field.TextField
+                    label={m.auth_field_email()}
+                    layout="stack"
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                )}
+              </form.AppField>
 
-          <form.AppField name="email">
-            {field => (
-              <field.TextField
-                label={m.auth_field_email()}
-                layout="stack"
-                type="email"
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
-            )}
-          </form.AppField>
-
-          <form.AppField name="password">
-            {field => (
-              <field.TextField
-                label={m.auth_field_password()}
-                layout="stack"
-                type="password"
-                autoComplete="new-password"
-                placeholder="••••••••"
-              />
-            )}
-          </form.AppField>
-
-          <form.AppField name="image">
-            {field => (
-              <field.TextField
-                label={m.auth_field_image_url()}
-                layout="stack"
-                placeholder={m.auth_field_image_url_placeholder()}
-              />
-            )}
-          </form.AppField>
-
-          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
-            {m.signup_submit()}
-          </Button>
-        </form>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={loading}
+                disabled={!captcha.ready}
+                className="mt-1 w-full"
+              >
+                {m.auth_send_code()}
+              </Button>
+            </form>
+          </>
+        )}
       </AuthCard>
     </AuthShell>
   )

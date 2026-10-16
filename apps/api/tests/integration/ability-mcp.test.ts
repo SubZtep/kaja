@@ -135,7 +135,7 @@ describe("MCP servers in the cloud", () => {
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-mcp-test-"))
-    token = await signUpAndSignIn(faker.internet.email(), faker.internet.password({ length: 8, prefix: "P4$s" }), "Mcp")
+    token = await signUpAndSignIn(faker.internet.email(), "Mcp")
     secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
     // With a sender set the guard leaves DNS to it; this one is the faked fetch, which hands the fake host to the local fixture.

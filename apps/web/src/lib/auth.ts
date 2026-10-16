@@ -1,5 +1,10 @@
 import { locales } from "@kaja/shared/locale"
-import { adminClient, deviceAuthorizationClient, inferAdditionalFields } from "better-auth/client/plugins"
+import {
+  adminClient,
+  deviceAuthorizationClient,
+  emailOTPClient,
+  inferAdditionalFields
+} from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 
 export function createAuthClientWithUrl(apiUrl: string) {
@@ -9,6 +14,7 @@ export function createAuthClientWithUrl(apiUrl: string) {
     plugins: [
       adminClient(),
       deviceAuthorizationClient(),
+      emailOTPClient(),
       // Mirrors the API's user.additionalFields, so updateUser and the session user know `locale`.
       inferAdditionalFields({ user: { locale: { type: [...locales], required: false } } })
     ],
