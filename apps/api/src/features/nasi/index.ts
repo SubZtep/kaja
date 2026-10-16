@@ -127,16 +127,15 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
 }
 
 /**
- * What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL (and its
- * original's, for a viewer to open), and a reply's `kaja-image:` links, which become their images' public URLs.
+ * What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL, and a reply's `kaja-image:` links, which become their images' public URLs.
  */
 function sseEvent(event: FinalizedAgentEvent | AgentDelta, imageAt: (id: string) => string | undefined): object {
   if (event.type === "message") return { ...event, content: resolveImageLinks(event.content, imageAt) }
   if (event.type === "final" && event.content) return { ...event, content: resolveImageLinks(event.content, imageAt) }
   if (event.type !== "tool_image") return event
-  const { mimeType, key, original, ref, alt } = event
+  const { mimeType, key, ref, alt } = event
   const url = key ? imageUrl(key) : ref
-  return { type: "tool_image", mimeType, url, ref, alt, ...(original ? { original: imageUrl(original) } : {}) }
+  return { type: "tool_image", mimeType, url, ref, alt }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */

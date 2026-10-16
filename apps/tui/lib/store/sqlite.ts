@@ -241,9 +241,9 @@ type MessageDbRow = {
 
 // A saved timeline keeps a stored tool image by its object keys; the paths it was shown and opened from are worked out again on load.
 function storedEvent(event: unknown): unknown {
-  const image = event as { type?: string; key?: string; path?: string; original?: string }
+  const image = event as { type?: string; key?: string; path?: string }
   if (image.type !== "tool_image" || !image.key) return event
-  const { path: _path, original: _original, ...kept } = image
+  const { path: _path, ...kept } = image
   return kept
 }
 
@@ -259,13 +259,9 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   // The inverse of storedEvent: the keys become the stored files' paths, plain files under the images folder.
   function loadedEvent(event: unknown): unknown {
-    const image = event as { type?: string; key?: string; originalKey?: string }
+    const image = event as { type?: string; key?: string }
     if (image.type !== "tool_image" || !image.key) return event
-    return {
-      ...image,
-      path: join(filesRoot, image.key),
-      ...(image.originalKey ? { original: join(filesRoot, image.originalKey) } : {})
-    }
+    return { ...image, path: join(filesRoot, image.key) }
   }
 
   function count(table: "messages" | "session_events", sessionId: string): number {

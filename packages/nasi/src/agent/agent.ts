@@ -280,8 +280,8 @@ export type AgentEvent =
   | { type: "reasoning"; text: string }
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
-  /** A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the object hosts show it from, `original` the one a viewer opens, `alt` its text until a description replaces it. */
-  | { type: "tool_image"; ref: string; key?: string; original?: string; mimeType: string; alt: string }
+  /** A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the object hosts show it from, `alt` its text until a description replaces it. */
+  | { type: "tool_image"; ref: string; key?: string; mimeType: string; alt: string }
   /** An image's description was written (in the background, after its `tool_image`); `ref` is the image's. */
   | { type: "image_described"; ref: string; description: string }
   | { type: "display_image"; url: string; alt: string }

@@ -98,8 +98,8 @@ describe("authentication flow", () => {
       const doomed = faker.internet.email().toLowerCase()
       const token = await signUpAndSignIn(doomed, password, "")
       const { rows } = await pool.query('SELECT id FROM "user" WHERE email = $1', [doomed])
-      // Their images in object storage go with them: a session's, and its original beside it
-      const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${userImagePrefix(rows[0].id)}/session/abc.orig`]
+      // Their images in object storage go with them: a session's, and its description beside it
+      const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${userImagePrefix(rows[0].id)}/session/abc.json`]
       for (const key of keys) await objects.put(key, new Uint8Array([1]), "image/png")
       const res = await app.request("/auth/delete-user", {
         method: "POST",

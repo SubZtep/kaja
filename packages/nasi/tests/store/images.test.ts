@@ -25,28 +25,22 @@ test("an image's id is the start of its sha256, and its ref points at it", () =>
   expect(imageRefId("data:image/png;base64,AAAA")).toBeUndefined()
 })
 
-test("a session's image is stored once, with its original beside it to open, and comes back with its type", async () => {
+test("a session's image is stored once and comes back with its type", async () => {
   const images = objectSessionImages(objects, "images/s1")
-  const original = png(3000, 100)
-  const image = await normalizeImage(original)
+  const image = await normalizeImage(png(3000, 100))
   const put = spyOn(objects, "put")
-  const first = await images.put(image, original)
-  const again = await images.put(image, original)
+  const first = await images.put(image)
+  const again = await images.put(image)
   expect(again).toEqual(first)
-  expect(put).toHaveBeenCalledTimes(2)
+  expect(put).toHaveBeenCalledTimes(1)
   put.mockRestore()
 
   const id = imageId(image.data)
   const key = imageKey("images/s1", id)
-  expect(first).toEqual({ ref: `${IMAGE_REF_PREFIX}${id}`, key, original: `${key}.orig` })
-  expect(await Bun.file(join(root, `${key}.orig`)).bytes()).toEqual(new Uint8Array(original))
+  expect(first).toEqual({ ref: `${IMAGE_REF_PREFIX}${id}`, key })
   expect(objects.location?.(key)).toBe(join(root, key))
   expect(await images.get(id)).toEqual({ data: new Uint8Array(image.data), mimeType: "image/png" })
   expect(await images.get("0000000000000000")).toBeUndefined()
-
-  // An image that needed no normalising is its own original
-  const small = await normalizeImage(png(2, 2))
-  expect((await images.put(small, small.data)).original).toBe(imageKey("images/s1", imageId(small.data)))
 })
 
 test("a description is kept beside its image", async () => {

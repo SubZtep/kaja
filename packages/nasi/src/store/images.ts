@@ -1,6 +1,5 @@
 import { ImageError, normalizeImage } from "../images/normalize"
 import { dataUrlBytes, imageDataUrl } from "../images/parts"
-import { warn } from "../warn"
 import type { ObjectStore } from "./objects"
 
 /** What an image part's URL is while its bytes are in the session's store: `kaja-image:<id>`. */
@@ -41,11 +40,8 @@ export type SessionImage = { data: Uint8Array; mimeType: string }
 
 /** One session's images: put when they arrive (already normalised), got back when a model request needs the bytes. */
 export type SessionImages = {
-  /**
-   * Stores an image once, and its untouched original beside it (`<key>.orig`); `ref` is what the message holds, `key`
-   * its object key, `original` the object a viewer opens: the original when one was kept, else the image itself.
-   */
-  put(image: SessionImage, original?: Uint8Array): Promise<{ ref: string; key?: string; original?: string }>
+  /** Stores an image once; `ref` is what the message holds, `key` its object key. */
+  put(image: SessionImage): Promise<{ ref: string; key?: string }>
   get(id: string): Promise<SessionImage | undefined>
   /** Keeps an image's description beside it (`<key>.json`), with the model that wrote it. */
   describe(id: string, description: string, model: string): Promise<void>
@@ -55,7 +51,7 @@ export type SessionImages = {
   clear(): Promise<void>
 }
 
-// What an image's bytes are, by their header: an original may be one Bun can't decode here (HEIC on Linux).
+// What an image's bytes are, by their header: a folder keeps no content type.
 async function typeOf(data: Uint8Array): Promise<string> {
   try {
     return `image/${(await new Bun.Image(data).metadata()).format}`
@@ -67,24 +63,11 @@ async function typeOf(data: Uint8Array): Promise<string> {
 /** A session's images as objects under `prefix` (the cloud's bucket, the TUI's folder beside its database). */
 export function objectSessionImages(objects: ObjectStore, prefix: string): SessionImages {
   return {
-    async put(image, original) {
+    async put(image) {
       const id = imageId(image.data)
       const key = imageKey(prefix, id)
-      // Normalising hands back the very bytes it got when they were already fine: the image is its own original.
-      const kept = original && original !== image.data ? `${key}.orig` : key
-      const keepOriginal = async () => {
-        if (kept === key || (await objects.exists(kept))) return
-        try {
-          await objects.put(kept, original!, await typeOf(original!))
-        } catch (error) {
-          warn("An image's original couldn't be kept", { key, error })
-        }
-      }
-      const keep = async () => {
-        if (!(await objects.exists(key))) await objects.put(key, image.data, image.mimeType)
-      }
-      await Promise.all([keep(), keepOriginal()])
-      return { ref: `${IMAGE_REF_PREFIX}${id}`, key, original: kept }
+      if (!(await objects.exists(key))) await objects.put(key, image.data, image.mimeType)
+      return { ref: `${IMAGE_REF_PREFIX}${id}`, key }
     },
     async get(id) {
       const data = await objects.get(imageKey(prefix, id))

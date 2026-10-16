@@ -33,15 +33,14 @@ function OpenLink({ target }: Readonly<{ target: string }>) {
 }
 
 /**
- * A tool's image with what it shows (its alt text, then its description once written) and a way to open it (the
- * original when one was kept): beside the picture on a wide terminal, under it on a narrow one.
+ * A tool's image with what it shows (its alt text, then its description once written) and a way to open it: beside the picture on a wide terminal, under it on a narrow one.
  */
-export function ImageRow({ path, text, original }: Readonly<{ path: string; text?: string; original?: string }>) {
+export function ImageRow({ path, text }: Readonly<{ path: string; text?: string }>) {
   const { columns } = useWindowSize()
   const { muted } = useKajaTheme()
   const wide = columns >= IMAGE_ROW_MIN_COLUMNS
   // A data URL has nothing to open; a stored file or a URL does.
-  const target = original ?? (path.startsWith("data:") ? undefined : path)
+  const target = path.startsWith("data:") ? undefined : path
   return (
     <Box flexDirection={wide ? "row" : "column"} columnGap={2}>
       <Box flexShrink={0} width={wide ? "60%" : "100%"}>

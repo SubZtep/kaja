@@ -24,11 +24,10 @@ export function sessionImagesFor(agent: Agent, session: Session): SessionImages 
   return agent.store && session.id ? agent.store.images(session.id) : inlineImages
 }
 
-/** An arriving image as stored: the ref its message holds (a data URL when inline), the object keys hosts show it from (`original`: what a viewer opens), and its size. */
+/** An arriving image as stored: the ref its message holds (a data URL when inline), the object key hosts show it from, and its size. */
 export type ArrivedImage = {
   ref: string
   key?: string
-  original?: string
   mimeType: string
   width: number
   height: number
@@ -51,8 +50,7 @@ export function altFrom(text: string | undefined, fallback: string): string {
 }
 
 /**
- * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo): the untouched bytes go
- * beside it for debugging. Its label starts as `alt`, which the vision model's description replaces once it's
+ * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo). Its label starts as `alt`, which the vision model's description replaces once it's
  * written (see `describeInBackground`); seen before in this session, it takes that description at once. One that
  * can't be used comes back as the reason why.
  */
@@ -67,7 +65,7 @@ export async function storeImage(
   try {
     const image = await normalizeImage(bytes)
     const images = sessionImagesFor(agent, session)
-    const stored = await images.put(image, bytes)
+    const stored = await images.put(image)
     const dataUrl = imageDataUrl(image)
     cacheOf(session).set(stored.ref, dataUrl)
     const size = { width: image.width, height: image.height }

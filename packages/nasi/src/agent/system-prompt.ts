@@ -77,8 +77,8 @@ function datasetInstructions(topic: string, label: string) {
 
 const IMAGE_INSTRUCTIONS =
   "Images in this conversation are labelled [Image kaja-image:<id> (width×height): what it shows]. Call view_image " +
-  "with an image's kaja-image: link to look at it again. To show the user an image, put ![a short description]" +
-  "(kaja-image:<id>) in your reply."
+  "with an image's kaja-image: link to look at it again. An image a tool returned is already shown to the user; to " +
+  "show one again (say, one the user sent earlier), put ![a short description](kaja-image:<id>) in your reply."
 
 const RUN_COMMAND_INSTRUCTIONS =
   `Use ${RUN_COMMAND_TOOL} to run a shell command on the user's computer — ` +

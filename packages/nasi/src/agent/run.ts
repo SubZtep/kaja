@@ -133,8 +133,8 @@ function* yieldStoredImages(
 ): Generator<AgentEvent, void, void> {
   for (const image of stored) {
     if ("error" in image) continue
-    const { ref, key, original, mimeType } = image
-    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}), ...(original ? { original } : {}) }
+    const { ref, key, mimeType } = image
+    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}) }
     messages.push({ role: "user", content: image.parts })
   }
 }

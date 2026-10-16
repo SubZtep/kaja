@@ -32,7 +32,7 @@ export function imageUrl(key: string): string {
 
 const isMissing = (error: unknown) => (error as { code?: string })?.code === "NoSuchKey"
 
-/** The bucket as nasi's object store: session images, their originals and descriptions. */
+/** The bucket as nasi's object store: session images and their descriptions. */
 export const objects: ObjectStore = {
   put: async (key, data, type) => {
     await bucket.write(key, data, type ? { type } : undefined)

@@ -32,7 +32,6 @@ export type CloudTimelineEvent =
       type: "tool_image"
       path: string
       mimeType: string
-      original?: string
       ref?: string
       alt?: string
       description?: string
@@ -288,8 +287,7 @@ export function useCloudAgent({
             path: event.url,
             mimeType: event.mimeType,
             ...(event.ref ? { ref: event.ref } : {}),
-            ...(event.alt ? { alt: event.alt } : {}),
-            ...(event.original ? { original: event.original } : {})
+            ...(event.alt ? { alt: event.alt } : {})
           })
         else if (event.type === "image_described") {
           eventsRef.current = withDescription(eventsRef.current, event.ref, event.description)
