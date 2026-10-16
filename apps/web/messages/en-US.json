@@ -320,7 +320,7 @@
   "models_field_model": "Model",
   "models_field_tasks": "Tasks:",
   "models_field_free": "Free (exposed on /config/models)",
-  "models_field_text_only": "[en-US] lorem ipsum dolor sit amet consectetur adipiscing",
+  "models_field_text_only": "Text only (sent image descriptions instead of images)",
   "models_field_context_window": "Context window",
   "models_field_context_window_placeholder": "Blank: ask the provider",
   "models_validation_context_window": "Whole number of tokens, or blank",

@@ -320,7 +320,7 @@
   "models_field_model": "Modell",
   "models_field_tasks": "Feladatok:",
   "models_field_free": "Ingyenes (elérhető a /config/models végponton)",
-  "models_field_text_only": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing",
+  "models_field_text_only": "Csak szöveg (képek helyett a leírásukat kapja)",
   "models_field_context_window": "Kontextusablak",
   "models_field_context_window_placeholder": "Üres: kérd meg a szolgáltatót",
   "models_validation_context_window": "Egész szám, vagy üres",

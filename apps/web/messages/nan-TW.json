@@ -320,7 +320,7 @@
   "models_field_model": "模型",
   "models_field_tasks": "任務：",
   "models_field_free": "免錢（會佇 /config/models 公開）",
-  "models_field_text_only": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing",
+  "models_field_text_only": "干焦文字（送圖片的描述，無送圖片）",
   "models_field_context_window": "語境窗",
   "models_field_context_window_placeholder": "空白：愛佮供應商吔",
   "models_validation_context_window": "整數抑是空白",
