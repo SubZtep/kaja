@@ -9,6 +9,7 @@ import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
 import { abilityService, marketplaceService, secretService } from "../../src/services"
+import { noisyPng } from "../fixtures/images"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -382,7 +383,7 @@ describe("HTTP tools in the cloud", () => {
   })
 
   test("a photo sent to the Telegram bot reaches the model with its caption, even one that looks like a command", async () => {
-    const photo = "data:image/jpeg;base64,/9j/4AAQ"
+    const photo = `data:image/png;base64,${noisyPng(2, 2).toString("base64")}`
     const sent = useScript([{ content: "A cat." }])
     const driver = createCloudTelegramDriver({
       resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),

@@ -235,7 +235,7 @@ export function useAgent(
   )
 
   const send = useCallback(
-    async (prompt: string, showUserEvent = true) => {
+    async (prompt: string, showUserEvent = true, images: Uint8Array[] = []) => {
       const focus = showUserEvent ? commandArgument(prompt, "compact") : undefined
       if (focus !== undefined) return compactNow(prompt, focus)
       setPending(true)
@@ -268,7 +268,7 @@ export function useAgent(
         if (event.model) setResponseModel(event.model)
       }
       try {
-        for await (const event of run(agent, prompt, sessionRef.current!)) {
+        for await (const event of run(agent, prompt, sessionRef.current!, undefined, images)) {
           if (event.type === "delta") handleDelta(event)
           else if (event.type === "usage") handleUsage(event)
           else {
@@ -318,9 +318,9 @@ export function useAgent(
           ? await runApprovedTool(agent.tools, name, argumentsJson, s => {
               status = s
             })
-          : "User declined this request."
+          : { text: "User declined this request.", images: [] }
         recordPausedCall(sessionRef.current!, "tool_approval", approved ? { status, startedAt } : "declined")
-        await send(result, false)
+        await send(result.text, false, result.images)
       } finally {
         setRunningCommand(false)
       }

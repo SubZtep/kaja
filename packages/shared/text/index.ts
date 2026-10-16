@@ -73,3 +73,10 @@ export function withQuestion(streamed: string, question: string) {
 export function sessionTitle(firstMessage: string): string {
   return firstMessage.split(/[\r\n]/)[0]!.slice(0, 60)
 }
+
+/** `text` cut so that it and the note saying so fit in `max` characters; whole when it already fits or there's no limit. */
+export function capText(text: string, max: number | undefined): string {
+  if (max === undefined || text.length <= max) return text
+  const note = `\n\n[cut: ${text.length} characters in total]`
+  return `${text.slice(0, Math.max(0, max - note.length))}${note}`
+}

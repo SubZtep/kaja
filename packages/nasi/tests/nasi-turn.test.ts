@@ -6,6 +6,7 @@ import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
+import { TINY_PNG_BASE64 } from "./fixtures/images"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
@@ -354,7 +355,7 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
   }
 })
 
-const PHOTO = "data:image/png;base64,iVBORw0KGgo="
+const PHOTO = `data:image/png;base64,${TINY_PNG_BASE64}`
 
 test("a turn's images reach the model with its text, and history shows them as a photo", async () => {
   const sent: SentMessage[][] = []

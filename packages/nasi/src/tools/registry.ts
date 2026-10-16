@@ -65,8 +65,8 @@ export type CreateToolsOptions = {
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
 /** What a cloud MCP result may hand the model, like an HTTP tool's body. */
 const CLOUD_MCP_MAX_RESULT_CHARS = 32 * 1024
-/** The largest MCP image a cloud turn keeps; it's stored with the session and sent to the model on every later round. */
-const CLOUD_MCP_MAX_IMAGE_BYTES = 1536 * 1024
+/** The largest raw MCP image a cloud turn takes in; run() then shrinks it to a model-sized copy, so this only guards memory. */
+const CLOUD_MCP_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 /** A sandboxed server may have to start first (a browser, say), so it gets longer than the usual connect timeout. */
 const SANDBOX_MCP_CONNECT_TIMEOUT_MS = 30_000
 

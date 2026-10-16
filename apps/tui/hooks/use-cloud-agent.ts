@@ -3,6 +3,7 @@ import type { NasiClientCall, NasiInfoResponse, NasiToolResult, NasiTurnRequest 
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { Approve, Computer } from "../lib/cloud/computer"
+import { fitTurnBody } from "../lib/cloud/turn-body"
 import { getLanguage, t } from "../lib/i18n"
 
 /** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
@@ -289,13 +290,15 @@ export function useCloudAgent({
         // TODO: forward includeThinking (from the thinking preference) once something depends on the request
         // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
         // display is already gated client-side by the `thinking` prop threaded through Chrome.
-        const gen = client.turn_stream({
-          session: sessionRef.current,
-          ...declared,
-          ...request,
-          language: getLanguage(),
-          personaId: personaIdRef.current
-        })
+        const gen = client.turn_stream(
+          fitTurnBody({
+            session: sessionRef.current,
+            ...declared,
+            ...request,
+            language: getLanguage(),
+            personaId: personaIdRef.current
+          })
+        )
         let next = await gen.next()
         while (!next.done) {
           const event = next.value

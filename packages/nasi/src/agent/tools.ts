@@ -160,33 +160,40 @@ export function toolName(t: Tool): string {
   return t.definition.function.name
 }
 
+/** What an approved call returned: its text, and the bytes of any images, for the host to pass to `run()` with it. */
+export type ApprovedToolResult = { text: string; images: Uint8Array[] }
+
 /**
- * Runs a tool call the human approved after a `confirm_tool` pause, returning the text to feed
- * back as its result. Hosts call this with their own tool list; a missing tool, bad arguments or
- * a failure come back as text so the model can react, and `onStatus` hears which way it went.
+ * Runs a tool call the human approved after a `confirm_tool` pause, returning what to feed back as its result.
+ * Hosts call this with their own tool list; a missing tool, bad arguments or a failure come back as text so the model
+ * can react, and `onStatus` hears which way it went.
  */
 export async function runApprovedTool(
   tools: Tool[],
   name: string,
   argumentsJson: string,
   onStatus?: (status: "ok" | "error") => void
-): Promise<string> {
-  const target = tools.find(t => toolName(t) === name)
-  if (!target) {
+): Promise<ApprovedToolResult> {
+  const failed = (text: string) => {
     onStatus?.("error")
-    return `Error: unknown tool "${name}"`
+    return { text, images: [] }
   }
+  const target = tools.find(t => toolName(t) === name)
+  if (!target) return failed(`Error: unknown tool "${name}"`)
   try {
     const checked = checkToolArgs(target, JSON.parse(argumentsJson || "{}"))
-    if (!checked.ok) {
-      onStatus?.("error")
-      return `Error: ${checked.error}`
-    }
+    if (!checked.ok) return failed(`Error: ${checked.error}`)
     const result = await target.execute(checked.args)
+    // Read now: a tool's image is often a temp file, gone once the turn ends.
+    const images =
+      typeof result === "string"
+        ? []
+        : await Promise.all(
+            (result.images ?? []).map(async image => new Uint8Array(await Bun.file(image.path).arrayBuffer()))
+          )
     onStatus?.("ok")
-    return typeof result === "string" ? result : result.text
+    return { text: typeof result === "string" ? result : result.text, images }
   } catch (error) {
-    onStatus?.("error")
-    return `Error: ${error instanceof Error ? error.message : String(error)}`
+    return failed(`Error: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

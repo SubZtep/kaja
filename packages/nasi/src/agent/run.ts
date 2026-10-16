@@ -1,11 +1,11 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
-import { file } from "bun"
 import OpenAI from "openai"
 import type {
   ChatCompletionChunk,
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall
 } from "openai/resources/chat/completions"
+import { imageDataUrl, normalizeImageFile, normalizePromptImage, withImageNote } from "../images/parts"
 import { takeLastServedModel } from "../models/client"
 import { lowerContextWindow, resolveContextWindow } from "../models/context-window"
 import {
@@ -164,16 +164,15 @@ async function* handleToolCall(
     return
   }
 
-  messages.push({ role: "tool", tool_call_id: call.id, content: result.text })
+  // Normalised first, so the model and the timeline both get the model-sized copy, and a refused one becomes a note.
+  const images = await Promise.all((result.images ?? []).map(image => normalizeImageFile(image.path)))
+  const refused = images.flatMap(image => ("error" in image ? [image.error] : []))
+  messages.push({ role: "tool", tool_call_id: call.id, content: withImageNote(result.text, refused) })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
-  for (const image of result.images ?? []) {
-    yield { type: "tool_image", path: image.path, mimeType: image.mimeType }
-    const data = await file(image.path).arrayBuffer()
-    const base64 = Buffer.from(data).toString("base64")
-    messages.push({
-      role: "user",
-      content: [{ type: "image_url", image_url: { url: `data:${image.mimeType};base64,${base64}` } }]
-    })
+  for (const shown of images) {
+    if ("error" in shown) continue
+    yield { type: "tool_image", path: shown.path, mimeType: shown.image.mimeType }
+    messages.push({ role: "user", content: [imagePart(imageDataUrl(shown.image))] })
   }
 }
 
@@ -261,18 +260,30 @@ async function* streamRound(
   }
 }
 
-function pushPromptToMessages(session: Session, prompt: string, images: string[]): void {
+type PromptPart = ReturnType<typeof imagePart> | { type: "text"; text: string }
+
+function pushPromptToMessages(session: Session, prompt: string, images: PromptPart[]): void {
   pushPromptText(session, prompt, images)
   // A tool result can't carry an image, so one sent with an answer follows as its own user message
   if (images.length > 0 && session.messages.at(-1)?.role === "tool")
-    session.messages.push({ role: "user", content: images.map(imagePart) })
+    session.messages.push({ role: "user", content: images })
 }
 
 function imagePart(url: string) {
   return { type: "image_url" as const, image_url: { url } }
 }
 
-function pushPromptText(session: Session, prompt: string, images: string[]): void {
+// The prompt's images, normalised; one that can't be read becomes a note, so the model knows something was sent.
+async function promptImageParts(images: (string | Uint8Array)[]): Promise<PromptPart[]> {
+  const parts = await Promise.all(images.map(normalizePromptImage))
+  return parts.map(part =>
+    "url" in part
+      ? imagePart(part.url)
+      : { type: "text" as const, text: `[An image was sent here, but it can't be shown: ${part.error}.]` }
+  )
+}
+
+function pushPromptText(session: Session, prompt: string, images: PromptPart[]): void {
   if (session.pendingAskUserId) {
     session.messages.push({
       role: "tool",
@@ -296,7 +307,7 @@ function pushPromptText(session: Session, prompt: string, images: string[]): voi
     session.pendingToolApprovalId = undefined
   } else if (images.length > 0) {
     const text = prompt ? [{ type: "text" as const, text: prompt }] : []
-    session.messages.push({ role: "user", content: [...text, ...images.map(imagePart)] })
+    session.messages.push({ role: "user", content: [...text, ...images] })
   } else {
     session.messages.push({ role: "user", content: prompt })
   }
@@ -568,7 +579,7 @@ async function openTurn(
   session: Session,
   prompt: string | undefined,
   owner: string | null,
-  images: string[]
+  images: (string | Uint8Array)[]
 ): Promise<void> {
   const messages = session.messages
   if (messages.length === 0) {
@@ -577,7 +588,7 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  if (prompt !== undefined) pushPromptToMessages(session, prompt, images)
+  if (prompt !== undefined) pushPromptToMessages(session, prompt, await promptImageParts(images))
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -678,7 +689,8 @@ function countFailingRounds(session: Session, toolCalls: { id: string }[], previ
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
- * `images` (data URLs) go to the model with the prompt, e.g. a photo sent to a bot. Without a prompt it carries on from
+ * `images` (data URLs or bytes, normalised here) go to the model with the prompt, e.g. a photo sent to a bot or what an
+ * approved tool returned. Without a prompt it carries on from
  * the session as it is, e.g. after the client's tool results were added (see `answerClientCalls`).
  */
 export async function* run(
@@ -686,7 +698,7 @@ export async function* run(
   prompt: string | undefined,
   session: Session,
   owner: string | null = LOCAL_OWNER,
-  images: string[] = []
+  images: (string | Uint8Array)[] = []
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
   await syncPersonaTools(agent)

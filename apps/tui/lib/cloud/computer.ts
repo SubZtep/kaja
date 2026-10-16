@@ -1,7 +1,17 @@
 import { readFile } from "node:fs/promises"
+import { basename } from "node:path"
 import type { AbilityStore, Tool } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
-import type { NasiClientCall, NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
+import {
+  type NasiClientCall,
+  type NasiClientSkill,
+  type NasiClientTool,
+  type NasiToolResult,
+  TOOL_RESULT_IMAGE_BASE64_MAX,
+  TOOL_RESULT_IMAGES_MAX,
+  TOOL_RESULT_TEXT_MAX
+} from "@kaja/schema/nasi"
+import { capText } from "@kaja/shared/text"
 import { getMarketplaceDir, ownAbilities } from "../abilities/abilities-file"
 import { SHELL_HOST_KEY, toolHosts } from "../abilities/sandbox-relay"
 import { secrets } from "../config/secrets"
@@ -60,6 +70,7 @@ function only(store: AbilityStore, names: Set<string>): AbilityStore {
  */
 export async function openComputer(): Promise<Computer> {
   const { createFolderAbilityStore, createTools, loadAbilities, toolName } = await import("@kaja/nasi")
+  const { resolveMemoryDbPath } = await import("../memory/store")
   const root = getMarketplaceDir()
   const personas = await loadPersonas()
   const names = await computerAbilities(root)
@@ -78,7 +89,8 @@ export async function openComputer(): Promise<Computer> {
     // Up front, with every persona's folders (as the doctor connects), so a roots-taking server lists its tools too.
     lazyMcpAbilities: false,
     backupDir: getBackupDir(),
-    deps: { tempDir: getPaths().temp }
+    // The --local sqlite file may be on this computer too: the file tools never read it.
+    deps: { tempDir: getPaths().temp, storePath: await resolveMemoryDbPath() }
   })
   let tools = created.tools
   const shell = (await toolHosts())[SHELL_HOST_KEY] === "computer"
@@ -97,11 +109,12 @@ export async function openComputer(): Promise<Computer> {
         ?.source?.slice("ability:".length)
       // A roots-taking server gets the turn's persona's folders before it runs.
       if (ability) tools = await created.ensureAbilities([ability], personaId)
-      if (call.name === "load_skill") return { id: call.id, ...(await loadSkillText(store, call.arguments)) }
+      if (call.name === "load_skill")
+        return clampResult({ id: call.id, ...(await loadSkillText(store, call.arguments)) })
       const target = declared().find(tool => toolName(tool) === call.name)
       if (!target)
         return { id: call.id, text: `Error: ${call.name} isn't available on this computer.`, status: "error" }
-      return { id: call.id, ...(await runHere(target, call, approve)) }
+      return clampResult({ id: call.id, ...(await runHere(target, call, approve)) })
     },
     close: created.closeTools
   }
@@ -155,7 +168,7 @@ function parseArgs(json: string): Record<string, unknown> | undefined {
 
 // Runs one tool here as `--local` would: the shell's safe list and every tool's own approval rule decide when to ask.
 async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Promise<Omit<NasiToolResult, "id">> {
-  const { checkToolArgs } = await import("@kaja/nasi")
+  const { checkToolArgs, withImageNote } = await import("@kaja/nasi")
   const args = parseArgs(call.arguments)
   if (!args) return { text: `Error: the arguments for ${call.name} aren't valid JSON.`, status: "error" }
   if (call.name === SHELL) return runCommandHere(args, approve)
@@ -167,17 +180,49 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
   try {
     const result = await target.execute(checked.args)
     if (typeof result === "string") return { text: result }
-    const images = await Promise.all(
-      (result.images ?? []).map(async image => ({
-        data: (await readFile(image.path)).toString("base64"),
-        mimeType: image.mimeType
-      }))
-    )
-    return { text: result.text, ...(images.length ? { images: images.slice(0, 4) } : {}) }
+    const { images, refused } = await normalizedImages(result.images ?? [])
+    return { text: withImageNote(result.text, refused), ...(images.length ? { images } : {}) }
   } catch (error) {
     log.warn("A cloud turn's call failed on this computer", { tool: call.name, error })
     return { text: `Error: ${error instanceof Error ? error.message : String(error)}`, status: "error" }
   }
+}
+
+// A tool's image files, made model-sized here (the turn's request has a size limit); one that can't be read is named in `refused`.
+async function normalizedImages(files: { path: string }[]) {
+  const { ImageError, normalizeImage } = await import("@kaja/nasi")
+  const images: NonNullable<NasiToolResult["images"]> = []
+  const refused: string[] = []
+  for (const image of files) {
+    try {
+      const normalized = await normalizeImage(new Uint8Array(await readFile(image.path)))
+      images.push({ data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType })
+    } catch (error) {
+      if (!(error instanceof ImageError)) throw error
+      refused.push(`${basename(image.path)}: ${error.message}`)
+    }
+  }
+  return { images, refused }
+}
+
+/**
+ * A result cut to what a turn's request takes (`@kaja/schema/nasi`'s limits): long text cut with a note, images past
+ * the count or too big left out with a note, so the cloud never refuses the whole turn over one result.
+ */
+export async function clampResult(result: NasiToolResult): Promise<NasiToolResult> {
+  const { imageNote, withImageNote } = await import("@kaja/nasi")
+  const images = result.images ?? []
+  const fitting = images.filter(image => image.data.length <= TOOL_RESULT_IMAGE_BASE64_MAX)
+  const kept = fitting.slice(0, TOOL_RESULT_IMAGES_MAX)
+  const refused = [
+    ...Array<string>(images.length - fitting.length).fill("too large to send"),
+    ...Array<string>(fitting.length - kept.length).fill(`only ${TOOL_RESULT_IMAGES_MAX} images go with one result`)
+  ]
+  const note = imageNote(refused)
+  const room = TOOL_RESULT_TEXT_MAX - (note ? note.length + 2 : 0)
+  const text = note ? withImageNote(capText(result.text, room), refused) : capText(result.text, room)
+  const { images: _images, ...rest } = result
+  return { ...rest, text, ...(kept.length ? { images: kept } : {}) }
 }
 
 // run_command here: commands.toml's safe list runs at once, anything else asks first.

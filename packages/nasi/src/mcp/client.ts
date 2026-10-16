@@ -3,6 +3,7 @@ import { join } from "node:path"
 import type { McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { randomUUIDv7 } from "@kaja/shared/id"
+import { capText } from "@kaja/shared/text"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -214,12 +215,6 @@ export async function connectMcpServer(
       await pendingAsk()
     }
   }
-}
-
-/** `text` cut at `max` characters with a note, or whole when there's no limit. */
-function capText(text: string, max: number | undefined): string {
-  if (max === undefined || text.length <= max) return text
-  return `${text.slice(0, max)}\n\n[cut: ${text.length} characters in total]`
 }
 
 async function callTool(

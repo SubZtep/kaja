@@ -5,6 +5,7 @@ import type { Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
 import { mcpAbility } from "./fixtures/abilities"
+import { TINY_PNG_BASE64 } from "./fixtures/images"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
 type Sent = { messages: SentMessage[]; tools?: { function: { name: string } }[] }
@@ -74,7 +75,7 @@ test("a round's client calls pause the turn together, and their results resume i
     session: first.session,
     toolResults: [
       { id: "c1", text: "alpha" },
-      { id: "c2", text: "beta", images: [{ data: "cG5n", mimeType: "image/png" }] }
+      { id: "c2", text: "beta", images: [{ data: TINY_PNG_BASE64, mimeType: "image/png" }] }
     ]
   })
   expect(second.status).toBe("completed")
@@ -84,7 +85,7 @@ test("a round's client calls pause the turn together, and their results resume i
     ["c1", "alpha"],
     ["c2", "beta"]
   ])
-  expect(JSON.stringify(resumed.at(-1))).toContain("data:image/png;base64,cG5n")
+  expect(JSON.stringify(resumed.at(-1))).toContain(`data:image/png;base64,${TINY_PNG_BASE64}`)
 })
 
 test("a message instead of results answers the waiting calls as gone, then goes on", async () => {

@@ -123,6 +123,8 @@ export {
   tool,
   toolName
 } from "./agent/tools"
+export { ImageError, MAX_IMAGE_BYTES, MAX_IMAGE_EDGE, type NormalizedImage, normalizeImage } from "./images/normalize"
+export { imageDataUrl, imageNote, withImageNote } from "./images/parts"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
   isInstalled,

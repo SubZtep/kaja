@@ -2,6 +2,8 @@ import type { NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/sche
 import type { Session } from "../agent/agent"
 import { recordCall } from "../agent/telemetry"
 import { type Tool, tool } from "../agent/tools"
+import { ImageError, normalizeImage } from "../images/normalize"
+import { withImageNote } from "../images/parts"
 import type { ToolGroup } from "../tools/registry"
 import type { AbilityStore } from "./types"
 
@@ -66,6 +68,30 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
     listHttpTools: async () => (await store.listHttpTools()).filter(ability => !theirs.has(ability.name)),
     listMcpAbilities: async () => (await store.listMcpAbilities()).filter(ability => !theirs.has(ability.name))
   }
+}
+
+/**
+ * The client's results with their images normalised here too (the client is untrusted: what the bytes are decides, not
+ * the type it named); an image that can't be used leaves a note in its result's text instead.
+ */
+export async function normalizeClientResults(results: NasiToolResult[] = []): Promise<NasiToolResult[]> {
+  return Promise.all(
+    results.map(async result => {
+      if (!result.images?.length) return result
+      const refused: string[] = []
+      const images: NonNullable<NasiToolResult["images"]> = []
+      for (const image of result.images) {
+        try {
+          const normalized = await normalizeImage(Buffer.from(image.data, "base64"))
+          images.push({ data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType })
+        } catch (error) {
+          if (!(error instanceof ImageError)) throw error
+          refused.push(error.message)
+        }
+      }
+      return { ...result, text: withImageNote(result.text, refused), images }
+    })
+  )
 }
 
 /**

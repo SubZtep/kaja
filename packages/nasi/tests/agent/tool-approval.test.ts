@@ -1,8 +1,13 @@
 import { expect, test } from "bun:test"
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import type OpenAI from "openai"
+import { z } from "zod"
 import { Agent, askUserTool, createSession } from "../../src/agent/agent"
 import { run } from "../../src/agent/run"
 import { runApprovedTool, type Tool, tool } from "../../src/agent/tools"
+import { png } from "../fixtures/images"
 
 type FakeCall = { id: string; name: string; arguments: string }
 
@@ -93,8 +98,8 @@ test("the host's result on resume answers the pending call and the turn continue
   const session = createSession()
   await collect(run(agent, "file a bug", session))
   const result = await runApprovedTool(agent.tools, "create_issue", '{"title":"Bug"}')
-  expect(result).toBe("created Bug")
-  const events = await collect(run(agent, result, session))
+  expect(result).toEqual({ text: "created Bug", images: [] })
+  const events = await collect(run(agent, result.text, session))
   expect(events.at(-1)).toEqual({ type: "final", content: "Filed it." })
   expect(session.pendingToolApprovalId).toBeUndefined()
   expect(session.messages).toContainEqual({ role: "tool", tool_call_id: "c1", content: "created Bug" })
@@ -122,8 +127,45 @@ test("a second approval in the same round, or one beside ask_user, is answered i
 })
 
 test("runApprovedTool reports an unknown tool or bad arguments as text", async () => {
-  expect(await runApprovedTool([createIssue], "nope", "{}")).toBe('Error: unknown tool "nope"')
-  expect(await runApprovedTool([createIssue], "create_issue", "{not json")).toStartWith("Error:")
+  expect((await runApprovedTool([createIssue], "nope", "{}")).text).toBe('Error: unknown tool "nope"')
+  expect((await runApprovedTool([createIssue], "create_issue", "{not json")).text).toStartWith("Error:")
+})
+
+test("an approved tool's images reach the model with its answer, normalised", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "kaja-approved-"))
+  const path = join(dir, "shot.png")
+  await Bun.write(path, png(3000, 100))
+  const snap: Tool<Record<string, never>> = {
+    ...tool({
+      name: "snap",
+      description: "Takes a picture",
+      schema: z.object({}),
+      execute: async () => ({ text: "snapped", images: [{ path, mimeType: "image/png" }] })
+    }),
+    approval: () => "Take a picture"
+  }
+  const result = await runApprovedTool([snap], "snap", "{}")
+  await rm(dir, { recursive: true })
+  expect(result.text).toBe("snapped")
+  expect(result.images).toHaveLength(1)
+
+  const session = createSession()
+  session.pendingToolApprovalId = "c1"
+  session.messages.push(
+    { role: "user", content: "take one" },
+    {
+      role: "assistant",
+      content: null,
+      tool_calls: [{ id: "c1", type: "function", function: { name: "snap", arguments: "{}" } }]
+    }
+  )
+  await collect(run(agentWith([{ content: "Nice." }]), result.text, session, undefined, result.images))
+  expect(session.messages[2]).toEqual({ role: "tool", tool_call_id: "c1", content: "snapped" })
+  const image = session.messages[3] as { role: string; content: { type: string; image_url: { url: string } }[] }
+  expect(image.role).toBe("user")
+  const url = image.content[0]!.image_url.url
+  expect(url).toStartWith("data:image/png;base64,")
+  expect((await new Bun.Image(Buffer.from(url.split(",")[1]!, "base64")).metadata()).width).toBe(1568)
 })
 
 test("yolo runs a tool that would ask, and a command that isn't safe, without pausing", async () => {

@@ -5,7 +5,13 @@ import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import { sessionTitle } from "@kaja/shared/text"
 import type OpenAI from "openai"
-import { answerClientCalls, clientToolGroups, type NasiClient, withClientAbilities } from "./abilities/client"
+import {
+  answerClientCalls,
+  clientToolGroups,
+  type NasiClient,
+  normalizeClientResults,
+  withClientAbilities
+} from "./abilities/client"
 import { loadAbilities } from "./abilities/load"
 import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
@@ -312,20 +318,20 @@ export class Nasi {
    * Calls waiting on the client are answered with its results (or as gone); with no message, the loop
    * carries on from them.
    */
-  private async promptFor(session: Session, input: NasiTurnInput): Promise<string | undefined> {
+  private async promptFor(session: Session, input: NasiTurnInput): Promise<{ prompt?: string; images?: Uint8Array[] }> {
     if (session.pendingClientCalls?.length) {
-      answerClientCalls(session, input.toolResults)
-      if (input.message === undefined) return undefined
+      answerClientCalls(session, await normalizeClientResults(input.toolResults))
+      if (input.message === undefined) return {}
     }
     const pendingId = session.pendingToolApprovalId
     if (input.approval) {
       if (!pendingId) throw new NothingToApproveError()
       if (input.approval === "decline") {
         recordPausedCall(session, "tool_approval", "declined")
-        return TOOL_DECLINED
+        return { prompt: TOOL_DECLINED }
       }
       const call = pendingToolCall(session, pendingId)
-      if (!call) return "Error: the call waiting for approval is gone."
+      if (!call) return { prompt: "Error: the call waiting for approval is gone." }
       if (input.approval === "approve_session") this.grant(session, call.function.name)
       const startedAt = performance.now()
       let status: "ok" | "error" = "ok"
@@ -333,11 +339,11 @@ export class Nasi {
         status = s
       })
       recordPausedCall(session, "tool_approval", { status, startedAt })
-      return result
+      return { prompt: result.text, images: result.images }
     }
     const message = input.message ?? ""
     if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
-    return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
+    return { prompt: pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message }
   }
 
   /** An `approve_session` answer: the tool stops asking for the rest of this session. */
@@ -386,10 +392,11 @@ export class Nasi {
     const loaded = await this.loadTurn(input)
     // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
     await syncPersonaTools(loaded.agent)
-    const prompt = await this.promptFor(loaded.session, input)
+    const { prompt, images = [] } = await this.promptFor(loaded.session, input)
 
     const turnEvents: AgentEvent[] = []
-    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, input.images)) {
+    const allImages = [...(input.images ?? []), ...images]
+    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, allImages)) {
       turnEvents.push(event)
       yield event
     }

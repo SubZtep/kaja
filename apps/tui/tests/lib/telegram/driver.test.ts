@@ -6,6 +6,7 @@ import type { Persona } from "@kaja/schema/cli"
 import { APIError } from "openai"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
+import { TINY_PNG, TINY_PNG_BASE64 } from "../../fixtures/images"
 
 // Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env vars and a minimal settings.toml fixture must be in place before lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever evaluated, since lib/openai.ts reads config() at its own module top level.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-telegram-driver`
@@ -171,7 +172,7 @@ test("first message from a user creates a session and finalizes the reply", asyn
 
 test("tool_image and display_image events are delivered as photos", async () => {
   const imagePath = join(tmpdir(), "kaja-test-telegram-photo.png")
-  writeFileSync(imagePath, "not-a-real-png")
+  writeFileSync(imagePath, TINY_PNG)
   const imageTool = tool<Record<string, never>>({
     name: "make_picture",
     description: "test tool that returns images",
@@ -241,7 +242,7 @@ test("a reply that is only an image leaves a 📷 placeholder instead of an empt
 })
 
 test("a photo reaches the model with its caption; a model that refuses it gets a plain note, and the photo is dropped", async () => {
-  const photo = "data:image/jpeg;base64,/9j/4AAQ"
+  const photo = `data:image/png;base64,${TINY_PNG_BASE64}`
   const { sender, edited } = fakeSender()
   const driver = makeDriver([{ content: "A cat." }, { content: null, reject: 400 }, { content: "Sure." }], sender)
 
