@@ -33,7 +33,7 @@ src/
     cron.ts              # Bun.cron jobs: hourly marketplace sync
     ssr-client-ip.ts     # trusts the web SSR's visitor IP via SSR_SECRET
     i18n.ts              # per-call translator over locales/*.toml (emails, Telegram bot)
-    files.ts             # files-sdk object storage for images (Hetzner, or the compose RustFS)
+    files.ts             # the images bucket via Bun.S3Client (Hetzner, or the compose RustFS); public-read images/, URLs
     geo.ts               # IP geolocation (sandboxes)
     lock.ts              # withLock: in-process per-key serialization (single instance)
   features/              # one folder per URL mount prefix

@@ -185,8 +185,8 @@ async function* handleToolCall(
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
   for (const stored of images) {
     if ("error" in stored) continue
-    const { ref, key, mimeType } = stored
-    yield { type: "tool_image", ref, mimeType, ...(key ? { key } : {}) }
+    const { ref, key, original, mimeType } = stored
+    yield { type: "tool_image", ref, mimeType, ...(key ? { key } : {}), ...(original ? { original } : {}) }
     messages.push({ role: "user", content: stored.parts })
   }
 }

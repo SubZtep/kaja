@@ -5,6 +5,14 @@ import { storedImagePath } from "../memory/store"
 /** An agent event as the timeline keeps it: a tool image by the file that shows it (or its data URL) and its stored key. */
 export function timelineEvent(event: Exclude<FinalizedAgentEvent, { type: "usage" }>): TimelineEvent {
   if (event.type !== "tool_image") return event
-  const { ref, key, mimeType } = event
-  return { type: "tool_image", mimeType, ...(key ? { key } : {}), path: (key && storedImagePath(key)) || ref }
+  const { ref, key, original, mimeType } = event
+  const path = (key && storedImagePath(key)) || ref
+  const opened = original && storedImagePath(original)
+  return {
+    type: "tool_image",
+    mimeType,
+    path,
+    ...(key ? { key } : {}),
+    ...(original && opened ? { originalKey: original, original: opened } : {})
+  }
 }

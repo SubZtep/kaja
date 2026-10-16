@@ -1,8 +1,7 @@
 import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
-import { Files } from "files-sdk"
-import { memory } from "files-sdk/memory"
-import { filesSessionImages, sessionImagePrefix } from "./images"
+import { objectSessionImages, sessionImagePrefix } from "./images"
+import { memoryObjects, type ObjectStore } from "./objects"
 import { sessionIdOf } from "./rows"
 import type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
 
@@ -24,9 +23,9 @@ function datasetKey(topic: string, owner: string | null, version: number, field?
   return field !== undefined ? `${base}\0${field}` : base
 }
 
-/** In-memory store for tests and hosts that do not persist; `files` holds the session images (in memory too by default). */
-export function createMemoryStore(opts: { files?: Files } = {}): NasiStore {
-  const files = opts.files ?? new Files({ adapter: memory() })
+/** In-memory store for tests and hosts that do not persist; `objects` holds the session images (in memory too by default). */
+export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiStore {
+  const objects = opts.objects ?? memoryObjects()
   const sessions = new Map<string, PersistedSession>()
   const memoryByOwner = new Map<string, MemoryStore>()
   const answers = new Map<string, DatasetAnswer & { topic: string; owner: string | null; version: number }>()
@@ -85,11 +84,11 @@ export function createMemoryStore(opts: { files?: Files } = {}): NasiStore {
 
     async deleteSession(id) {
       if (!sessions.delete(id)) return false
-      await filesSessionImages(files, sessionImagePrefix(id)).clear()
+      await objectSessionImages(objects, sessionImagePrefix(id)).clear()
       return true
     },
 
-    images: id => filesSessionImages(files, sessionImagePrefix(id)),
+    images: id => objectSessionImages(objects, sessionImagePrefix(id)),
 
     listSessions(): Promise<SessionMeta[]> {
       return Promise.try(() => {

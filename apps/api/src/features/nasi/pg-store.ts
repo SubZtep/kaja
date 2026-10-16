@@ -1,11 +1,10 @@
 import {
   clearTelemetry,
   type DatasetAnswer,
-  deleteImages,
-  filesSessionImages,
   joinConversation,
   type MessageRow,
   type NasiStore,
+  objectSessionImages,
   type PendingKind,
   type SessionWrite,
   sessionIdOf,
@@ -16,7 +15,7 @@ import {
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { channelOf, PersistedSessionSchema } from "@kaja/schema/store"
 import type { Pool, PoolClient } from "pg"
-import { files } from "../../core/files"
+import { objects } from "../../core/files"
 import { reportError } from "../../core/report"
 
 function ownerKey(owner: string | null): string {
@@ -106,7 +105,7 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
 }
 
 const sessionImages = (userId: string, sessionId: string) =>
-  filesSessionImages(files, sessionImagePrefix(sessionId, userId))
+  objectSessionImages(objects, sessionImagePrefix(sessionId, userId))
 
 // Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save
 const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?? null
@@ -275,7 +274,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
     async deleteSession(id) {
       const result = await db.query("DELETE FROM nasi_session WHERE id = $1 AND user_id = $2", [id, userId])
       if (!result.rowCount) return false
-      await deleteImages(files, sessionImagePrefix(id, userId))
+      await sessionImages(userId, id).clear()
       return true
     },
 

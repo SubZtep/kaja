@@ -13,7 +13,7 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import { commandArgument, compactedLine, escapeHtml, isCommand, openReply, type Reply } from "@kaja/shared/telegram"
 import { withQuestion } from "@kaja/shared/text"
 import { pool } from "../../core/db"
-import { files, imageUrl } from "../../core/files"
+import { imageUrl, objects } from "../../core/files"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
@@ -78,20 +78,11 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** A tool's image as a photo: by its signed storage URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
+  /** A tool's image as a photo: by its public URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
   async function sendToolImage(chatId: number, image: { ref: string; key?: string }) {
-    if (image.key) {
-      try {
-        const url = await imageUrl(image.key)
-        if (isPublicHttpUrl(url)) return await sender.sendPhoto(chatId, url)
-      } catch (error) {
-        console.warn("Telegram tool image by URL failed, sending the bytes", { error })
-      }
-    }
     try {
-      const bytes = image.key
-        ? new Uint8Array(await (await files.download(image.key)).arrayBuffer())
-        : dataUrlBytes(image.ref)
+      if (image.key && isPublicHttpUrl(imageUrl(image.key))) return await sender.sendPhoto(chatId, imageUrl(image.key))
+      const bytes = image.key ? await objects.get(image.key) : dataUrlBytes(image.ref)
       if (bytes) await sender.sendPhoto(chatId, bytes)
     } catch (error) {
       console.warn("Telegram tool image send failed", { error })

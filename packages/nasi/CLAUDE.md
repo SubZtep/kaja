@@ -19,7 +19,7 @@ src/
   personas.ts        # dataset loaders the host registers (setDatasetLoaders, loadDataset)
   warn.ts            # warn + setWarnHandler
   agent/             # Agent, run(), system prompt, compaction, command risk, telemetry
-  store/             # NasiStore interface + in-memory adapter; images.ts the session image store (`SessionImages`: `filesSessionImages`, `inlineImages`, refs `kaja-image:<id>`); rows.ts splits a session into message/tool-call rows (and joins it back) for the sqlite and Postgres stores
+  store/             # NasiStore interface + in-memory adapter; images.ts the session image store (`SessionImages`: `objectSessionImages` over objects.ts's `ObjectStore`, which hosts provide: `memoryObjects`, `folderObjects`, the API's S3; `inlineImages`; refs `kaja-image:<id>`); rows.ts splits a session into message/tool-call rows (and joins it back) for the sqlite and Postgres stores
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # connectMcpServer: MCP abilities (also in the cloud); launch.ts resolveLaunch: a stdio manifest's package → the runner this host has

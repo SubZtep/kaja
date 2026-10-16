@@ -1,7 +1,7 @@
-import { type Files, FilesError } from "files-sdk"
 import { ImageError, normalizeImage } from "../images/normalize"
 import { dataUrlBytes, imageDataUrl } from "../images/parts"
 import { warn } from "../warn"
+import type { ObjectStore } from "./objects"
 
 /** What an image part's URL is while its bytes are in the session's store: `kaja-image:<id>`. */
 export const IMAGE_REF_PREFIX = "kaja-image:"
@@ -29,8 +29,11 @@ export type SessionImage = { data: Uint8Array; mimeType: string }
 
 /** One session's images: put when they arrive (already normalised), got back when a model request needs the bytes. */
 export type SessionImages = {
-  /** Stores an image once (and the untouched original beside it, `<key>.orig`, for debugging only); `ref` is what the message holds, `key` its object key. */
-  put(image: SessionImage, original?: Uint8Array): Promise<{ ref: string; key?: string }>
+  /**
+   * Stores an image once, and its untouched original beside it (`<key>.orig`); `ref` is what the message holds, `key`
+   * its object key, `original` the object a viewer opens: the original when one was kept, else the image itself.
+   */
+  put(image: SessionImage, original?: Uint8Array): Promise<{ ref: string; key?: string; original?: string }>
   get(id: string): Promise<SessionImage | undefined>
   /** Keeps an image's description beside it (`<key>.json`), with the model that wrote it. */
   describe(id: string, description: string, model: string): Promise<void>
@@ -40,54 +43,54 @@ export type SessionImages = {
   clear(): Promise<void>
 }
 
-/** A session's images as objects under `prefix` in `files` (the cloud's bucket, the TUI's folder beside its database). */
-export function filesSessionImages(files: Files, prefix: string): SessionImages {
+// What an image's bytes are, by their header: an original may be one Bun can't decode here (HEIC on Linux).
+async function typeOf(data: Uint8Array): Promise<string> {
+  try {
+    return `image/${(await new Bun.Image(data).metadata()).format}`
+  } catch {
+    return "application/octet-stream"
+  }
+}
+
+/** A session's images as objects under `prefix` (the cloud's bucket, the TUI's folder beside its database). */
+export function objectSessionImages(objects: ObjectStore, prefix: string): SessionImages {
   return {
     async put(image, original) {
       const id = imageId(image.data)
       const key = imageKey(prefix, id)
+      // Normalising hands back the very bytes it got when they were already fine: the image is its own original.
+      const kept = original && original !== image.data ? `${key}.orig` : key
       const keepOriginal = async () => {
-        // Normalising hands back the very bytes it got when they were already fine: nothing else to keep.
-        if (!original || original === image.data) return
+        if (kept === key || (await objects.exists(kept))) return
         try {
-          if (!(await files.exists(`${key}.orig`))) await files.upload(`${key}.orig`, original)
+          await objects.put(kept, original!, await typeOf(original!))
         } catch (error) {
           warn("An image's original couldn't be kept", { key, error })
         }
       }
       const keep = async () => {
-        if (!(await files.exists(key))) await files.upload(key, image.data, { contentType: image.mimeType })
+        if (!(await objects.exists(key))) await objects.put(key, image.data, image.mimeType)
       }
       await Promise.all([keep(), keepOriginal()])
-      return { ref: `${IMAGE_REF_PREFIX}${id}`, key }
+      return { ref: `${IMAGE_REF_PREFIX}${id}`, key, original: kept }
     },
     async get(id) {
-      try {
-        const file = await files.download(imageKey(prefix, id))
-        const data = new Uint8Array(await file.arrayBuffer())
-        // The bytes say what they are: an fs adapter has no stored content type.
-        const { format } = await new Bun.Image(data).metadata()
-        return { data, mimeType: `image/${format}` }
-      } catch (error) {
-        if (error instanceof FilesError && error.code === "NotFound") return undefined
-        throw error
-      }
+      const data = await objects.get(imageKey(prefix, id))
+      if (!data) return undefined
+      // The bytes say what they are: a folder keeps no content type.
+      return { data, mimeType: await typeOf(data) }
     },
     async describe(id, description, model) {
       const sidecar = { description, model, at: new Date().toISOString() }
-      await files.upload(`${imageKey(prefix, id)}.json`, JSON.stringify(sidecar), { contentType: "application/json" })
+      await objects.put(`${imageKey(prefix, id)}.json`, JSON.stringify(sidecar), "application/json")
     },
     async description(id) {
-      try {
-        const file = await files.download(`${imageKey(prefix, id)}.json`)
-        const { description } = JSON.parse(await file.text()) as { description?: unknown }
-        return typeof description === "string" ? description : undefined
-      } catch (error) {
-        if (error instanceof FilesError && error.code === "NotFound") return undefined
-        throw error
-      }
+      const data = await objects.get(`${imageKey(prefix, id)}.json`)
+      if (!data) return undefined
+      const { description } = JSON.parse(new TextDecoder().decode(data)) as { description?: unknown }
+      return typeof description === "string" ? description : undefined
     },
-    clear: () => deleteImages(files, prefix)
+    clear: () => objects.deletePrefix(`${prefix}/`)
   }
 }
 
@@ -98,13 +101,6 @@ export const inlineImages: SessionImages = {
   describe: async () => {},
   description: async () => undefined,
   clear: async () => {}
-}
-
-/** Removes every image under the prefix: a session's, or all of a user's. */
-export async function deleteImages(files: Files, prefix: string): Promise<void> {
-  const keys: string[] = []
-  for await (const file of files.listAll({ prefix: `${prefix}/` })) keys.push(file.key)
-  if (keys.length > 0) await files.delete(keys)
 }
 
 type ImagePart = { type: "image_url"; image_url: { url: string } }

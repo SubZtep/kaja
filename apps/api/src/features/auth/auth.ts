@@ -1,4 +1,4 @@
-import { deleteImages, userImagePrefix } from "@kaja/nasi"
+import { userImagePrefix } from "@kaja/nasi"
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { locales } from "@kaja/shared/locale"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
@@ -7,7 +7,7 @@ import { admin, bearer, captcha, deviceAuthorization, openAPI } from "better-aut
 import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
-import { files } from "../../core/files"
+import { objects } from "../../core/files"
 import { isRateLimitEnabled } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
@@ -164,9 +164,9 @@ export const auth = betterAuth({
       // The rows cascade from the user; their images in object storage don't, so they go here (self-service and admin removal alike).
       delete: {
         after: async user => {
-          await deleteImages(files, userImagePrefix(user.id)).catch(err =>
-            reportError("Failed to delete a removed user's images", err, { userId: user.id })
-          )
+          await objects
+            .deletePrefix(`${userImagePrefix(user.id)}/`)
+            .catch(err => reportError("Failed to delete a removed user's images", err, { userId: user.id }))
         }
       }
     }

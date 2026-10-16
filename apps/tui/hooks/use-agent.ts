@@ -32,8 +32,8 @@ export type TimelineEvent =
   | { type: "error"; text: string; category: ErrorCategory }
   /** A line from the app itself, e.g. that `/compact` found nothing to do. */
   | { type: "notice"; text: string }
-  /** A tool's image: `path` shows it (its stored file, or a data URL), `key` is its stored object, which a saved timeline keeps. */
-  | { type: "tool_image"; path: string; mimeType: string; key?: string }
+  /** A tool's image: `path` shows it (its stored file, a URL, or a data URL), `original` is what opening it opens; `key`/`originalKey` are the stored objects a saved timeline keeps. */
+  | { type: "tool_image"; path: string; mimeType: string; original?: string; key?: string; originalKey?: string }
   | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" }>
 
 /**

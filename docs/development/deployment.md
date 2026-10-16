@@ -82,8 +82,11 @@ saved before the recreate are gone with it.
 Session images, and the images tools return in cloud turns, go to a Hetzner Object Storage bucket, never
 to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzner.cloud/):
 
-1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Keep it **private**:
-   clients only ever get signed URLs that expire after an hour, and model providers get the bytes.
+1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Leave its visibility
+   private in the console: the API itself makes `images/` public-read on every boot (a bucket policy that allows
+   anonymous `GetObject` there and nothing else, so nobody can list it), and clients and Telegram get plain URLs.
+   An image's URL holds the user's and session's ids and the start of the image's hash, so it can't be guessed,
+   but anyone given one can open it.
 2. Under **Security → S3 credentials**, create a key pair.
 3. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
    and `STORAGE_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another

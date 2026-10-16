@@ -1,11 +1,10 @@
 export {
-  deleteImages,
-  filesSessionImages,
   IMAGE_REF_PREFIX,
   imageId,
   imageKey,
   imageRefId,
   inlineImages,
+  objectSessionImages,
   type SessionImage,
   type SessionImages,
   sessionImagePrefix,
@@ -14,6 +13,7 @@ export {
 } from "./images"
 export { createMemoryStore } from "./memory-store"
 export { forgetNotes, noteHeader } from "./notes"
+export { folderObjects, memoryObjects, type ObjectStore } from "./objects"
 export { requireStore } from "./require"
 export {
   type CallUpdate,

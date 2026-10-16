@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker"
 import { sessionImagePrefix } from "@kaja/nasi"
 import type { StoredConversation } from "@kaja/schema/store"
 import { pool } from "../../src/core/db"
-import { files } from "../../src/core/files"
+import { imageUrl, objects } from "../../src/core/files"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
 import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
@@ -170,7 +170,7 @@ describe("postgres store", () => {
   test("loading a session downloads no images: its messages keep their refs", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
-    const download = spyOn(files, "download")
+    const download = spyOn(objects, "get")
     try {
       expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
       expect(download).not.toHaveBeenCalled()
@@ -187,11 +187,14 @@ describe("postgres store", () => {
     expect(key).toStartWith(`${sessionImagePrefix(id, userId)}/`)
     const messages: Messages = [{ role: "user", content: [{ type: "image_url", image_url: { url: ref } }] }]
     expect(await store.createSession({ ...write(messages, { session: { id, messages } }), title: "t" })).toBe(id)
-    expect((await files.head(key!)).contentType).toBe("image/png")
+    // images/ is public-read: anyone with the URL gets it, with its type
+    const fetched = await fetch(imageUrl(key!))
+    expect(fetched.status).toBe(200)
+    expect(fetched.headers.get("content-type")).toBe("image/png")
     expect((await store.images(id).get(ref.slice("kaja-image:".length)))?.data).toEqual(new Uint8Array(data))
 
     await store.deleteSession(id)
-    expect(await files.exists(key!)).toBe(false)
+    expect(await objects.exists(key!)).toBe(false)
   })
 
   test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {

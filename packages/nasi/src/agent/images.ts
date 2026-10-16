@@ -24,8 +24,15 @@ export function sessionImagesFor(agent: Agent, session: Session): SessionImages 
   return agent.store && session.id ? agent.store.images(session.id) : inlineImages
 }
 
-/** An arriving image as stored: the ref its message holds (a data URL when inline), the object key hosts show it from, and its size. */
-export type ArrivedImage = { ref: string; key?: string; mimeType: string; width: number; height: number }
+/** An arriving image as stored: the ref its message holds (a data URL when inline), the object keys hosts show it from (`original`: what a viewer opens), and its size. */
+export type ArrivedImage = {
+  ref: string
+  key?: string
+  original?: string
+  mimeType: string
+  width: number
+  height: number
+}
 
 /** An image's parts in its message: its label (alt text, later its description) and the image itself. */
 export type ImageParts = [{ type: "text"; text: string }, { type: "image_url"; image_url: { url: string } }]

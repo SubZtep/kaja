@@ -1,12 +1,10 @@
 import { afterEach, expect, spyOn, test } from "bun:test"
-import { Files } from "files-sdk"
-import { memory } from "files-sdk/memory"
 import type { AbilityStore } from "../src/abilities/types"
 import { createSession } from "../src/agent/agent"
 import { NothingToApproveError } from "../src/agent/errors"
 import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
-import { createMemoryStore, IMAGE_REF_PREFIX, imageId } from "../src/store"
+import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
 import { TINY_PNG, TINY_PNG_BASE64 } from "./fixtures/images"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
@@ -426,9 +424,9 @@ test("an image is stored the moment it arrives: the session keeps its ref, the m
 })
 
 test("only images still in the window are fetched for a request; older ones aren't read at all", async () => {
-  const files = new Files({ adapter: memory() })
-  const store = createMemoryStore({ files })
-  const download = spyOn(files, "download")
+  const objects = memoryObjects()
+  const store = createMemoryStore({ objects })
+  const download = spyOn(objects, "get")
   const script = [{ content: "A cat." }, { content: "Yes." }, { content: "Sure." }]
   const first = await (await open(script, { store })).turnBuffered({ message: "look", images: [PHOTO] })
   // Stored as it arrived, so its own turn needn't read it back
@@ -444,13 +442,18 @@ test("only images still in the window are fetched for a request; older ones aren
 })
 
 test("a new session whose first turn fails leaves no images behind", async () => {
-  const files = new Files({ adapter: memory() })
-  const store = createMemoryStore({ files })
+  const objects = memoryObjects()
+  const kept = new Set<string>()
+  const put = objects.put
+  objects.put = async (key, data, type) => {
+    kept.add(key)
+    await put(key, data, type)
+  }
+  const store = createMemoryStore({ objects })
   const nasi = await open([], { store })
   await expect(nasi.turnBuffered({ message: "look", images: [PHOTO] })).rejects.toThrow("script exhausted")
-  const left: string[] = []
-  for await (const file of files.listAll({ prefix: "images/" })) left.push(file.key)
-  expect(left).toEqual([])
+  expect(kept.size).toBeGreaterThan(0)
+  for (const key of kept) expect(await objects.exists(key)).toBe(false)
   expect(await store.listSessions()).toEqual([])
 })
 

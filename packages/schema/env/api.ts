@@ -159,7 +159,7 @@ const apiEnvFields = z.object({
     .meta({ secret: true, section: "MCP Sandbox" }),
 
   STORAGE_BUCKET: trimmed
-    .describe("Object storage bucket for session and tool images")
+    .describe("Object storage bucket for session images (images/ is public-read; the API sets the policy)")
     .meta({ example: "kaja", devDefault: true, section: "Storage" }),
   STORAGE_REGION: trimmed
     .default("fsn1")
@@ -172,7 +172,7 @@ const apiEnvFields = z.object({
   STORAGE_PUBLIC_ENDPOINT: url
     .optional()
     .describe(
-      "STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000)"
+      "STORAGE_ENDPOINT as clients reach it, for image URLs; only when it differs (the compose API: storage:9000 vs localhost:9000)"
     )
     .meta({ section: "Storage" }),
   STORAGE_ACCESS_KEY_ID: trimmed

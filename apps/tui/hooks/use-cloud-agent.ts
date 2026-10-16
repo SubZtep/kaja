@@ -27,7 +27,7 @@ export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
   | { type: "notice"; text: string }
-  | { type: "tool_image"; path: string; mimeType: string }
+  | { type: "tool_image"; path: string; mimeType: string; original?: string }
   /** A shell command a call on this computer waits to run (only with the opted-in shell). */
   | { type: "confirm_command"; command: string; description: string }
   | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" | "client_tool_calls" }>
@@ -274,7 +274,12 @@ export function useCloudAgent({
         else if (event.type === "client_tool_calls") clientCalls = event.calls
         else if (event.type === "usage") handleUsage(event)
         else if (event.type === "tool_image")
-          handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
+          handleEvent({
+            type: "tool_image",
+            path: event.url,
+            mimeType: event.mimeType,
+            ...(event.original ? { original: event.original } : {})
+          })
         // Yolo answers it below, so there's no question to show
         else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
       }

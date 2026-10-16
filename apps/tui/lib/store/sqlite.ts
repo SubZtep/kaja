@@ -3,11 +3,11 @@ import { mkdirSync } from "node:fs"
 import { dirname, join } from "node:path"
 import {
   clearTelemetry,
-  deleteImages,
-  filesSessionImages,
+  folderObjects,
   joinConversation,
   type MessageRow,
   type NasiStore,
+  objectSessionImages,
   type PendingKind,
   type SessionWrite,
   sessionIdOf,
@@ -17,8 +17,6 @@ import {
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
-import { Files } from "files-sdk"
-import { fs } from "files-sdk/fs"
 import { log } from "../logger"
 
 function ownerKey(owner: string | null): string {
@@ -241,11 +239,16 @@ type MessageDbRow = {
   toolCallId: string | null
 }
 
-// A saved timeline keeps a stored tool image by its object key; the path it was shown from is worked out again on load.
+// A saved timeline keeps a stored tool image by its object keys; the paths it was shown and opened from are worked out again on load.
 function storedEvent(event: unknown): unknown {
-  const image = event as { type?: string; key?: string; mimeType?: string }
+  const image = event as { type?: string; key?: string; originalKey?: string; mimeType?: string }
   if (image.type !== "tool_image" || !image.key) return event
-  return { type: image.type, key: image.key, mimeType: image.mimeType }
+  return {
+    type: image.type,
+    key: image.key,
+    mimeType: image.mimeType,
+    ...(image.originalKey ? { originalKey: image.originalKey } : {})
+  }
 }
 
 /** The folder the session images are kept in, beside the database. */
@@ -255,14 +258,18 @@ export const imagesRoot = (dbPath: string) => join(dirname(dbPath), "files")
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
   const filesRoot = imagesRoot(dbPath)
-  const files = new Files({ adapter: fs({ root: filesRoot }) })
-  const sessionImages = (id: string) => filesSessionImages(files, sessionImagePrefix(id))
+  const objects = folderObjects(filesRoot)
+  const sessionImages = (id: string) => objectSessionImages(objects, sessionImagePrefix(id))
 
-  // The inverse of storedEvent: the key becomes the stored file's path, a plain file under the fs adapter's root.
+  // The inverse of storedEvent: the keys become the stored files' paths, plain files under the images folder.
   function loadedEvent(event: unknown): unknown {
-    const image = event as { type?: string; key?: string }
+    const image = event as { type?: string; key?: string; originalKey?: string }
     if (image.type !== "tool_image" || !image.key) return event
-    return { ...image, path: join(filesRoot, image.key) }
+    return {
+      ...image,
+      path: join(filesRoot, image.key),
+      ...(image.originalKey ? { original: join(filesRoot, image.originalKey) } : {})
+    }
   }
 
   function count(table: "messages" | "session_events", sessionId: string): number {
@@ -534,7 +541,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
     async deleteSession(id) {
       if (db.query("DELETE FROM sessions WHERE id = $id").run({ $id: id }).changes === 0) return false
-      await deleteImages(files, sessionImagePrefix(id))
+      await sessionImages(id).clear()
       return true
     },
 

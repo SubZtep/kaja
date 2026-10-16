@@ -80,13 +80,13 @@ declare module "bun" {
     GEO_API_URL?: string
     /** GEO_API_URL's X-API-Key; unset, sandboxes register without a location */
     GEO_API_KEY?: string
-    /** Object storage bucket for session and tool images */
+    /** Object storage bucket for session images (images/ is public-read; the API sets the policy) */
     STORAGE_BUCKET?: string
     /** Hetzner Object Storage location (fsn1, nbg1, hel1) */
     STORAGE_REGION?: string
     /** S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI) */
     STORAGE_ENDPOINT?: string
-    /** STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000) */
+    /** STORAGE_ENDPOINT as clients reach it, for image URLs; only when it differs (the compose API: storage:9000 vs localhost:9000) */
     STORAGE_PUBLIC_ENDPOINT?: string
     /** Object storage access key */
     STORAGE_ACCESS_KEY_ID?: string

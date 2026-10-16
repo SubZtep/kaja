@@ -105,7 +105,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   }
 })
 
-/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a signed URL (see {@link sseEvent}). */
+/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a public URL (see {@link sseEvent}). */
 const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   delta: "delta",
   reasoning: "reasoning",
@@ -122,10 +122,16 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   tool_image: "tool_image"
 }
 
-/** What the client gets for an event: as is, except a tool image, stored by now, which goes as a signed URL to its object (never the key itself). */
-async function sseEvent(event: FinalizedAgentEvent | AgentDelta): Promise<object> {
+/** What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL (and its original's, for a viewer to open). */
+function sseEvent(event: FinalizedAgentEvent | AgentDelta): object {
   if (event.type !== "tool_image") return event
-  return { type: "tool_image", mimeType: event.mimeType, url: event.key ? await imageUrl(event.key) : event.ref }
+  const { mimeType, key, original, ref } = event
+  return {
+    type: "tool_image",
+    mimeType,
+    url: key ? imageUrl(key) : ref,
+    ...(original ? { original: imageUrl(original) } : {})
+  }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */
@@ -159,7 +165,7 @@ nasiRoutes.post("/turn/stream", async c => {
         if (name)
           await stream.writeSSE({
             event: name,
-            data: JSON.stringify(await sseEvent(next.value))
+            data: JSON.stringify(sseEvent(next.value))
           })
         next = await gen.next()
       }
