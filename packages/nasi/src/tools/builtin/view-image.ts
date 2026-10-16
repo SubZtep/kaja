@@ -1,11 +1,8 @@
-import { mkdir } from "node:fs/promises"
-import { homedir, tmpdir } from "node:os"
+import { homedir } from "node:os"
 import { join } from "node:path"
-import { randomUUIDv7 } from "@kaja/shared/id"
 import { z } from "zod"
 import { type Tool, ToolError, tool } from "../../agent/agent"
-import { ImageError, type NormalizedImage, normalizeImage } from "../../images/normalize"
-import { getToolDeps } from "../deps"
+import { ImageError, normalizeImage } from "../../images/normalize"
 import { PathDeniedError, resolveWorkspacePath } from "../path-guard"
 
 // Bigger files aren't read at all: no photo or screenshot comes near it.
@@ -29,8 +26,8 @@ function resolved(path: string) {
  * secrets.toml or the conversation store, and refuses a file that isn't an image.
  *
  * @param args.path - Path to the image file.
- * @returns A {@link ToolResult} carrying a model-sized copy of the image; run() injects it as a vision content block in
- * a follow-up user message.
+ * @returns A {@link ToolResult} carrying the image, already model-sized (so its size is known before it's sent);
+ * run() stores it and injects it as a vision content block in a follow-up user message.
  */
 export const viewImageTool: Tool<{ path: string }> = {
   ...tool({
@@ -45,18 +42,13 @@ export const viewImageTool: Tool<{ path: string }> = {
       const source = Bun.file(where.path)
       if (!(await source.exists())) return `File not found: ${args.path}`
       if (source.size > MAX_SOURCE_BYTES) throw new ToolError("view_image", `Too large to view: ${args.path}`)
-      let image: NormalizedImage
       try {
-        image = await normalizeImage(new Uint8Array(await source.arrayBuffer()))
+        const image = await normalizeImage(new Uint8Array(await source.arrayBuffer()))
+        return { text: `Viewing image: ${args.path}`, images: [image] }
       } catch (error) {
         if (error instanceof ImageError) throw new ToolError("view_image", `${args.path}: ${error.message}`)
         throw error
       }
-      const dir = getToolDeps().tempDir ?? join(tmpdir(), "kaja-images")
-      await mkdir(dir, { recursive: true })
-      const path = join(dir, `${randomUUIDv7()}.${image.mimeType === "image/png" ? "png" : "jpg"}`)
-      await Bun.write(path, image.data)
-      return { text: `Viewing image: ${args.path}`, images: [{ path, mimeType: image.mimeType }] }
     }
   }),
   // The model's arguments, not yet checked: anything but a readable path outside the workspace goes on to execute.

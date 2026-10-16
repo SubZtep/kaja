@@ -2,7 +2,10 @@ import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import {
   compact,
+  dataUrlBytes,
   dropImages,
+  type FinalizedAgentEvent,
+  imageRefId,
   isImageRejection,
   personaAbilities,
   photoLabel,
@@ -28,6 +31,7 @@ import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
 import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
+import { timelineEvent } from "../agent/timeline"
 import { t } from "../i18n"
 import { log } from "../logger"
 import type { Persona } from "../personas/personas"
@@ -83,8 +87,12 @@ export type TelegramSender = {
     opts?: { replyMarkup?: InlineKeyboardLike }
   ): Promise<void>
   answerCallbackQuery(callbackQueryId: string, opts?: { text?: string }): Promise<void>
-  /** Sends a photo either from a local file (tool_image events) or a remote URL (display_image events). */
-  sendPhoto(chatId: number, photo: { path: string } | { url: string }, opts?: { caption?: string }): Promise<void>
+  /** Sends a photo: a tool's stored image (bytes), a local file (a reply's Markdown image) or a remote URL (display_image events). */
+  sendPhoto(
+    chatId: number,
+    photo: { data: Uint8Array } | { path: string } | { url: string },
+    opts?: { caption?: string }
+  ): Promise<void>
 }
 
 export type TelegramDriverConfig = {
@@ -233,12 +241,25 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   }
 
   /** Log-and-continue like editSafely: a failed photo upload shouldn't abort the turn's text stream. */
-  async function sendPhotoSafely(chatId: number, photo: { path: string } | { url: string }, caption?: string) {
+  async function sendPhotoSafely(
+    chatId: number,
+    photo: { data: Uint8Array } | { path: string } | { url: string },
+    caption?: string
+  ) {
     try {
       await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
     } catch (error) {
       log.warn("Telegram photo send failed", { error })
     }
+  }
+
+  // A tool image's bytes: from the session's store, or the data URL it stayed as without one.
+  async function toolImageBytes(state: UserState, ref: string): Promise<Uint8Array | undefined> {
+    const id = imageRefId(ref)
+    if (!id) return dataUrlBytes(ref)
+    const store = state.agent.store
+    if (!store || !state.session.id) return undefined
+    return (await store.images(state.session.id).get(id))?.data
   }
 
   async function sendConfirmCommand(chatId: number, state: UserState, event: { command: string; description: string }) {
@@ -316,7 +337,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     chatId: number,
     state: UserState,
     reply: Reply,
-    event: Exclude<TimelineEvent, { type: "user" | "error" }>
+    event: Exclude<FinalizedAgentEvent, { type: "usage" }>
   ): Promise<boolean> {
     if (event.type === "compacted") {
       await sender.sendMessage(chatId, compactedLine(event, t))
@@ -331,7 +352,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
 
     if (event.type === "tool_image") {
-      await sendPhotoSafely(chatId, { path: event.path })
+      const data = await toolImageBytes(state, event.ref)
+      if (data) await sendPhotoSafely(chatId, { data })
       return false
     }
 
@@ -411,7 +433,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
         if (event.type === "usage") continue
 
-        state.events.push(event)
+        state.events.push(timelineEvent(event))
 
         const done = await handleFinalizedEvent(chatId, state, reply, event)
         if (done) return

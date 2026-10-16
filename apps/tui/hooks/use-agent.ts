@@ -15,6 +15,7 @@ import {
 } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
+import { timelineEvent } from "../lib/agent/timeline"
 import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { peekStore } from "../lib/memory/store"
@@ -31,7 +32,9 @@ export type TimelineEvent =
   | { type: "error"; text: string; category: ErrorCategory }
   /** A line from the app itself, e.g. that `/compact` found nothing to do. */
   | { type: "notice"; text: string }
-  | Exclude<FinalizedAgentEvent, { type: "usage" }>
+  /** A tool's image: `path` shows it (its stored file, or a data URL), `key` is its stored object, which a saved timeline keeps. */
+  | { type: "tool_image"; path: string; mimeType: string; key?: string }
+  | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" }>
 
 /**
  * The message currently streaming in, accumulated from delta events. Cleared
@@ -205,7 +208,7 @@ export function useAgent(
     (event: Exclude<FinalizedAgentEvent, { type: "usage" | "delta" }>) => {
       if (event.type === "persona_switch") applyPersonaSwitch(event.personaId)
       setPartial(null)
-      pushEvent(event)
+      pushEvent(timelineEvent(event))
     },
     [applyPersonaSwitch, pushEvent]
   )

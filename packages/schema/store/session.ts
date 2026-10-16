@@ -37,6 +37,8 @@ export const SessionMessageSchema = z.discriminatedUnion("role", [
 
 /** The replayable conversation a store keeps: what nasi's `Session` holds apart from its unsaved telemetry. */
 export const StoredConversationSchema = z.object({
+  /** The session's own id (its row's), which its images are stored under. */
+  id: z.uuidv7().optional(),
   messages: z.array(SessionMessageSchema),
   pendingAskUserId: z.string().optional(),
   pendingRunCommandId: z.string().optional(),

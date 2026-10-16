@@ -11,6 +11,7 @@ import {
   renderSessionMarkdown,
   resolveTerminalSessionId
 } from "../../scripts/session"
+import { TINY_PNG_BASE64 } from "../fixtures/images"
 
 const dirs: string[] = []
 
@@ -65,7 +66,7 @@ test("list, prefix match, and dump cover the terminal session and leave secrets 
         { role: "user", content: "hi" },
         {
           role: "user",
-          content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }]
+          content: [{ type: "image_url", image_url: { url: `data:image/png;base64,${TINY_PNG_BASE64}` } }]
         },
         {
           role: "assistant",

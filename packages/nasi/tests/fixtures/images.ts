@@ -40,5 +40,8 @@ export function png(width: number, height: number, opts: { alpha?: number; noise
 export const jpeg = (width: number, height: number, opts: { noise?: boolean } = {}) =>
   new Bun.Image(png(width, height, opts)).jpeg({ quality: 90 }).bytes()
 
-/** A 1×1 PNG's base64, for results that only need a real image. */
-export const TINY_PNG_BASE64 = Buffer.from(png(1, 1)).toString("base64")
+/** A 1×1 PNG, for results that only need a real image (normalising leaves it as it is). */
+export const TINY_PNG = png(1, 1)
+
+/** {@link TINY_PNG} as base64. */
+export const TINY_PNG_BASE64 = Buffer.from(TINY_PNG).toString("base64")

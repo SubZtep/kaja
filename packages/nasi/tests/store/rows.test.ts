@@ -1,13 +1,5 @@
 import { expect, test } from "bun:test"
-import {
-  attachImages,
-  clearTelemetry,
-  detachImages,
-  IMAGE_REF_PREFIX,
-  imageRefs,
-  joinConversation,
-  splitConversation
-} from "../../src/store/rows"
+import { clearTelemetry, joinConversation, sessionIdOf, splitConversation } from "../../src/store/rows"
 
 const call = (id: string, name: string) => ({ id, type: "function", function: { name, arguments: `{"a":"${name}"}` } })
 
@@ -109,20 +101,10 @@ test("a session without telemetry has no calls, and clearing takes it off", () =
   expect(session).not.toHaveProperty("telemetry")
 })
 
-test("inline images leave the parts as references, and come back from them", () => {
-  const png = { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }
-  const linked = { type: "image_url", image_url: { url: "https://example.com/a.png" } }
-  const { parts, images } = detachImages([png, { type: "text", text: "hi" }, linked, png])
-  expect(images).toHaveLength(2)
-  expect(images[0]!.hash).toBe(images[1]!.hash)
-  expect(images[0]!.mimeType).toBe("image/png")
-  const ref = (parts![0] as typeof png).image_url.url
-  expect(ref).toStartWith(IMAGE_REF_PREFIX)
-  expect(parts![2]).toEqual(linked)
-  expect(imageRefs(parts)).toEqual([images[0]!.hash, images[0]!.hash])
-  expect(imageRefs([linked])).toEqual([])
-
-  const stored = new Map(images.map(image => [image.hash, image]))
-  expect(attachImages(parts, stored)).toEqual([png, { type: "text", text: "hi" }, linked, png])
-  expect(attachImages(parts, new Map())![0]).toEqual({ type: "text", text: "[an image that is no longer stored]" })
+test("a session saves under the id it was created with; one built by hand gets a new one", () => {
+  const id = Bun.randomUUIDv7()
+  expect(sessionIdOf({ id, messages: [] })).toBe(id)
+  expect(sessionIdOf({ messages: [] })).toMatch(/^[0-9a-f-]{36}$/)
+  // The id isn't part of the rows: the session row is keyed by it
+  expect(splitConversation({ id, messages })).toEqual(splitConversation({ messages }))
 })

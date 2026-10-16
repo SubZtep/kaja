@@ -4,7 +4,7 @@ import { userImagePrefix } from "@kaja/nasi"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { files, toolImagePrefix } from "../../src/core/files"
+import { files } from "../../src/core/files"
 import { signUpAndSignIn, verifyEmail } from "./helpers"
 
 describe("authentication flow", () => {
@@ -98,8 +98,8 @@ describe("authentication flow", () => {
       const doomed = faker.internet.email().toLowerCase()
       const token = await signUpAndSignIn(doomed, password, "")
       const { rows } = await pool.query('SELECT id FROM "user" WHERE email = $1', [doomed])
-      // Their images in object storage go with them: a session's and a leftover tool image
-      const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${toolImagePrefix(rows[0].id)}/def`]
+      // Their images in object storage go with them: a session's, and its original beside it
+      const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${userImagePrefix(rows[0].id)}/session/abc.orig`]
       for (const key of keys) await files.upload(key, new Uint8Array([1]), { contentType: "image/png" })
       const res = await app.request("/auth/delete-user", {
         method: "POST",

@@ -1,12 +1,14 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, expect, spyOn, test } from "bun:test"
+import { Files } from "files-sdk"
+import { memory } from "files-sdk/memory"
 import type { AbilityStore } from "../src/abilities/types"
 import { createSession } from "../src/agent/agent"
 import { NothingToApproveError } from "../src/agent/errors"
 import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
-import { createMemoryStore } from "../src/store"
+import { createMemoryStore, IMAGE_REF_PREFIX, imageId } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
-import { TINY_PNG_BASE64 } from "./fixtures/images"
+import { TINY_PNG, TINY_PNG_BASE64 } from "./fixtures/images"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
@@ -393,6 +395,54 @@ test("a turn's images reach the model with its text, and history shows them as a
     { role: "tool", tool_call_id: "call_1", content: "" },
     { role: "user", content: [{ type: "image_url", image_url: { url: PHOTO } }] }
   ])
+})
+
+test("an image is stored the moment it arrives: the session keeps its ref, the model gets its bytes", async () => {
+  const sent: SentMessage[][] = []
+  const store = createMemoryStore()
+  const done = await (await open([{ content: "A cat." }], { store }, sent)).turnBuffered({
+    message: "what is this?",
+    images: [PHOTO]
+  })
+  const id = imageId(TINY_PNG)
+  const row = await store.loadSession(done.session)
+  expect(row!.session.id).toBe(done.session)
+  const asked = row!.session.messages.find(message => message.role === "user")!
+  expect(asked.content).toEqual([
+    { type: "text", text: "what is this?" },
+    { type: "image_url", image_url: { url: `${IMAGE_REF_PREFIX}${id}` } }
+  ])
+  expect((await store.images(done.session).get(id))?.mimeType).toBe("image/png")
+  expect(JSON.stringify(sent[0])).toContain(PHOTO)
+})
+
+test("only images still in the window are fetched for a request; older ones aren't read at all", async () => {
+  const files = new Files({ adapter: memory() })
+  const store = createMemoryStore({ files })
+  const download = spyOn(files, "download")
+  const script = [{ content: "A cat." }, { content: "Yes." }, { content: "Sure." }]
+  const first = await (await open(script, { store })).turnBuffered({ message: "look", images: [PHOTO] })
+  // Stored as it arrived, so its own turn needn't read it back
+  expect(download).toHaveBeenCalledTimes(0)
+  const sent: SentMessage[][] = []
+  await (await open(script.slice(1), { store }, sent)).turnBuffered({ session: first.session, message: "a cat?" })
+  expect(download).toHaveBeenCalledTimes(1)
+  expect(JSON.stringify(sent[0])).toContain(PHOTO)
+  await (await open(script.slice(2), { store }, sent)).turnBuffered({ session: first.session, message: "sure?" })
+  expect(download).toHaveBeenCalledTimes(1)
+  expect(JSON.stringify(sent[1])).not.toContain("data:image")
+  download.mockRestore()
+})
+
+test("a new session whose first turn fails leaves no images behind", async () => {
+  const files = new Files({ adapter: memory() })
+  const store = createMemoryStore({ files })
+  const nasi = await open([], { store })
+  await expect(nasi.turnBuffered({ message: "look", images: [PHOTO] })).rejects.toThrow("script exhausted")
+  const left: string[] = []
+  for await (const file of files.listAll({ prefix: "images/" })) left.push(file.key)
+  expect(left).toEqual([])
+  expect(await store.listSessions()).toEqual([])
 })
 
 test("dropImages leaves a note where a failed turn's images were", async () => {

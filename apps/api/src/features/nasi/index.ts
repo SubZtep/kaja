@@ -19,6 +19,7 @@ import {
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
+import { imageUrl } from "../../core/files"
 import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { abilityService } from "../../services"
@@ -43,7 +44,6 @@ import {
 } from "./chat"
 import { createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
-import { toolImageUrl } from "./tool-image"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
 
@@ -122,15 +122,10 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   tool_image: "tool_image"
 }
 
-/** What the client gets for an event: as is, except a tool image, whose server-side file goes to storage and becomes a signed URL (the file is gone after the turn). */
-async function sseEvent(
-  event: FinalizedAgentEvent | AgentDelta,
-  userId: string,
-  sessionId: string | undefined
-): Promise<object> {
+/** What the client gets for an event: as is, except a tool image, stored by now, which goes as a signed URL to its object (never the key itself). */
+async function sseEvent(event: FinalizedAgentEvent | AgentDelta): Promise<object> {
   if (event.type !== "tool_image") return event
-  const { path, mimeType } = event
-  return { type: "tool_image", mimeType, url: await toolImageUrl(userId, sessionId, path, mimeType) }
+  return { type: "tool_image", mimeType: event.mimeType, url: event.key ? await imageUrl(event.key) : event.ref }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */
@@ -164,7 +159,7 @@ nasiRoutes.post("/turn/stream", async c => {
         if (name)
           await stream.writeSSE({
             event: name,
-            data: JSON.stringify(await sseEvent(next.value, user.id, body.session))
+            data: JSON.stringify(await sseEvent(next.value))
           })
         next = await gen.next()
       }

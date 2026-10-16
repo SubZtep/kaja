@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import {
   categorizeError,
+  dataUrlBytes,
   type FinalizedAgentEvent,
   isImageRejection,
   type NasiTurnInput,
@@ -12,12 +13,12 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import { commandArgument, compactedLine, escapeHtml, isCommand, openReply, type Reply } from "@kaja/shared/telegram"
 import { withQuestion } from "@kaja/shared/text"
 import { pool } from "../../core/db"
+import { files, imageUrl } from "../../core/files"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
-import { toolImageUrl } from "../nasi/tool-image"
 import { type BotLanguage, botLanguage } from "./language"
 
 const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
@@ -77,22 +78,21 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** A tool's image file (only there during the turn) as a photo: by its signed storage URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
-  async function sendToolImage(
-    chatId: number,
-    userId: string,
-    sessionId: string | undefined,
-    path: string,
-    mimeType: string
-  ) {
-    try {
-      const url = await toolImageUrl(userId, sessionId, path, mimeType)
-      if (isPublicHttpUrl(url)) return await sender.sendPhoto(chatId, url)
-    } catch (error) {
-      console.warn("Telegram tool image by URL failed, sending the bytes", { error })
+  /** A tool's image as a photo: by its signed storage URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
+  async function sendToolImage(chatId: number, image: { ref: string; key?: string }) {
+    if (image.key) {
+      try {
+        const url = await imageUrl(image.key)
+        if (isPublicHttpUrl(url)) return await sender.sendPhoto(chatId, url)
+      } catch (error) {
+        console.warn("Telegram tool image by URL failed, sending the bytes", { error })
+      }
     }
     try {
-      await sender.sendPhoto(chatId, new Uint8Array(await Bun.file(path).arrayBuffer()))
+      const bytes = image.key
+        ? new Uint8Array(await (await files.download(image.key)).arrayBuffer())
+        : dataUrlBytes(image.ref)
+      if (bytes) await sender.sendPhoto(chatId, bytes)
     } catch (error) {
       console.warn("Telegram tool image send failed", { error })
     }
@@ -126,7 +126,6 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   async function handleFinalizedEvent(
     reply: Reply,
     chatId: number,
-    turn: { userId: string; sessionId: string | undefined },
     event: FinalizedAgentEvent,
     language: BotLanguage
   ): Promise<boolean> {
@@ -143,8 +142,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return true
     }
     if (event.type === "compacted") await sender.sendMessage(chatId, compactedLine(event, language.t))
-    else if (event.type === "tool_image")
-      await sendToolImage(chatId, turn.userId, turn.sessionId, event.path, event.mimeType)
+    else if (event.type === "tool_image") await sendToolImage(chatId, event)
     return false
   }
 
@@ -235,13 +233,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
             continue
           }
           if (event.type === "usage") continue
-          ended = await handleFinalizedEvent(
-            reply,
-            chatId,
-            { userId: ownerUserId, sessionId: resumeRow?.id },
-            event,
-            language
-          )
+          ended = await handleFinalizedEvent(reply, chatId, event, language)
         }
       } finally {
         await nasi.close()

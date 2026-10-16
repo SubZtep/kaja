@@ -1,6 +1,7 @@
 import type OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { DEFAULT_CONTEXT_WINDOW } from "../models/context-window"
+import { IMAGE_REF_PREFIX } from "../store/images"
 import type { Agent, Session } from "./agent"
 import { msSince, recordModelCall } from "./telemetry"
 import type { ModelCallUsage } from "./tools"
@@ -26,10 +27,12 @@ export type Compaction = { beforeTokens: number; afterTokens: number; dropped: b
 /** How many of the latest user prompts keep their images in what the model is sent; older images become a note. */
 const KEEP_IMAGE_TURNS = 2
 
-// Serializes a message for counting, with inline images as a flat cost instead of their base64.
+// Serializes a message for counting, with each image (inline, or a stored ref) as a flat cost instead of its URL.
 function sizeOf(value: unknown): number {
-  return JSON.stringify(value, (_key, v) =>
-    typeof v === "string" && v.startsWith("data:") ? "x".repeat(1000 * CHARS_PER_TOKEN) : v
+  return JSON.stringify(value, (key, v) =>
+    key === "url" && typeof v === "string" && (v.startsWith("data:") || v.startsWith(IMAGE_REF_PREFIX))
+      ? "x".repeat(1000 * CHARS_PER_TOKEN)
+      : v
   ).length
 }
 

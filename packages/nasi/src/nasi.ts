@@ -1,23 +1,16 @@
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import { sessionTitle } from "@kaja/shared/text"
 import type OpenAI from "openai"
-import {
-  answerClientCalls,
-  clientToolGroups,
-  type NasiClient,
-  normalizeClientResults,
-  withClientAbilities
-} from "./abilities/client"
+import { answerClientCalls, clientToolGroups, type NasiClient, withClientAbilities } from "./abilities/client"
 import { loadAbilities } from "./abilities/load"
 import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
+import { storeImage } from "./agent/images"
+
 import { samplingOf } from "./agent/persona"
 import { syncPersonaTools } from "./agent/persona-tools"
 import { compact, run } from "./agent/run"
@@ -28,6 +21,7 @@ import { createGuardedFetch, type FetchLike } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
+import { warn } from "./warn"
 
 export type NasiOpenOptions = {
   store: NasiStore
@@ -242,9 +236,6 @@ export class Nasi {
           clientSkills: client && new Set(client.skills.map(skill => skill.name))
         })
       : undefined
-    // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
-    const imageDir =
-      !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
@@ -253,13 +244,11 @@ export class Nasi {
       mcpAbilities: abilities?.mcp,
       lazyMcpAbilities: true,
       mcpFetch: name => withSandbox(createGuardedFetch({ send: opts.egress?.(name) }), opts.mcpSandbox),
-      mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })
     const close = async () => {
       await closeTools()
       await opts.mcpSandbox?.close?.()
-      if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
     return new Nasi(opts, tools, close, ensureAbilities)
   }
@@ -318,9 +307,13 @@ export class Nasi {
    * Calls waiting on the client are answered with its results (or as gone); with no message, the loop
    * carries on from them.
    */
-  private async promptFor(session: Session, input: NasiTurnInput): Promise<{ prompt?: string; images?: Uint8Array[] }> {
+  private async promptFor(
+    agent: Agent,
+    session: Session,
+    input: NasiTurnInput
+  ): Promise<{ prompt?: string; images?: Uint8Array[] }> {
     if (session.pendingClientCalls?.length) {
-      answerClientCalls(session, await normalizeClientResults(input.toolResults))
+      await answerClientCalls(session, input.toolResults, bytes => storeImage(agent, session, bytes))
       if (input.message === undefined) return {}
     }
     const pendingId = session.pendingToolApprovalId
@@ -392,16 +385,26 @@ export class Nasi {
     const loaded = await this.loadTurn(input)
     // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
     await syncPersonaTools(loaded.agent)
-    const { prompt, images = [] } = await this.promptFor(loaded.session, input)
+    const { prompt, images = [] } = await this.promptFor(loaded.agent, loaded.session, input)
 
     const turnEvents: AgentEvent[] = []
     const allImages = [...(input.images ?? []), ...images]
-    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, allImages)) {
-      turnEvents.push(event)
-      yield event
+    let saved = false
+    try {
+      for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, allImages)) {
+        turnEvents.push(event)
+        yield event
+      }
+      const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
+      saved = true
+      return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
+    } finally {
+      // A new session that was never saved leaves no images behind (a saved one's go when it's deleted).
+      if (!saved && !loaded.sessionId && loaded.session.id)
+        await this.opts.store
+          .images(loaded.session.id)
+          .clear()
+          .catch(error => warn("An unsaved session's images couldn't be removed", { error }))
     }
-
-    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
-    return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
   }
 }

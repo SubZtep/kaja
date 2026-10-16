@@ -231,6 +231,8 @@ export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallSt
 
 /** Conversation state threaded through repeated {@link run} calls. */
 export type Session = {
+  /** Its id from the start, so images can be stored under it before the first save (unset: a session built by hand, whose images stay inline). */
+  id?: string
   messages: import("openai/resources/chat/completions").ChatCompletionMessageParam[]
   telemetry?: SessionTelemetry
   pendingAskUserId?: string
@@ -248,7 +250,7 @@ export type Session = {
 }
 
 export function createSession(): Session {
-  return { messages: [] }
+  return { id: Bun.randomUUIDv7(), messages: [] }
 }
 
 export type AgentDelta = {
@@ -262,7 +264,8 @@ export type AgentEvent =
   | { type: "reasoning"; text: string }
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
-  | { type: "tool_image"; path: string; mimeType: string }
+  /** A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the object hosts show it from. */
+  | { type: "tool_image"; ref: string; key?: string; mimeType: string }
   | { type: "display_image"; url: string; alt: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }

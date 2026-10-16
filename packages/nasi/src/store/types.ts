@@ -1,4 +1,5 @@
 import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
+import type { SessionImages } from "./images"
 
 export type DatasetAnswer = {
   field: string
@@ -17,12 +18,15 @@ export type SessionWrite = {
 
 /** Persistence for sessions, memory notes, and dataset answers. Hosts inject an implementation. */
 export type NasiStore = {
+  /** Saves a new session under its own id (`Session.id`, see `sessionIdOf`) and returns it. */
   createSession(data: SessionWrite & { title: string }): Promise<string>
   updateSession(id: string, data: SessionWrite): Promise<void>
   loadSession(id: string): Promise<PersistedSession | undefined>
   loadLatestSession(owner: string | null): Promise<PersistedSession | undefined>
   deleteSession(id: string): Promise<boolean>
   listSessions(): Promise<SessionMeta[]>
+  /** Where a session's images are kept, from the moment they arrive (the session needn't be saved yet). */
+  images(sessionId: string): SessionImages
   loadPromptHistory(limit?: number): Promise<string[]>
 
   loadMemory(owner: string | null): Promise<MemoryStore>

@@ -107,7 +107,7 @@ export async function checkMcpAbilityKey(
   const sandboxed = ability.transport === "stdio" && opts.sandbox
   const target = sandboxed ? sandboxedMcpTarget(ability) : mcpAbilityTarget(ability, apiKey)
   const timeoutMs = opts.timeoutMs ?? CHECK_TIMEOUT_MS
-  const pending = connectMcpServer(target.server, "", {
+  const pending = connectMcpServer(target.server, {
     transport: target.transport === "sse" ? "sse" : "http",
     fetch: sandboxed ? opts.sandbox!.fetch : opts.fetch,
     images: false

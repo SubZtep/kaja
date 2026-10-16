@@ -11,7 +11,7 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 Kaja is a TypeScript monorepo built with Bun:
 
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
-- **Images**: session images are never in a database: `@kaja/nasi` store helpers (`saveImages`/`loadImages`/`deleteImages`) put them in files-sdk storage under a per-session prefix (API: Hetzner Object Storage at `images/<userId>/<sessionId>/`; TUI: the fs adapter in `files/` beside the SQLite file). Cloud tool images reach clients as signed URLs from `tool-images/<userId>/`
+- **Images**: never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)`, files-sdk storage under a per-session prefix: API Hetzner Object Storage at `images/<userId>/<sessionId>/`, TUI the fs adapter in `files/` beside the SQLite file; the untouched original beside it as `<id>.orig`, for debugging only). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. Cloud clients get signed URLs to the stored object
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)

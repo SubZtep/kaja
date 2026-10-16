@@ -344,3 +344,17 @@ test("an overflow that survives the retry still reaches the host as a model prov
   expect(error).toBeInstanceOf(ModelUnavailableError)
   expect(rounds).toHaveLength(2)
 })
+
+test("a stored image's ref costs what an inline image does, and text that only mentions one costs its length", () => {
+  const inline = {
+    role: "user" as const,
+    content: [{ type: "image_url" as const, image_url: { url: "data:image/png;base64,AAAA" } }]
+  }
+  const stored = {
+    role: "user" as const,
+    content: [{ type: "image_url" as const, image_url: { url: "kaja-image:0123456789abcdef" } }]
+  }
+  const mention = { role: "user" as const, content: "see kaja-image:0123456789abcdef" }
+  expect(estimateTokens([stored])).toBe(estimateTokens([inline]))
+  expect(estimateTokens([mention])).toBeLessThan(50)
+})

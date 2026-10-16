@@ -86,7 +86,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
         await withRateLimitRetry(() =>
           bot.api.sendPhoto(
             chatId,
-            "path" in photo ? new InputFile(photo.path) : photo.url,
+            "data" in photo ? new InputFile(photo.data) : "path" in photo ? new InputFile(photo.path) : photo.url,
             opts?.caption ? { caption: opts.caption } : undefined
           )
         )

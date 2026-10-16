@@ -56,8 +56,6 @@ export type CreateToolsOptions = {
   mcpConnectTimeoutMs?: number
   /** Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities don't connect without it. Locally, only sandboxed abilities use it. */
   mcpFetch?: (ability: string) => FetchLike
-  /** Cloud only: where MCP image results (screenshots) are saved for the model to see; unset drops them. Kept apart from `tempDir`, which sets the process-wide tool deps. */
-  mcpImageDir?: string
   /** Local only: where files in a persona's backed-up roots are copied before an MCP server writes them; unset turns backups off. */
   backupDir?: string
 }
@@ -144,13 +142,9 @@ type McpTarget = {
 }
 
 /** Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed rather than left running. */
-async function connectWithTimeout(
-  target: McpTarget,
-  tempDir: string,
-  defaultTimeoutMs: number
-): Promise<McpConnection> {
+async function connectWithTimeout(target: McpTarget, defaultTimeoutMs: number): Promise<McpConnection> {
   const timeoutMs = target.timeoutMs ?? defaultTimeoutMs
-  const pending = connectMcpServer(target.server, tempDir, target.opts)
+  const pending = connectMcpServer(target.server, target.opts)
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`no answer in ${Math.round(timeoutMs / 1000)} s`)), timeoutMs)
@@ -171,8 +165,8 @@ async function connectWithTimeout(
 }
 
 /** Every server at once, so one slow or offline server can't hold up the others (or startup) past the timeout. */
-function connectMcpServers(targets: McpTarget[], tempDir: string, timeoutMs: number): Promise<McpConnection[]> {
-  return Promise.all(targets.map(target => connectWithTimeout(target, tempDir, timeoutMs)))
+function connectMcpServers(targets: McpTarget[], timeoutMs: number): Promise<McpConnection[]> {
+  return Promise.all(targets.map(target => connectWithTimeout(target, timeoutMs)))
 }
 
 // list_backups/restore_backup go with the first server some persona backs up (in practice the one filesystem server).
@@ -221,14 +215,12 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   ]
 
   const official = local ? builtin : builtin.filter(t => CLOUD_SAFE.has(toolName(t)))
-  const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   // The cloud never runs a command on the server (the sandbox runs stdio ones behind a url), and never connects without the guarded fetch.
   const cloudAbilities = opts.mcpFetch ? (opts.mcpAbilities ?? []).filter(target => "url" in target.server) : []
   const abilities = local ? (opts.mcpAbilities ?? []) : cloudAbilities
   const abilityIds = new Set(abilities.map(target => `ability:${target.name}`))
   const cloudOpts: McpConnectOptions = {
-    images: opts.mcpImageDir !== undefined,
     maxImageBytes: CLOUD_MCP_MAX_IMAGE_BYTES,
     maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS
   }
@@ -274,15 +266,12 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     }
   }
   const backupGroup = backupToolGroup(mcpTargets, backupDir, rootsOf)
-  // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
-  const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
   // One connection per target, started at most once, so callers asking for the same ability at once share it.
   const connecting = new Map<string, Promise<McpConnection>>()
   const connect = async (targets: McpTarget[]): Promise<void> => {
-    if (mcpImagesDir === undefined) return
     const fresh = targets.filter(target => !connecting.has(target.id))
-    const started = connectMcpServers(fresh, mcpImagesDir, connectTimeoutMs)
+    const started = connectMcpServers(fresh, connectTimeoutMs)
     fresh.forEach((target, index) =>
       connecting.set(
         target.id,

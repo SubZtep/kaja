@@ -3,7 +3,7 @@ import type { Session } from "../agent/agent"
 import { recordCall } from "../agent/telemetry"
 import { type Tool, tool } from "../agent/tools"
 import { ImageError, normalizeImage } from "../images/normalize"
-import { withImageNote } from "../images/parts"
+import { imageDataUrl, withImageNote } from "../images/parts"
 import type { ToolGroup } from "../tools/registry"
 import type { AbilityStore } from "./types"
 
@@ -70,48 +70,45 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
   }
 }
 
-/**
- * The client's results with their images normalised here too (the client is untrusted: what the bytes are decides, not
- * the type it named); an image that can't be used leaves a note in its result's text instead.
- */
-export async function normalizeClientResults(results: NasiToolResult[] = []): Promise<NasiToolResult[]> {
-  return Promise.all(
-    results.map(async result => {
-      if (!result.images?.length) return result
-      const refused: string[] = []
-      const images: NonNullable<NasiToolResult["images"]> = []
-      for (const image of result.images) {
-        try {
-          const normalized = await normalizeImage(Buffer.from(image.data, "base64"))
-          images.push({ data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType })
-        } catch (error) {
-          if (!(error instanceof ImageError)) throw error
-          refused.push(error.message)
-        }
-      }
-      return { ...result, text: withImageNote(result.text, refused), images }
-    })
-  )
+/** Keeps one of the client's images: its ref, or why it can't be used (see `storeImage`). */
+export type KeepImage = (bytes: Uint8Array) => Promise<{ ref: string } | { error: string }>
+
+// Without a store the image stays inline, normalised like any other.
+const keepInline: KeepImage = async bytes => {
+  try {
+    return { ref: imageDataUrl(await normalizeImage(bytes)) }
+  } catch (error) {
+    if (error instanceof ImageError) return { error: error.message }
+    throw error
+  }
 }
 
 /**
  * Answers the calls the session waits on with the client's results, in the order the model made them; a call without
- * one gets {@link CLIENT_GONE}. Images follow as one user message, since a tool message can't carry them. Each call's
- * status is recorded as the client reports it (a missing one as skipped).
+ * one gets {@link CLIENT_GONE}. Images (normalised and kept here too: the client is untrusted, so the bytes decide what
+ * they are) follow as one user message, since a tool message can't carry them; one that can't be used leaves a note in
+ * its call's text. Each call's status is recorded as the client reports it (a missing one as skipped).
  */
-export function answerClientCalls(session: Session, results: NasiToolResult[] = []): void {
+export async function answerClientCalls(
+  session: Session,
+  results: NasiToolResult[] = [],
+  keep: KeepImage = keepInline
+): Promise<void> {
   const pending = session.pendingClientCalls
   if (!pending?.length) return
   const byId = new Map(results.map(result => [result.id, result]))
-  const images: string[] = []
+  const refs: string[] = []
   for (const id of pending) {
     const result = byId.get(id)
-    session.messages.push({ role: "tool", tool_call_id: id, content: result?.text ?? CLIENT_GONE })
+    const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"))))
+    const refused = kept.flatMap(image => ("error" in image ? [image.error] : []))
+    const text = result ? withImageNote(result.text, refused) : CLIENT_GONE
+    session.messages.push({ role: "tool", tool_call_id: id, content: text })
     const status = result ? (result.status ?? "ok") : "skipped"
     recordCall(session, id, status === "declined" ? { status, approval: "declined" } : { status })
-    for (const image of result?.images ?? []) images.push(`data:${image.mimeType};base64,${image.data}`)
+    refs.push(...kept.flatMap(image => ("ref" in image ? [image.ref] : [])))
   }
-  if (images.length)
-    session.messages.push({ role: "user", content: images.map(url => ({ type: "image_url", image_url: { url } })) })
+  if (refs.length)
+    session.messages.push({ role: "user", content: refs.map(url => ({ type: "image_url", image_url: { url } })) })
   session.pendingClientCalls = undefined
 }

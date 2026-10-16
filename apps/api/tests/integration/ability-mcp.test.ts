@@ -299,7 +299,9 @@ describe("MCP servers in the cloud", () => {
       const image = (await res.text()).split("\n\n").find(block => block.startsWith("event: tool_image"))
       const data = JSON.parse(image!.slice(image!.indexOf("data:") + 5))
       expect(data).toMatchObject({ type: "tool_image", mimeType: "image/png" })
-      // The screenshot went to object storage; the client gets a signed URL to it
+      // The screenshot went to object storage with its session's images; the client gets a signed URL to it
+      const { user: owner } = await (await app.request("/auth/get-session", { headers: auth() })).json()
+      expect(new URL(data.url).pathname).toContain(`/images/${owner.id}/`)
       const fetched = await fetch(data.url)
       expect(fetched.ok).toBe(true)
       expect(Buffer.from(await fetched.arrayBuffer()).toString("base64")).toStartWith("iVBOR")

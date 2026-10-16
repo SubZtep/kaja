@@ -120,7 +120,7 @@ function fakeSender() {
   const answered: { callbackQueryId: string; text?: string }[] = []
   const photos: {
     chatId: number
-    photo: { path: string } | { url: string }
+    photo: { data: Uint8Array } | { path: string } | { url: string }
     caption?: string
   }[] = []
   const sender: TelegramSender = {
@@ -171,15 +171,13 @@ test("first message from a user creates a session and finalizes the reply", asyn
 })
 
 test("tool_image and display_image events are delivered as photos", async () => {
-  const imagePath = join(tmpdir(), "kaja-test-telegram-photo.png")
-  writeFileSync(imagePath, TINY_PNG)
   const imageTool = tool<Record<string, never>>({
     name: "make_picture",
     description: "test tool that returns images",
     parameters: { type: "object", properties: {} },
     execute: async () => ({
       text: "made a picture",
-      images: [{ path: imagePath, mimeType: "image/png" }],
+      images: [{ data: TINY_PNG, mimeType: "image/png" }],
       displayImage: { url: "https://example.com/pic.png", alt: "a preview" }
     })
   })
@@ -207,7 +205,8 @@ test("tool_image and display_image events are delivered as photos", async () => 
   expect(photos).toHaveLength(2)
   expect(photos[0]!.photo).toEqual({ url: "https://example.com/pic.png" })
   expect(photos[0]!.caption).toBe("a preview")
-  expect(photos[1]!.photo).toEqual({ path: imagePath })
+  // The stored copy, read back from the session's store
+  expect(photos[1]!.photo).toEqual({ data: new Uint8Array(TINY_PNG) })
   expect(edited.at(-1)!.text).toBe("Here is your picture.")
 })
 

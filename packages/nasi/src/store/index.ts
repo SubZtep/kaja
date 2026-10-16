@@ -1,21 +1,29 @@
-export { deleteImages, imageKey, loadImages, saveImages, sessionImagePrefix, userImagePrefix } from "./images"
+export {
+  deleteImages,
+  filesSessionImages,
+  IMAGE_REF_PREFIX,
+  imageId,
+  imageKey,
+  imageRefId,
+  inlineImages,
+  type SessionImage,
+  type SessionImages,
+  sessionImagePrefix,
+  storeInlineImages,
+  userImagePrefix
+} from "./images"
 export { createMemoryStore } from "./memory-store"
 export { forgetNotes, noteHeader } from "./notes"
 export { requireStore } from "./require"
 export {
-  attachImages,
   type CallUpdate,
   type ConversationRows,
   clearTelemetry,
-  detachImages,
-  IMAGE_REF_PREFIX,
-  imageHash,
-  imageRefs,
   joinConversation,
   type MessageRow,
   type PendingKind,
   type StepRow,
-  type StoredImage,
+  sessionIdOf,
   splitConversation,
   type ToolCallRow
 } from "./rows"

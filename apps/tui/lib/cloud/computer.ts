@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises"
-import { basename } from "node:path"
 import type { AbilityStore, Tool } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import {
@@ -188,18 +186,18 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
   }
 }
 
-// A tool's image files, made model-sized here (the turn's request has a size limit); one that can't be read is named in `refused`.
-async function normalizedImages(files: { path: string }[]) {
+// A tool's images, made model-sized here (the turn's request has a size limit); one that can't be used is named in `refused`.
+async function normalizedImages(found: { data: Uint8Array }[]) {
   const { ImageError, normalizeImage } = await import("@kaja/nasi")
   const images: NonNullable<NasiToolResult["images"]> = []
   const refused: string[] = []
-  for (const image of files) {
+  for (const image of found) {
     try {
-      const normalized = await normalizeImage(new Uint8Array(await readFile(image.path)))
+      const normalized = await normalizeImage(image.data)
       images.push({ data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType })
     } catch (error) {
       if (!(error instanceof ImageError)) throw error
-      refused.push(`${basename(image.path)}: ${error.message}`)
+      refused.push(error.message)
     }
   }
   return { images, refused }

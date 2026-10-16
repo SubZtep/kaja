@@ -1,8 +1,9 @@
 import { afterEach, expect, test } from "bun:test"
-import { readdir, rm } from "node:fs/promises"
+import { readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { StoredConversation } from "@kaja/schema/store"
+import { TINY_PNG, TINY_PNG_BASE64 } from "../../fixtures/images"
 
 // XDG_CONFIG_HOME is isolated too, since memory-store.ts can write
 // config.memory.dbPath back into settings.toml on first successful open.
@@ -108,43 +109,49 @@ function count(
   return (db.query(sql).get(id) as { n: number }).n
 }
 
-test("an inline image is stored once as a file beside the database, the message keeps a reference, and it loads back", async () => {
-  const image = { type: "image_url" as const, image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } }
+test("a session's images are files beside the database: its messages keep their refs, and deleting it removes them", async () => {
+  const { getStore, peekStorePath } = await import("../../../lib/memory/store")
+  const id = Bun.randomUUIDv7()
+  const { ref } = await (await getStore()).images(id).put({ data: TINY_PNG, mimeType: "image/png" })
+  const image = { type: "image_url" as const, image_url: { url: ref } }
   const messages: Messages = [
     { role: "user", content: [image] },
-    { role: "assistant", content: "a picture" },
-    { role: "user", content: [image] }
+    { role: "assistant", content: "a picture" }
   ]
-  const id = await createSessionRow(row({ session: { messages } }))
-  const db = await openDb()
-  const parts = db.query("SELECT parts FROM messages WHERE sessionId = ? ORDER BY seq").all(id) as { parts: string }[]
-  db.close()
-  expect(parts[0]!.parts).toContain("kaja-image:")
-  expect(parts[0]!.parts).not.toContain("iVBORw0KGgo")
-  const { peekStorePath } = await import("../../../lib/memory/store")
+  expect(await createSessionRow(row({ session: { id, messages } }))).toBe(id)
   const folder = join(dirname(peekStorePath()!), "files", "images", id)
   expect((await readdir(folder)).filter(name => !name.endsWith(".meta.json"))).toHaveLength(1)
-  expect((await loadSessionRow(id))!.session.messages).toEqual(messages)
+  const loaded = (await loadSessionRow(id))!.session
+  expect(loaded).toEqual({ id, messages })
   expect(await deleteSessionRow(id)).toBe(true)
   expect(await readdir(folder).catch(() => [])).toHaveLength(0)
 })
 
-test("a timeline tool image outlives its temp file: it's stored with the session and replays from the stored copy", async () => {
-  const temp = join(tmpdir(), `kaja-test-tool-image-${Bun.randomUUIDv7()}.png`)
-  const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3])
-  await Bun.write(temp, bytes)
-  const id = await createSessionRow(row({ events: [{ type: "tool_image", path: temp, mimeType: "image/png" }] }))
-  await rm(temp)
+test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
+  const image = { type: "image_url" as const, image_url: { url: `data:image/png;base64,${TINY_PNG_BASE64}` } }
+  const id = await createSessionRow(row({ session: { messages: [{ role: "user", content: [image] }] } }))
+  const db = await openDb()
+  const parts = db.query("SELECT parts FROM messages WHERE sessionId = ? ORDER BY seq").all(id) as { parts: string }[]
+  db.close()
+  expect(parts[0]!.parts).toContain("kaja-image:")
+  expect(parts[0]!.parts).not.toContain(TINY_PNG_BASE64)
+})
+
+test("a timeline tool image is saved by its stored key and replays from the stored file", async () => {
+  const { getStore } = await import("../../../lib/memory/store")
+  const id = Bun.randomUUIDv7()
+  const { key } = await (await getStore()).images(id).put({ data: TINY_PNG, mimeType: "image/png" })
+  const shown = { type: "tool_image", key, mimeType: "image/png", path: "/somewhere/it/was/shown.png" }
+  await createSessionRow(row({ session: { id, messages: [] }, events: [shown] }))
 
   const db = await openDb()
   const stored = db.query("SELECT payload FROM session_events WHERE sessionId = ?").get(id) as { payload: string }
   db.close()
-  expect(stored.payload).toContain("kaja-image:")
-  expect(stored.payload).not.toContain(temp)
+  expect(JSON.parse(stored.payload)).toEqual({ type: "tool_image", key, mimeType: "image/png" })
 
   const [event] = (await loadSessionRow(id))!.events as { type: string; path: string; mimeType: string }[]
-  expect(event).toMatchObject({ type: "tool_image", mimeType: "image/png" })
-  expect(new Uint8Array(await Bun.file(event!.path).arrayBuffer())).toEqual(bytes)
+  expect(event).toMatchObject({ type: "tool_image", key, mimeType: "image/png" })
+  expect(new Uint8Array(await Bun.file(event!.path).arrayBuffer())).toEqual(new Uint8Array(TINY_PNG))
 })
 
 test("a corrupt row loads as undefined instead of crashing", async () => {

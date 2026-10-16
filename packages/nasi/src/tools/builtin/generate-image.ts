@@ -1,7 +1,3 @@
-import { mkdir } from "node:fs/promises"
-import { join } from "node:path"
-import { randomUUIDv7 } from "@kaja/shared/id"
-import { write } from "bun"
 import OpenAI from "openai"
 import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
@@ -10,10 +6,10 @@ import { getToolDeps } from "../deps"
 
 /**
  * Generates an image from a text prompt via an OpenAI-compatible Images API
- * (e.g. xAI's Grok Imagine) and saves it to a temp file.
+ * (e.g. xAI's Grok Imagine).
  *
  * @param args.prompt - Description of the image to generate.
- * @returns A {@link ToolResult} carrying the saved image; run() injects it as
+ * @returns A {@link ToolResult} carrying the image; run() stores it and injects it as
  * a vision content block in a follow-up user message.
  */
 export const generateImageTool = tool({
@@ -42,17 +38,10 @@ export const generateImageTool = tool({
     const res = await fetchPublicHttp(url, { allowPrivate: true, timeoutMs: 60_000, maxBytes: 20 * 1024 * 1024 })
     if (!res.ok) throw new ToolError("generate_image", `Failed to download generated image: ${res.status}`)
     const mimeType = res.headers.get("content-type") ?? "image/png"
-    const ext = mimeType.split("/")[1] ?? "png"
-
-    const dir = getToolDeps().tempDir
-    if (!dir) return "Image generation is not configured."
-    await mkdir(dir, { recursive: true })
-    const path = join(dir, `${randomUUIDv7()}.${ext}`)
-    await write(path, await res.arrayBuffer())
 
     return {
       text: `Generated image: ${args.prompt}`,
-      images: [{ path, mimeType }]
+      images: [{ data: new Uint8Array(await res.arrayBuffer()), mimeType }]
     }
   }
 })

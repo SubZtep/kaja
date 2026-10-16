@@ -13,7 +13,7 @@ let outside: string
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "nasi-view-root-"))
   outside = mkdtempSync(join(tmpdir(), "nasi-view-outside-"))
-  setToolDeps({ workspaceRoot: root, tempDir: join(root, ".tmp") })
+  setToolDeps({ workspaceRoot: root })
 })
 
 afterEach(() => {
@@ -53,6 +53,5 @@ test("a file that isn't an image is refused; a big one comes back model-sized", 
   expect(result.text).toBe("Viewing image: photo.png")
   const image = result.images![0]!
   expect(image.mimeType).toBe("image/png")
-  expect(image.path.startsWith(join(root, ".tmp"))).toBe(true)
-  expect((await new Bun.Image(image.path).metadata()).width).toBe(1568)
+  expect((await new Bun.Image(image.data).metadata()).width).toBe(1568)
 })

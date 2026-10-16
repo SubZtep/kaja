@@ -1,24 +1,19 @@
 import { Database } from "bun:sqlite"
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
-import { dirname, isAbsolute, join } from "node:path"
+import { mkdirSync } from "node:fs"
+import { dirname, join } from "node:path"
 import {
-  attachImages,
   clearTelemetry,
   deleteImages,
-  detachImages,
-  IMAGE_REF_PREFIX,
-  imageHash,
-  imageKey,
+  filesSessionImages,
   joinConversation,
-  loadImages,
   type MessageRow,
   type NasiStore,
   type PendingKind,
   type SessionWrite,
-  type StoredImage,
-  saveImages,
+  sessionIdOf,
   sessionImagePrefix,
-  splitConversation
+  splitConversation,
+  storeInlineImages
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
@@ -227,28 +222,28 @@ type MessageDbRow = {
   toolCallId: string | null
 }
 
-// A tool image event names a temp file that won't last; the saved timeline refers to the session's stored copy instead, which `images` gets if it isn't there yet.
-function storedEvent(event: unknown, images: StoredImage[]): unknown {
-  const image = event as { type?: string; path?: string; mimeType?: string }
-  if (image.type !== "tool_image" || !image.path || !isAbsolute(image.path) || !existsSync(image.path)) return event
-  const data = new Uint8Array(readFileSync(image.path))
-  const hash = imageHash(data)
-  images.push({ hash, mimeType: image.mimeType ?? "image/png", data })
-  return { ...image, path: `${IMAGE_REF_PREFIX}${hash}` }
+// A saved timeline keeps a stored tool image by its object key; the path it was shown from is worked out again on load.
+function storedEvent(event: unknown): unknown {
+  const image = event as { type?: string; key?: string; mimeType?: string }
+  if (image.type !== "tool_image" || !image.key) return event
+  return { type: image.type, key: image.key, mimeType: image.mimeType }
 }
+
+/** The folder the session images are kept in, beside the database. */
+export const imagesRoot = (dbPath: string) => join(dirname(dbPath), "files")
 
 /** Local CLI persistence: one sqlite file (sessions, notes, datasets), and the session images as files beside it. */
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
-  const filesRoot = join(dirname(dbPath), "files")
+  const filesRoot = imagesRoot(dbPath)
   const files = new Files({ adapter: fs({ root: filesRoot }) })
+  const sessionImages = (id: string) => filesSessionImages(files, sessionImagePrefix(id))
 
-  // The inverse of storedEvent: the reference becomes the stored copy's path, a plain file under the fs adapter's root.
-  function loadedEvent(sessionId: string, event: unknown): unknown {
-    const image = event as { type?: string; path?: string }
-    if (image.type !== "tool_image" || !image.path?.startsWith(IMAGE_REF_PREFIX)) return event
-    const key = imageKey(sessionImagePrefix(sessionId), image.path.slice(IMAGE_REF_PREFIX.length))
-    return { ...image, path: join(filesRoot, key) }
+  // The inverse of storedEvent: the key becomes the stored file's path, a plain file under the fs adapter's root.
+  function loadedEvent(event: unknown): unknown {
+    const image = event as { type?: string; key?: string }
+    if (image.type !== "tool_image" || !image.key) return event
+    return { ...image, path: join(filesRoot, image.key) }
   }
 
   function count(table: "messages" | "session_events", sessionId: string): number {
@@ -258,12 +253,10 @@ export function createSqliteStore(dbPath: string): NasiStore {
     return row.n
   }
 
-  // Inline images are collected into `images` for the caller to write as files once the transaction is done; the message keeps a reference to each.
-  function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string, images: StoredImage[]) {
+  // `parts` hold refs: images were stored when they arrived (see storeInline, for one that wasn't).
+  function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string) {
     const id = Bun.randomUUIDv7()
-    const detached = detachImages(row.parts)
-    const parts = detached.parts
-    images.push(...detached.images)
+    const parts = row.parts
     db.query(
       `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, persona, model,
                              promptTokens, completionTokens, latencyMs, finishReason, createdAt)
@@ -308,8 +301,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
   }
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
-  // Returns the new messages' images, for the caller to write with saveImages after the transaction.
-  const saveConversation = db.transaction((id: string, data: SessionWrite): StoredImage[] => {
+  const saveConversation = db.transaction((id: string, data: SessionWrite) => {
     const {
       systemPrompt,
       pending,
@@ -329,8 +321,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
     })
     const now = new Date().toISOString()
     const storedMessages = count("messages", id)
-    const images: StoredImage[] = []
-    messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now, images))
+    messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now))
     for (const [callId, text] of Object.entries(toolSummaries)) {
       db.query(
         `UPDATE tool_calls SET resultSummary = $text
@@ -349,7 +340,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $id: id,
         $seq: storedEvents + i,
         $type: (event as { type: string }).type,
-        $payload: JSON.stringify(storedEvent(event, images))
+        $payload: JSON.stringify(storedEvent(event))
       })
     })
     for (const { callId, status, approval, durationMs } of calls) {
@@ -379,8 +370,20 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $now: now
       })
     }
-    return images
   })
+
+  // A message still holding an inline image (a run without the store) gets it stored before the transaction writes it.
+  async function storeInline(id: string, data: SessionWrite): Promise<SessionWrite> {
+    const session = data.session as { messages?: { content?: unknown }[] }
+    const messages = await Promise.all(
+      (session.messages ?? []).map(async message =>
+        Array.isArray(message.content)
+          ? { ...message, content: await storeInlineImages(message.content, sessionImages(id)) }
+          : message
+      )
+    )
+    return { ...data, session: { ...session, messages } }
+  }
 
   async function hydrate(row: SessionRow): Promise<PersistedSession | undefined> {
     try {
@@ -403,7 +406,6 @@ export function createSqliteStore(dbPath: string): NasiStore {
       }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
       const parts = messageRows.map(message => (message.parts ? (JSON.parse(message.parts) as unknown[]) : null))
-      const images = await loadImages(files, sessionImagePrefix(row.id), parts)
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
         .all({ $id: row.id }) as { payload: string }[]
@@ -420,27 +422,30 @@ export function createSqliteStore(dbPath: string): NasiStore {
         model: row.model,
         title: row.title,
         owner: row.owner,
-        session: joinConversation({
-          systemPrompt: row.systemPrompt,
-          pending: row.pendingCallId && row.pendingKind ? { callId: row.pendingCallId, kind: row.pendingKind } : null,
-          summary: latest ? { text: latest.summary, from: latest.summaryFrom } : null,
-          toolSummaries: Object.fromEntries(
-            callRows.flatMap(call => (call.resultSummary !== null ? [[call.callId, call.resultSummary]] : []))
-          ),
-          messages: messageRows.map((message, seq) => ({
-            role: message.role,
-            content: message.content,
-            parts: attachImages(parts[seq] ?? null, images),
-            reasoning: message.reasoning,
-            toolCallId: message.toolCallId,
-            toolCalls: (callsBySeq.get(seq) ?? []).map(({ callId, name, arguments: args }) => ({
-              callId,
-              name,
-              arguments: args
+        session: {
+          id: row.id,
+          ...joinConversation({
+            systemPrompt: row.systemPrompt,
+            pending: row.pendingCallId && row.pendingKind ? { callId: row.pendingCallId, kind: row.pendingKind } : null,
+            summary: latest ? { text: latest.summary, from: latest.summaryFrom } : null,
+            toolSummaries: Object.fromEntries(
+              callRows.flatMap(call => (call.resultSummary !== null ? [[call.callId, call.resultSummary]] : []))
+            ),
+            messages: messageRows.map((message, seq) => ({
+              role: message.role,
+              content: message.content,
+              parts: parts[seq] ?? null,
+              reasoning: message.reasoning,
+              toolCallId: message.toolCallId,
+              toolCalls: (callsBySeq.get(seq) ?? []).map(({ callId, name, arguments: args }) => ({
+                callId,
+                name,
+                arguments: args
+              }))
             }))
-          }))
-        }),
-        events: eventRows.map(event => loadedEvent(row.id, JSON.parse(event.payload)))
+          })
+        },
+        events: eventRows.map(event => loadedEvent(JSON.parse(event.payload)))
       })
       if (parsed.success) return parsed.data
       log.error("Stored session failed validation", { sessionId: row.id, issues: parsed.error.issues })
@@ -453,8 +458,9 @@ export function createSqliteStore(dbPath: string): NasiStore {
   return {
     async createSession(data: SessionWrite & { title: string }) {
       const now = new Date().toISOString()
-      const id = Bun.randomUUIDv7()
-      const images = db.transaction(() => {
+      const id = sessionIdOf(data.session)
+      const write = await storeInline(id, data)
+      db.transaction(() => {
         db.query(`
           INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner)
           VALUES ($id, $createdAt, $updatedAt, $persona, $model, $title, $owner)
@@ -467,21 +473,20 @@ export function createSqliteStore(dbPath: string): NasiStore {
           $title: data.title,
           $owner: data.owner
         })
-        return saveConversation(id, data)
+        saveConversation(id, write)
       })()
-      await saveImages(files, sessionImagePrefix(id), images)
       clearTelemetry(data.session)
       return id
     },
 
     async updateSession(id, data) {
-      const images = db.transaction(() => {
+      const write = await storeInline(id, data)
+      db.transaction(() => {
         const { changes } = db
           .query("UPDATE sessions SET updatedAt = $updatedAt, persona = $persona, model = $model WHERE id = $id")
           .run({ $id: id, $updatedAt: new Date().toISOString(), $persona: data.persona, $model: data.model })
-        return changes > 0 ? saveConversation(id, data) : []
+        if (changes > 0) saveConversation(id, write)
       })()
-      await saveImages(files, sessionImagePrefix(id), images)
       clearTelemetry(data.session)
     },
 
@@ -513,6 +518,8 @@ export function createSqliteStore(dbPath: string): NasiStore {
       await deleteImages(files, sessionImagePrefix(id))
       return true
     },
+
+    images: sessionImages,
 
     listSessions(): Promise<SessionMeta[]> {
       return Promise.try(() => {

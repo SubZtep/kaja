@@ -148,9 +148,9 @@ test("the cloud's copy of an ability the client declares is left out, and load_s
   await nasi.close()
 })
 
-test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", () => {
+test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", async () => {
   const session: Session = { messages: [], pendingClientCalls: ["a", "b", "c", "d"] }
-  answerClientCalls(session, [
+  await answerClientCalls(session, [
     { id: "a", text: "fine" },
     { id: "b", text: "Error: no such file", status: "error" },
     { id: "c", text: "User declined this request.", status: "declined" }

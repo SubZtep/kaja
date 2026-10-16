@@ -23,11 +23,12 @@ export const LOCAL_OWNER_CTX: ToolContext = { owner: LOCAL_OWNER }
  * screenshot. Images can't travel in the `role: "tool"` message itself (the
  * OpenAI API restricts tool message content to text), so {@link run} sends
  * `text` as the tool response and follows up with a separate `role: "user"`
- * message carrying each image, so the model actually sees it.
+ * message carrying each image, so the model actually sees it. `images` are the
+ * bytes as the tool got them: run() normalises and stores them.
  */
 export type ToolResult = {
   text: string
-  images?: { path: string; mimeType: string }[]
+  images?: { data: Uint8Array; mimeType: string }[]
   /**
    * A remote image to show next to the tool's result in the timeline —
    * display-only, e.g. a search result thumbnail. Unlike {@link images},
@@ -184,15 +185,9 @@ export async function runApprovedTool(
     const checked = checkToolArgs(target, JSON.parse(argumentsJson || "{}"))
     if (!checked.ok) return failed(`Error: ${checked.error}`)
     const result = await target.execute(checked.args)
-    // Read now: a tool's image is often a temp file, gone once the turn ends.
-    const images =
-      typeof result === "string"
-        ? []
-        : await Promise.all(
-            (result.images ?? []).map(async image => new Uint8Array(await Bun.file(image.path).arrayBuffer()))
-          )
     onStatus?.("ok")
-    return { text: typeof result === "string" ? result : result.text, images }
+    if (typeof result === "string") return { text: result, images: [] }
+    return { text: result.text, images: (result.images ?? []).map(image => image.data) }
   } catch (error) {
     return failed(`Error: ${error instanceof Error ? error.message : String(error)}`)
   }

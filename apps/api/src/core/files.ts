@@ -1,9 +1,4 @@
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  PutBucketLifecycleConfigurationCommand,
-  S3Client
-} from "@aws-sdk/client-s3"
+import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/client-s3"
 import { Files } from "files-sdk"
 import { hetzner } from "files-sdk/hetzner"
 import { minio } from "files-sdk/minio"
@@ -28,38 +23,19 @@ function storage(endpoint: string | undefined) {
 /** A time-limited URL a client can fetch the object from. */
 export const signedUrl = (key: string, expiresIn: number) => signer.url(key, { expiresIn })
 
-/** Where a user's tool images go when their turn's session doesn't exist yet (a new one is saved at the turn's end); the bucket expires them after a day. */
-export const toolImagePrefix = (userId: string) => `tool-images/${userId}`
+/** How long a stored image's signed URL works: long enough to show it, and for Telegram to fetch it. */
+const IMAGE_URL_TTL_SECONDS = 60 * 60
 
-/** Days a leftover tool image lives under `tool-images/` before the bucket's lifecycle rule deletes it. */
-const TOOL_IMAGE_DAYS = 1
+/** A signed URL for a session image's object key (an `AgentEvent`'s `tool_image` `key`). */
+export const imageUrl = (key: string) => signedUrl(key, IMAGE_URL_TTL_SECONDS)
 
-/**
- * Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in its console),
- * then sets the rule that expires `tool-images/`. Hetzner only takes lifecycle rules through the S3 API, so the API sets it itself.
- */
+/** Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in its console). */
 export async function prepareBucket(): Promise<void> {
+  if (!env.STORAGE_ENDPOINT) return
   const client = s3Client()
   const Bucket = env.STORAGE_BUCKET
   try {
-    if (env.STORAGE_ENDPOINT) {
-      await client.send(new HeadBucketCommand({ Bucket })).catch(() => client.send(new CreateBucketCommand({ Bucket })))
-    }
-    await client.send(
-      new PutBucketLifecycleConfigurationCommand({
-        Bucket,
-        LifecycleConfiguration: {
-          Rules: [
-            {
-              ID: "expire-tool-images",
-              Status: "Enabled",
-              Filter: { Prefix: "tool-images/" },
-              Expiration: { Days: TOOL_IMAGE_DAYS }
-            }
-          ]
-        }
-      })
-    )
+    await client.send(new HeadBucketCommand({ Bucket })).catch(() => client.send(new CreateBucketCommand({ Bucket })))
   } finally {
     client.destroy()
   }

@@ -1,7 +1,4 @@
 import { expect, test } from "bun:test"
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import type OpenAI from "openai"
 import { z } from "zod"
 import { Agent, askUserTool, createSession } from "../../src/agent/agent"
@@ -132,20 +129,16 @@ test("runApprovedTool reports an unknown tool or bad arguments as text", async (
 })
 
 test("an approved tool's images reach the model with its answer, normalised", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "kaja-approved-"))
-  const path = join(dir, "shot.png")
-  await Bun.write(path, png(3000, 100))
   const snap: Tool<Record<string, never>> = {
     ...tool({
       name: "snap",
       description: "Takes a picture",
       schema: z.object({}),
-      execute: async () => ({ text: "snapped", images: [{ path, mimeType: "image/png" }] })
+      execute: async () => ({ text: "snapped", images: [{ data: png(3000, 100), mimeType: "image/png" }] })
     }),
     approval: () => "Take a picture"
   }
   const result = await runApprovedTool([snap], "snap", "{}")
-  await rm(dir, { recursive: true })
   expect(result.text).toBe("snapped")
   expect(result.images).toHaveLength(1)
 

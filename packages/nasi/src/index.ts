@@ -124,7 +124,7 @@ export {
   toolName
 } from "./agent/tools"
 export { ImageError, MAX_IMAGE_BYTES, MAX_IMAGE_EDGE, type NormalizedImage, normalizeImage } from "./images/normalize"
-export { imageDataUrl, imageNote, withImageNote } from "./images/parts"
+export { dataUrlBytes, imageDataUrl, imageNote, withImageNote } from "./images/parts"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
   isInstalled,
@@ -160,32 +160,33 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
-  attachImages,
   type CallUpdate,
   type ConversationRows,
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
   deleteImages,
-  detachImages,
+  filesSessionImages,
   forgetNotes,
   IMAGE_REF_PREFIX,
-  imageHash,
+  imageId,
   imageKey,
-  imageRefs,
+  imageRefId,
+  inlineImages,
   joinConversation,
-  loadImages,
   type MessageRow,
   type NasiStore,
   noteHeader,
   type PendingKind,
   requireStore,
+  type SessionImage,
+  type SessionImages,
   type SessionWrite,
   type StepRow,
-  type StoredImage,
-  saveImages,
+  sessionIdOf,
   sessionImagePrefix,
   splitConversation,
+  storeInlineImages,
   type ToolCallRow,
   userImagePrefix
 } from "./store"
