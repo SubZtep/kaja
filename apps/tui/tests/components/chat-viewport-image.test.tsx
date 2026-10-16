@@ -43,7 +43,7 @@ async function settledAfter(t: { output: () => string; tick: () => Promise<void>
   await t.tick()
   const settled = t.output().length
   await Bun.sleep(400)
-  expect(t.output().length).toBe(settled)
+  expect(t.output()).toHaveLength(settled)
 }
 
 // A turn ending with the agent showing a picture: the tool's own row, then the reply pointing at it
