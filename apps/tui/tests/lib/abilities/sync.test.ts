@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
+import { createHash } from "node:crypto"
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
@@ -13,6 +14,7 @@ function put(root: string, rel: string, content: string) {
   writeFileSync(path, content)
 }
 
+const hash = (content: string) => createHash("sha256").update(content).digest("hex")
 const read = (rel: string) => readFileSync(join(local, rel), "utf8")
 
 beforeEach(() => {
@@ -26,15 +28,25 @@ afterEach(() => {
   rmSync(dirname(upstream), { recursive: true, force: true })
 })
 
-test("first sync copies everything into a missing folder and writes the lock", async () => {
+test("first sync copies the folders into a missing folder and writes the lock, leaving top-level files out", async () => {
   put(upstream, "abilities/a/SKILL.md", "a1")
   put(upstream, "README.md", "readme")
   const report = await syncMarketplace(upstream, local, { url: "u", ref: "main", commit: "c1" })
-  expect(report.added.sort()).toEqual(["README.md", "abilities/a/SKILL.md"])
+  expect(report.added).toEqual(["abilities/a/SKILL.md"])
   expect(read("abilities/a/SKILL.md")).toBe("a1")
+  expect(existsSync(join(local, "README.md"))).toBe(false)
   const lock = await readSyncLock(local)
   expect(lock?.source).toEqual({ url: "u", ref: "main", commit: "c1" })
-  expect(Object.keys(lock!.files).sort()).toEqual(["README.md", "abilities/a/SKILL.md"])
+  expect(Object.keys(lock!.files)).toEqual(["abilities/a/SKILL.md"])
+})
+
+test("a top-level file an earlier sync wrote is removed", async () => {
+  put(local, "README.md", "readme")
+  put(local, LOCK_FILE, JSON.stringify({ files: { "README.md": hash("readme") } }))
+  put(upstream, "README.md", "readme")
+  const report = await syncMarketplace(upstream, local)
+  expect(report.removed).toEqual(["README.md"])
+  expect(existsSync(join(local, "README.md"))).toBe(false)
 })
 
 test("an untouched file follows upstream without a backup", async () => {
