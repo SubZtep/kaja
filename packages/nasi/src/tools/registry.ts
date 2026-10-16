@@ -241,6 +241,8 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       approval: target.approval,
       readOnly: target.readOnly,
       label: `ability:${target.name}`,
+      // A sandbox can restart under a long-lived session: the next call opens a new one.
+      reconnect: target.sandboxed === true,
       // Locally only a sandboxed target (the user's choice) needs mcpFetch: it reaches the sandbox through the API.
       ...(local
         ? target.sandboxed

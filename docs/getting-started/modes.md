@@ -57,7 +57,8 @@ kaja --cloud     # cloud login, even if a local config exists
 
 The first time, Kaja does a **device login**: it shows a code, you approve it at
 [kaja.io/device](https://kaja.io/device), and a token goes into your OS keychain. Nothing is written to
-disk. One account is signed in at a time, and `kaja logout` clears it.
+disk. One account is signed in at a time: `kaja login` signs in without starting a chat, and `kaja logout`
+clears it.
 
 > Without a keychain, cloud mode stops and suggests `--local`. There is no plaintext fallback.
 {: .warning }

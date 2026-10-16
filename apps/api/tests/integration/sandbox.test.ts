@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { faker } from "@faker-js/faker"
-import { SANDBOX_KEY_HEADER } from "@kaja/schema/api"
+import { SANDBOX_KEY_HEADER, SANDBOX_RELAY_KEY_HEADER } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
@@ -15,7 +15,7 @@ import {
   pickSandbox,
   type SandboxKeys
 } from "../../src/features/sandbox/registry"
-import { closeRelays, RELAY_KEY_HEADER } from "../../src/features/sandbox/relay"
+import { closeRelays } from "../../src/features/sandbox/relay"
 import { abilityService, sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
@@ -362,7 +362,7 @@ describe("relay", () => {
       headers: {
         ...(init.headers as Record<string, string>),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(key ? { [RELAY_KEY_HEADER]: key } : {})
+        ...(key ? { [SANDBOX_RELAY_KEY_HEADER]: key } : {})
       }
     })
 

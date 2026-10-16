@@ -8,6 +8,7 @@ import {
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import { getMarketplaceDir } from "../lib/abilities/abilities-file"
+import { sandboxedAbilities, sandboxRelay, signedOutSandbox } from "../lib/abilities/sandbox-relay"
 import { secrets } from "../lib/config/secrets"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
@@ -37,9 +38,16 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
 
   // Every ability in the marketplace folder loads; the active persona decides which of them a chat gets.
   const { abilities: abilitySecrets } = await secrets()
+  const keyOf = (name: string) => abilitySecrets[name]?.api_key
+  // Abilities set to run on a sandbox reach it through the Kaja API; signed out, they're off rather than started here.
+  const onSandbox = new Set(await sandboxedAbilities())
+  const relay = onSandbox.size ? await sandboxRelay(keyOf) : undefined
+  const sandbox = onSandbox.size ? (relay ?? signedOutSandbox) : undefined
   const abilities = await loadAbilities(createFolderAbilityStore({ root: getMarketplaceDir() }), {
     personas,
-    getApiKey: name => abilitySecrets[name]?.api_key,
+    getApiKey: keyOf,
+    mcpSandbox: sandbox,
+    sandboxed: name => onSandbox.has(name),
     // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
     allowPrivate: true,
     // The folder is every ability there is, so a persona naming another is a typo worth a warning.
@@ -51,6 +59,7 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     extraTools: abilities.groups,
     mcpAbilities: abilities.mcp,
     lazyMcpAbilities: lazyMcp,
+    ...(sandbox ? { mcpFetch: () => sandbox.fetch } : {}),
     backupDir: getBackupDir(),
     deps: {
       chat: { client, model: chatModelId },
@@ -62,5 +71,11 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     }
   })
   // Stdio abilities nothing here can start, and roots-taking ones no persona gives a folder: the doctor says so.
-  return { ...tools, missingRunners: abilities.missingRunners, missingRoots: abilities.missingRoots }
+  return {
+    ...tools,
+    missingRunners: abilities.missingRunners,
+    missingRoots: abilities.missingRoots,
+    // Set to run on a sandbox while signed out of Kaja cloud: off this session.
+    signedOutSandboxed: relay ? [] : [...onSandbox]
+  }
 }

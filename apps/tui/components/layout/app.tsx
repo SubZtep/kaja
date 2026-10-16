@@ -288,7 +288,8 @@ function LocalApp({
   ensureTools,
   safeCommands,
   initialSession,
-  promptHistory
+  promptHistory,
+  notices
 }: Readonly<{
   initialPreferences?: KajaPreferences
   models?: CliResolvedModel[]
@@ -301,6 +302,7 @@ function LocalApp({
   safeCommands?: RegExp[]
   initialSession?: PersistedSession
   promptHistory?: string[]
+  notices?: string[]
 }>) {
   const {
     displayModel,
@@ -328,6 +330,7 @@ function LocalApp({
     yolo: initialPreferences?.yolo,
     personas,
     models,
+    notices,
     // Stored session's persona/model may no longer exist; resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
     resume: initialSession && {
       session: initialSession,
@@ -454,6 +457,8 @@ type LocalAppProps = Readonly<{
   initialSession?: PersistedSession
   /** Past prompts across all sessions for ↑/↓ recall, newest first. */
   promptHistory?: string[]
+  /** Startup notices shown in the chat before the first message, e.g. abilities left off. */
+  notices?: string[]
 }>
 
 type CloudAppProps = Readonly<{

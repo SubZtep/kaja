@@ -4,6 +4,7 @@ import { secrets } from "../config/secrets"
 import { getLanguage, t } from "../i18n"
 import { loadPersonas } from "../personas/personas"
 import { getMarketplaceDir, ownAbilities } from "./abilities-file"
+import { toolHosts } from "./sandbox-relay"
 
 /** One ability folder as `kaja abilities` shows it. */
 type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string; needs?: string }
@@ -19,6 +20,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
   const own = new Set((await ownAbilities(root)).abilities)
   const keys = (await secrets()).abilities
   const usedBy = await personasByAbility()
+  const hosts = await toolHosts()
 
   const sorted = rows.toSorted((a, b) => a.name.localeCompare(b.name))
   const width = Math.max(...sorted.map(r => r.name.length))
@@ -32,8 +34,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
     const details = [
       r.parts.join(" + "),
       keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
-      r.runs && t("ability.runs", { command: r.runs }),
-      r.needs && t("ability.needs", { programs: r.needs }),
+      ...stdioDetails(r, hosts[r.name] === "sandbox"),
       (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
     ].filter(Boolean)
     lines.push(`  ${name}  ${details.join(" · ")}`)
@@ -65,6 +66,13 @@ async function scanRows(root: string): Promise<Row[]> {
   }
   for (const name of await scanCodeTools(root)) add({ name }, t("ability.typeCode"))
   return [...rows.values()]
+}
+
+// What runs a stdio server: a sandbox when settings.toml sends it there, else the command here or what to install.
+function stdioDetails(r: Row, onSandbox: boolean): (string | undefined)[] {
+  if (!r.runs && !r.needs) return []
+  if (onSandbox) return [t("ability.onSandbox")]
+  return [r.runs && t("ability.runs", { command: r.runs }), r.needs && t("ability.needs", { programs: r.needs })]
 }
 
 // Which personas use each ability, by ability name.

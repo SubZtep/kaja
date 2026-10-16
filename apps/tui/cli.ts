@@ -8,6 +8,7 @@ import { log } from "./lib/logger"
 import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
+import { runLoginSubcommand } from "./subcommands/login"
 import { runLogoutSubcommand } from "./subcommands/logout"
 import { runSubcommand } from "./subcommands/run"
 import { runCloudSubcommand } from "./subcommands/run-cloud"
@@ -26,6 +27,11 @@ try {
 
   if (args.input[0] === "logout") {
     await runLogoutSubcommand()
+    process.exit(0)
+  }
+
+  if (args.input[0] === "login") {
+    await runLoginSubcommand()
     process.exit(0)
   }
 

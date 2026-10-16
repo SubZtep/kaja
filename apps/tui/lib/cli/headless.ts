@@ -15,7 +15,7 @@ export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {
 
   const models = await loadModels()
   const personas = await loadPersonas()
-  const { tools, skipped, mcpServers, missingRunners, missingRoots, closeTools, ensureAbilities } =
+  const { tools, skipped, mcpServers, missingRunners, missingRoots, closeTools, ensureAbilities, signedOutSandboxed } =
     await getDefaultTools(personas, options)
   const { loadSafeCommands } = await import("../config/commands")
   const safeCommands = await loadSafeCommands()
@@ -28,6 +28,7 @@ export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {
     mcpServers,
     missingRunners,
     missingRoots,
+    signedOutSandboxed,
     closeTools,
     ensureAbilities,
     safeCommands

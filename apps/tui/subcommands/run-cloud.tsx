@@ -69,7 +69,8 @@ function listenForKeys(onKey: (key: string) => void): () => void {
   }
 }
 
-async function resolveToken(apiUrl: string): Promise<string> {
+/** The stored cloud token, else a device login (the browser opens on the code; L and Q keys for the link and a QR code). */
+export async function resolveToken(apiUrl: string): Promise<string> {
   try {
     const stored = await loadToken()
     if (stored) return stored

@@ -95,6 +95,18 @@ export const KajaContextSchema = z.object({
     )
 })
 
+/** Where an ability runs in local mode: on this computer, or a Kaja sandbox reached through the Kaja API. */
+export const ToolHostSchema = z.enum(["computer", "sandbox"])
+
+export const KajaToolsSchema = z.object({
+  hosts: z
+    .record(z.string().min(1), ToolHostSchema)
+    .optional()
+    .describe(
+      'Where each stdio MCP ability runs in local mode, by name: "computer" (default) or "sandbox" (needs a Kaja cloud sign-in)'
+    )
+})
+
 /** telegram (external service credentials) lives in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
@@ -102,6 +114,7 @@ export const KajaConfigSchema = z.object({
   memory: KajaMemorySchema.optional(),
   marketplace: KajaMarketplaceSchema.optional().describe("Fetching abilities from the online marketplace"),
   context: KajaContextSchema.optional().describe("Keeping long conversations inside the model's context window"),
+  tools: KajaToolsSchema.optional().describe("Where abilities' tools run"),
   preferences: KajaPreferencesSchema.optional().describe("In-app preferences")
 })
 
@@ -112,3 +125,5 @@ export type KajaTts = z.infer<typeof KajaTtsSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
 export type KajaMarketplace = z.infer<typeof KajaMarketplaceSchema>
 export type KajaContext = z.infer<typeof KajaContextSchema>
+export type KajaTools = z.infer<typeof KajaToolsSchema>
+export type ToolHost = z.infer<typeof ToolHostSchema>

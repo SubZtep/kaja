@@ -44,7 +44,11 @@ export async function runSubcommand(cli: typeof Cli) {
   // Background pull, not awaited: it changes the folder for the next launch, and startup must not wait on the network
   void import("../lib/abilities/auto-update").then(m => m.autoUpdateAbilities())
 
-  const { models, personas, tools, closeTools, ensureAbilities, safeCommands } = await bootstrapLocalAgentDeps()
+  const { models, personas, tools, closeTools, ensureAbilities, safeCommands, signedOutSandboxed } =
+    await bootstrapLocalAgentDeps()
+  const notices = signedOutSandboxed.length
+    ? [t("ability.sandboxSignedOut", { names: signedOutSandboxed.join(", ") })]
+    : []
 
   // Closes long-lived tool connections (e.g. Playwright MCP subprocess) on SIGINT/normal exit.
   const shutdown = installShutdownHandlers(closeTools)
@@ -69,6 +73,7 @@ export async function runSubcommand(cli: typeof Cli) {
       safeCommands={safeCommands}
       initialSession={initialSession}
       promptHistory={promptHistory}
+      notices={notices}
     />,
     {
       alternateScreen: true,

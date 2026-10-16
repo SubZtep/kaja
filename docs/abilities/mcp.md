@@ -113,6 +113,23 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   "query-docs"         = "Fetches current documentation and code examples for a library."
   ```
 
+## On a sandbox, from local mode
+
+In local mode a `stdio` ability can run on a Kaja sandbox instead of your machine: handy when its runner
+(`uvx` for a Python package) or Chrome isn't installed here, or when you'd rather keep a browser off it. Set
+it in [`settings.toml`](/configuration/config#toolshosts):
+
+```toml
+[tools.hosts]
+chrome-devtools = "sandbox"
+```
+
+Its requests go through the Kaja API, so you need to be signed in (`kaja login`). The sandbox is picked the
+same way as for cloud chat (below): your own, a shared one if you allow that, else Kaja's; `trustedSandbox`
+and keyed abilities only your own or Kaja's. Your key from `secrets.toml` travels with each request and isn't
+stored there. `kaja abilities` shows which abilities run on a sandbox. If the sandbox restarts, the next call
+opens a new session (a browser's open pages are lost).
+
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so

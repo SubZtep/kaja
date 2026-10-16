@@ -16,6 +16,8 @@ secretsUnavailable     = "Nem sikerült elérni a rendszer kulcstartóját a bej
 connecting             = "Csatlakozás…"
 logoutSuccess          = "Kijelentkezve."
 logoutNotSignedIn      = "Nem voltál bejelentkezve."
+loginDone              = "[hu-HU] lorem ipsum dolor"
+loginAlready           = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
 deviceLoginStartFailed = "Nem sikerült elindítani az eszközös bejelentkezést"
 deviceLoginDenied      = "Az eszközös bejelentkezés elutasítva"
 deviceLoginExpired     = "Az eszközös bejelentkezési kód lejárt — futtasd újra a bejelentkezést"
@@ -50,28 +52,29 @@ temp           = "ideiglenes"
 
 [args]
 help        = """
-Kaja parancssoros felület • v{version} • https://kaja.io
+[hu-HU] lorem ipsum dolor sit amet consectetur {version}
 
-HASZNÁLAT
-  $ kaja [OPCIÓK] [PARANCS]
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit
 
-PARANCSOK
-  config <wizard|fetch|diff|paths>
-                       Interaktív beállítás, vagy konfigurációs fájlok kezelése
-  doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
-  telegram [--pair]    Telegram bot futtatása; --pair egy kódot mutat egy másik személy párosításához
-  abilities [update]   Betöltendő készségek kiválasztása, vagy a piactér letöltése
-  sessions             Mentett helyi munkamenetek megjelenítése az azonosítójukkal
-  logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit amet
+                       [hu-HU] lorem ipsum dolor sit amet consectetur
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-OPCIÓK
-  --local         A helyi ágens futtatása saját szolgáltatóval a felhő alapú bejelentkezés helyett
-  --cloud         Felhő alapú bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció (alapértelmezett)
-  --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
-  --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja sessions)
-  --help          Ennek a súgónak a megjelenítése
-  --version       A verziószám kiírása
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet
+  [hu-HU] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
@@ -221,6 +224,8 @@ typeSkill           = "készség"
 typeTool            = "eszköz"
 typeMcp             = "mcp"
 typeCode            = "kód"
+onSandbox           = "[hu-HU] lorem ipsum"
+sandboxSignedOut    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
 brokenPart          = "{part}: {error}"
 keySaved            = "kulcs elmentve"
 noKey               = "nincs kulcs, kikapcsolva"

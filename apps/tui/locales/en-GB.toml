@@ -16,6 +16,8 @@ secretsUnavailable     = "Could not access the system keychain to store your log
 connecting             = "Connecting…"
 logoutSuccess          = "Logged out."
 logoutNotSignedIn      = "You weren't signed in."
+loginDone              = "Signed in to Kaja cloud."
+loginAlready           = "You're already signed in to Kaja cloud. `kaja logout` signs you out."
 deviceLoginStartFailed = "Failed to start device login"
 deviceLoginDenied      = "Device login was denied"
 deviceLoginExpired     = "Device login code expired — run login again"
@@ -62,6 +64,7 @@ COMMANDS
   telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
   abilities [update]   Pick which skills load, or fetch the marketplace
   sessions             List saved local sessions with their ids
+  login                Sign in to the cloud account without starting a chat
   logout               Log out of the cloud account, clearing its stored credential
 
 OPTIONS
@@ -221,6 +224,8 @@ typeSkill           = "skill"
 typeTool            = "tool"
 typeMcp             = "mcp"
 typeCode            = "code"
+onSandbox           = "runs on a sandbox"
+sandboxSignedOut    = "{names}: set to run on a sandbox, but you're not signed in to Kaja cloud, so off for now. `kaja login` signs you in."
 brokenPart          = "{part}: {error}"
 keySaved            = "key saved"
 noKey               = "no key, off"

@@ -30,6 +30,7 @@ kaja --local              # force the local agent loop for this launch
 kaja --cloud              # force cloud login for this launch
 kaja --help               # flags and subcommands
 kaja --version
+kaja login                # sign in to the cloud account without starting a chat
 kaja logout               # clear the stored cloud token
 
 # Local mode only

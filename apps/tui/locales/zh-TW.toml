@@ -16,6 +16,8 @@ secretsUnavailable     = "無法存取系統金鑰圈來儲存你的登入資訊
 connecting             = "連線中…"
 logoutSuccess          = "已登出。"
 logoutNotSignedIn      = "你尚未登入。"
+loginDone              = "[zh-TW] lorem ipsum dolor"
+loginAlready           = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
 deviceLoginStartFailed = "無法啟動裝置登入"
 deviceLoginDenied      = "裝置登入已被拒絕"
 deviceLoginExpired     = "裝置登入代碼已過期 — 請重新執行登入"
@@ -50,28 +52,29 @@ temp           = "暫存"
 
 [args]
 help        = """
-Kaja 命令列工具 • v{version} • https://kaja.io
+[zh-TW] lorem ipsum dolor sit amet consectetur {version}
 
-用法
-  $ kaja [選項] [指令]
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit
 
-指令
-  config <wizard|fetch|diff|paths>
-                       以互動方式設定，或管理設定檔
-  doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
-  telegram [--pair]    執行你的 Telegram 機器人；--pair 顯示一個代碼以配對另一個人
-  abilities [update]   選擇要載入的技能，或下載市集內容
-  sessions             列出已儲存的本機對話及其 id
-  logout               登出雲端帳號，並清除已儲存的憑證
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit amet
+                       [zh-TW] lorem ipsum dolor sit amet consectetur
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-選項
-  --local         使用你自己的供應商執行本機代理，而非雲端登入
-  --cloud         即使已有本機設定，也強制使用雲端登入（預設）
-  --continue, -c  繼續最近一次的對話（僅限 --local）
-  --headless      不顯示終端機介面；供支援的子指令使用（例如 telegram）
-  --session, -s   依 id 繼續指定的對話（僅限 --local；參見：kaja sessions）
-  --help          顯示此說明
-  --version       顯示版本
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet
+  [zh-TW] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}。執行 `kaja --help` 查看可用的選項。"
 
@@ -221,6 +224,8 @@ typeSkill           = "技能"
 typeTool            = "工具"
 typeMcp             = "mcp"
 typeCode            = "程式碼"
+onSandbox           = "[zh-TW] lorem ipsum"
+sandboxSignedOut    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
 brokenPart          = "{part}：{error}"
 keySaved            = "金鑰已儲存"
 noKey               = "沒有金鑰，已停用"

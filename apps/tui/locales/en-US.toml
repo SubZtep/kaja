@@ -16,6 +16,8 @@ secretsUnavailable     = "Could not access the system keychain to store your log
 connecting             = "Connecting…"
 logoutSuccess          = "Logged out."
 logoutNotSignedIn      = "You weren't signed in."
+loginDone              = "[en-US] lorem ipsum dolor"
+loginAlready           = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
 deviceLoginStartFailed = "Failed to start device login"
 deviceLoginDenied      = "Device login was denied"
 deviceLoginExpired     = "Device login code expired — run login again"
@@ -50,28 +52,29 @@ temp           = "temp"
 
 [args]
 help        = """
-Kaja command line tool • v{version} • https://kaja.io
+[en-US] lorem ipsum dolor sit amet consectetur {version}
 
-USAGE
-  $ kaja [OPTIONS] [COMMAND]
+[en-US] lorem
+  [en-US] lorem ipsum dolor sit
 
-COMMANDS
-  config <wizard|fetch|diff|paths>
-                       Set up interactively, or manage config files
-  doctor               Print configured models, MCP servers and tools, and check connections
-  telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
-  abilities [update]   Pick which skills load, or fetch the marketplace
-  sessions             List saved local sessions with their ids
-  logout               Log out of the cloud account, clearing its stored credential
+[en-US] lorem
+  [en-US] lorem ipsum dolor sit amet
+                       [en-US] lorem ipsum dolor sit amet consectetur
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-OPTIONS
-  --local         Run the local agent loop against your own provider instead of cloud login
-  --cloud         Force cloud login even if a local config exists (default)
-  --continue, -c  Resume the most recent session (--local only)
-  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
-  --session, -s   Resume a session by id (--local only; see: kaja sessions)
-  --help          Show this help
-  --version       Print the version
+[en-US] lorem
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [en-US] lorem ipsum dolor sit amet
+  [en-US] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}. Run `kaja --help` to see the available options."
 
@@ -221,6 +224,8 @@ typeSkill           = "skill"
 typeTool            = "tool"
 typeMcp             = "mcp"
 typeCode            = "code"
+onSandbox           = "[en-US] lorem ipsum"
+sandboxSignedOut    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
 brokenPart          = "{part}: {error}"
 keySaved            = "key saved"
 noKey               = "no key, off"
