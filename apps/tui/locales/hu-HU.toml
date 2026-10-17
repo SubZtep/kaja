@@ -46,6 +46,7 @@ images         = "munkamenet-képek"
 backups        = "fájlmentések"
 models         = "modellek"
 commands       = "biztonságos parancsok"
+hooks          = "[hu-HU] lorem"
 marketplace    = "piactér"
 temp           = "ideiglenes"
 

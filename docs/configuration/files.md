@@ -17,6 +17,7 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ settings.toml    # preferences, voice, marketplace, storage location
 ├─ models.toml      # providers and the model for each task
 ├─ secrets.toml     # every key and token, and nothing else
+├─ hooks.toml       # optional: commands to run on chat events
 └─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
@@ -30,6 +31,7 @@ edit. Kaja reads them once at startup and never writes them while running, so re
 | `settings.toml` | [Settings](/configuration/config) |
 | `models.toml` | [Models](/configuration/models) |
 | `secrets.toml` | [Secrets](/configuration/secrets) |
+| `hooks.toml` | [Hooks](/configuration/config#hookstoml-commands-that-run-on-chat-events) |
 | `marketplace/` | [The marketplace](/abilities/marketplace), [Personas](/abilities/personas) |
 | the SQLite file | [Local storage](/configuration/storage) |
 

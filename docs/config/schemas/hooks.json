@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "message": {
+      "description": "Shell one-liner run in the background whenever the assistant writes in the chat; the reply as plain text is in $KAJA_TEXT and on stdin",
+      "type": "string"
+    },
+    "question": {
+      "description": "Shell one-liner run in the background whenever Kaja asks you a question; the question as plain text is in $KAJA_TEXT and on stdin",
+      "type": "string"
+    }
+  }
+}

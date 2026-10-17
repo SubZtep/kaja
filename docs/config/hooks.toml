@@ -1,0 +1,9 @@
+# Optional: Kaja works without this file, and never creates it. Each hook is a shell one-liner that
+# the terminal UI starts in the background (it never waits for it) when something happens in the chat.
+# The text is plain (no Markdown), in $KAJA_TEXT and on the command's stdin.
+
+# The assistant wrote something in the chat. Read it aloud:
+# message = "espeak-ng --stdin"
+
+# Kaja asks you a question. Show a desktop notification:
+# question = 'notify-send "Kaja asks" "$KAJA_TEXT"'
