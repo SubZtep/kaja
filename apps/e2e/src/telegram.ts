@@ -19,8 +19,14 @@ type StoredMessage = {
   deleted?: boolean
 }
 
-const matches = (match: string | RegExp | ((plain: string) => boolean), plain: string) =>
-  typeof match === "string" ? plain.includes(match) : typeof match === "function" ? match(plain) : match.test(plain)
+function matches(match: string | RegExp | ((plain: string) => boolean), plain: string): boolean {
+  if (typeof match === "string") return plain.includes(match)
+  if (typeof match === "function") return match(plain)
+  return match.test(plain)
+}
+
+const NOT_MODIFIED =
+  "Bad Request: message is not modified: specified new message content and reply markup are exactly the same"
 
 export type BotMessage = { id: number; text: string; plain: string; photo?: string; buttons: string[] }
 
@@ -70,7 +76,7 @@ export type Telegram = {
   stop(): Promise<void>
 }
 
-export async function startTelegram(): Promise<Telegram> {
+export function startTelegram(): Telegram {
   const messages: StoredMessage[] = []
   const files = new Map<string, { bytes: Uint8Array<ArrayBuffer>; mime: string }>()
   const updates: { update_id: number; [key: string]: unknown }[] = []
@@ -124,6 +130,41 @@ export async function startTelegram(): Promise<Telegram> {
     return String(photo)
   }
 
+  async function getUpdates(body: Record<string, unknown>) {
+    const offset = Number(body.offset ?? 0)
+    while (updates.length && updates[0]!.update_id < offset) updates.shift()
+    if (updates.length === 0) {
+      const seconds = Math.min(Number(body.timeout ?? 0), 20)
+      await new Promise<void>(resolve => {
+        const timer = setTimeout(resolve, seconds * 1000)
+        waiters.push(() => {
+          clearTimeout(timer)
+          resolve()
+        })
+      })
+    }
+    return updates.filter(update => update.update_id >= offset)
+  }
+
+  function editText(body: Record<string, unknown>) {
+    const message = findMessage(body.message_id)
+    if (!message) throw new Error("message to edit not found")
+    const buttons = buttonsOf(body.reply_markup)
+    if (message.text === String(body.text) && JSON.stringify(message.buttons) === JSON.stringify(buttons))
+      throw new Error(NOT_MODIFIED)
+    message.text = String(body.text)
+    message.buttons = buttons
+    return wire(message)
+  }
+
+  function editCaption(body: Record<string, unknown>) {
+    const message = findMessage(body.message_id)
+    if (!message) throw new Error("message to edit not found")
+    if (message.caption === String(body.caption)) throw new Error(NOT_MODIFIED)
+    message.caption = String(body.caption)
+    return wire(message)
+  }
+
   async function method(name: string, body: Record<string, unknown>): Promise<unknown> {
     switch (name) {
       case "getMe":
@@ -133,21 +174,8 @@ export async function startTelegram(): Promise<Telegram> {
       case "sendChatAction":
       case "answerCallbackQuery":
         return true
-      case "getUpdates": {
-        const offset = Number(body.offset ?? 0)
-        while (updates.length && updates[0]!.update_id < offset) updates.shift()
-        if (updates.length === 0) {
-          const seconds = Math.min(Number(body.timeout ?? 0), 20)
-          await new Promise<void>(resolve => {
-            const timer = setTimeout(resolve, seconds * 1000)
-            waiters.push(() => {
-              clearTimeout(timer)
-              resolve()
-            })
-          })
-        }
-        return updates.filter(update => update.update_id >= offset)
-      }
+      case "getUpdates":
+        return getUpdates(body)
       case "sendMessage": {
         const message: StoredMessage = {
           id: nextMessageId++,
@@ -163,37 +191,17 @@ export async function startTelegram(): Promise<Telegram> {
           id: nextMessageId++,
           from: "bot",
           text: "",
-          caption: body.caption ? String(body.caption) : undefined,
+          caption: typeof body.caption === "string" && body.caption ? body.caption : undefined,
           photo: await storePhoto(body),
           buttons: []
         }
         messages.push(message)
         return { ...wire(message), caption: message.caption }
       }
-      case "editMessageText": {
-        const message = findMessage(body.message_id)
-        if (!message) throw new Error("message to edit not found")
-        if (
-          message.text === String(body.text) &&
-          JSON.stringify(message.buttons) === JSON.stringify(buttonsOf(body.reply_markup))
-        )
-          throw new Error(
-            "Bad Request: message is not modified: specified new message content and reply markup are exactly the same"
-          )
-        message.text = String(body.text)
-        message.buttons = buttonsOf(body.reply_markup)
-        return wire(message)
-      }
-      case "editMessageCaption": {
-        const message = findMessage(body.message_id)
-        if (!message) throw new Error("message to edit not found")
-        if (message.caption === String(body.caption))
-          throw new Error(
-            "Bad Request: message is not modified: specified new message content and reply markup are exactly the same"
-          )
-        message.caption = String(body.caption)
-        return wire(message)
-      }
+      case "editMessageText":
+        return editText(body)
+      case "editMessageCaption":
+        return editCaption(body)
       case "deleteMessage": {
         const message = findMessage(body.message_id)
         if (message) message.deleted = true
@@ -207,6 +215,51 @@ export async function startTelegram(): Promise<Telegram> {
   }
 
   const reply = (json: unknown, status = 200) => Response.json(json, { status })
+
+  // What the chat window does as the user
+  const userActions: Record<string, (request: Request) => Promise<void>> = {
+    async "/user/message"(request) {
+      const { text, group } = (await request.json()) as { text: string; group?: boolean }
+      const message: StoredMessage = { id: nextMessageId++, from: "user", text, buttons: [] }
+      // A group's messages never appear in the private chat window
+      if (!group) messages.push(message)
+      const command = text.startsWith("/")
+        ? { entities: [{ type: "bot_command", offset: 0, length: text.split(" ")[0]!.length }] }
+        : {}
+      const where = group ? { chat: { id: -1001, type: "supergroup", title: "Friends" } } : {}
+      enqueue({ message: { ...wire(message), ...where, ...command } })
+    },
+    async "/user/photo"(request) {
+      const { data, mime, caption } = (await request.json()) as { data: string; mime: string; caption?: string }
+      const bytes = Uint8Array.fromBase64(data)
+      const id = `photo-${nextFileId++}`
+      files.set(id, { bytes, mime })
+      const message: StoredMessage = {
+        id: nextMessageId++,
+        from: "user",
+        text: "",
+        caption,
+        photo: `/files/${id}`,
+        buttons: []
+      }
+      messages.push(message)
+      enqueue({
+        message: {
+          ...wire(message),
+          ...(caption ? { caption } : {}),
+          photo: [{ file_id: id, file_unique_id: id, width: 100, height: 100, file_size: bytes.byteLength }]
+        }
+      })
+    },
+    async "/user/callback"(request) {
+      const { messageId, data } = (await request.json()) as { messageId: number; data?: string }
+      const message = findMessage(messageId)
+      if (message && data)
+        enqueue({
+          callback_query: { id: String(nextUpdateId), from: user, message: wire(message), chat_instance: "e2e", data }
+        })
+    }
+  }
 
   const server = Bun.serve({
     port: e2eEnv.E2E_TELEGRAM_PORT,
@@ -233,48 +286,9 @@ export async function startTelegram(): Promise<Telegram> {
       if (url.pathname === "/state") {
         return reply(messages.filter(message => !message.deleted))
       }
-      if (url.pathname === "/user/message" && request.method === "POST") {
-        const { text, group } = (await request.json()) as { text: string; group?: boolean }
-        const message: StoredMessage = { id: nextMessageId++, from: "user", text, buttons: [] }
-        // A group's messages never appear in the private chat window
-        if (!group) messages.push(message)
-        const command = text.startsWith("/")
-          ? { entities: [{ type: "bot_command", offset: 0, length: text.split(" ")[0]!.length }] }
-          : {}
-        const where = group ? { chat: { id: -1001, type: "supergroup", title: "Friends" } } : {}
-        enqueue({ message: { ...wire(message), ...where, ...command } })
-        return reply(true)
-      }
-      if (url.pathname === "/user/photo" && request.method === "POST") {
-        const { data, mime, caption } = (await request.json()) as { data: string; mime: string; caption?: string }
-        const bytes = Uint8Array.fromBase64(data)
-        const id = `photo-${nextFileId++}`
-        files.set(id, { bytes, mime })
-        const message: StoredMessage = {
-          id: nextMessageId++,
-          from: "user",
-          text: "",
-          caption,
-          photo: `/files/${id}`,
-          buttons: []
-        }
-        messages.push(message)
-        enqueue({
-          message: {
-            ...wire(message),
-            ...(caption ? { caption } : {}),
-            photo: [{ file_id: id, file_unique_id: id, width: 100, height: 100, file_size: bytes.byteLength }]
-          }
-        })
-        return reply(true)
-      }
-      if (url.pathname === "/user/callback" && request.method === "POST") {
-        const { messageId, data } = (await request.json()) as { messageId: number; data?: string }
-        const message = findMessage(messageId)
-        if (message && data)
-          enqueue({
-            callback_query: { id: String(nextUpdateId), from: user, message: wire(message), chat_instance: "e2e", data }
-          })
+      const userAction = request.method === "POST" ? userActions[url.pathname] : undefined
+      if (userAction) {
+        await userAction(request)
         return reply(true)
       }
       if (url.pathname === "/") return new Response(CHAT_PAGE, { headers: { "content-type": "text/html" } })

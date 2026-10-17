@@ -35,6 +35,43 @@ export function launchBrowser(): Promise<Browser> {
   return chromium.launch({ executablePath: browserPath(), headless: !e2eEnv.E2E_HEADED })
 }
 
+/** Runs a model-dependent step; it gets one retry, and a second failure counts as the model's, not the app's. */
+async function withRetry<T>(step: () => Promise<T>): Promise<T> {
+  try {
+    return await step()
+  } catch (first) {
+    console.log(`  ↻ model step failed, retrying once: ${(first as Error).message}`)
+    try {
+      return await step()
+    } catch (second) {
+      throw new ModelFailure((second as Error).message)
+    }
+  }
+}
+
+/** Renames each drawn page's recording to its clip. A page the scenario never drew anything on has nothing to show (the terminal's is drawn without a URL). */
+async function saveClips(
+  pages: { label: string; page: Page }[],
+  clips: string,
+  file: string,
+  close: () => Promise<void>
+) {
+  const recorded: { label: string; video: ReturnType<Page["video"]> }[] = []
+  for (const { label, page } of pages) {
+    const drawn = await page.evaluate(() => document.body?.children.length ?? 0).catch(() => 0)
+    if (drawn > 0) recorded.push({ label, video: page.video() })
+  }
+  await close()
+  const videos: string[] = []
+  for (const { label, video } of recorded) {
+    if (!video) continue
+    const clip = join(clips, `${file}.${label}.webm`)
+    renameSync(await video.path(), clip)
+    videos.push(clip)
+  }
+  return videos
+}
+
 /** Runs one scenario in a fresh browser context that records a video; a failure also leaves a screenshot. */
 export async function runScenario(browser: Browser, stack: Stack, scenario: Scenario, file: string): Promise<Result> {
   const clips = join(outDir, "clips")
@@ -64,18 +101,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
       stack,
       page,
       newPage: open,
-      model: async step => {
-        try {
-          return await step()
-        } catch (first) {
-          console.log(`  ↻ model step failed, retrying once: ${(first as Error).message}`)
-          try {
-            return await step()
-          } catch (second) {
-            throw new ModelFailure((second as Error).message)
-          }
-        }
-      },
+      model: withRetry,
       newEmail: () => `e2e-${crypto.randomUUID()}@example.test`,
       step: name => {
         current = name
@@ -94,20 +120,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   }
   // The recorder drops what changed in the last moments before the context closes
   if (scenario.video !== false) await Bun.sleep(LINGER_MS)
-  // A page the scenario never drew anything on has nothing to show (the terminal's is drawn without a URL)
-  const recorded: { label: string; video: ReturnType<Page["video"]> }[] = []
-  for (const { label, page: recordedPage } of pages) {
-    const drawn = await recordedPage.evaluate(() => document.body?.children.length ?? 0).catch(() => 0)
-    if (drawn > 0) recorded.push({ label, video: recordedPage.video() })
-  }
-  await context.close()
-  const videos: string[] = []
-  for (const { label, video } of recorded) {
-    if (!video) continue
-    const clip = join(clips, `${file}.${label}.webm`)
-    renameSync(await video.path(), clip)
-    videos.push(clip)
-  }
+  const videos = await saveClips(pages, clips, file, () => context.close())
   const seconds = (performance.now() - started) / 1000
   return {
     name: scenario.name,

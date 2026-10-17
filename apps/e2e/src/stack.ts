@@ -91,7 +91,7 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
   await buildDatabase(dbUrl, llama)
 
   // Up before the API: its bot asks getMe on boot
-  const telegram = await startTelegram()
+  const telegram = startTelegram()
 
   const apiUrl = `http://localhost:${e2eEnv.E2E_API_PORT}`
   const webUrl = `http://localhost:${e2eEnv.E2E_WEB_PORT}`
