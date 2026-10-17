@@ -31,15 +31,22 @@ const getMe = mock(async () => ({ id: 1, is_bot: true, first_name: "bot" }))
 const setMyCommands = mock(async (_commands: { command: string; description: string }[]) => true)
 type Handler = (ctx: unknown) => unknown
 let handlers: Record<string, Handler> = {}
+/** The chat types the bot's handlers were scoped to. */
+let chatTypes: string[] = []
 
 mock.module("grammy", () => ({
   Bot: class {
     api = { getMe, sendMessage, setMyCommands }
     constructor() {
       handlers = {}
+      chatTypes = []
     }
-    on(filter: string, handler: Handler) {
-      handlers[filter] = handler
+    chatType(type: string) {
+      chatTypes.push(type)
+      return this
+    }
+    on(filter: string | string[], handler: Handler) {
+      for (const each of [filter].flat()) handlers[each] = handler
     }
     catch() {}
     async start(opts?: { onStart?: (botInfo: { username: string }) => void }) {
@@ -74,6 +81,17 @@ test("start() sets the command menu, and a failure there doesn't stop the bot", 
     throw new Error("network down")
   })
   await makeBot().start()
+})
+
+test("the bot listens in private chats only", () => {
+  makeBot()
+  expect(chatTypes).toEqual(["private"])
+  expect(Object.keys(handlers).sort()).toEqual([
+    "callback_query:data",
+    "message:document",
+    "message:photo",
+    "message:text"
+  ])
 })
 
 test("start() and stop() send no lifecycle notices — there is no allowlist to send them to", async () => {

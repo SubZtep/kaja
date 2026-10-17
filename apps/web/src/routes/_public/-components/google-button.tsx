@@ -41,8 +41,16 @@ export function GoogleButton({
   callbackPath = "/dashboard",
   signUp = false,
   disabled = false,
+  label,
   captcha
-}: Readonly<{ className?: string; callbackPath?: string; signUp?: boolean; disabled?: boolean; captcha: Captcha }>) {
+}: Readonly<{
+  className?: string
+  callbackPath?: string
+  signUp?: boolean
+  disabled?: boolean
+  label?: string
+  captcha: Captcha
+}>) {
   const { apiUrl } = useLoaderData({ from: "__root__" })
   const [loading, setLoading] = useState(false)
 
@@ -78,7 +86,7 @@ export function GoogleButton({
         onClick={signIn}
       >
         <GoogleMark />
-        {m.google_continue()}
+        {label ?? m.google_continue()}
       </button>
       <Sticker rotate={12} className="pointer-events-none absolute -top-3 -right-2 px-2 py-1">
         {m.stamp_one_click()}

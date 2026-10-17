@@ -3,7 +3,7 @@ layout: page
 title: Installation
 parent: Get started
 nav_order: 1
-summary: "Install the terminal client and run it for the first time."
+summary: Install the terminal client and run it for the first time.
 icon: 🧩
 ---
 

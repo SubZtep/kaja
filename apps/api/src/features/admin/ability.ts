@@ -67,7 +67,7 @@ const saveServiceKeyRoute = createRoute({
   tags: ["Admin"],
   summary: "Save (or replace) an ability's server-wide key, and test it",
   description:
-    "Every user without their own key shares it, and calls with it go only through the official sandbox. Stored encrypted and never sent back; tested like a user's key, and saved even when the test fails.",
+    "Every user shares it, and calls with it go only through the official sandbox. Stored encrypted and never sent back; tested with the ability's `check` request or by connecting to its MCP server, and saved even when the test fails.",
   security: [{ bearerAuth: [] }],
   request: {
     params: keyParams,

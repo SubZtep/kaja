@@ -3,7 +3,7 @@ layout: page
 title: Website widget
 parent: Using Kaja
 nav_order: 4
-summary: "Embed a chat on your own website."
+summary: Embed a chat on your own website.
 icon: 🖼
 ---
 
@@ -27,9 +27,10 @@ Create one on the **Widget** page of the [web app](/using/web-app):
 2. List the **allowed origins**, the sites that may embed it: scheme and host (plus a port if it isn't the
    default), such as `https://example.com`. You need at least one, and up to 20. A pasted page URL is cut
    to its origin.
-3. Pick a **type** (`chat` or `barkochba`) and, optionally, a **persona** and the **skills** it may use.
+3. Pick a **type** (`chat` or `barkochba`) and, optionally, a **persona** — its abilities decide which skills a
+   visitor's chat can use.
 
-You can change the label, origins, persona and skills later. The key itself never changes.
+You can change the label, origins and persona later. The key itself never changes.
 
 The raw key is shown **once**, when you create it. Kaja only stores a hash and a short prefix, so if you
 lose it, create a new one.
@@ -71,8 +72,8 @@ other's, and none of it mixes into yours.
 
 A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud
 [built-in tools](/abilities/tools#built-ins) except `fetch_url`, and no HTTP tools or MCP servers. A key's
-abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with your
-API keys. Every persona in the catalog is available, starting with the key's own.
+abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with
+Kaja's API keys. Every persona in the catalog is available, starting with the key's own.
 
 ## Types
 

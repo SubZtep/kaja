@@ -3,7 +3,7 @@ layout: page
 title: Nasi
 parent: Abilities
 nav_order: 1
-summary: "The agent at the heart of Kaja and how it loops."
+summary: The agent at the heart of Kaja and how it loops.
 icon: 🌀
 ---
 
@@ -85,8 +85,9 @@ Type `/compact` to do it on demand. Which model writes the summaries, and when c
 
 Conversations, memory notes and dataset answers live in a store the host provides: a
 [SQLite file](/configuration/storage) locally, Postgres in the cloud. Nasi reads no config file and opens no
-database itself, which is why one brain fits every front door. How it's built is on
-[Agent brain](/development/nasi).
+database itself, which is why one brain fits every front door.
+
+Curious how it works under the hood? [Inside Nasi](/abilities/inside-nasi) tells the story.
 
 ---
 

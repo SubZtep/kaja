@@ -63,12 +63,6 @@ export function trimTrailingSlashes(value: string) {
   return value.slice(0, end)
 }
 
-/** The text of a turn that ends on a question: what streamed, plus the question unless the streamed text already ends with it (a reply ending in "?" streams and then arrives as the question). */
-export function withQuestion(streamed: string, question: string) {
-  if (!streamed.trim()) return question
-  return streamed.trimEnd().endsWith(question.trim()) ? streamed : `${streamed}\n\n${question}`
-}
-
 /** A stored session's title: the first line of its first message, at most 60 characters. */
 export function sessionTitle(firstMessage: string): string {
   return firstMessage.split(/[\r\n]/)[0]!.slice(0, 60)

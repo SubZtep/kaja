@@ -3,7 +3,7 @@ layout: page
 title: Terminal UI
 parent: Using Kaja
 nav_order: 1
-summary: "The terminal chat client and its commands."
+summary: The terminal chat client and its commands.
 icon: 🖵
 ---
 

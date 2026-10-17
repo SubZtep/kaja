@@ -3,6 +3,7 @@ import { homedir } from "node:os"
 import { resolve } from "node:path"
 import {
   type AgentEvent,
+  allowKey,
   applyVisionPin,
   compact,
   dataUrlBytes,
@@ -10,17 +11,20 @@ import {
   type FinalizedAgentEvent,
   imageRefId,
   isImageRejection,
+  notApprovedPrompt,
   type PromptImage,
   personaAbilities,
   photoLabel,
   recordPausedCall,
   runApprovedTool,
-  samplingOf
+  samplingOf,
+  toolName
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
+  approvalToken,
   commandArgument,
   compactedLine,
   escapeHtml,
@@ -29,14 +33,14 @@ import {
   type Reply,
   renderTelegramHtml
 } from "@kaja/shared/telegram"
-import { sessionTitle, withQuestion } from "@kaja/shared/text"
+import { sessionTitle } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
 import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
 import { timelineEvent } from "../agent/timeline"
-import { t } from "../i18n"
+import { getLanguage, t } from "../i18n"
 import { withDescription } from "../image/rows"
 import { log } from "../logger"
 import { storedImagePath } from "../memory/store"
@@ -87,6 +91,16 @@ const MAX_CAPTIONED_PHOTOS = 32
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6
 
+/** The events after which the turn has nothing more to say. */
+const ENDS_TURN = new Set<AgentEvent["type"]>(["ask_user", "final", "confirm_command", "confirm_tool"])
+
+/** A failure as the chat shows it: the category in the user's language, like the cloud bot and the terminal, then the provider's own (technical) text, escaped for HTML. */
+function errorLine(error: unknown): string {
+  const { category, message } = categorizeError(error)
+  const label = t(`error.${category}`)
+  return `⚠ ${label}: ${escapeHtml(message)}`
+}
+
 /** A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy dependency. */
 export type InlineKeyboardLike = { text: string; callback_data: string }[][]
 
@@ -104,6 +118,7 @@ export type TelegramSender = {
     text: string,
     opts?: { replyMarkup?: InlineKeyboardLike }
   ): Promise<void>
+  deleteMessage(chatId: number, messageId: number): Promise<void>
   answerCallbackQuery(callbackQueryId: string, opts?: { text?: string }): Promise<void>
   /** Sends a photo: a tool's stored image (bytes), a local file (a reply's Markdown image) or a remote URL (display_image events). */
   sendPhoto(
@@ -159,6 +174,8 @@ type UserState = {
   persistChain: Promise<void>
   pendingCommand: PendingCommand | undefined
   busy: boolean
+  /** Settles once the running turn has finished and saved, so an approval tapped while it winds down waits for it. */
+  idle: Promise<void>
   /** Tool images sent as photos, by ref, so a description written later can become the photo's caption. */
   photos: Map<string, number>
 }
@@ -207,7 +224,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       persistChain: Promise.resolve(),
       pendingCommand: undefined,
       photos: new Map(),
-      busy: false
+      busy: false,
+      idle: Promise.resolve()
     }
   }
 
@@ -294,14 +312,15 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const description = dangerous ? `⚠ ${event.description}` : event.description
     const body = [
       renderTelegramHtml(description),
-      `<pre><code>$ ${renderTelegramHtml(preview)}</code></pre>`,
+      // As written: what's approved must be exactly what runs
+      `<pre><code>$ ${escapeHtml(preview)}</code></pre>`,
       hidden > 0 ? t("confirmCommand.truncated", { count: hidden }) : undefined
     ]
       .filter(Boolean)
       .join("\n")
 
-    // The tool_call id the model provider already minted for this call, already stored on session.pendingRunCommandId — reused as the callback_data correlator instead of generating a separate token, and short enough to fit the Bot API's 64-byte callback_data cap (unlike the command text itself).
-    const token = state.session.pendingRunCommandId!
+    // A hash of the call id the session already waits on: it correlates the tap, and fits the Bot API's 64-byte callback_data cap whatever the provider's ids look like
+    const token = approvalToken(state.session.pendingRunCommandId!)
     const keyboard: InlineKeyboardLike = [
       [
         {
@@ -334,13 +353,14 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       renderTelegramHtml(t("confirmCommand.toolRequest", { name: event.name })),
       `<pre><code>→ ${escapeHtml(event.summary)}</code></pre>`
     ].join("\n")
-    // Same correlator as sendConfirmCommand: the provider's tool_call id, already stored on the session.
-    const token = state.session.pendingToolApprovalId!
+    // Same correlator as sendConfirmCommand
+    const token = approvalToken(state.session.pendingToolApprovalId!)
     const keyboard: InlineKeyboardLike = [
       [
         { text: `✅ ${t("confirmCommand.yes")}`, callback_data: `tool:approve:${token}` },
         { text: `❌ ${t("confirmCommand.no")}`, callback_data: `tool:decline:${token}` }
-      ]
+      ],
+      [{ text: `✅ ${t("telegram.approveSession")}`, callback_data: `tool:approve_session:${token}` }]
     ]
     const sent = await sender.sendMessage(chatId, body, { replyMarkup: keyboard })
     state.pendingCommand = {
@@ -364,8 +384,12 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     event: Exclude<FinalizedAgentEvent, { type: "usage" }>
   ): Promise<boolean> {
     switch (event.type) {
+      case "message":
+        await reply.endRound(event.content)
+        return false
+
       case "compacted":
-        await sender.sendMessage(chatId, compactedLine(event, t))
+        await sender.sendMessage(chatId, compactedLine(event, t, getLanguage()))
         return false
 
       case "persona_switch": {
@@ -413,8 +437,9 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         await sendConfirmTool(chatId, state, event)
         return true
 
+      // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
       case "ask_user":
-        await reply.finish(withQuestion(reply.streamed, event.question))
+        await reply.finish(event.question)
         return true
 
       case "final":
@@ -424,6 +449,23 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       // A delta (the caller's own are handled before they get here) ends nothing.
       default:
         return false
+    }
+  }
+
+  /** Dispatches one finalized event, logging a failed send rather than stopping the run. Returns whether the turn ended. */
+  async function dispatchFinalizedEvent(
+    chatId: number,
+    state: UserState,
+    reply: Reply,
+    event: Exclude<FinalizedAgentEvent, { type: "usage" }>
+  ): Promise<boolean> {
+    try {
+      return await handleFinalizedEvent(chatId, state, reply, event)
+    } catch (error) {
+      log.warn("Telegram send failed", { error })
+      if (!ENDS_TURN.has(event.type)) return false
+      await reply.fail(errorLine(error))
+      return true
     }
   }
 
@@ -443,7 +485,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
       if (event.type !== "image_described") state.events.push(timelineEvent(event))
 
-      if (await handleFinalizedEvent(chatId, state, reply, event)) ended = true
+      // A failed send never stops the run: the session then stays whole
+      if (await dispatchFinalizedEvent(chatId, state, reply, event)) ended = true
     }
   }
 
@@ -452,51 +495,78 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     log.warn("Telegram agent run failed", { error })
     const { category, message } = categorizeError(error)
     state.events.push({ type: "error", text: message, category })
-    // The category in the user's language, like the cloud bot and the terminal show it; the detail is the provider's own text
-    const label = t(`error.${category}`)
-    const line = `⚠ ${label}: ${message}`
+    const line = errorLine(error)
     if (!hadImages) return line
     // The session lives on in memory: without this, every later turn would send the photo again
     dropImages(state.session, turnStart)
     return isImageRejection(error) ? t("telegram.noVision") : line
   }
 
+  /** `userText`: the timeline's line for what the human sent (none for an approval's result, which they didn't type). */
   async function runTurn(
     userId: number,
     chatId: number,
     state: UserState,
     prompt: string,
-    showUserEvent: boolean,
+    userText: string | undefined,
     images: PromptImage[] = []
   ) {
     state.busy = true
-    if (showUserEvent) state.events.push({ type: "user", text: images.length > 0 ? photoLabel(prompt) : prompt })
+    let finished = () => {}
+    state.idle = new Promise(resolve => {
+      finished = resolve
+    })
+    if (userText !== undefined) state.events.push({ type: "user", text: userText })
     const turnStart = state.session.messages.length
 
-    const reply = await openReply({
-      send: text => sender.sendMessage(chatId, text),
-      edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
-      sendPhoto: async (photo: { path: string } | { url: string }, caption) => {
-        await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
-      },
-      photoSource,
-      emptyReply: t("telegram.emptyResponse"),
-      warn: (message, error) => log.warn(message, { error })
-    })
-
     try {
-      await readTurn(run(state.agent, prompt, state.session, telegramOwner(userId), images), chatId, state, reply)
-    } catch (error) {
-      await reply.fail(turnFailure(state, error, images.length > 0, turnStart))
+      const reply = await openReply({
+        send: text => sender.sendMessage(chatId, text),
+        edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+        remove: messageId => sender.deleteMessage(chatId, messageId),
+        sendPhoto: async (photo: { path: string } | { url: string }, caption) => {
+          await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
+        },
+        photoSource,
+        emptyReply: t("telegram.emptyResponse"),
+        warn: (message, error) => log.warn(message, { error })
+      })
+      try {
+        await readTurn(run(state.agent, prompt, state.session, telegramOwner(userId), images), chatId, state, reply)
+      } catch (error) {
+        await reply.fail(turnFailure(state, error, images.length > 0, turnStart))
+      }
     } finally {
-      state.busy = false
       await persistSession(userId, state)
+      state.busy = false
+      finished()
     }
   }
 
-  /** `images` (data URLs): a photo sent with the message, whose caption is `text`; it always runs as a turn, never a command. */
+  /**
+   * A message instead of a tap on a waiting approval skips the call, like the cloud bot: the prompt says so, and
+   * the approval's buttons go. Also after a restart, when only the session remembers the call.
+   */
+  async function answerPendingWith(chatId: number, state: UserState, text: string): Promise<string> {
+    const kind = state.session.pendingRunCommandId ? "run_command" : "tool_approval"
+    if (!state.session.pendingRunCommandId && !state.session.pendingToolApprovalId) return text
+    const pending = state.pendingCommand
+    state.pendingCommand = undefined
+    recordPausedCall(state.session, kind, "skipped")
+    if (pending)
+      await editSafely(chatId, pending.messageId, `${pending.body}\n\n⏭ ${t("telegram.skipped")}`, { replyMarkup: [] })
+    return notApprovedPrompt(text)
+  }
+
+  /** `images` (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a command. */
   async function handleMessage(userId: number, chatId: number, text: string, images: string[] = []) {
     if (images.length > 0) return handlePhoto(userId, chatId, text, images)
+
+    // Telegram sends it when an owner opens the chat anew; a code in it only pairs strangers
+    if (commandArgument(text, "start") !== undefined) {
+      await sender.sendMessage(chatId, t("telegram.welcome"))
+      return
+    }
 
     if (isCommand(text, "abilities")) {
       await sender.sendMessage(chatId, abilitiesMessage(personas))
@@ -521,27 +591,26 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       await sender.sendMessage(chatId, t("telegram.stillWorking"))
       return
     }
-    if (state.pendingCommand) {
-      await sender.sendMessage(chatId, t("telegram.pendingCommand"))
-      return
-    }
 
     const focus = commandArgument(text, "compact")
     if (focus !== undefined) {
-      await compactNow(userId, chatId, state, focus)
+      // Compacting would leave the waiting call without its answer
+      if (state.pendingCommand) await sender.sendMessage(chatId, t("telegram.pendingCommand"))
+      else await compactNow(userId, chatId, state, focus)
       return
     }
 
-    await runTurn(userId, chatId, state, text, true)
+    await runTurn(userId, chatId, state, await answerPendingWith(chatId, state, text), text)
   }
 
   async function handlePhoto(userId: number, chatId: number, caption: string, images: string[]) {
     const state = await getUserState(userId)
-    if (state.busy || state.pendingCommand) {
-      await sender.sendMessage(chatId, t(state.busy ? "telegram.stillWorking" : "telegram.pendingCommand"))
+    if (state.busy) {
+      await sender.sendMessage(chatId, t("telegram.stillWorking"))
       return
     }
-    await runTurn(userId, chatId, state, caption, true, images)
+    const prompt = await answerPendingWith(chatId, state, caption)
+    await runTurn(userId, chatId, state, prompt, photoLabel(caption), images)
   }
 
   // `/compact [focus]`: summarises this user's conversation now instead of running a turn.
@@ -550,7 +619,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     try {
       const result = await compact(state.agent, state.session, focus || undefined)
       if (result) state.events.push({ type: "compacted", ...result })
-      await sender.sendMessage(chatId, result ? compactedLine(result, t) : t("telegram.nothingToCompact"))
+      await sender.sendMessage(
+        chatId,
+        result ? compactedLine(result, t, getLanguage()) : t("telegram.nothingToCompact")
+      )
     } catch (error) {
       log.warn("Telegram compaction failed", { error })
       await sender.sendMessage(chatId, t("telegram.genericError"))
@@ -558,6 +630,31 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       state.busy = false
       await persistSession(userId, state)
     }
+  }
+
+  /** Runs the approved/declined command or tool, recording it on the session. */
+  async function runApprovalAction(
+    state: UserState,
+    pendingCommand: PendingCommand,
+    approved: boolean,
+    action: "approve" | "approve_session" | "decline"
+  ): Promise<{ result: string; images: PromptImage[] }> {
+    const startedAt = performance.now()
+    if (pendingCommand.kind === "command") {
+      const result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
+      recordPausedCall(state.session, "run_command", approved ? { status: "ok", startedAt } : "declined")
+      return { result, images: [] }
+    }
+
+    if (action === "approve_session") grantForSession(state, pendingCommand.name)
+    let status: "ok" | "error" = "ok"
+    const ran = approved
+      ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments, s => {
+          status = s
+        })
+      : { text: "User declined this request.", images: [] }
+    recordPausedCall(state.session, "tool_approval", approved ? { status, startedAt } : "declined")
+    return { result: ran.text, images: ran.images }
   }
 
   async function handleCallbackQuery(
@@ -569,16 +666,18 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   ) {
     // Ack immediately regardless of outcome — Telegram shows a client-side spinner on the pressed button until this call resolves.
     await sender.answerCallbackQuery(callbackQueryId)
-    const match = /^(cmd|tool):(approve|decline):(.+)$/.exec(data)
+    const match = /^(cmd|tool):(approve|approve_session|decline):(.+)$/.exec(data)
     if (!match) return
     const kind = match[1] === "cmd" ? "command" : "tool"
-    const action = match[2] as "approve" | "decline"
+    const action = match[2] as "approve" | "approve_session" | "decline"
     const token = match[3]!
 
     const state = await getUserState(userId)
+    // The turn that sent the prompt may still be finishing (saving, waiting on an image's description)
+    await state.idle
     const pendingId = kind === "command" ? state.session.pendingRunCommandId : state.session.pendingToolApprovalId
     // The pressing user's id comes from the callback source (grammy: ctx.from.id), never from the payload, so this can only ever check against *that same user's* pendingCommand — even a leaked/guessed callback_data from another user's session can't cross over.
-    if (state.pendingCommand?.kind !== kind || pendingId !== token) {
+    if (state.busy || state.pendingCommand?.kind !== kind || !pendingId || approvalToken(pendingId) !== token) {
       await editSafely(chatId, messageId, t("telegram.commandExpired"), {
         replyMarkup: []
       })
@@ -587,29 +686,29 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
     const pendingCommand = state.pendingCommand
     state.pendingCommand = undefined
-    const approved = action === "approve"
+    // Busy from the tap on: a message sent while the command runs mustn't start a turn beside it
+    state.busy = true
+    const approved = action !== "decline"
     const statusLine = approved ? `✅ ${t("telegram.approved")}` : `❌ ${t("telegram.declined")}`
     await editSafely(chatId, pendingCommand.messageId, `${pendingCommand.body}\n\n${statusLine}`, { replyMarkup: [] })
 
     let result: string
-    let images: PromptImage[] = []
-    const startedAt = performance.now()
-    if (pendingCommand.kind === "command") {
-      result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
-      recordPausedCall(state.session, "run_command", approved ? { status: "ok", startedAt } : "declined")
-    } else {
-      let status: "ok" | "error" = "ok"
-      const ran = approved
-        ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments, s => {
-            status = s
-          })
-        : { text: "User declined this request.", images: [] }
-      result = ran.text
-      images = ran.images
-      recordPausedCall(state.session, "tool_approval", approved ? { status, startedAt } : "declined")
+    let images: PromptImage[]
+    try {
+      ;({ result, images } = await runApprovalAction(state, pendingCommand, approved, action))
+    } catch (error) {
+      state.busy = false
+      throw error
     }
-    // showUserEvent = false: the synthesized shell result isn't something the human typed, so it drives the next turn without rendering as if they said it — matches hooks/use-agent.ts's resolveCommand.
-    await runTurn(userId, chatId, state, result, false, images)
+    // No user line: the synthesized result isn't something the human typed, so it drives the next turn without rendering as if they said it — matches hooks/use-agent.ts's resolveCommand.
+    await runTurn(userId, chatId, state, result, undefined, images)
+  }
+
+  /** "Approve for this chat": the tool stops asking for the rest of this session, as in the cloud. */
+  function grantForSession(state: UserState, name: string) {
+    const approved = state.agent.tools.find(candidate => toolName(candidate) === name)
+    const key = approved && allowKey(approved)
+    if (key) state.session.grantedTools = [...new Set([...(state.session.grantedTools ?? []), key])]
   }
 
   return { handleMessage, handleCallbackQuery }

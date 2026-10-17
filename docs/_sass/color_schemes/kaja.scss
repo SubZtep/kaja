@@ -1,0 +1,5 @@
+@import "./color_schemes/dark";
+
+$body-background-color: #1e1d22;
+$sidebar-color: #1e1d22;
+$feedback-color: darken($sidebar-color, 3%);

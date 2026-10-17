@@ -8,7 +8,7 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_TUI_CLIENT_ID
   auth.ts      # auth-related payloads
-  ability.ts     # ability catalog + users' abilities and keys
+  ability.ts     # ability catalog + server-wide ability keys
   config-export.ts # /config/export bundle
   model.ts       # provider/model admin CRUD schemas
   sandbox.ts     # sandbox tunnel frames, sandbox keys and settings

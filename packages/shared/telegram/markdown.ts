@@ -154,35 +154,98 @@ export function renderTelegramHtml(markdown: string): string {
     .trim()
 }
 
+const TAG = /<(\/?)([a-z]+)\b[^>]*>/g
+
+/** The tags still open at the end of `html`, outermost first. */
+function openTags(html: string): { name: string; tag: string }[] {
+  const open: { name: string; tag: string }[] = []
+  for (const [tag, closing, name] of html.matchAll(TAG)) {
+    const last = closing ? open.findLastIndex(t => t.name === name) : -1
+    if (!closing) open.push({ name: name!, tag })
+    else if (last >= 0) open.splice(last, 1)
+  }
+  return open
+}
+
+/** Trims trailing `\n` characters without a regex (avoids a ReDoS-shaped backtracking pattern). */
+function trimTrailingNewlines(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "\n") end--
+  return value.slice(0, end)
+}
+
+/** Moves a cut back so it lands outside any tag, entity or surrogate pair. */
+function safeCut(html: string, at: number): number {
+  const tagStart = html.lastIndexOf("<", at - 1)
+  if (tagStart > html.lastIndexOf(">", at - 1)) at = tagStart
+  // Every `&` in rendered HTML starts an entity
+  const entityStart = html.lastIndexOf("&", at - 1)
+  if (entityStart > html.lastIndexOf(";", at - 1)) at = entityStart
+  // A code point above 0xffff here means at-1 is a high surrogate paired with the low surrogate at `at`: the cut splits it
+  if ((html.codePointAt(at - 1) ?? 0) > 0xffff) at--
+  return at
+}
+
+/**
+ * Cuts `html` into a head of at most `limit` characters, at a blank line, else a line break, else anywhere past
+ * `from`; the tags open at the cut are closed at the head's end and reopened at the rest's start, so both parse.
+ */
+function cutHtml(html: string, limit: number, from: number): { head: string; rest: string; reopened: number } {
+  let budget = limit
+  for (;;) {
+    const enough = from + (budget - from) / 2
+    let at = html.lastIndexOf("\n\n", budget)
+    if (at <= enough) at = html.lastIndexOf("\n", budget)
+    if (at <= enough) at = budget
+    at = safeCut(html, at)
+    if (at <= from) at = budget
+    const open = openTags(html.slice(0, at))
+    const head =
+      trimTrailingNewlines(html.slice(0, at)) +
+      open
+        .toReversed()
+        .map(t => `</${t.name}>`)
+        .join("")
+    if (head.length <= limit || budget <= from + 1) {
+      const reopen = open.map(t => t.tag).join("")
+      // Only line breaks go: a code block's next line keeps its indentation
+      return { head, rest: reopen + html.slice(at).replace(/^\n+/, ""), reopened: reopen.length }
+    }
+    budget -= head.length - limit
+  }
+}
+
 /**
  * Splits already-rendered Telegram HTML into <=`limit`-char chunks for
- * separate sendMessage calls, breaking on a blank-line boundary where
- * possible so it doesn't sever a tag pair mid-block. Used only at
- * final/flush time — editMessageText always targets one existing message,
- * so it can't be split this way.
+ * separate sendMessage calls, breaking on a blank line where possible and
+ * closing and reopening any tag a break falls inside (a long code block),
+ * so every chunk parses. Used only at final/flush time — editMessageText
+ * always targets one existing message, so it can't be split this way.
  */
 export function splitTelegramMessage(html: string, limit = TELEGRAM_MESSAGE_LIMIT): string[] {
   if (html.length <= limit) return [html]
   const chunks: string[] = []
   let remaining = html
+  let reopened = 0
   while (remaining.length > limit) {
-    let splitAt = remaining.lastIndexOf("\n\n", limit)
-    if (splitAt <= 0) splitAt = limit
-    chunks.push(remaining.slice(0, splitAt).trim())
-    remaining = remaining.slice(splitAt).trim()
+    // A cut must get past the tags the chunk was reopened with, or it would make no progress
+    const { head, rest, reopened: next } = cutHtml(remaining, limit, reopened)
+    chunks.push(head)
+    remaining = rest
+    reopened = next
   }
   if (remaining) chunks.push(remaining)
   return chunks
 }
 
 /**
- * Cheap, not tag-safe truncation for in-flight streaming edits that exceed
- * the message limit — good enough since it's only ever transient (the next
- * edit tick replaces it, and the final flush uses splitTelegramMessage for
- * the real, tag-safe multi-message split).
+ * Truncation for in-flight streaming edits that exceed the message limit:
+ * cut like splitTelegramMessage (so the edit still parses), with an ellipsis.
+ * Only ever transient — the next edit replaces it, and the final flush splits
+ * the whole text over more messages.
  */
 export function truncateForStreaming(html: string, limit = TELEGRAM_MESSAGE_LIMIT): string {
   if (html.length <= limit) return html
   const ellipsis = "\n…"
-  return html.slice(0, Math.max(0, limit - ellipsis.length)) + ellipsis
+  return cutHtml(html, limit - ellipsis.length, 0).head + ellipsis
 }

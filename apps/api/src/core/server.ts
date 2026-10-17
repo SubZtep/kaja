@@ -27,7 +27,7 @@ await sandboxService.markAllOffline().catch(err => reportError("Couldn't reset t
 marketplaceService.sync().catch(() => {})
 
 if (!env.USER_SECRET_KEY) {
-  console.warn("USER_SECRET_KEY isn't set: users can't save ability keys, and tools that need one are hidden")
+  console.warn("USER_SECRET_KEY isn't set: admins can't save ability keys, and tools that need one are hidden")
 }
 
 // Start the always-on cloud Telegram bot, if configured

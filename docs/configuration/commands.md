@@ -3,7 +3,7 @@ layout: page
 title: Doctor & troubleshooting
 parent: Configuration
 nav_order: 6
-summary: "Find, refresh and test your config, and what to do when something's wrong."
+summary: Find, refresh and test your config, and what to do when something's wrong.
 icon: 🩺
 ---
 
@@ -76,9 +76,3 @@ agent's warnings: skipped abilities, missing keys, failed MCP connections.
 
 Open an issue on [GitHub](https://github.com/SubZtep/kaja/issues) with the `kaja doctor` output. Every
 config file except `secrets.toml` is safe to include.
-
----
-
-Next:
-
-[Development](/development){: .btn .btn-green .fs-5 }

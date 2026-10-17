@@ -37,7 +37,7 @@ describe("error responses", () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ message: "x".repeat(megabytes * 1024 * 1024) })
       })
-    const small = await send("/abilities/me/keys/web-search", "PUT", 1)
+    const small = await send("/sandbox/settings", "PATCH", 1)
     expect(small.status).toBe(413)
     expect(await small.json()).toEqual({ error: "Request body too large" })
     expect((await send("/nasi/turn", "POST", 16)).status).toBe(413)

@@ -35,8 +35,7 @@ When you create or use an account, Kaja collects:
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
 - when you open the sign-in or sign-up forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
 - email data needed to send account emails, such as sign-in and email change codes;
-- if you link Telegram, your Telegram user id, so the bot knows which account you are;
-- which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
+- if you link Telegram, your Telegram user id, so the bot knows which account you are.
 
 When you use **cloud chat**, Kaja additionally stores, against your account:
 
@@ -75,7 +74,7 @@ Kaja is not a medical service, and its replies are not medical advice.
 | Purpose | Data | Legal basis |
 |---|---|---|
 | Create and run your account, sign you in, send account emails | account, authentication, and email data | contract (Article 6(1)(b)) |
-| Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers, ability settings and keys | contract (Article 6(1)(b)) |
+| Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers | contract (Article 6(1)(b)) |
 | Health information you choose to share | conversation content and memory notes about your health | explicit consent (Article 9(2)(a)) |
 | Fill in your name and picture from your public Gravatar profile when you sign up with your email address | a hash of your email address; the profile's display name and picture | legitimate interests (Article 6(1)(f)) — so you don't have to type them; you can change or remove them at any time |
 | Link the Telegram bot to your account | Telegram user id | contract (Article 6(1)(b)) |
@@ -141,7 +140,7 @@ You can ask for details of the safeguard for any provider by email.
 ## Retention
 
 - **Account data** is kept while your account exists.
-- **Cloud conversations, memory notes, dataset answers, ability keys, widget keys, and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
+- **Cloud conversations, memory notes, dataset answers, widget keys, and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
 - **Deleting your account** from your profile page deletes it and everything stored with it straight away, including conversations your widgets' visitors had.
 - **Sandbox working state** (such as a browser's pages and cookies) is deleted after about 10 minutes unused, or when the sandbox restarts.
 - **Sandbox records** (IP address, location, hardware) are kept until you remove the sandbox or your account; anonymous ones a week after they were last online.

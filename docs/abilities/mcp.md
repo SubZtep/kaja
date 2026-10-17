@@ -3,7 +3,7 @@ layout: page
 title: MCP servers
 parent: Abilities
 nav_order: 5
-summary: "Plug in Model Context Protocol servers."
+summary: Plug in Model Context Protocol servers.
 icon: 🔌
 ---
 
@@ -151,17 +151,16 @@ websites, not Kaja's servers or anything on the sandbox's private network.
 
 A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja's, never in a shared one.
 `chrome-devtools` is one, so the browser never runs on someone else's computer. A key travels with each
-request and is never stored there: yours only to your own sandbox or Kaja's, the server's own key only to
-Kaja's. The same goes for HTTP tools.
+request and is never stored there, and goes only to Kaja's own sandbox. The same goes for HTTP tools.
 
 - A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
   switch, and closes them when it ends. Nothing is shared with other users.
-- A saved key is tested by connecting and listing the server's tools.
+- A key is tested when an admin saves it, by connecting and listing the server's tools.
 - `approval` and `readOnly` work as above. Images, like screenshots, come back to you, and long results are
   cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`, like a screenshot's
   `filePath`) is hidden in the cloud.
-- A server that works without a key sees every user of a sandbox as one IP, with its rate limits. Add your
-  own key to get yours.
+- A server that works without a key sees every user of a sandbox as one IP, with its rate limits, until an
+  admin adds a key.
 
 Keys and approvals otherwise work as described in [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 

@@ -66,12 +66,12 @@ export function MarketplaceSection() {
   )
 }
 
-/** The server-wide ability keys every user without their own shares; calls with one go only through the official sandbox. */
+/** The server-wide ability keys every user shares; calls with one go only through the official sandbox. */
 export function ServiceKeysSection() {
   return (
     <Section className="mb-6" title={m.service_keys_title()}>
       <p className="mt-0 mb-4 text-muted text-sm">{m.service_keys_description()}</p>
-      <ApiKeys scope="service" />
+      <ApiKeys />
     </Section>
   )
 }

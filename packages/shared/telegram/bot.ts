@@ -1,5 +1,34 @@
+import { createHash } from "node:crypto"
+
 /** Telegram allows about one edit a second per message; a 429 doubles the wait, up to the cap. */
 const DEFAULT_EDIT_INTERVALS = { minMs: 1000, maxMs: 4000 }
+
+/** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
+export function approvalToken(callId: string): string {
+  return createHash("sha256").update(callId).digest("hex").slice(0, 16)
+}
+
+/** How long to wait for the rest of an album: Telegram sends each of its photos as a message of its own. */
+const ALBUM_WAIT_MS = 1000
+
+/**
+ * Gathers an album's photos into one call of `onAlbum`, so they make one turn: pass each photo with its message's
+ * `media_group_id` (scoped to its chat); a photo without one is passed on at once.
+ */
+export function albumCollector<T>(onAlbum: (items: T[]) => void, waitMs = ALBUM_WAIT_MS) {
+  const albums = new Map<string, { items: T[]; timer?: ReturnType<typeof setTimeout> }>()
+  return (groupId: string | undefined, item: T) => {
+    if (groupId === undefined) return onAlbum([item])
+    const album = albums.get(groupId) ?? { items: [] }
+    clearTimeout(album.timer)
+    album.items.push(item)
+    album.timer = setTimeout(() => {
+      albums.delete(groupId)
+      onAlbum(album.items)
+    }, waitMs)
+    albums.set(groupId, album)
+  }
+}
 
 /** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
 export function escapeHtml(text: string): string {

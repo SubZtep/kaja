@@ -3,7 +3,7 @@ layout: page
 title: Settings
 parent: Configuration
 nav_order: 2
-summary: "settings.toml: preferences, voice, marketplace and storage."
+summary: settings.toml: preferences, voice, marketplace and storage.
 icon: ⚙️
 ---
 
@@ -68,7 +68,7 @@ The agent asks before it runs a shell command, except for the simple read-only o
 `commands.toml` holds that list as regexes, each of which must match the whole command:
 
 ```toml
-safe = ['pwd', 'git (status|diff|log)(\s+[\w./=:@^~-]+)*']  # the defaults; `kaja config fetch` refreshes them
+safe = ['pwd', 'git (status|diff|log)(\s+[\w./=:@^~-]+)*', '...']  # a couple of the defaults; `kaja config fetch` refreshes them
 custom = ['npm (test|run lint)']                            # yours, kept when the defaults are refreshed
 ```
 

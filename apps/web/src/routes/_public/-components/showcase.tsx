@@ -171,8 +171,8 @@ export function Showcase() {
             <Sticker rotate={-6} className="text-[10px]">
               {m.stamp_soon()}
             </Sticker>
-            <SoonItem src="/art/cassette.webp" title={m.carousel_voice_title()} meta={m.carousel_voice_meta()} />
             <SoonItem src="/art/heart.webp" title={m.carousel_care_title()} meta={m.carousel_care_meta()} />
+            <SoonItem src="/art/cassette.webp" title={m.carousel_voice_title()} meta={m.carousel_voice_meta()} />
           </div>
         </div>
       </ContentWidth>

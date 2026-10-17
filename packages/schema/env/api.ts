@@ -127,7 +127,7 @@ const apiEnvFields = z.object({
     }, "must be 32 bytes, base64-encoded")
     .optional()
     .describe(
-      "Encrypts ability API keys, users' own and the admins' server-wide ones (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one"
+      "Encrypts the admins' server-wide ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one"
     )
     .meta({ secret: true, section: "Marketplace" }),
 

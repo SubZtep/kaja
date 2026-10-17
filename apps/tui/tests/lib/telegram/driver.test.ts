@@ -41,6 +41,8 @@ const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowFo
 const { telegramOwner } = await import("@kaja/schema/store")
 const { createTelegramDriver } = await import("../../../lib/telegram/driver")
 const { t } = await import("../../../lib/i18n")
+const { approvalToken } = await import("@kaja/shared/telegram")
+const { notApprovedPrompt } = await import("@kaja/nasi")
 
 beforeEach(async () => {
   process.env.XDG_DATA_HOME = dataDir
@@ -52,6 +54,8 @@ beforeEach(async () => {
 type FakeMessage = {
   /** The provider refuses the request with this status instead of answering. */
   reject?: number
+  /** The refusal's text (default: an image refusal). */
+  rejectMessage?: string
   content: string | null
   tool_calls?: {
     id: string
@@ -74,7 +78,12 @@ function fakeClient(script: FakeMessage[]) {
           const message = script[i++]
           if (!message) throw new Error("fake script exhausted")
           if (message.reject)
-            throw APIError.generate(message.reject, { message: "image input unsupported" }, undefined, new Headers())
+            throw APIError.generate(
+              message.reject,
+              { error: { message: message.rejectMessage ?? "image input unsupported" } },
+              undefined,
+              new Headers()
+            )
           return {
             async *[Symbol.asyncIterator]() {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
@@ -118,6 +127,7 @@ function fakeSender() {
     replyMarkup?: InlineKeyboardLike
   }[] = []
   const answered: { callbackQueryId: string; text?: string }[] = []
+  const deleted: number[] = []
   const photos: {
     chatId: number
     photo: { data: Uint8Array } | { path: string } | { url: string }
@@ -133,6 +143,9 @@ function fakeSender() {
     async editMessageText(chatId, messageId, text, opts) {
       edited.push({ chatId, messageId, text, replyMarkup: opts?.replyMarkup })
     },
+    async deleteMessage(_chatId, messageId) {
+      deleted.push(messageId)
+    },
     async answerCallbackQuery(callbackQueryId, opts) {
       answered.push({ callbackQueryId, text: opts?.text })
     },
@@ -144,7 +157,7 @@ function fakeSender() {
       captions.push({ chatId, messageId, caption })
     }
   }
-  return { sender, sent, edited, answered, photos, captions }
+  return { sender, sent, edited, answered, deleted, photos, captions }
 }
 
 /** One driver, one scripted fake LLM conversation. */
@@ -414,17 +427,17 @@ test("confirm_command sends an approval keyboard, and approving runs the command
     [
       {
         text: `✅ ${t("confirmCommand.yes")}`,
-        callback_data: "cmd:approve:call_1"
+        callback_data: `cmd:approve:${approvalToken("call_1")}`
       },
       {
         text: `❌ ${t("confirmCommand.no")}`,
-        callback_data: "cmd:decline:call_1"
+        callback_data: `cmd:decline:${approvalToken("call_1")}`
       }
     ]
   ])
 
   const confirmMessageId = sent.indexOf(confirmMsg!) + 1
-  await driver.handleCallbackQuery(42, 100, confirmMessageId, "cmd:approve:call_1", "cbq_1")
+  await driver.handleCallbackQuery(42, 100, confirmMessageId, `cmd:approve:${approvalToken("call_1")}`, "cbq_1")
 
   expect(edited.some(e => e.text.includes(t("telegram.approved")))).toBe(true)
   expect(edited.at(-1)!.text).toBe("Done.")
@@ -464,19 +477,57 @@ test("confirm_tool sends the request summary with an approval keyboard, and appr
   expect(confirmMsg!.text).toContain("POST https://api.example.com/issues")
   expect(confirmMsg!.replyMarkup).toEqual([
     [
-      { text: `✅ ${t("confirmCommand.yes")}`, callback_data: "tool:approve:call_t" },
-      { text: `❌ ${t("confirmCommand.no")}`, callback_data: "tool:decline:call_t" }
-    ]
+      { text: `✅ ${t("confirmCommand.yes")}`, callback_data: `tool:approve:${approvalToken("call_t")}` },
+      { text: `❌ ${t("confirmCommand.no")}`, callback_data: `tool:decline:${approvalToken("call_t")}` }
+    ],
+    [{ text: `✅ ${t("telegram.approveSession")}`, callback_data: `tool:approve_session:${approvalToken("call_t")}` }]
   ])
   expect(executed).toEqual([])
 
   // A cmd: callback can't resolve a tool approval.
-  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "cmd:approve:call_t", "cbq_0")
+  await driver.handleCallbackQuery(
+    42,
+    100,
+    sent.indexOf(confirmMsg!) + 1,
+    `cmd:approve:${approvalToken("call_t")}`,
+    "cbq_0"
+  )
   expect(executed).toEqual([])
 
-  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "tool:approve:call_t", "cbq_1")
+  await driver.handleCallbackQuery(
+    42,
+    100,
+    sent.indexOf(confirmMsg!) + 1,
+    `tool:approve:${approvalToken("call_t")}`,
+    "cbq_1"
+  )
   expect(executed).toEqual([{ title: "Bug" }])
   expect(edited.at(-1)!.text).toBe("Filed.")
+})
+
+test("approving a tool for the chat runs it, and its next call doesn't ask again", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const executed: unknown[] = []
+  const ability = { ...approvalTool(executed), source: "ability:issues" } as Tool<never>
+  const script: FakeMessage[] = [
+    ...approvalScript,
+    {
+      content: null,
+      tool_calls: [{ id: "call_u", type: "function", function: { name: "create_issue", arguments: '{"title":"Two"}' } }]
+    },
+    { content: "Filed again." }
+  ]
+  const driver = makeDriver(script, sender, [ability])
+
+  await driver.handleMessage(42, 100, "file a bug")
+  const prompt = sent.find(s => s.replyMarkup)!
+  await driver.handleCallbackQuery(42, 100, sent.indexOf(prompt) + 1, prompt.replyMarkup![1]![0]!.callback_data, "q")
+  expect(executed).toEqual([{ title: "Bug" }])
+
+  await driver.handleMessage(42, 100, "and another")
+  expect(executed).toEqual([{ title: "Bug" }, { title: "Two" }])
+  expect(sent.filter(s => s.replyMarkup)).toHaveLength(1)
+  expect(edited.at(-1)!.text).toBe("Filed again.")
 })
 
 test("declining a tool request doesn't run it", async () => {
@@ -486,7 +537,13 @@ test("declining a tool request doesn't run it", async () => {
 
   await driver.handleMessage(42, 100, "file a bug")
   const confirmMsg = sent.find(s => s.replyMarkup)
-  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "tool:decline:call_t", "cbq_1")
+  await driver.handleCallbackQuery(
+    42,
+    100,
+    sent.indexOf(confirmMsg!) + 1,
+    `tool:decline:${approvalToken("call_t")}`,
+    "cbq_1"
+  )
 
   expect(executed).toEqual([])
   expect(edited.some(e => e.text.includes(t("telegram.declined")))).toBe(true)
@@ -522,7 +579,7 @@ test("declining a command feeds back a decline notice without a user-role event"
   await driver.handleMessage(42, 100, "please run true")
   const confirmMsg = sent.find(s => s.replyMarkup)!
   const confirmMessageId = sent.indexOf(confirmMsg) + 1
-  await driver.handleCallbackQuery(42, 100, confirmMessageId, "cmd:decline:call_2", "cbq_2")
+  await driver.handleCallbackQuery(42, 100, confirmMessageId, `cmd:decline:${approvalToken("call_2")}`, "cbq_2")
 
   expect(edited.some(e => e.text.includes(t("telegram.declined")))).toBe(true)
   expect(edited.at(-1)!.text).toBe("Understood.")
@@ -568,38 +625,119 @@ test("a callback with a stale/mismatched token doesn't touch state", async () =>
   expect(edited.at(-1)!.text).toBe(t("telegram.commandExpired"))
 })
 
-test("a message while busy or a command is pending gets a reminder instead of interleaving", async () => {
-  const { sender, sent, edited } = fakeSender()
-  const driver = makeDriver(
-    [
+/** A run_command call the model makes; `command` is shown for approval as written. */
+function runCommandCall(id: string, command = "true") {
+  return {
+    content: null,
+    tool_calls: [
       {
-        content: null,
-        tool_calls: [
-          {
-            id: "call_4",
-            type: "function",
-            function: {
-              name: "run_command",
-              arguments: JSON.stringify({
-                command: "true",
-                description: "Do nothing",
-                mutates: true
-              })
-            }
-          }
-        ]
+        id,
+        type: "function" as const,
+        function: { name: "run_command", arguments: JSON.stringify({ command, description: "Do it", mutates: true }) }
       }
-    ],
-    sender
-  )
+    ]
+  }
+}
+
+test("a message instead of a tap skips the waiting command, like the cloud bot, and the turn goes on", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const driver = makeDriver([runCommandCall("call_4"), { content: "Okay, I won't." }], sender)
 
   await driver.handleMessage(42, 100, "please run true")
-  const editsAfterFirstTurn = edited.length
+  const prompt = sent.find(s => s.replyMarkup)!
+  requests.length = 0
+  await driver.handleMessage(42, 100, "actually, don't")
 
-  await driver.handleMessage(42, 100, "another message while pending")
+  const promptEdit = edited.find(e => e.messageId === sent.indexOf(prompt) + 1)!
+  expect(promptEdit.text).toContain(t("telegram.skipped"))
+  expect(promptEdit.replyMarkup).toEqual([])
+  expect(requests[0]!.at(-1) as unknown).toEqual({
+    role: "tool",
+    tool_call_id: "call_4",
+    content: notApprovedPrompt("actually, don't")
+  })
+  expect(edited.at(-1)!.text).toBe("Okay, I won't.")
 
+  // The old buttons are stale now
+  await driver.handleCallbackQuery(42, 100, sent.indexOf(prompt) + 1, `cmd:approve:${approvalToken("call_4")}`, "q")
+  expect(edited.at(-1)!.text).toBe(t("telegram.commandExpired"))
+})
+
+test("/compact while a command waits gets a reminder instead", async () => {
+  const { sender, sent } = fakeSender()
+  const driver = makeDriver([runCommandCall("call_5")], sender)
+  await driver.handleMessage(42, 100, "please run true")
+  await driver.handleMessage(42, 100, "/compact")
   expect(sent.at(-1)!.text).toBe(t("telegram.pendingCommand"))
-  expect(edited).toHaveLength(editsAfterFirstTurn)
+})
+
+test("the command to approve is shown exactly as it will run, never as Markdown", async () => {
+  const { sender, sent } = fakeSender()
+  const command = 'find . -name "*.ts" -o -name "*.tsx" && echo __init__ > a_b'
+  const driver = makeDriver([runCommandCall("call_6", command)], sender)
+  await driver.handleMessage(42, 100, "find them")
+  const prompt = sent.find(s => s.replyMarkup)!
+  expect(prompt.text).toContain(
+    "<pre><code>$ find . -name &quot;*.ts&quot; -o -name &quot;*.tsx&quot; &amp;&amp; echo __init__ &gt; a_b</code></pre>".replaceAll(
+      "&quot;",
+      '"'
+    )
+  )
+})
+
+test("an approval asked for before any text removes the empty placeholder", async () => {
+  const { sender, sent, deleted } = fakeSender()
+  const driver = makeDriver([runCommandCall("call_7")], sender)
+  await driver.handleMessage(42, 100, "please run true")
+  expect(sent[0]!.text).toBe("…")
+  expect(deleted).toEqual([1])
+})
+
+test("a tap while the turn that asked is still finishing waits for it instead of running beside it", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const driver = makeDriver([runCommandCall("call_8"), { content: "Done." }], sender)
+  let tapped: Promise<void> | undefined
+  const send = sender.sendMessage
+  sender.sendMessage = async (chatId, text, opts) => {
+    const result = await send(chatId, text, opts)
+    // Tap the moment the prompt arrives: the turn is still running then
+    if (opts?.replyMarkup?.length && !tapped)
+      tapped = driver.handleCallbackQuery(42, chatId, result.messageId, opts.replyMarkup[0]![0]!.callback_data, "q")
+    return result
+  }
+
+  await driver.handleMessage(42, 100, "please run true")
+  await tapped
+  expect(edited.some(e => e.text.includes(t("telegram.approved")))).toBe(true)
+  expect(edited.at(-1)!.text).toBe("Done.")
+  expect(sent.filter(s => s.text === t("telegram.stillWorking"))).toEqual([])
+})
+
+test("a round that calls tools keeps its text as its own message, and the answer follows in a new one", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const driver = makeDriver(
+    [{ ...runCommandCall("call_9", "pwd"), content: "Let me check." }, { content: "You're in /tmp." }],
+    sender
+  )
+  await driver.handleMessage(42, 100, "where am I?")
+  expect(edited.find(e => e.messageId === 1)!.text).toBe("Let me check.")
+  expect(sent.at(-1)!.text).toBe("You're in /tmp.")
+  expect(edited.some(e => e.text.includes("Let me check.You're"))).toBe(false)
+})
+
+test("an error line is escaped for Telegram's HTML", async () => {
+  const { sender, edited } = fakeSender()
+  const driver = makeDriver([{ content: null, reject: 400, rejectMessage: "<html>Bad Gateway</html> & more" }], sender)
+  await driver.handleMessage(42, 100, "hi")
+  expect(edited.at(-1)!.text).toContain("&lt;html&gt;Bad Gateway&lt;/html&gt; &amp; more")
+})
+
+test("an owner's /start gets a welcome, not a turn", async () => {
+  const { sender, sent } = fakeSender()
+  const driver = makeDriver([], sender)
+  await driver.handleMessage(42, 100, "/start")
+  await driver.handleMessage(42, 100, "/start K7Q2-M9XD")
+  expect(sent.map(s => s.text)).toEqual([t("telegram.welcome"), t("telegram.welcome")])
 })
 
 test("switch_persona mid-turn updates the user's persona and the persisted row", async () => {

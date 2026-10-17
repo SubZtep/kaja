@@ -1,5 +1,7 @@
 import { afterEach, expect, spyOn, test } from "bun:test"
 import {
+  albumCollector,
+  approvalToken,
   asRateLimitError,
   commandArgument,
   downloadTelegramImage,
@@ -15,6 +17,25 @@ import {
 // grammy's GrammyError, by shape: what the helpers actually look at.
 const botApiError = (error_code: number, description: string, parameters?: { retry_after?: number }) =>
   Object.assign(new Error(description), { error_code, description, parameters })
+
+test("approvalToken is a short, stable hex stand-in for any call id", () => {
+  const long = `functions.create_issue:${"x".repeat(80)}`
+  expect(approvalToken(long)).toMatch(/^[0-9a-f]{16}$/)
+  expect(approvalToken(long)).toBe(approvalToken(long))
+  expect(approvalToken("call_1")).not.toBe(approvalToken("call_2"))
+})
+
+test("albumCollector passes a single photo on at once and an album's photos together", async () => {
+  const calls: string[][] = []
+  const add = albumCollector<string>(items => calls.push(items), 10)
+  add(undefined, "solo")
+  add("1:a", "first")
+  add("1:b", "other album")
+  add("1:a", "second")
+  expect(calls).toEqual([["solo"]])
+  await Bun.sleep(30)
+  expect(calls).toEqual([["solo"], ["other album"], ["first", "second"]])
+})
 
 test("escapeHtml escapes only the three characters Telegram HTML needs", () => {
   expect(escapeHtml(`a < b && c > "d"`)).toBe(`a &lt; b &amp;&amp; c &gt; "d"`)

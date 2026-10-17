@@ -31,7 +31,7 @@ mermaid:
 target-blank:
   noopener: false
 
-color_scheme: dark
+color_scheme: kaja
 favicon_ico: /images/favicon.ico
 
 callouts:

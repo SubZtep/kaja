@@ -68,7 +68,7 @@ declare module "bun" {
     WIDGET_KEY_RATE_LIMIT_MAX?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
-    /** Encrypts ability API keys, users' own and the admins' server-wide ones (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */
+    /** Encrypts the admins' server-wide ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */
     USER_SECRET_KEY?: string
     /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string

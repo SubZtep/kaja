@@ -1,7 +1,9 @@
 import type { Locale } from "@kaja/shared/locale"
 import {
+  albumCollector,
   asRateLimitError,
   downloadTelegramImage,
+  escapeHtml,
   incomingImage,
   isNotModifiedError,
   TELEGRAM_IMAGE_LIMIT,
@@ -33,6 +35,15 @@ export type CreateCloudTelegramBotConfig = {
 function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | undefined {
   if (!rows?.length) return undefined
   return new InlineKeyboard(rows.map(row => row.map(button => InlineKeyboard.text(button.text, button.data))))
+}
+
+/** One photo of a message (or of an album), before it's downloaded. */
+type IncomingPhoto = {
+  telegramUserId: number
+  chatId: number
+  languageCode?: string
+  caption: string
+  image: { fileId: string; mimeType: string; size?: number }
 }
 
 /** How long to wait before polling again while another instance holds the getUpdates connection. */
@@ -88,6 +99,9 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
           throw error
         }
       },
+      async deleteMessage(chatId, messageId) {
+        await bot.api.deleteMessage(chatId, messageId)
+      },
       async sendPhoto(chatId, photo, caption) {
         const input = typeof photo === "string" ? photo : new InputFile(photo)
         const message = await withRateLimitRetry(() =>
@@ -105,12 +119,48 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     }
   })
 
-  bot.command("start", async ctx => {
-    if (!ctx.from) return
+  // Private chats only: in a group, the chat's messages and buttons would mix several people's conversations
+  const chat = bot.chatType("private")
+
+  /** An image message, or a whole album, as one turn; the photos download here, never in grammy's update loop. */
+  async function handlePhotos(photos: IncomingPhoto[]) {
+    const { telegramUserId, chatId, languageCode } = photos[0]!
+    const caption = photos
+      .map(photo => photo.caption)
+      .filter(Boolean)
+      .join("\n")
+    // An unlinked sender only gets the "link your account" reply; their photos are never downloaded
+    const linked = await telegramLinkService.resolveUser(telegramUserId)
+    if (!linked) return driver.handleMessage(telegramUserId, chatId, caption, languageCode)
+    const { t } = botLanguage(linked.locale, languageCode)
+    if (photos.some(photo => (photo.image.size ?? 0) > TELEGRAM_IMAGE_LIMIT)) {
+      await bot.api.sendMessage(chatId, t("telegram.photoTooLarge"))
+      return
+    }
+    let dataUrls: string[]
+    try {
+      dataUrls = await Promise.all(
+        photos.map(photo => downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image))
+      )
+    } catch (error) {
+      reportError("Telegram photo download failed", error)
+      await bot.api.sendMessage(chatId, t("telegram.photoFailed"))
+      return
+    }
+    await driver.handleMessage(telegramUserId, chatId, caption, languageCode, dataUrls)
+  }
+
+  const addPhoto = albumCollector<IncomingPhoto>(photos =>
+    inBackground("Telegram message handling crashed", handlePhotos(photos))
+  )
+
+  chat.command("start", async ctx => {
     const token = ctx.match
     // Before linking, the only language known is the Telegram app's; the account being linked has its own saved one.
     if (!token) {
-      await ctx.reply(botLanguage(null, ctx.from.language_code).t("telegram.startWithoutLink"))
+      const linked = await telegramLinkService.resolveUser(ctx.from.id)
+      const { t } = botLanguage(linked?.locale, ctx.from.language_code)
+      await ctx.reply(t(linked ? "telegram.startLinked" : "telegram.startWithoutLink"))
       return
     }
 
@@ -124,15 +174,15 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     const keyboard = new InlineKeyboard()
       .text(t("telegram.linkConfirm"), linkCallbackData("confirm", token))
       .text(t("telegram.linkCancel"), linkCallbackData("cancel", token))
-    await ctx.reply(t("telegram.linkQuestion", { email: pending.email }), {
+    await ctx.reply(t("telegram.linkQuestion", { email: escapeHtml(pending.email) }), {
       parse_mode: "HTML",
       reply_markup: keyboard
     })
   })
 
-  bot.on("callback_query:data", async ctx => {
+  chat.on("callback_query:data", async ctx => {
     const message = ctx.callbackQuery.message
-    if (/^(tool|ability|abilitypage):/.test(ctx.callbackQuery.data) && message) {
+    if (ctx.callbackQuery.data.startsWith("tool:") && message) {
       await ctx.answerCallbackQuery()
       inBackground(
         "Telegram button handling crashed",
@@ -141,7 +191,8 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
           message.chat.id,
           message.message_id,
           ctx.callbackQuery.data,
-          ctx.from.language_code
+          ctx.from.language_code,
+          "text" in message ? message.text : undefined
         )
       )
       return
@@ -174,49 +225,31 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     }
 
     const linked = await telegramLinkService.link(ctx.from.id, pending.userId)
-    await ctx.editMessageText(linked ? t("telegram.linked", { email: pending.email }) : t("telegram.linkedElsewhere"), {
+    const email = escapeHtml(pending.email)
+    await ctx.editMessageText(linked ? t("telegram.linked", { email }) : t("telegram.linkedElsewhere"), {
       parse_mode: "HTML"
     })
   })
 
-  bot.on("message:text", ctx => {
+  chat.on("message:text", ctx => {
     inBackground(
       "Telegram message handling crashed",
       driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
     )
   })
 
-  // A photo (or an image sent as a file) goes to the model with its caption as the text
-  bot.on(["message:photo", "message:document"], async ctx => {
+  // A photo (or an image sent as a file) goes to the model with its caption as the text; an album's photos go together
+  chat.on(["message:photo", "message:document"], ctx => {
     const image = incomingImage(ctx.message)
     if (!image) return
-    const caption = ctx.message.caption ?? ""
-    // An unlinked sender only gets the "link your account" reply; their photo is never downloaded
-    const linked = await telegramLinkService.resolveUser(ctx.from.id)
-    if (!linked) {
-      inBackground(
-        "Telegram message handling crashed",
-        driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
-      )
-      return
-    }
-    const { t } = botLanguage(linked.locale, ctx.from.language_code)
-    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) {
-      await ctx.reply(t("telegram.photoTooLarge"))
-      return
-    }
-    let dataUrl: string
-    try {
-      dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
-    } catch (error) {
-      reportError("Telegram photo download failed", error)
-      await ctx.reply(t("telegram.photoFailed"))
-      return
-    }
-    inBackground(
-      "Telegram message handling crashed",
-      driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
-    )
+    const group = ctx.message.media_group_id
+    addPhoto(group && `${ctx.chat.id}:${group}`, {
+      telegramUserId: ctx.from.id,
+      chatId: ctx.chat.id,
+      languageCode: ctx.from.language_code,
+      caption: ctx.message.caption ?? "",
+      image
+    })
   })
 
   bot.catch(err => {
