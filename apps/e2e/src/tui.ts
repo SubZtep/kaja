@@ -39,6 +39,21 @@ export type Tui = {
   stop(): Promise<void>
 }
 
+/** Writes a minimal local-mode config (the E2E's model as the only provider, no marketplace fetching, no setup wizard) where the TUI reads it. */
+export function writeLocalConfig(llm: { baseUrl: string; model: string; apiKey?: string }): void {
+  const dir = join(e2eDir, e2eEnv.E2E_OUT_DIR, "tui-home", "config", `kaja-${PROFILE}`)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(
+    join(dir, "settings.toml"),
+    `[preferences]\nthinking = false\nsounds = false\nvoice = false\nlocale = "en-GB"\nmode = "local"\ntheme = "dark"\n\n[marketplace]\nenabled = false\n`
+  )
+  writeFileSync(
+    join(dir, "models.toml"),
+    `[providers.e2e]\nbase_url = "${llm.baseUrl}"\n\n[models.e2e-chat]\nmodel = "${llm.model}"\nprovider = "e2e"\ntasks = ["chat"]\n`
+  )
+  if (llm.apiKey) writeFileSync(join(dir, "secrets.toml"), `[providers.e2e]\napi_key = "${llm.apiKey}"\n`)
+}
+
 /** Draws the page the terminal is shown on: xterm.js in a dark window, sized to the PTY. */
 async function drawTerminal(page: Page, send: (data: string) => void): Promise<void> {
   await page.exposeFunction("__send", send)
@@ -78,7 +93,7 @@ export async function startTui(
   stack: Stack,
   page: Page,
   args: string[] = ["--cloud"],
-  { fresh = true }: { fresh?: boolean } = {}
+  { fresh = true, config }: { fresh?: boolean; config?: () => void } = {}
 ): Promise<Tui> {
   const home = join(e2eDir, e2eEnv.E2E_OUT_DIR, "tui-home")
   // `fresh: false` is a later launch of the same setup: its config and login are kept
@@ -88,6 +103,8 @@ export async function startTui(
     await Bun.secrets.delete({ service: `kaja-tui-${PROFILE}`, name: "token" }).catch(() => {})
   }
   mkdirSync(home, { recursive: true })
+  // After the wipe, so a fresh launch can bring its own config
+  config?.()
   const opened = join(home, "opened-urls.txt")
   writeFileSync(opened, "")
 

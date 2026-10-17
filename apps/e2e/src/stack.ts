@@ -16,6 +16,8 @@ export type Stack = {
   mailUrl: string
   /** The fake Telegram the API's bot talks to. */
   telegram: Telegram
+  /** The model the cloud turns use, when a scenario asked for one. */
+  llm?: Llama
   stop(): Promise<void>
 }
 
@@ -145,5 +147,5 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
     await stop()
     throw new Error(`${(error as Error).message} (logs in ${logDir})`)
   }
-  return { apiUrl, webUrl, databaseUrl: dbUrl, mailUrl: e2eEnv.E2E_MAILDEV_URL, telegram, stop }
+  return { apiUrl, webUrl, databaseUrl: dbUrl, mailUrl: e2eEnv.E2E_MAILDEV_URL, telegram, llm: llama, stop }
 }
