@@ -25,7 +25,7 @@
     "@mozilla/readability": "^0.6.0",
     "jimp": "1.6.1",
     "linkedom": "^0.18.13",
-    "openai": "^7.34.0",
+    "openai": "^7.36.0",
     "turndown": "7",
     "zod": "^4.6.7"
   },

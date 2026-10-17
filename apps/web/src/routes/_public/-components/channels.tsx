@@ -1,5 +1,6 @@
 import { cn } from "@kaja/shared/ui"
-import { Link, useLoaderData } from "@tanstack/react-router"
+import { useLoaderData } from "@tanstack/react-router"
+import { RotateCw } from "lucide-react"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
@@ -18,10 +19,20 @@ function ChannelCard({
   label,
   title,
   sticker,
+  className,
+  away = false,
   children
-}: Readonly<{ label: string; title: string; sticker?: string; children: ReactNode }>) {
+}: Readonly<{
+  label: string
+  title: string
+  sticker?: string
+  className?: string
+  /** Turned away (a flip card's hidden face): out of focus and the accessibility tree. */
+  away?: boolean
+  children: ReactNode
+}>) {
   return (
-    <article className="toy-card gap-2 bg-surface p-4 md:min-h-56">
+    <article className={cn("toy-card gap-2 bg-surface p-4 md:min-h-56", className)} inert={away} aria-hidden={away}>
       <div className="flex items-center justify-between gap-3">
         <p className="m-0 font-stamp text-[11px] text-neon uppercase">{label}</p>
         {sticker ? (
@@ -33,6 +44,55 @@ function ChannelCard({
       <h3 className="m-0 font-bold font-display text-fg text-lg leading-tight">{title}</h3>
       {children}
     </article>
+  )
+}
+
+// Both faces share one grid cell, so the card is as tall as the taller face; toy-card's clip-path flattens 3D, so the faces carry it, not the rotating box
+const FACE = "col-start-1 row-start-1 h-full backface-hidden"
+
+/** A visitor's local-or-cloud card: the front says why not to register, the back why to; the links flip it in 3D. */
+function GuestBrowserCard() {
+  const [flipped, setFlipped] = useState(false)
+  // Each face keeps its own label, so the text doesn't swap mid-turn
+  const flip = (label: string) => (
+    <button
+      type="button"
+      className={cn(ACTION, "flex cursor-pointer items-center gap-1.5")}
+      onClick={() => setFlipped(f => !f)}
+    >
+      <RotateCw className="size-3.5" aria-hidden />
+      {label}
+    </button>
+  )
+
+  return (
+    <div className="perspective-distant h-full">
+      <div
+        className={cn(
+          "transform-3d grid h-full transition-transform duration-700 motion-reduce:duration-0",
+          flipped && "rotate-y-180"
+        )}
+      >
+        <ChannelCard
+          label={m.channel_choice_label()}
+          title={m.channel_choice_local_title()}
+          className={FACE}
+          away={flipped}
+        >
+          <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_guest_body()}</p>
+          {flip(m.channel_browser_why())}
+        </ChannelCard>
+        <ChannelCard
+          label={m.channel_choice_label()}
+          title={m.channel_browser_perks_title()}
+          className={cn(FACE, "rotate-y-180")}
+          away={!flipped}
+        >
+          <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_perks_body()}</p>
+          {flip(m.channel_browser_why_not())}
+        </ChannelCard>
+      </div>
+    </div>
   )
 }
 
@@ -77,42 +137,44 @@ function InstallCommand() {
   )
 }
 
-/** Where to talk to it: the chat on this page, Telegram, or the terminal. */
+/** Anchor for the hero's "run it locally" link. */
+export const WAYS_IN_ID = "ways-in"
+
+/** Where to talk to it: local or cloud, the terminal, or Telegram. */
 export function Channels() {
   const user = useUser()
   const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
 
   return (
-    <section>
+    <section id={WAYS_IN_ID} className="scroll-mt-16">
       <ContentWidth className="py-10 sm:py-16">
-        <SectionTitle title={m.channels_title()} subtitle={m.channels_subtitle()} />
+        <SectionTitle title={m.channels_title()} />
         <div className="grid gap-5 md:grid-cols-3">
-          <ChannelCard label={m.channel_browser_label()} title={m.channel_browser_title()} sticker={m.stamp_wip()}>
-            <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_body()}</p>
-            <button
-              type="button"
-              className={cn(ACTION, "cursor-pointer")}
-              onClick={() => openChatWidget(apiUrl, chatWidgetKey)}
-            >
-              {m.channel_browser_action()} →
-            </button>
+          {user ? (
+            <ChannelCard label={m.channel_browser_label()} title={m.channel_browser_title()} sticker={m.stamp_wip()}>
+              <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_body()}</p>
+              <button
+                type="button"
+                className={cn(ACTION, "cursor-pointer")}
+                onClick={() => openChatWidget(apiUrl, chatWidgetKey)}
+              >
+                {m.channel_browser_action()} →
+              </button>
+            </ChannelCard>
+          ) : (
+            <GuestBrowserCard />
+          )}
+
+          <ChannelCard label={m.channel_terminal_label()} title={m.install_terminal_note()}>
+            <InstallCommand />
           </ChannelCard>
 
           <ChannelCard label={m.channel_telegram_label()} title={m.hero_telegram_title()}>
             {user ? (
               <TelegramConnectCta actionClassName={ACTION} />
             ) : (
-              <>
-                <p className="m-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
-                <Link to="/signin" className={ACTION}>
-                  {m.hero_telegram_action()} →
-                </Link>
-              </>
+              <p className="m-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
             )}
-          </ChannelCard>
-
-          <ChannelCard label={m.channel_terminal_label()} title={m.install_terminal_note()}>
-            <InstallCommand />
           </ChannelCard>
         </div>
       </ContentWidth>

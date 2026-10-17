@@ -63,7 +63,7 @@ function MobileNav({ menuItems, user }: Readonly<{ menuItems: NavItem[]; user: R
             <div className="truncate font-display font-extrabold text-fg text-sm">{getDisplayName(user)}</div>
             <div className="truncate font-crt text-muted text-xs capitalize">{user.role ?? "user"}</div>
           </div>
-          <SignOutButton onClick={close} />
+          <SignOutButton />
         </div>
       ) : null}
     </>

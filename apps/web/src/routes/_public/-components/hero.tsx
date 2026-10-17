@@ -4,6 +4,7 @@ import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { CaptchaAlert, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
 import { m } from "../../../paraglide/messages.js"
+import { WAYS_IN_ID } from "./channels"
 import { GoogleButton } from "./google-button"
 import { Sticker } from "./sticker"
 
@@ -46,7 +47,13 @@ function GoogleSignIn() {
   return (
     <div>
       <CaptchaAlert captcha={captcha} />
-      <GoogleButton captcha={captcha} />
+      <GoogleButton label={m.google_start()} captcha={captcha} />
+      <a
+        href={`#${WAYS_IN_ID}`}
+        className="mt-3 inline-block font-stamp text-[11px] text-muted uppercase hover:text-neon"
+      >
+        {m.hero_run_locally()} ↓
+      </a>
     </div>
   )
 }
