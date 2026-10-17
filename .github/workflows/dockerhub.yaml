@@ -116,7 +116,6 @@ jobs:
           VERSION=$(jq -r .version ./apps/sandbox/package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # subztep/kaja-sandbox, the image anyone can run: docker run subztep/kaja-sandbox (amd64 only, like its Chrome)
       - name: Release Sandbox
         uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
         with:
@@ -125,5 +124,4 @@ jobs:
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/sandbox/Dockerfile
           version: ${{ steps.version.outputs.version }}
-          # The Chrome for Testing headless shell has no Linux arm64 build
           platforms: linux/amd64

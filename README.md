@@ -15,14 +15,12 @@ Under the hood it’s a full-stack playground: a **Hono API** secured by **Bette
 
 ## Repository map
 
-One Bun monorepo: four apps and three packages.
-
 ```mermaid
 flowchart LR
-    subgraph doors["Front doors"]
+    subgraph doors["User facing"]
         TUI["<b>tui</b><br>terminal UI<br>+ Telegram bot"]
         WEB["<b>web</b><br>homepage<br>+ web app"]
-        WID["<b>widget</b><br>chat for any website"]
+        WID["<b>widget</b><br>chat popup<br>+game(s)"]
     end
 
     API["<b>api</b><br>REST, auth<br>cloud agent"]
@@ -48,10 +46,10 @@ flowchart LR
 | [`apps/api`](./apps/api/) | Hono REST API: Better Auth, the cloud agent, emails, and serves the [widget](./apps/api/widgets/) bundle |
 | [`apps/web`](./apps/web/) | TanStack Start: the public homepage and the signed-in web app |
 | [`apps/tui`](./apps/tui/) | Ink terminal UI and Telegram bot, with local config and storage |
-| [`apps/sandbox`](./apps/sandbox/) | runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |
-| [`packages/nasi`](./packages/nasi/) | the agent brain: the loop, tools, personas, memory |
-| [`packages/schema`](./packages/schema/) | every Zod schema and type, in role-based subpaths |
-| [`packages/shared`](./packages/shared/) | small pure utilities, including the Telegram plumbing both bots share |
+| [`apps/sandbox`](./apps/sandbox/) | Runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |
+| [`packages/nasi`](./packages/nasi/) | The agent brain: the loop, tools, personas, memory |
+| [`packages/schema`](./packages/schema/) | Every Zod schema and type, in role-based subpaths |
+| [`packages/shared`](./packages/shared/) | Small pure utilities, including the Telegram plumbing both bots share |
 
 ## Run from the source
 
@@ -77,12 +75,6 @@ bun dev:tui
 
 The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider(s) and it writes `~/.config/kaja/` for you.
 
-> [!TIP]
-> If you want to look around **inside the sandbox** container, open a shell:
-> ```bash
-> docker compose exec sandbox bash
-> ```
-
 ## Documentation
 
-Want more? 🐓 Visit [**docs.kaja.io**](https://docs.kaja.io/).
+Want more? 🐓 Visit [docs.kaja.io](https://docs.kaja.io/).
