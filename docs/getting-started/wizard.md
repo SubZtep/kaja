@@ -40,8 +40,8 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
    preselected. You can switch later with <kbd>Alt</kbd>+<kbd>D</kbd> ([Colours](/using/tui#colours)).
 3. **How to run Kaja.**
    - **Kaja Cloud** (default): after the wizard, Kaja shows a code, you approve it in your browser, and
-     you're chatting. The server picks the models, and every persona is yours; ability keys go in the
-     [web app](/using/web-app).
+     you're chatting. The server picks the models, every persona is yours, and Kaja provides the API
+     keys abilities need.
    - **Your own provider**: Kaja runs on your machine with the models you choose. The next questions
      set them up.
 

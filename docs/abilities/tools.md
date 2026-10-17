@@ -27,7 +27,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `dataset_info` | collect answers for a persona's [dataset](/abilities/memory#datasets) | ✓ |
 | `generate_image` | text-to-image | ✓ |
 | `read_file` / `list_files` | read a file, list a directory | your computer |
-| `view_image` | look at an image file | your computer |
+| `view_image` | look at an image file | ✓ for the chat's own images, your computer for a file path |
 | `edit_image` | crop, zoom, resize, rotate or flip a chat image, adjust its tone, blur, sharpen or pixelate it, or draw a box or arrow on it | ✓ |
 | `run_command` | run a shell command | your computer, opt-in |
 
