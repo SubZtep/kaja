@@ -10,7 +10,8 @@ function hookFor(event: TimelineEvent): { name: HookName; text: string } | null 
     case "final":
       return { name: "message", text: event.content ?? "" }
     case "ask_user":
-      return { name: "question", text: event.question }
+      // A plain reply ending in "?" is an ask_user event too, but only the tool call expects an answer
+      return { name: event.fromTool ? "question" : "message", text: event.question }
     default:
       return null
   }

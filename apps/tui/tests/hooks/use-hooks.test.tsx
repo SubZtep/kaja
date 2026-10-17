@@ -31,7 +31,7 @@ async function waitForLines(path: string, count: number) {
   throw new Error(`${path} never had ${count} lines`)
 }
 
-test("replies and questions fire their hooks as plain text, and what was there on mount does not", async () => {
+test("replies and asked questions fire their hooks (a reply ending in a question mark is a reply) as plain text, and what was there on mount does not", async () => {
   await rm(getConfigDir(), { recursive: true, force: true })
   await mkdir(getConfigDir(), { recursive: true })
   const log = join(getConfigDir(), "log.txt")
@@ -48,13 +48,14 @@ test("replies and questions fire their hooks as plain text, and what was there o
     ...old,
     { type: "user", text: "ignored" },
     { type: "message", content: "**Hello** there" },
-    { type: "ask_user", question: "Which one?" },
+    { type: "ask_user", question: "Which one?", fromTool: true },
+    { type: "ask_user", question: "Anything else?" },
     { type: "final", content: "Done" }
   ]
   t.rerender(<Harness events={next} />)
 
-  const lines = await waitForLines(log, 3)
-  expect([...lines].sort()).toEqual(["m:Done", "m:Hello there", "q:Which one?"])
+  const lines = await waitForLines(log, 4)
+  expect([...lines].sort()).toEqual(["m:Anything else?", "m:Done", "m:Hello there", "q:Which one?"])
 
   t.unmount()
   await t.waitUntilExit()

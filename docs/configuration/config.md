@@ -88,7 +88,7 @@ question = 'notify-send "Kaja asks" "$KAJA_TEXT"'        # Kaja asks you a quest
 ```
 
 The text, without Markdown, is in `$KAJA_TEXT` and on the command's stdin; `$KAJA_HOOK` is `message` or
-`question`. A hook that fails is only logged (see [Logs](/configuration/commands#logs)). Every reply starts its own
+`question`. `question` is for when Kaja stops to ask you something; a reply that merely ends in a question mark is a `message`. A hook that fails is only logged (see [Logs](/configuration/commands#logs)). Every reply starts its own
 process, so a slow command can overlap with the next one, and one still running when you quit carries on. A
 session you resume doesn't replay its old messages, and `kaja telegram` has no hooks.
 

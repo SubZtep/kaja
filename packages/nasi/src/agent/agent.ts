@@ -296,7 +296,8 @@ export type AgentEvent =
   /** An image's description was written (in the background, after its `tool_image`); `ref` is the image's. */
   | { type: "image_described"; ref: string; description: string }
   | { type: "display_image"; url: string; alt: string }
-  | { type: "ask_user"; question: string; note?: string }
+  /** `fromTool` is set when the model called the ask_user tool; a plain reply ending in "?" arrives as ask_user too, without it. */
+  | { type: "ask_user"; question: string; note?: string; fromTool?: true }
   | { type: "confirm_command"; command: string; description: string }
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
