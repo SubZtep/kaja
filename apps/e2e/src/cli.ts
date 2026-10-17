@@ -3,6 +3,7 @@ import { basename, join } from "node:path"
 import { e2eDir } from "./env"
 import { startModel } from "./llama"
 import { launchBrowser, type Result, runScenario } from "./runner"
+import { startSandbox } from "./sandbox"
 import type { Scenario } from "./scenario"
 import { startStack } from "./stack"
 
@@ -31,6 +32,7 @@ const scenarios = await Promise.all(
 const llama = scenarios.some(({ scenario }) => scenario.llm) ? await startModel() : undefined
 console.log("Starting the stack (fresh database, API, web)...")
 const stack = await startStack(llama)
+const sandbox = scenarios.some(({ scenario }) => scenario.sandbox) ? await startSandbox(stack) : undefined
 const browser = await launchBrowser()
 const results: Result[] = []
 
@@ -43,6 +45,7 @@ try {
   }
 } finally {
   await browser.close()
+  await sandbox?.stop()
   await stack.stop()
   await llama?.stop()
 }

@@ -72,6 +72,8 @@ export type Context = {
 export type ScenarioOptions = {
   /** Needs the local llama.cpp server (started once for the run). */
   llm?: boolean
+  /** Needs the sandbox app running and registered (it starts once for the run). */
+  sandbox?: boolean
   /** Record a video; default true, off for scenarios with nothing to see. */
   video?: boolean
 }

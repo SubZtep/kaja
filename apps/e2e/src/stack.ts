@@ -5,6 +5,7 @@ import { applyMigrations, readMigrations } from "../../api/scripts/migrations"
 import { seedConfig } from "../../api/scripts/seed-config"
 import { apiDir, databaseUrl, e2eDir, e2eEnv, webDir, withDatabase } from "./env"
 import type { Llama } from "./llama"
+import { SANDBOX_KEY } from "./sandbox"
 import { BOT_TOKEN, startTelegram, type Telegram } from "./telegram"
 
 export type Stack = {
@@ -113,7 +114,8 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
       // The dev bot's token would make this API poll the real Telegram; this one only knows the fake
       TELEGRAM_BOT_TOKEN: BOT_TOKEN,
       TELEGRAM_API_ROOT: telegram.apiRoot,
-      SANDBOX_URL: ""
+      SANDBOX_URL: "",
+      SANDBOX_SYSTEM_KEY: SANDBOX_KEY
     },
     logDir
   )
