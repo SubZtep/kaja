@@ -96,6 +96,8 @@ declare module "bun" {
     STORAGE_SECRET_ACCESS_KEY?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string
+    /** Bot API server the cloud bot talks to instead of https://api.telegram.org; for tests (a fake server) only */
+    TELEGRAM_API_ROOT?: string
   }
 }
 

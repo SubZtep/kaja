@@ -189,12 +189,13 @@ export function incomingImage(
 export async function downloadTelegramImage(
   botToken: string,
   getFile: (fileId: string) => Promise<{ file_path?: string }>,
-  image: { fileId: string; mimeType: string }
+  image: { fileId: string; mimeType: string },
+  apiRoot = "https://api.telegram.org"
 ): Promise<string> {
   const { file_path } = await getFile(image.fileId)
   if (!file_path) throw new Error("Telegram returned no file path")
   // A failed fetch's error carries the URL, bot token and all, and these errors end up in logs and Sentry
-  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`).catch((error: unknown) => {
+  const response = await fetch(`${apiRoot}/file/bot${botToken}/${file_path}`).catch((error: unknown) => {
     const reason = error instanceof Error ? error.message : String(error)
     throw new Error(`Telegram file download failed: ${reason.replaceAll(botToken, "***")}`)
   })

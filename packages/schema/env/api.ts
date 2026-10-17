@@ -191,7 +191,13 @@ const apiEnvFields = z.object({
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")
-    .meta({ secret: true, section: "Telegram" })
+    .meta({ secret: true, section: "Telegram" }),
+  TELEGRAM_API_ROOT: url
+    .optional()
+    .describe(
+      "Bot API server the cloud bot talks to instead of https://api.telegram.org; for tests (a fake server) only"
+    )
+    .meta({ section: "Telegram" })
 })
 
 export const ApiEnvSchema = apiEnvFields.superRefine((env, ctx) => {
