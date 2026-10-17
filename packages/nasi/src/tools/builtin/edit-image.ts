@@ -29,7 +29,8 @@ const region = {
   height: z.number().gt(0).max(1).describe("0–1 of the height")
 }
 const color = z.string().optional().describe("red (default), yellow, green, blue, white, black, or #rrggbb")
-const point = z.tuple([fraction, fraction]).describe("[x, y] as 0–1 fractions of the width and height")
+// An array, not a tuple: a tuple's `items: false` is a schema llama.cpp can't turn into a grammar
+const point = z.array(fraction).length(2).describe("[x, y] as 0–1 fractions of the width and height")
 
 const step = z.discriminatedUnion("op", [
   z.object({ op: z.literal("crop"), ...region }).describe("Keep only this region"),
@@ -188,7 +189,9 @@ function applyStep(image: Image, s: Step): void {
     case "arrow": {
       const c = parseColor(s.color)
       const t = thickness(image)
-      const [x1, y1, x2, y2] = [s.from[0] * width, s.from[1] * height, s.to[0] * width, s.to[1] * height]
+      const [fromX = 0, fromY = 0] = s.from
+      const [toX = 0, toY = 0] = s.to
+      const [x1, y1, x2, y2] = [fromX * width, fromY * height, toX * width, toY * height]
       drawLine(image, x1, y1, x2, y2, t, c)
       // The head: two short strokes back from the tip, 28° either side of the shaft
       const angle = Math.atan2(y2 - y1, x2 - x1)
