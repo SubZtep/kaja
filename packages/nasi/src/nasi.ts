@@ -133,6 +133,11 @@ function messageFromEvents(events: AgentEvent[], status: NasiTurnStatus): string
 /** The tool result a declined approval leaves, same wording as the CLI's. */
 const TOOL_DECLINED = "User declined this request."
 
+/** The tool result a pending approval gets when the user writes a message instead of answering it. */
+export function notApprovedPrompt(message: string): string {
+  return `Not run: the user didn't approve it and wrote instead: ${message}`
+}
+
 /** The saved function call a pending approval refers to, from the assistant message that made it. */
 export function pendingToolCall(session: Session, id: string) {
   for (let i = session.messages.length - 1; i >= 0; i--) {
@@ -348,7 +353,7 @@ export class Nasi {
     }
     const message = input.message ?? ""
     if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
-    return { prompt: pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message }
+    return { prompt: pendingId ? notApprovedPrompt(message) : message }
   }
 
   /** An `approve_session` answer: the tool stops asking for the rest of this session. */

@@ -8,16 +8,16 @@ One subpath per category (`@kaja/shared/<category>`), each a folder with an `ind
 
 ```
 date/        # getTimeAgo, getDateTime — locale-aware formatting via Intl
-text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDeviceUserCode, modelSlug, uniqueModelSlug, trimTrailingSlashes, withQuestion, sessionTitle
+text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDeviceUserCode, modelSlug, uniqueModelSlug, trimTrailingSlashes, sessionTitle
 ui/          # cn (clsx + tailwind-merge)
 net/         # isPrivateAddress, isPublicHttpUrl — SSRF guard
 id/          # randomUUIDv7
 locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage, createMessages — the one list of supported languages
 toml/        # stringifyToml, groupTomlTables — every TOML file Kaja writes groups sub-tables under their parent's header (API and TUI)
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
-  bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
-  markdown.ts  # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
-  reply.ts     # openReply (a turn's "…" placeholder: throttled streamed edits, finish with chunks and photos, settle before an approval, fail), compactedLine; each bot passes its sender, photo rule, translations and logger
+  bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency), approvalToken (a call id's hash for callback data), albumCollector (an album's photos as one turn)
+  markdown.ts  # renderTelegramHtml, splitTelegramMessage and truncateForStreaming (both close and reopen the tags a cut falls inside, never cut a tag or entity), TELEGRAM_MESSAGE_LIMIT
+  reply.ts     # openReply (a turn's "…" placeholder: throttled streamed edits sent one at a time, a failed one not counted as sent; endRound keeps a tool-calling round's text as its own message; finish with chunks and photos; settle before an approval, removing an untouched placeholder; fail), compactedLine; each bot passes its sender, photo rule, translations and logger
 ```
 
 A new subpath needs an entry in `package.json` `exports`.

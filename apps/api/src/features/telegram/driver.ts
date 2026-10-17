@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import {
   type AgentEvent,
   categorizeError,
@@ -11,23 +10,25 @@ import {
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import { commandArgument, compactedLine, escapeHtml, isCommand, openReply, type Reply } from "@kaja/shared/telegram"
-import { withQuestion } from "@kaja/shared/text"
+import {
+  approvalToken,
+  commandArgument,
+  compactedLine,
+  escapeHtml,
+  isCommand,
+  openReply,
+  type Reply
+} from "@kaja/shared/telegram"
 import { pool } from "../../core/db"
 import { imageUrl, objects } from "../../core/files"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
-import { openNasiFor, pinnedModelFor } from "../nasi/chat"
+import { openNasiFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
 import { type BotLanguage, botLanguage } from "./language"
 
 const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
-
-/** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
-function approvalToken(callId: string): string {
-  return createHash("sha256").update(callId).digest("hex").slice(0, 16)
-}
 
 /** One inline button: its label and the callback data it sends back. */
 export type TelegramButton = { text: string; data: string }
@@ -43,6 +44,7 @@ export type TelegramButton = { text: string; data: string }
 export type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
+  deleteMessage(chatId: number, messageId: number): Promise<void>
   /** Sends a photo by URL (Telegram fetches it) or as the image's bytes, with an optional plain-text caption. */
   sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<{ messageId: number }>
   /** Replaces a sent photo's caption (a tool image's alt text, once its description is written). */
@@ -53,6 +55,20 @@ export type CloudTelegramDriverConfig = {
   /** Resolves a Telegram user id to the Kaja account it's linked to (with its saved language), or undefined if unlinked. */
   resolveLinkedUser: (telegramUserId: number) => Promise<{ userId: string; locale: string | null } | undefined>
   sender: TelegramSender
+}
+
+/** An account's latest conversation with one Telegram user. */
+function loadLatestSession(userId: string, owner: string) {
+  return createPostgresStore(pool, userId).loadLatestSession(owner)
+}
+
+/** The events after which the turn has nothing more to say. */
+const ENDS_TURN = new Set<AgentEvent["type"]>(["ask_user", "final", "confirm_tool"])
+
+/** A failure as the chat shows it: the category in the user's language, then the (technical) detail, escaped for HTML. */
+function errorLine(error: unknown, t: Translate): string {
+  const { category, message } = categorizeError(error)
+  return `⚠ ${t(`telegram.error.${category}`)}: ${escapeHtml(message)}`
 }
 
 /**
@@ -69,15 +85,29 @@ export type CloudTelegramDriverConfig = {
  */
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   const { resolveLinkedUser, sender } = config
-  // Marks a Telegram user's next message as "don't resume" after /new. No other in-memory
-  // state exists — session content itself always round-trips through Postgres.
+  // Marks a Telegram user's next message as "don't resume" after /new, and who has a turn running (a message
+  // then gets "still working"). No other in-memory state exists — session content always round-trips through Postgres.
   const forceNew = new Set<number>()
+  // A count, since an approval can be waiting on the lock while a turn finishes
+  const busy = new Map<string, number>()
 
   async function editSafely(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]) {
     try {
       await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
       console.warn("Telegram edit failed", { error })
+    }
+  }
+
+  /** Runs `work` with the user marked busy, under the per-user lock that serialises their turns. */
+  async function whileBusy<T>(owner: string, work: () => Promise<T>): Promise<T> {
+    busy.set(owner, (busy.get(owner) ?? 0) + 1)
+    try {
+      return await withLock(`telegram:${owner}`, work)
+    } finally {
+      const left = busy.get(owner)! - 1
+      if (left > 0) busy.set(owner, left)
+      else busy.delete(owner)
     }
   }
 
@@ -103,7 +133,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays in the placeholder. */
+  /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays above it. */
   async function sendApproval(
     reply: Reply,
     chatId: number,
@@ -127,32 +157,25 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     await sender.sendMessage(chatId, text.join("\n"), buttons)
   }
 
-  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
+  /** Handles one event; ask_user, confirm_tool and final end the turn. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
   async function handleFinalizedEvent(
     reply: Reply,
     chatId: number,
     event: FinalizedAgentEvent,
     language: BotLanguage,
     photos: Map<string, number>
-  ): Promise<boolean> {
-    if (event.type === "ask_user") {
-      await reply.finish(withQuestion(reply.streamed, event.question))
-      return true
-    }
-    if (event.type === "final") {
-      await reply.finish(event.content ?? "")
-      return true
-    }
-    if (event.type === "confirm_tool") {
-      await sendApproval(reply, chatId, event, language)
-      return true
-    }
-    if (event.type === "compacted") await sender.sendMessage(chatId, compactedLine(event, language.t))
+  ): Promise<void> {
+    if (event.type === "message") await reply.endRound(event.content)
+    // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
+    else if (event.type === "ask_user") await reply.finish(event.question)
+    else if (event.type === "final") await reply.finish(event.content ?? "")
+    else if (event.type === "confirm_tool") await sendApproval(reply, chatId, event, language)
+    else if (event.type === "compacted")
+      await sender.sendMessage(chatId, compactedLine(event, language.t, language.locale))
     else if (event.type === "tool_image") {
       const sent = await sendToolImage(chatId, event)
       if (sent) photos.set(event.ref, sent.messageId)
     } else if (event.type === "image_described") await describePhoto(chatId, photos.get(event.ref), event.description)
-    return false
   }
 
   /** `/compact [focus]`: summarises the user's latest conversation now, under the same per-user lock as turns. */
@@ -162,11 +185,12 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     chatId: number,
     focus: string,
     resume: boolean,
-    t: Translate
+    language: BotLanguage
   ) {
-    return withLock(`telegram:${owner}`, async () => {
+    const { t } = language
+    return whileBusy(owner, async () => {
       try {
-        const latest = resume ? await createPostgresStore(pool, ownerUserId).loadLatestSession(owner) : undefined
+        const latest = resume ? await loadLatestSession(ownerUserId, owner) : undefined
         if (!latest) {
           await sender.sendMessage(chatId, t("telegram.nothingToCompact"))
           return
@@ -174,37 +198,24 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         const nasi = await openNasiFor({ userId: ownerUserId, owner, pinnedModel: latest.model })
         try {
           const result = await nasi.compact(latest.id, focus || undefined)
-          await sender.sendMessage(chatId, result ? compactedLine(result, t) : t("telegram.nothingToCompact"))
+          await sender.sendMessage(
+            chatId,
+            result ? compactedLine(result, t, language.locale) : t("telegram.nothingToCompact")
+          )
         } finally {
           await nasi.close()
         }
       } catch (error) {
         reportError("Telegram compaction failed", error)
-        const { category, message } = categorizeError(error)
-        const label = t(`telegram.error.${category}`)
-        await sender.sendMessage(chatId, `⚠ ${label}: ${message}`)
+        await sender.sendMessage(chatId, errorLine(error, t)).catch(() => {})
       }
     })
   }
 
-  // Serializes turns per Telegram user, mirroring nasi/chat.ts's withSessionLock — without it,
-  // two rapid messages from the same user could both resolve the same "latest session" and race
-  // its persistence.
-  function runTurn(
-    ownerUserId: string,
-    owner: string,
-    chatId: number,
-    prompt: string,
-    resume: boolean,
-    language: BotLanguage,
-    images?: string[]
-  ) {
-    return withLock(`telegram:${owner}`, () =>
-      runTurnLocked(ownerUserId, owner, chatId, { message: prompt, images }, resume, language)
-    )
-  }
-
-  /** Reads a turn's events to the end, handling each as it arrives. */
+  /**
+   * Reads a turn's events to the end, handling each as it arrives. A failed send never stops it: the turn is
+   * saved only once its events have all been read.
+   */
   async function readTurn(
     turn: AsyncIterable<AgentEvent>,
     chatId: number,
@@ -221,7 +232,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         continue
       }
       if (event.type === "usage") continue
-      ended = (await handleFinalizedEvent(reply, chatId, event, language, photos)) || ended
+      try {
+        await handleFinalizedEvent(reply, chatId, event, language, photos)
+      } catch (error) {
+        console.warn("Telegram send failed", { error })
+        if (ENDS_TURN.has(event.type)) await reply.fail(errorLine(error, language.t))
+      }
+      if (ENDS_TURN.has(event.type)) ended = true
     }
   }
 
@@ -236,6 +253,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const reply = await openReply({
       send: text => sender.sendMessage(chatId, text),
       edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+      remove: messageId => sender.deleteMessage(chatId, messageId),
       sendPhoto: async (url: string, caption) => {
         await sender.sendPhoto(chatId, url, caption)
       },
@@ -246,12 +264,11 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     })
 
     try {
-      const store = createPostgresStore(pool, ownerUserId)
-      const resumeRow = resume ? await store.loadLatestSession(owner) : undefined
+      const resumeRow = resume ? await loadLatestSession(ownerUserId, owner) : undefined
       const nasi = await openNasiFor({
         userId: ownerUserId,
         owner,
-        pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id),
+        pinnedModel: resumeRow?.model,
         language: language.locale,
         channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
       })
@@ -267,16 +284,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         await reply.fail(language.t("telegram.noVision"))
         return
       }
-      const { category, message } = categorizeError(error)
-      // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
-      const label = language.t(`telegram.error.${category}`)
-      await reply.fail(`⚠ ${label}: ${message}`)
+      await reply.fail(errorLine(error, language.t))
     }
   }
 
   /**
    * `telegramLanguage` is the sender's Telegram app language, used only when their account has none saved. `images`
-   * (data URLs): a photo sent with the message, whose caption is `text`; it always runs as a turn, never a command.
+   * (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a command.
    */
   async function handleMessage(
     telegramUserId: number,
@@ -296,36 +310,29 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     const owner = telegramOwner(telegramUserId)
 
-    if (images.length > 0) return startTurn(telegramUserId, ownerUserId, owner, chatId, text, language, images)
-
-    if (isCommand(text, "new")) {
+    if (images.length === 0 && isCommand(text, "new")) {
       forceNew.add(telegramUserId)
       await sender.sendMessage(chatId, t("telegram.newSession"))
       return
     }
 
-    const focus = commandArgument(text, "compact")
-    if (focus !== undefined) {
-      // After /new there's no conversation to compact yet, and the next message still starts a fresh one.
-      await compactNow(ownerUserId, owner, chatId, focus, !forceNew.has(telegramUserId), t)
+    if (busy.has(owner)) {
+      await sender.sendMessage(chatId, t("telegram.stillWorking"))
       return
     }
 
-    await startTurn(telegramUserId, ownerUserId, owner, chatId, text, language)
-  }
+    const focus = images.length === 0 ? commandArgument(text, "compact") : undefined
+    if (focus !== undefined) {
+      // After /new there's no conversation to compact yet, and the next message still starts a fresh one.
+      await compactNow(ownerUserId, owner, chatId, focus, !forceNew.has(telegramUserId), language)
+      return
+    }
 
-  async function startTurn(
-    telegramUserId: number,
-    ownerUserId: string,
-    owner: string,
-    chatId: number,
-    text: string,
-    language: BotLanguage,
-    images?: string[]
-  ) {
     const resume = !forceNew.delete(telegramUserId)
     try {
-      await runTurn(ownerUserId, owner, chatId, text, resume, language, images)
+      await whileBusy(owner, () =>
+        runTurnLocked(ownerUserId, owner, chatId, { message: text, images }, resume, language)
+      )
     } catch (error) {
       reportError("Telegram turn crashed", error)
     }
@@ -335,14 +342,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
    * A button press: Approve/Decline on a tool call. The pressing user comes
    * from Telegram (never the payload). An approval must match the call their latest session is still waiting
    * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
-   * Returns false for callback data that isn't ours.
+   * `messageText` is the prompt's own text, kept above the answer. Returns false for callback data that isn't ours.
    */
   async function handleCallback(
     telegramUserId: number,
     chatId: number,
     messageId: number,
     data: string,
-    telegramLanguage?: string
+    telegramLanguage?: string,
+    messageText?: string
   ) {
     const match = TOOL_CALLBACK.exec(data)
     if (!match) return false
@@ -359,8 +367,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const approval = match[1] as "approve" | "approve_session" | "decline"
 
     try {
-      await withLock(`telegram:${owner}`, async () => {
-        const row = await createPostgresStore(pool, ownerUserId).loadLatestSession(owner)
+      await whileBusy(owner, async () => {
+        const row = await loadLatestSession(ownerUserId, owner)
         const session = row?.session
         const pendingId = session?.pendingToolApprovalId
         const call = session && pendingId ? pendingToolCall(session, pendingId) : undefined
@@ -369,7 +377,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
           return
         }
         const status = approval === "decline" ? t("telegram.declined") : t("telegram.approved")
-        await editSafely(chatId, messageId, `🔐 <b>${escapeHtml(call.function.name)}</b>: ${status}`)
+        const prompt = messageText ? escapeHtml(messageText) : `🔐 <b>${escapeHtml(call.function.name)}</b>`
+        await editSafely(chatId, messageId, `${prompt}\n\n${status}`)
         await runTurnLocked(ownerUserId, owner, chatId, { approval }, true, language)
       })
     } catch (error) {

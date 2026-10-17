@@ -71,7 +71,7 @@ type SentRequest = { url: string; method: string; authorization: string | null; 
 
 /** Chat client that plays `script` (one assistant message per model call) and records what each call was sent. */
 function scriptedChat(
-  script: { content: string | null; tool_calls?: unknown[] }[],
+  script: { content: string | null; tool_calls?: unknown[]; throws?: string }[],
   sent: { tools?: { function: { name: string } }[]; messages: { role: string; content?: unknown }[] }[]
 ) {
   let i = 0
@@ -81,6 +81,7 @@ function scriptedChat(
         stream: (params: never) => {
           sent.push(structuredClone(params))
           const message = script[i++] ?? { content: "done" }
+          if (message.throws) throw new Error(message.throws)
           return {
             async *[Symbol.asyncIterator]() {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
@@ -329,6 +330,7 @@ describe("HTTP tools in the cloud", () => {
         async editMessageText(_chatId, messageId, text) {
           edits.push({ id: messageId, text })
         },
+        async deleteMessage() {},
         async sendPhoto() {
           return { messageId: 2 }
         },
@@ -380,6 +382,7 @@ describe("HTTP tools in the cloud", () => {
         async editMessageText(_chatId, _messageId, text) {
           edits.push(text)
         },
+        async deleteMessage() {},
         async sendPhoto(_chatId, url, caption) {
           photos.push({ url, caption })
           return { messageId: 2 }
@@ -409,6 +412,7 @@ describe("HTTP tools in the cloud", () => {
           return { messageId: 1 }
         },
         async editMessageText() {},
+        async deleteMessage() {},
         async sendPhoto() {
           return { messageId: 2 }
         },
@@ -434,6 +438,83 @@ describe("HTTP tools in the cloud", () => {
       [userId]
     )
     expect(rows[0].title).toBe("📷 /new")
+  })
+
+  /** A cloud Telegram driver for user 1001 over a recording sender; `onSend` sees each sent message first. */
+  function telegramDriver(onSend?: (text: string) => void) {
+    const messages: { id: number; text: string; buttons?: TelegramButton[][] }[] = []
+    const edits: { id: number; text: string }[] = []
+    const deleted: number[] = []
+    const driver = createCloudTelegramDriver({
+      resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
+      sender: {
+        async sendMessage(_chatId, text, buttons) {
+          onSend?.(text)
+          messages.push({ id: messages.length + 1, text, buttons })
+          return { messageId: messages.length }
+        },
+        async editMessageText(_chatId, messageId, text) {
+          edits.push({ id: messageId, text })
+        },
+        async deleteMessage(_chatId, messageId) {
+          deleted.push(messageId)
+        },
+        async sendPhoto() {
+          return { messageId: 99 }
+        },
+        async editCaption() {}
+      }
+    })
+    return { driver, messages, edits, deleted }
+  }
+
+  test("the Telegram bot keeps a round's text as its own message, and the answer follows in a new one", async () => {
+    const forecast = { id: "call_f", type: "function", function: { name: forecastTool, arguments: "{}" } }
+    useScript([{ content: "Let me check.", tool_calls: [forecast] }, { content: "Sunny." }])
+    const { driver, messages, edits } = telegramDriver()
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "weather?")
+    const placeholder = messages.find(message => message.text === "…")!
+    expect(edits.filter(edit => edit.id === placeholder.id).at(-1)!.text).toBe("Let me check.")
+    expect(messages.at(-1)!.text).toBe("Sunny.")
+    expect(edits.some(edit => edit.text.includes("Let me check.Sunny."))).toBe(false)
+  })
+
+  test("the Telegram bot removes the empty placeholder before an approval, and keeps the prompt's text once answered", async () => {
+    useScript([{ content: null, tool_calls: [createIssueCall("call_p")] }, { content: "Filed." }])
+    const { driver, messages, edits, deleted } = telegramDriver()
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "file a bug")
+    const placeholder = messages.find(message => message.text === "…")!
+    expect(deleted).toEqual([placeholder.id])
+    const prompt = messages.find(message => message.buttons)!
+    await driver.handleCallback(1001, 55, prompt.id, prompt.buttons![0]![0]!.data, undefined, "🔐 create_issue <x>")
+    expect(edits.find(edit => edit.id === prompt.id)!.text).toBe("🔐 create_issue &lt;x&gt;\n\n✅ Approved")
+  })
+
+  test("a message to the Telegram bot while a turn runs gets 'still working' instead of queueing", async () => {
+    useScript([{ content: "First." }])
+    let second: Promise<void> | undefined
+    const { driver, messages } = telegramDriver(text => {
+      // The placeholder goes out once the turn holds the user: a message now finds them busy
+      if (text === "…" && !second) second = driver.handleMessage(1001, 55, "are you there?")
+    })
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "hello")
+    await second
+    expect(messages.map(message => message.text)).toContain("Still working on your last message…")
+  })
+
+  test("a failed Telegram turn's error line is escaped for Telegram's HTML", async () => {
+    useScript([{ content: null, throws: "<html>Bad Gateway</html> & more" }])
+    const { driver, edits } = telegramDriver()
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "hello")
+    expect(edits.at(-1)!.text).toBe("⚠ Something went wrong: &lt;html&gt;Bad Gateway&lt;/html&gt; &amp; more")
   })
 
   test("widget turns never get HTTP tools, even when their persona lists them", async () => {

@@ -342,6 +342,7 @@ describe("MCP servers in the cloud", () => {
             return { messageId: 1 }
           },
           async editMessageText() {},
+          async deleteMessage() {},
           async sendPhoto(_chatId, photo, caption) {
             photos.push(photo)
             captions.push(caption)

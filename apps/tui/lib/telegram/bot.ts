@@ -1,5 +1,6 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import {
+  albumCollector,
   asRateLimitError,
   downloadTelegramImage,
   incomingImage,
@@ -86,6 +87,9 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
           throw error
         }
       },
+      async deleteMessage(chatId, messageId) {
+        await bot.api.deleteMessage(chatId, messageId)
+      },
       async answerCallbackQuery(callbackQueryId, opts) {
         await bot.api.answerCallbackQuery(callbackQueryId, { text: opts?.text })
       },
@@ -106,8 +110,35 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     }
   })
 
+  // Private chats only: in a group, the chat's messages and buttons would mix several people's conversations
+  const chat = bot.chatType("private")
+
+  type IncomingPhoto = { userId: number; chatId: number; caption: string; image: { fileId: string; mimeType: string } }
+
+  /** An image message, or a whole album, as one turn; the photos download here, never in grammy's update loop. */
+  async function handlePhotos(photos: IncomingPhoto[]) {
+    const { userId, chatId } = photos[0]!
+    const caption = photos
+      .map(photo => photo.caption)
+      .filter(Boolean)
+      .join("\n")
+    let dataUrls: string[]
+    try {
+      dataUrls = await Promise.all(
+        photos.map(photo => downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image))
+      )
+    } catch (error) {
+      log.warn("Telegram photo download failed", { error })
+      await bot.api.sendMessage(chatId, t("telegram.photoFailed"))
+      return
+    }
+    await driver.handleMessage(userId, chatId, caption, dataUrls)
+  }
+
+  const addPhoto = albumCollector<IncomingPhoto>(photos => inBackground(handlePhotos(photos)))
+
   // Strangers get no reply at all, so the bot doesn't even confirm it's running.
-  bot.on("message:text", async ctx => {
+  chat.on("message:text", async ctx => {
     const verdict = pairing.check(ctx.from.id, ctx.message.text)
     if (verdict === "owner") {
       inBackground(driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text))
@@ -120,8 +151,8 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     await ctx.reply(t("telegram.paired"))
   })
 
-  // A photo (or an image sent as a file) goes to the model with its caption as the text; owners only, like everything else
-  bot.on(["message:photo", "message:document"], async ctx => {
+  // A photo (or an image sent as a file) goes to the model with its caption as the text, an album's photos together; owners only, like everything else
+  chat.on(["message:photo", "message:document"], async ctx => {
     if (!pairing.isOwner(ctx.from.id)) return
     const image = incomingImage(ctx.message)
     if (!image) return
@@ -129,11 +160,16 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       await ctx.reply(t("telegram.photoTooLarge"))
       return
     }
-    const dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
-    inBackground(driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.caption ?? "", [dataUrl]))
+    const group = ctx.message.media_group_id
+    addPhoto(group && `${ctx.chat.id}:${group}`, {
+      userId: ctx.from.id,
+      chatId: ctx.chat.id,
+      caption: ctx.message.caption ?? "",
+      image
+    })
   })
 
-  bot.on("callback_query:data", ctx => {
+  chat.on("callback_query:data", ctx => {
     if (!pairing.isOwner(ctx.from.id)) return
     const chatId = ctx.callbackQuery.message?.chat.id
     const messageId = ctx.callbackQuery.message?.message_id

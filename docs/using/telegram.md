@@ -76,10 +76,19 @@ which ones the model gets. Where they run, and where their keys come from, diffe
 | API keys | kaja.io provides them, nothing to set up | [`secrets.toml`](/configuration/secrets) `[abilities.<name>] api_key`, or `kaja doctor` |
 | After a change | the next message, within the hour for marketplace updates | restart the bot |
 
-Calls that could change something wait for your Approve or Decline button.
+Calls that could change something wait for your **Approve** or **Decline** button. **Approve for this chat**
+stops asking about that tool until you start a new conversation (on your own bot, until it restarts). If you write
+a message instead of tapping, the call is skipped and Kaja reads your message.
 
 {: .note }
 Never send an API key to your bot: Telegram keeps the message history. Put it in `secrets.toml` instead.
+
+## Chatting
+
+- Both bots answer in a private chat only. Added to a group, they stay quiet.
+- Kaja works on one message at a time. Send another while it's busy and it says it's still working, so wait for
+  the answer.
+- Send a photo with a caption to ask about it. An album of photos goes in as one message.
 
 ## Commands
 
