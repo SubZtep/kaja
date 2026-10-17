@@ -3,6 +3,7 @@ import { linkTelegram } from "../src/flows"
 import { writeRedBluePng } from "../src/images"
 import { scenario } from "../src/scenario"
 import { listObjects } from "../src/storage"
+import { pollUntil } from "../src/wait"
 import { signUpOnWeb } from "../src/web"
 
 export default scenario(
@@ -26,16 +27,19 @@ export default scenario(
         "Which two colours are in this picture? Reply with just the colour names."
       )
       // The persona may say something else first (it asks to get to know you): wait for the message that names both
-      await telegram.waitForBot(/(?=.*red)(?=.*blue)/is, { after: before, timeoutMs: 120_000 })
+      await telegram.waitForBot(plain => /red/i.test(plain) && /blue/i.test(plain), {
+        after: before,
+        timeoutMs: 120_000
+      })
     })
 
     step("the image and its description are in storage")
     const [user] = await queryDb<{ id: string }>(stack, `SELECT id FROM "user" WHERE email = $1`, [email])
-    let keys: string[] = []
-    for (const deadline = Date.now() + 30_000; Date.now() < deadline; await Bun.sleep(1000)) {
-      keys = await listObjects(`images/${user?.id}/`)
-      if (keys.some(key => key.endsWith(".json"))) break
-    }
+    const keys = await pollUntil(
+      () => listObjects(`images/${user?.id}/`),
+      found => found.some(key => key.endsWith(".json")),
+      { timeoutMs: 30_000, intervalMs: 1000 }
+    )
     if (keys.length < 2 || !keys.some(key => key.endsWith(".json"))) {
       throw new Error(`Expected an image and its description under images/${user?.id}/, found: ${JSON.stringify(keys)}`)
     }

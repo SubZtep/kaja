@@ -19,14 +19,22 @@ type StoredMessage = {
   deleted?: boolean
 }
 
+const matches = (match: string | RegExp | ((plain: string) => boolean), plain: string) =>
+  typeof match === "string" ? plain.includes(match) : typeof match === "function" ? match(plain) : match.test(plain)
+
 export type BotMessage = { id: number; text: string; plain: string; photo?: string; buttons: string[] }
 
-const stripTags = (html: string) =>
-  html
-    .replace(/<[^>]*>/g, "")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&amp;", "&")
+/** Telegram's HTML as the text a person reads: tags dropped (a character at a time, so an unclosed one can't leave one behind), entities decoded. */
+export function plainText(html: string): string {
+  let text = ""
+  let inTag = false
+  for (const char of html) {
+    if (char === "<") inTag = true
+    else if (char === ">" && inTag) inTag = false
+    else if (!inTag) text += char
+  }
+  return text.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&")
+}
 
 /** The fake Telegram: a Bot API server the cloud bot long-polls, and the chat window a scenario types into. */
 export type Telegram = {
@@ -53,7 +61,10 @@ export type Telegram = {
   /** The bytes of a photo the bot sent (by upload or by URL). */
   fetchPhoto(message: BotMessage): Promise<Uint8Array>
   /** Waits for a (new) bot message whose text matches; returns it. */
-  waitForBot(match: string | RegExp, options?: { after?: number; timeoutMs?: number }): Promise<BotMessage>
+  waitForBot(
+    match: string | RegExp | ((plain: string) => boolean),
+    options?: { after?: number; timeoutMs?: number }
+  ): Promise<BotMessage>
   /** A different Telegram user with an empty chat, so one scenario's link or history never reaches the next. */
   reset(): void
   stop(): Promise<void>
@@ -279,22 +290,19 @@ export async function startTelegram(): Promise<Telegram> {
         return {
           id: message.id,
           text: html,
-          plain: stripTags(html),
+          plain: plainText(html),
           ...(message.photo ? { photo: message.photo } : {}),
           buttons: message.buttons.flat().map(button => button.text)
         }
       })
 
   async function waitForBot(
-    match: string | RegExp,
+    match: string | RegExp | ((plain: string) => boolean),
     { after = 0, timeoutMs = 60_000 }: { after?: number; timeoutMs?: number } = {}
   ): Promise<BotMessage> {
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {
-      const found = botMessages().find(
-        message =>
-          message.id > after && (typeof match === "string" ? message.plain.includes(match) : match.test(message.plain))
-      )
+      const found = botMessages().find(message => message.id > after && matches(match, message.plain))
       if (found) return found
       await Bun.sleep(200)
     }

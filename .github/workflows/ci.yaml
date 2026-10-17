@@ -170,7 +170,7 @@ jobs:
           restore-keys: bun-${{ runner.os }}-
 
       - name: Install dependencies
-        run: bun i --frozen-lockfile
+        run: bun i --frozen-lockfile --ignore-scripts
 
       - name: Generate Paraglide messages
         run: bun --filter @kaja/web generate:paraglide

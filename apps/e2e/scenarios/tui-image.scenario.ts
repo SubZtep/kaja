@@ -4,6 +4,7 @@ import { e2eDir, e2eEnv } from "../src/env"
 import { quitTui } from "../src/flows-tui"
 import { Skip, scenario } from "../src/scenario"
 import { startTui, writeLocalConfig } from "../src/tui"
+import { pollUntil } from "../src/wait"
 
 /** Every file under `dir`, with its size. */
 function filesUnder(dir: string): { path: string; bytes: number }[] {
@@ -36,11 +37,11 @@ export default scenario(
 
       step("the image is kept as a file, with its description")
       const store = join(e2eDir, e2eEnv.E2E_OUT_DIR, "tui-home", "data", "kaja-e2e", "files")
-      let files: ReturnType<typeof filesUnder> = []
-      for (const deadline = Date.now() + 60_000; Date.now() < deadline; await Bun.sleep(1000)) {
-        files = filesUnder(store)
-        if (files.some(file => file.path.endsWith(".json"))) break
-      }
+      const files = await pollUntil(
+        () => filesUnder(store),
+        found => found.some(file => file.path.endsWith(".json")),
+        { timeoutMs: 60_000, intervalMs: 1000 }
+      )
       const images = files.filter(file => !file.path.endsWith(".json"))
       if (images.length === 0) throw new Error(`No image kept under ${store}: ${JSON.stringify(files)}`)
       if (!files.some(file => file.path.endsWith(".json"))) throw new Error("The image has no description beside it")

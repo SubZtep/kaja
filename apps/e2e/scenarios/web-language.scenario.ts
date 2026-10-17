@@ -1,6 +1,7 @@
 import { queryDb } from "../src/db"
 import { linkTelegram } from "../src/flows"
 import { apiText, scenario, t } from "../src/scenario"
+import { pollUntil } from "../src/wait"
 import { signUpOnWeb, visit } from "../src/web"
 
 export default scenario(
@@ -31,11 +32,12 @@ export default scenario(
     await visit(page, stack.webUrl)
     await page.getByRole("combobox", { name: t("language_select_label") }).click()
     await page.getByRole("option", { name: /Magyar/ }).click()
-    let saved: string | undefined
-    for (const deadline = Date.now() + 15_000; Date.now() < deadline && saved !== "hu-HU"; await Bun.sleep(300)) {
-      saved = (await queryDb<{ locale: string }>(stack, `SELECT locale FROM "user" WHERE email = $1`, [email]))[0]
-        ?.locale
-    }
+    const saved = await pollUntil(
+      async () =>
+        (await queryDb<{ locale: string }>(stack, `SELECT locale FROM "user" WHERE email = $1`, [email]))[0]?.locale,
+      found => found === "hu-HU",
+      { timeoutMs: 15_000, intervalMs: 300 }
+    )
     if (saved !== "hu-HU") throw new Error(`The saved language is ${saved}, wanted hu-HU`)
     await page.waitForFunction(() => document.documentElement.lang.startsWith("hu"))
 

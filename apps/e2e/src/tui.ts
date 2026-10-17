@@ -229,7 +229,7 @@ export async function startTui(
     },
     press: key => write(KEYS[key]),
     chord: (letter, options) => {
-      const code = String.fromCharCode(letter.toUpperCase().charCodeAt(0) - 64)
+      const code = String.fromCodePoint((letter.toUpperCase().codePointAt(0) ?? 64) - 64)
       write(options?.alt ? `\x1b${letter}` : code)
     },
     openedUrls: () => readFileSync(opened, "utf8").split("\n").filter(Boolean),

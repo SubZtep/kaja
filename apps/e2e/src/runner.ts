@@ -76,7 +76,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
           }
         }
       },
-      newEmail: () => `e2e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}@example.test`,
+      newEmail: () => `e2e-${crypto.randomUUID()}@example.test`,
       step: name => {
         current = name
         console.log(`  · ${name}`)

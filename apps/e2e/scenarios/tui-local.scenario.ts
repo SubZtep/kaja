@@ -1,6 +1,7 @@
 import { quitTui } from "../src/flows-tui"
 import { scenario } from "../src/scenario"
 import { startTui, writeLocalConfig } from "../src/tui"
+import { pollUntil } from "../src/wait"
 
 export default scenario(
   "TUI --local: the agent runs on this computer, sessions are kept and resumed",
@@ -42,9 +43,12 @@ export default scenario(
       const before = count(await again.screen())
       await model(async () => {
         await again.submit("What is my cat called? Reply with only the name, lowercase.")
-        for (const deadline = Date.now() + 90_000; count(await again.screen()) <= before + 0; await Bun.sleep(500)) {
-          if (Date.now() > deadline) throw new Error("No answer naming the cat appeared")
-        }
+        const after = await pollUntil(
+          async () => count(await again.screen()),
+          found => found > before,
+          { timeoutMs: 90_000 }
+        )
+        if (after <= before) throw new Error("No answer naming the cat appeared")
       })
       await quitTui(again)
     } finally {

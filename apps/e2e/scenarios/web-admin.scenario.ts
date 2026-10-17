@@ -1,6 +1,7 @@
 import { signUp } from "../src/api"
 import { queryDb } from "../src/db"
 import { scenario, t } from "../src/scenario"
+import { pollUntil } from "../src/wait"
 import { signUpOnWeb, visit } from "../src/web"
 
 export default scenario(
@@ -28,11 +29,13 @@ export default scenario(
 
     // The saved state is the proof; the success toast comes and goes
     const waitForEnabled = async (wanted: boolean) => {
-      for (const deadline = Date.now() + 15_000; Date.now() < deadline; await Bun.sleep(300)) {
-        const [row] = await queryDb<{ enabled: boolean }>(stack, `SELECT enabled FROM model WHERE 'chat' = ANY(tasks)`)
-        if (row?.enabled === wanted) return
-      }
-      throw new Error(`The chat model never became enabled=${wanted}`)
+      const row = await pollUntil(
+        async () =>
+          (await queryDb<{ enabled: boolean }>(stack, `SELECT enabled FROM model WHERE 'chat' = ANY(tasks)`))[0],
+        found => found?.enabled === wanted,
+        { timeoutMs: 15_000, intervalMs: 300 }
+      )
+      if (row?.enabled !== wanted) throw new Error(`The chat model never became enabled=${wanted}`)
     }
 
     step("disable the model on the models page")

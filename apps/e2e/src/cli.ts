@@ -8,6 +8,17 @@ import type { Scenario } from "./scenario"
 import { startStack } from "./stack"
 import { stitch } from "./stitch"
 
+function mark(result: Result): string {
+  if (result.skipped) return "–"
+  return result.ok ? "✓" : `✗ [${result.kind}]`
+}
+
+function outcome(result: Result): string {
+  if (result.skipped) return `– skipped: ${result.skipped}`
+  if (result.ok) return `✓ ${result.seconds.toFixed(1)} s`
+  return `✗ [${result.kind}] ${result.error}`
+}
+
 const suffix = ".scenario.ts"
 const scenariosDir = join(e2eDir, "scenarios")
 const flags = process.argv.slice(2).filter(arg => arg.startsWith("--"))
@@ -43,13 +54,7 @@ try {
     console.log(`\n▶ ${scenario.name}`)
     const result = await runScenario(browser, stack, scenario, file)
     results.push(result)
-    console.log(
-      result.skipped
-        ? `  – skipped: ${result.skipped}`
-        : result.ok
-          ? `  ✓ ${result.seconds.toFixed(1)} s`
-          : `  ✗ [${result.kind}] ${result.error}`
-    )
+    console.log(`  ${outcome(result)}`)
   }
   if (!flags.includes("--no-video")) {
     console.log("\nStitching the clips into one video...")
@@ -67,8 +72,8 @@ try {
 }
 
 console.log("")
-for (const result of results)
-  console.log(
-    `${result.skipped ? "–" : result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.videos.length ? `  ${result.videos.join("  ")}` : ""}`
-  )
+for (const result of results) {
+  const clips = result.videos.length ? `  ${result.videos.join("  ")}` : ""
+  console.log(`${mark(result)} ${result.name}${clips}`)
+}
 process.exit(results.every(result => result.ok) ? 0 : 1)

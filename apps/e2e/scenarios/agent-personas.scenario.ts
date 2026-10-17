@@ -1,5 +1,6 @@
 import { signUp } from "../src/api"
 import { scenario } from "../src/scenario"
+import { pollUntil } from "../src/wait"
 
 type Persona = { id: string; label: string }
 
@@ -10,11 +11,11 @@ export default scenario(
 
     step("the catalog fills from the marketplace")
     // The API syncs it from GitHub in the background after it starts
-    let personas: Persona[] = []
-    for (const deadline = Date.now() + 90_000; Date.now() < deadline; await Bun.sleep(2000)) {
-      personas = (await user.json<{ personas: Persona[] }>("GET", "/nasi/personas")).personas
-      if (personas.some(persona => persona.id === "barkochba")) break
-    }
+    const personas = await pollUntil(
+      async () => (await user.json<{ personas: Persona[] }>("GET", "/nasi/personas")).personas,
+      found => found.some(persona => persona.id === "barkochba"),
+      { timeoutMs: 90_000, intervalMs: 2000 }
+    )
     for (const id of ["default", "barkochba"]) {
       if (!personas.some(persona => persona.id === id))
         throw new Error(`No ${id} persona in ${JSON.stringify(personas)}`)

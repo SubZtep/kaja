@@ -1,5 +1,6 @@
 import { signUp } from "../src/api"
 import { apiText, scenario } from "../src/scenario"
+import { plainText } from "../src/telegram"
 
 export default scenario(
   "Telegram: an unlinked chat is told to link, and a cancelled link stays unlinked",
@@ -13,7 +14,7 @@ export default scenario(
       await telegram.say(chat, text)
       return (await telegram.waitForReply(before, 20_000)).plain
     }
-    const plain = (key: string) => apiText(key).replace(/<[^>]*>/g, "")
+    const plain = (key: string) => plainText(apiText(key))
 
     step("a message before linking")
     const first = await say("hello?")
