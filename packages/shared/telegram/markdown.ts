@@ -167,6 +167,13 @@ function openTags(html: string): { name: string; tag: string }[] {
   return open
 }
 
+/** Trims trailing `\n` characters without a regex (avoids a ReDoS-shaped backtracking pattern). */
+function trimTrailingNewlines(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "\n") end--
+  return value.slice(0, end)
+}
+
 /** Moves a cut back so it lands outside any tag, entity or surrogate pair. */
 function safeCut(html: string, at: number): number {
   const tagStart = html.lastIndexOf("<", at - 1)
@@ -174,8 +181,8 @@ function safeCut(html: string, at: number): number {
   // Every `&` in rendered HTML starts an entity
   const entityStart = html.lastIndexOf("&", at - 1)
   if (entityStart > html.lastIndexOf(";", at - 1)) at = entityStart
-  const code = html.charCodeAt(at - 1)
-  if (code >= 0xd800 && code <= 0xdbff) at--
+  // A code point above 0xffff here means at-1 is a high surrogate paired with the low surrogate at `at`: the cut splits it
+  if ((html.codePointAt(at - 1) ?? 0) > 0xffff) at--
   return at
 }
 
@@ -194,7 +201,7 @@ function cutHtml(html: string, limit: number, from: number): { head: string; res
     if (at <= from) at = budget
     const open = openTags(html.slice(0, at))
     const head =
-      html.slice(0, at).replace(/\n+$/, "") +
+      trimTrailingNewlines(html.slice(0, at)) +
       open
         .toReversed()
         .map(t => `</${t.name}>`)

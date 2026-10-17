@@ -97,7 +97,8 @@ const ENDS_TURN = new Set<AgentEvent["type"]>(["ask_user", "final", "confirm_com
 /** A failure as the chat shows it: the category in the user's language, like the cloud bot and the terminal, then the provider's own (technical) text, escaped for HTML. */
 function errorLine(error: unknown): string {
   const { category, message } = categorizeError(error)
-  return `⚠ ${t(`error.${category}`)}: ${escapeHtml(message)}`
+  const label = t(`error.${category}`)
+  return `⚠ ${label}: ${escapeHtml(message)}`
 }
 
 /** A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy dependency. */
@@ -451,6 +452,23 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
   }
 
+  /** Dispatches one finalized event, logging a failed send rather than stopping the run. Returns whether the turn ended. */
+  async function dispatchFinalizedEvent(
+    chatId: number,
+    state: UserState,
+    reply: Reply,
+    event: Exclude<FinalizedAgentEvent, { type: "usage" }>
+  ): Promise<boolean> {
+    try {
+      return await handleFinalizedEvent(chatId, state, reply, event)
+    } catch (error) {
+      log.warn("Telegram send failed", { error })
+      if (!ENDS_TURN.has(event.type)) return false
+      await reply.fail(errorLine(error))
+      return true
+    }
+  }
+
   /** Reads a turn's events to the end: the reply as it streams, the timeline until the turn has ended. */
   async function readTurn(events: AsyncIterable<AgentEvent>, chatId: number, state: UserState, reply: Reply) {
     let ended = false
@@ -468,15 +486,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       if (event.type !== "image_described") state.events.push(timelineEvent(event))
 
       // A failed send never stops the run: the session then stays whole
-      try {
-        if (await handleFinalizedEvent(chatId, state, reply, event)) ended = true
-      } catch (error) {
-        log.warn("Telegram send failed", { error })
-        if (ENDS_TURN.has(event.type)) {
-          ended = true
-          await reply.fail(errorLine(error))
-        }
-      }
+      if (await dispatchFinalizedEvent(chatId, state, reply, event)) ended = true
     }
   }
 
@@ -622,6 +632,31 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
   }
 
+  /** Runs the approved/declined command or tool, recording it on the session. */
+  async function runApprovalAction(
+    state: UserState,
+    pendingCommand: PendingCommand,
+    approved: boolean,
+    action: "approve" | "approve_session" | "decline"
+  ): Promise<{ result: string; images: PromptImage[] }> {
+    const startedAt = performance.now()
+    if (pendingCommand.kind === "command") {
+      const result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
+      recordPausedCall(state.session, "run_command", approved ? { status: "ok", startedAt } : "declined")
+      return { result, images: [] }
+    }
+
+    if (action === "approve_session") grantForSession(state, pendingCommand.name)
+    let status: "ok" | "error" = "ok"
+    const ran = approved
+      ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments, s => {
+          status = s
+        })
+      : { text: "User declined this request.", images: [] }
+    recordPausedCall(state.session, "tool_approval", approved ? { status, startedAt } : "declined")
+    return { result: ran.text, images: ran.images }
+  }
+
   async function handleCallbackQuery(
     userId: number,
     chatId: number,
@@ -658,24 +693,9 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await editSafely(chatId, pendingCommand.messageId, `${pendingCommand.body}\n\n${statusLine}`, { replyMarkup: [] })
 
     let result: string
-    let images: PromptImage[] = []
+    let images: PromptImage[]
     try {
-      const startedAt = performance.now()
-      if (pendingCommand.kind === "command") {
-        result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
-        recordPausedCall(state.session, "run_command", approved ? { status: "ok", startedAt } : "declined")
-      } else {
-        if (action === "approve_session") grantForSession(state, pendingCommand.name)
-        let status: "ok" | "error" = "ok"
-        const ran = approved
-          ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments, s => {
-              status = s
-            })
-          : { text: "User declined this request.", images: [] }
-        result = ran.text
-        images = ran.images
-        recordPausedCall(state.session, "tool_approval", approved ? { status, startedAt } : "declined")
-      }
+      ;({ result, images } = await runApprovalAction(state, pendingCommand, approved, action))
     } catch (error) {
       state.busy = false
       throw error

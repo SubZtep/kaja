@@ -68,7 +68,8 @@ const ENDS_TURN = new Set<AgentEvent["type"]>(["ask_user", "final", "confirm_too
 /** A failure as the chat shows it: the category in the user's language, then the (technical) detail, escaped for HTML. */
 function errorLine(error: unknown, t: Translate): string {
   const { category, message } = categorizeError(error)
-  return `⚠ ${t(`telegram.error.${category}`)}: ${escapeHtml(message)}`
+  const label = t(`telegram.error.${category}`)
+  return `⚠ ${label}: ${escapeHtml(message)}`
 }
 
 /**
@@ -212,6 +213,25 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     })
   }
 
+  /** Dispatches one finalized event, logging a failed send rather than stopping the turn. Returns whether the turn ended. */
+  async function dispatchFinalizedEvent(
+    reply: Reply,
+    chatId: number,
+    event: FinalizedAgentEvent,
+    language: BotLanguage,
+    photos: Map<string, number>
+  ): Promise<boolean> {
+    try {
+      await handleFinalizedEvent(reply, chatId, event, language, photos)
+    } catch (error) {
+      console.warn("Telegram send failed", { error })
+      if (!ENDS_TURN.has(event.type)) return false
+      await reply.fail(errorLine(error, language.t))
+      return true
+    }
+    return ENDS_TURN.has(event.type)
+  }
+
   /**
    * Reads a turn's events to the end, handling each as it arrives. A failed send never stops it: the turn is
    * saved only once its events have all been read.
@@ -232,13 +252,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         continue
       }
       if (event.type === "usage") continue
-      try {
-        await handleFinalizedEvent(reply, chatId, event, language, photos)
-      } catch (error) {
-        console.warn("Telegram send failed", { error })
-        if (ENDS_TURN.has(event.type)) await reply.fail(errorLine(error, language.t))
-      }
-      if (ENDS_TURN.has(event.type)) ended = true
+      if (await dispatchFinalizedEvent(reply, chatId, event, language, photos)) ended = true
     }
   }
 
