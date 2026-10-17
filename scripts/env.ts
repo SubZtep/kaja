@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import type { z } from "zod"
-import { ApiEnvSchema, SandboxEnvSchema, WebEnvSchema } from "../packages/schema/env"
+import { ApiEnvSchema, E2eEnvSchema, SandboxEnvSchema, WebEnvSchema } from "../packages/schema/env"
 import { type FieldInfo, inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
@@ -60,7 +60,8 @@ function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>): string {
 const targets = [
   { schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/.env.example") },
   { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") },
-  { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/.env.example") }
+  { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/.env.example") },
+  { schema: E2eEnvSchema, outPath: join(rootDir, "apps/e2e/.env.example") }
 ]
 
 const knownKeys = new Set(targets.flatMap(t => Object.keys(t.schema.shape)))

@@ -47,6 +47,19 @@
         "@types/react": "^19.3.0",
       },
     },
+    "apps/e2e": {
+      "name": "@kaja/e2e",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kaja/schema": "workspace:*",
+        "pg": "^8.20.0",
+        "playwright-core": "^1.60.0",
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.20.0",
+      },
+    },
     "apps/sandbox": {
       "name": "@kaja/sandbox",
       "version": "0.2.12",
@@ -441,6 +454,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@kaja/api": ["@kaja/api@workspace:apps/api"],
+
+    "@kaja/e2e": ["@kaja/e2e@workspace:apps/e2e"],
 
     "@kaja/nasi": ["@kaja/nasi@workspace:packages/nasi"],
 
@@ -1443,6 +1458,8 @@
     "pkce-challenge": ["pkce-challenge@5.0.1", "", {}, "sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ=="],
 
     "play-sound": ["play-sound@1.1.6", "", { "dependencies": { "find-exec": "1.0.3" } }, "sha512-09eO4QiXNFXJffJaOW5P6x6F5RLihpLUkXttvUZeWml0fU6x6Zp7AjG9zaeMpgH2ZNvq4GR1ytB22ddYcqJIZA=="],
+
+    "playwright-core": ["playwright-core@1.64.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ=="],
 
     "plist": ["plist@3.1.1", "", { "dependencies": { "@xmldom/xmldom": "^0.9.10", "base64-js": "^1.5.1", "xmlbuilder": "^15.1.1" } }, "sha512-ZIfcLJC+7E7FBFnDxm9MPmt7D+DidyQ26lewieO75AdhA2ayMtsJSES0iWzqJQbcVRSrTufQoy0DR94xHue0oA=="],
 

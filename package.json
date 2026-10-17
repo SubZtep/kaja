@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:api": "bun run --filter @kaja/api dev",
+    "e2e": "bun run --filter @kaja/e2e e2e",
     "dev:docs": "cd docs && bundle exec jekyll serve --watch --incremental --livereload",
     "dev:sandbox": "bun run --filter @kaja/sandbox dev",
     "dev:tui": "bun run --env-file=apps/tui/.env apps/tui/cli.ts",
