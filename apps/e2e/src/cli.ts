@@ -43,7 +43,13 @@ try {
     console.log(`\n▶ ${scenario.name}`)
     const result = await runScenario(browser, stack, scenario, file)
     results.push(result)
-    console.log(result.ok ? `  ✓ ${result.seconds.toFixed(1)} s` : `  ✗ [${result.kind}] ${result.error}`)
+    console.log(
+      result.skipped
+        ? `  – skipped: ${result.skipped}`
+        : result.ok
+          ? `  ✓ ${result.seconds.toFixed(1)} s`
+          : `  ✗ [${result.kind}] ${result.error}`
+    )
   }
   if (!flags.includes("--no-video")) {
     console.log("\nStitching the clips into one video...")
@@ -63,6 +69,6 @@ try {
 console.log("")
 for (const result of results)
   console.log(
-    `${result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.videos.length ? `  ${result.videos.join("  ")}` : ""}`
+    `${result.skipped ? "–" : result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.videos.length ? `  ${result.videos.join("  ")}` : ""}`
   )
 process.exit(results.every(result => result.ok) ? 0 : 1)

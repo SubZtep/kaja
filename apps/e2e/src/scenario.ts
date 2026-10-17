@@ -13,6 +13,11 @@ export function t(key: string, values: Record<string, string> = {}): string {
   return text.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole)
 }
 
+/** Thrown by a scenario that can't run here (a missing key, say): reported as skipped, not failed. */
+export class Skip extends Error {
+  override name = "Skip"
+}
+
 /** A scenario step that failed because of the local model (it never produced what the step needs), not because of the app. */
 export class ModelFailure extends Error {
   override name = "ModelFailure"

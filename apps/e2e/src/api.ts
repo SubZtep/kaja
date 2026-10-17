@@ -17,7 +17,13 @@ export type ApiUser = {
   /** `call`, parsed, and a failure thrown. */
   json<T = unknown>(method: string, path: string, body?: unknown): Promise<T>
   /** POST /nasi/turn. */
-  turn(body: { message: string; session?: string; personaId?: string; [key: string]: unknown }): Promise<TurnResult>
+  turn(body: {
+    message?: string
+    session?: string
+    personaId?: string
+    approval?: "approve" | "approve_session" | "decline"
+    [key: string]: unknown
+  }): Promise<TurnResult>
   /** POST /nasi/compact. */
   compact(
     session: string,

@@ -40,7 +40,12 @@ export type Tui = {
 }
 
 /** Writes a minimal local-mode config (the E2E's model as the only provider, no marketplace fetching, no setup wizard) where the TUI reads it. */
-export function writeLocalConfig(llm: { baseUrl: string; model: string; apiKey?: string }): void {
+export function writeLocalConfig(llm: {
+  baseUrl: string
+  model: string
+  apiKey?: string
+  others?: { model: string; tasks: string[] }[]
+}): void {
   const dir = join(e2eDir, e2eEnv.E2E_OUT_DIR, "tui-home", "config", `kaja-${PROFILE}`)
   mkdirSync(dir, { recursive: true })
   writeFileSync(
@@ -49,9 +54,33 @@ export function writeLocalConfig(llm: { baseUrl: string; model: string; apiKey?:
   )
   writeFileSync(
     join(dir, "models.toml"),
-    `[providers.e2e]\nbase_url = "${llm.baseUrl}"\n\n[models.e2e-chat]\nmodel = "${llm.model}"\nprovider = "e2e"\ntasks = ["chat"]\n`
+    [
+      `[providers.e2e]\nbase_url = "${llm.baseUrl}"\n`,
+      // The image provider is its own: another host, another key
+      ...(e2eEnv.E2E_IMAGE_API_KEY ? [`[providers.e2e-image]\nbase_url = "${e2eEnv.E2E_IMAGE_BASE_URL}"\n`] : []),
+      `[models.e2e-chat]\nmodel = "${llm.model}"\nprovider = "e2e"\ntasks = ["chat"]\n`,
+      // Image descriptions and summaries come from the provider's other models, as in the cloud
+      ...(llm.others ?? [])
+        .filter(other => other.tasks.some(task => task === "vision" || task === "summarize"))
+        .map(
+          (other, i) =>
+            `[models.e2e-other-${i}]\nmodel = "${other.model}"\nprovider = "e2e"\ntasks = [${other.tasks
+              .filter(task => task === "vision" || task === "summarize")
+              .map(task => `"${task}"`)
+              .join(", ")}]\n`
+        ),
+      ...(e2eEnv.E2E_IMAGE_API_KEY
+        ? [
+            `[models.e2e-image]\nmodel = "${e2eEnv.E2E_IMAGE_MODEL}"\nprovider = "e2e-image"\ntasks = ["image-generation"]\n`
+          ]
+        : [])
+    ].join("\n")
   )
-  if (llm.apiKey) writeFileSync(join(dir, "secrets.toml"), `[providers.e2e]\napi_key = "${llm.apiKey}"\n`)
+  const keys = [
+    ...(llm.apiKey ? [`[providers.e2e]\napi_key = "${llm.apiKey}"\n`] : []),
+    ...(e2eEnv.E2E_IMAGE_API_KEY ? [`[providers.e2e-image]\napi_key = "${e2eEnv.E2E_IMAGE_API_KEY}"\n`] : [])
+  ]
+  if (keys.length > 0) writeFileSync(join(dir, "secrets.toml"), keys.join("\n"))
 }
 
 /** Draws the page the terminal is shown on: xterm.js in a dark window, sized to the PTY. */

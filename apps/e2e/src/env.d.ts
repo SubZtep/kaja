@@ -26,6 +26,12 @@ declare module "bun" {
     E2E_LLM_VISION_MODEL?: string
     /** Reranker at the hosted provider (with E2E_LLM_API_KEY) */
     E2E_LLM_RERANK_MODEL?: string
+    /** API key of an image-generation provider (xAI's, by default); unset, the scenario that generates an image is skipped */
+    E2E_IMAGE_API_KEY?: string
+    /** OpenAI-compatible Images API base URL (with E2E_IMAGE_API_KEY) */
+    E2E_IMAGE_BASE_URL?: string
+    /** Image model name (with E2E_IMAGE_API_KEY) */
+    E2E_IMAGE_MODEL?: string
     /** llama.cpp server the stack's cloud turns use; one already answering there is reused, else E2E_LLAMA_MODEL starts one */
     E2E_LLAMA_URL?: string
     /** llama-server binary to start when none answers at E2E_LLAMA_URL; unset, llama-server on PATH */

@@ -2,7 +2,7 @@ import { mkdirSync, renameSync } from "node:fs"
 import { join } from "node:path"
 import { type Browser, chromium, type Page } from "playwright-core"
 import { e2eDir, e2eEnv } from "./env"
-import { ModelFailure, type Scenario } from "./scenario"
+import { ModelFailure, type Scenario, Skip } from "./scenario"
 import type { Stack } from "./stack"
 
 export type Result = {
@@ -12,6 +12,7 @@ export type Result = {
   /** One clip per recorded page. */
   videos: string[]
   error?: string
+  skipped?: string
   /** Who failed: the app, or the model behind it (a flaky answer, not necessarily a bug). */
   kind?: "app" | "model"
 }
@@ -56,6 +57,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   const started = performance.now()
   let current = "start"
   let error: string | undefined
+  let skipped: string | undefined
   let kind: Result["kind"]
   try {
     await scenario.run({
@@ -81,10 +83,13 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
       }
     })
   } catch (caught) {
-    error = `at "${current}": ${(caught as Error).message}`
-    kind = caught instanceof ModelFailure ? "model" : "app"
-    for (const { label, page: shown } of pages) {
-      await shown.screenshot({ path: join(outDir, `${file}.${label}.failed.png`) }).catch(() => {})
+    if (caught instanceof Skip) skipped = caught.message
+    else {
+      error = `at "${current}": ${(caught as Error).message}`
+      kind = caught instanceof ModelFailure ? "model" : "app"
+      for (const { label, page: shown } of pages) {
+        await shown.screenshot({ path: join(outDir, `${file}.${label}.failed.png`) }).catch(() => {})
+      }
     }
   }
   // The recorder drops what changed in the last moments before the context closes
@@ -109,6 +114,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
     ok: !error,
     seconds,
     videos,
-    ...(error ? { error, kind } : {})
+    ...(error ? { error, kind } : {}),
+    ...(skipped ? { skipped } : {})
   }
 }
