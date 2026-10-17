@@ -44,6 +44,17 @@ export function apiText(key: string, values: Record<string, string> = {}): strin
   return value.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole)
 }
 
+const widgetMessages = Bun.TOML.parse(
+  readFileSync(join(webDir, "..", "api", "widgets", "locales", "en-GB.toml"), "utf8")
+) as Record<string, string>
+
+/** The embeddable widget's English wording for a key like `openChat`. */
+export function widgetText(key: string): string {
+  const text = widgetMessages[key]
+  if (text === undefined) throw new Error(`No widget en-GB message "${key}"`)
+  return text
+}
+
 export type Context = {
   stack: Stack
   /** The scenario's first browser page (clip label `web`). */
