@@ -13,7 +13,7 @@ export default scenario(
       if (!turn.message?.toLowerCase().includes("pong")) throw new Error(`Unexpected reply: ${turn.message}`)
       return turn
     })
-    if (result.status !== "done") throw new Error(`Unexpected status ${result.status}`)
+    if (result.status !== "completed") throw new Error(`Unexpected status ${result.status}`)
   },
   { llm: true, video: false }
 )
