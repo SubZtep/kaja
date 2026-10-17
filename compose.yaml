@@ -36,13 +36,12 @@ services:
         ]
       timeout: 5s
 
-  # S3-compatible object storage for images (Hetzner Object Storage in production); the API creates the bucket on boot
   storage:
     image: rustfs/rustfs:1.0.1
     restart: unless-stopped
     ports:
       - "127.0.0.1:9000:9000" # S3 API
-      - "127.0.0.1:9001:9001" # console
+      - "127.0.0.1:9001:9001"
     environment:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
@@ -78,14 +77,13 @@ services:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
       STORAGE_ENDPOINT: http://storage:9000
-      STORAGE_PUBLIC_ENDPOINT: http://localhost:9000 # signed URLs name the host the browser and the TUI reach
+      STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
       CORS_ORIGIN: http://localhost:3000
-      BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
-      SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only
+      BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production
+      SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production
     networks:
       - default
       - sandbox
-    # The image has no curl or wget, so Bun's fetch does the check.
     healthcheck:
       test:
         [
@@ -124,9 +122,6 @@ services:
       timeout: 5s
       start_period: 10s
 
-  # Runs stdio MCP servers (a headless Chrome among them) for cloud turns, as the official sandbox: it dials the api's
-  # WebSocket, nothing connects in, so it publishes no port. Only the api shares its network, so it can't reach db or mail
-  # by name. Chrome also goes out only through the sandbox's egress proxy (public addresses only).
   sandbox:
     build:
       context: .
@@ -143,7 +138,6 @@ services:
     environment:
       KAJA_API_URL: http://api:3001
       KAJA_SANDBOX_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only: the api's SANDBOX_SYSTEM_KEY
-      # The image's own paths: apps/sandbox/.env may point these at host files for `bun dev:sandbox`.
       MARKETPLACE_DIR: /home/node/app/marketplace
       SANDBOX_OVERRIDES: /home/node/app/overrides.json
       SANDBOX_CACHE_DIR: /home/node/.cache/mcp

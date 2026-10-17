@@ -14,8 +14,6 @@ on:
 
 permissions:
   contents: write
-  # So we can `gh workflow run` Build and release TUI after a TUI bump
-  # (tag pushes alone are skipped by [skip ci] on the bump commit).
   actions: write
 
 jobs:
@@ -34,7 +32,6 @@ jobs:
         id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
         with:
-          # An app is also bumped by what its build takes in: the workspace packages it imports and the repo files it bundles.
           filters: |
             api:
               - 'apps/api/**'
@@ -184,16 +181,10 @@ jobs:
             exit 0
           fi
 
-          # bun.lock records each workspace version, so it goes stale on every bump.
-          # No --frozen-lockfile here (S8543): it would exit 0 without writing the new
-          # versions, silently restoring the staleness this step exists to fix.
           bun install --lockfile-only --ignore-scripts
           git add bun.lock
 
           SUMMARY=$(IFS=", "; echo "${SUMMARY_PARTS[*]}")
-          # [skip ci] avoids re-running CI / this workflow on the bump commit.
-          # Tag push alone will not start Build and release TUI either — we
-          # dispatch that workflow explicitly below when the TUI was bumped.
           git commit -m "chore: auto bump ${SUMMARY} [skip ci]"
 
           for tag in "${TAGS[@]}"; do
@@ -201,8 +192,6 @@ jobs:
             echo "Created tag ${tag}"
           done
 
-          # We just reset to origin/main above, so a plain push is a fast-forward
-          # unless another run landed in between — retry from scratch if so.
           if git push origin main --tags; then
             break
           fi
