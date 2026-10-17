@@ -48,6 +48,10 @@ export type Telegram = {
   press(page: Page, label: string): Promise<void>
   /** Waits for the bot's next real message after `after` (not its "…" placeholder, which later becomes the answer). */
   waitForReply(after: number, timeoutMs?: number): Promise<BotMessage>
+  /** Waits for the bot's next photo after `after`. */
+  waitForPhoto(after: number, timeoutMs?: number): Promise<BotMessage>
+  /** The bytes of a photo the bot sent (by upload or by URL). */
+  fetchPhoto(message: BotMessage): Promise<Uint8Array>
   /** Waits for a (new) bot message whose text matches; returns it. */
   waitForBot(match: string | RegExp, options?: { after?: number; timeoutMs?: number }): Promise<BotMessage>
   /** A different Telegram user with an empty chat, so one scenario's link or history never reaches the next. */
@@ -96,7 +100,11 @@ export async function startTelegram(): Promise<Telegram> {
   const buttonsOf = (markup: unknown): Button[][] =>
     nested<{ inline_keyboard?: Button[][] }>(markup)?.inline_keyboard ?? []
 
-  async function storePhoto(photo: unknown): Promise<string> {
+  async function storePhoto(body: Record<string, unknown>): Promise<string> {
+    // An upload comes as `attach://<name>` pointing at another form part
+    const field = body.photo
+    const photo =
+      typeof field === "string" && field.startsWith("attach://") ? body[field.slice("attach://".length)] : field
     if (photo instanceof Blob) {
       const id = `photo-${nextFileId++}`
       files.set(id, { bytes: new Uint8Array(await photo.arrayBuffer()), mime: photo.type || "image/jpeg" })
@@ -145,7 +153,7 @@ export async function startTelegram(): Promise<Telegram> {
           from: "bot",
           text: "",
           caption: body.caption ? String(body.caption) : undefined,
-          photo: await storePhoto(body.photo),
+          photo: await storePhoto(body),
           buttons: []
         }
         messages.push(message)
@@ -327,6 +335,27 @@ export async function startTelegram(): Promise<Telegram> {
       await page.locator(".msg:has(.btn)").last().getByRole("button", { name: label }).click()
     },
     waitForBot,
+    async waitForPhoto(after, timeoutMs = 90_000) {
+      const deadline = Date.now() + timeoutMs
+      while (Date.now() < deadline) {
+        const found = botMessages().find(message => message.id > after && message.photo)
+        if (found) return found
+        await Bun.sleep(200)
+      }
+      throw new Error(
+        `The bot sent no photo within ${timeoutMs} ms. It said:\n${botMessages()
+          .map(m => `  ${m.plain}`)
+          .join("\n")}`
+      )
+    },
+    async fetchPhoto(message) {
+      if (!message.photo) throw new Error("That message has no photo")
+      const response = await fetch(
+        message.photo.startsWith("/") ? `http://127.0.0.1:${server.port}${message.photo}` : message.photo
+      )
+      if (!response.ok) throw new Error(`The photo ${message.photo} answered ${response.status}`)
+      return new Uint8Array(await response.arrayBuffer())
+    },
     reset() {
       messages.length = 0
       updates.length = 0
