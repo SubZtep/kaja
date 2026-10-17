@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@kaja/schema": "workspace:*",
+    "@xterm/xterm": "^6.0.0",
     "pg": "^8.23.1",
     "playwright-core": "^1.60.0",
     "zod": "^4.6.7"

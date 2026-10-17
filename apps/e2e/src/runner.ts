@@ -1,6 +1,6 @@
 import { mkdirSync, renameSync } from "node:fs"
 import { join } from "node:path"
-import { type Browser, chromium } from "playwright-core"
+import { type Browser, chromium, type Page } from "playwright-core"
 import { e2eDir, e2eEnv } from "./env"
 import { ModelFailure, type Scenario } from "./scenario"
 import type { Stack } from "./stack"
@@ -9,7 +9,8 @@ export type Result = {
   name: string
   ok: boolean
   seconds: number
-  video?: string
+  /** One clip per recorded page. */
+  videos: string[]
   error?: string
   /** Who failed: the app, or the model behind it (a flaky answer, not necessarily a bug). */
   kind?: "app" | "model"
@@ -41,7 +42,13 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
       ? {}
       : { recordVideo: { dir: join(outDir, "raw"), size: { width: 1280, height: 720 } } })
   })
-  const page = await context.newPage()
+  const pages: { label: string; page: Page }[] = []
+  const open = async (label: string) => {
+    const opened = await context.newPage()
+    pages.push({ label, page: opened })
+    return opened
+  }
+  const page = await open("web")
   const started = performance.now()
   let current = "start"
   let error: string | undefined
@@ -50,6 +57,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
     await scenario.run({
       stack,
       page,
+      newPage: open,
       model: async step => {
         try {
           return await step()
@@ -71,21 +79,25 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   } catch (caught) {
     error = `at "${current}": ${(caught as Error).message}`
     kind = caught instanceof ModelFailure ? "model" : "app"
-    await page.screenshot({ path: join(outDir, `${file}.failed.png`) }).catch(() => {})
+    for (const { label, page: shown } of pages) {
+      await shown.screenshot({ path: join(outDir, `${file}.${label}.failed.png`) }).catch(() => {})
+    }
   }
-  const video = page.video()
+  const recorded = pages.map(({ label, page: recordedPage }) => ({ label, video: recordedPage.video() }))
   await context.close()
-  let clip: string | undefined
-  if (video) {
-    clip = join(clips, `${file}.webm`)
+  const videos: string[] = []
+  for (const { label, video } of recorded) {
+    if (!video) continue
+    const clip = join(clips, `${file}.${label}.webm`)
     renameSync(await video.path(), clip)
+    videos.push(clip)
   }
   const seconds = (performance.now() - started) / 1000
   return {
     name: scenario.name,
     ok: !error,
     seconds,
-    ...(clip ? { video: clip } : {}),
+    videos,
     ...(error ? { error, kind } : {})
   }
 }

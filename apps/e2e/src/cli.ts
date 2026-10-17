@@ -49,5 +49,7 @@ try {
 
 console.log("")
 for (const result of results)
-  console.log(`${result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.video ? `  ${result.video}` : ""}`)
+  console.log(
+    `${result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.videos.length ? `  ${result.videos.join("  ")}` : ""}`
+  )
 process.exit(results.every(result => result.ok) ? 0 : 1)
