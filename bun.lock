@@ -17,7 +17,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.22.11",
+      "version": "0.22.12",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1152.0",
         "@aws-sdk/s3-presigned-post": "^3.1152.0",
@@ -63,7 +63,7 @@
     },
     "apps/sandbox": {
       "name": "@kaja/sandbox",
-      "version": "0.2.12",
+      "version": "0.2.13",
       "dependencies": {
         "@kaja/nasi": "workspace:*",
         "@kaja/schema": "workspace:*",
@@ -76,7 +76,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.30.12",
+      "version": "0.30.13",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
@@ -109,7 +109,7 @@
     },
     "apps/web": {
       "name": "@kaja/web",
-      "version": "0.24.13",
+      "version": "0.24.14",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
         "@fontsource-variable/inter": "^5.3.0",
@@ -146,7 +146,7 @@
     },
     "packages/nasi": {
       "name": "@kaja/nasi",
-      "version": "0.3.11",
+      "version": "0.3.12",
       "dependencies": {
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
@@ -164,7 +164,7 @@
     },
     "packages/schema": {
       "name": "@kaja/schema",
-      "version": "0.21.22",
+      "version": "0.21.23",
       "dependencies": {
         "@kaja/shared": "workspace:*",
         "zod": "^4.6.7",
@@ -172,7 +172,7 @@
     },
     "packages/shared": {
       "name": "@kaja/shared",
-      "version": "0.5.13",
+      "version": "0.5.14",
       "dependencies": {
         "clsx": "^2.1.1",
         "marked": "^18.1.1",
