@@ -32,3 +32,18 @@ test("clearToken removes the stored token", async () => {
   await clearToken()
   expect(await loadToken()).toBeUndefined()
 })
+
+test("a KAJA_PROFILE keeps its own token", async () => {
+  await saveToken("tok_default")
+  Bun.env.KAJA_PROFILE = "second"
+  try {
+    // A query string makes Bun evaluate the module again, now seeing the profile
+    const specifier = "../../../lib/auth/credentials?profile=second"
+    const second = (await import(specifier)) as typeof import("../../../lib/auth/credentials")
+    expect(await second.loadToken()).toBeUndefined()
+    await second.saveToken("tok_second")
+    expect(await loadToken()).toBe("tok_default")
+  } finally {
+    delete Bun.env.KAJA_PROFILE
+  }
+})

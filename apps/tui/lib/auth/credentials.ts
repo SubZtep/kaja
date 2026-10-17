@@ -1,4 +1,5 @@
-const SECRETS_SERVICE = "kaja-tui"
+// A KAJA_PROFILE gets its own entry, like its own config folders, so a second setup never replaces the first one's login
+const SECRETS_SERVICE = Bun.env.KAJA_PROFILE ? `kaja-tui-${Bun.env.KAJA_PROFILE}` : "kaja-tui"
 const SECRETS_NAME = "token"
 
 /** Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from "no token stored". */
