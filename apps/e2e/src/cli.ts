@@ -6,10 +6,12 @@ import { launchBrowser, type Result, runScenario } from "./runner"
 import { startSandbox } from "./sandbox"
 import type { Scenario } from "./scenario"
 import { startStack } from "./stack"
+import { stitch } from "./stitch"
 
 const suffix = ".scenario.ts"
 const scenariosDir = join(e2eDir, "scenarios")
-const wanted = process.argv.slice(2)
+const flags = process.argv.slice(2).filter(arg => arg.startsWith("--"))
+const wanted = process.argv.slice(2).filter(arg => !arg.startsWith("--"))
 
 const files = readdirSync(scenariosDir)
   .filter(name => name.endsWith(suffix))
@@ -42,6 +44,14 @@ try {
     const result = await runScenario(browser, stack, scenario, file)
     results.push(result)
     console.log(result.ok ? `  ✓ ${result.seconds.toFixed(1)} s` : `  ✗ [${result.kind}] ${result.error}`)
+  }
+  if (!flags.includes("--no-video")) {
+    console.log("\nStitching the clips into one video...")
+    try {
+      console.log(`Full run: ${await stitch(browser, results)}`)
+    } catch (error) {
+      console.error(`Stitching failed: ${(error as Error).message}`)
+    }
   }
 } finally {
   await browser.close()
