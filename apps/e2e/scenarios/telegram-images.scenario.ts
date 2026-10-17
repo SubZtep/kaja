@@ -25,8 +25,8 @@ export default scenario(
         writeRedBluePng(),
         "Which two colours are in this picture? Reply with just the colour names."
       )
-      const reply = (await telegram.waitForReply(before, 120_000)).plain
-      if (!/red/i.test(reply) || !/blue/i.test(reply)) throw new Error(`Unexpected description: ${reply}`)
+      // The persona may say something else first (it asks to get to know you): wait for the message that names both
+      await telegram.waitForBot(/(?=.*red)(?=.*blue)/is, { after: before, timeoutMs: 120_000 })
     })
 
     step("the image and its description are in storage")
