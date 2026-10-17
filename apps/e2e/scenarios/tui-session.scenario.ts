@@ -1,4 +1,4 @@
-import { loginTui } from "../src/flows-tui"
+import { loginTui, quitTui } from "../src/flows-tui"
 import { scenario, tuiText } from "../src/scenario"
 import { startTui } from "../src/tui"
 import { signUpOnWeb } from "../src/web"
@@ -11,8 +11,7 @@ export default scenario(
     const first = await startTui(stack, await newPage("first"))
     try {
       await loginTui(page, first)
-      first.press("escape")
-      await first.waitForExit()
+      await quitTui(first)
     } finally {
       await first.stop()
     }
@@ -22,8 +21,7 @@ export default scenario(
     try {
       const screen = await second.waitFor("Esc Quit")
       if (screen.includes(tuiText("cli.pleaseSignIn"))) throw new Error("The restart asked for a login")
-      second.press("escape")
-      await second.waitForExit()
+      await quitTui(second)
     } finally {
       await second.stop()
     }
