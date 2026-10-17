@@ -11,6 +11,8 @@ export type Stack = {
   apiUrl: string
   webUrl: string
   databaseUrl: string
+  /** MailDev's address, where the sign-in codes land. */
+  mailUrl: string
   /** The fake Telegram the API's bot talks to. */
   telegram: Telegram
   stop(): Promise<void>
@@ -141,5 +143,5 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
     await stop()
     throw new Error(`${(error as Error).message} (logs in ${logDir})`)
   }
-  return { apiUrl, webUrl, databaseUrl: dbUrl, telegram, stop }
+  return { apiUrl, webUrl, databaseUrl: dbUrl, mailUrl: e2eEnv.E2E_MAILDEV_URL, telegram, stop }
 }

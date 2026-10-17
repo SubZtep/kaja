@@ -11,8 +11,8 @@ async function enterCode(page: Page, email: string, submit: string): Promise<voi
   await page.waitForURL("**/dashboard")
 }
 
-// SSR'd pages filled before React hydrates get reset, so every visit waits for the network to go quiet first
-function visit(page: Page, url: string) {
+/** Opens a page and waits for the network to go quiet: an SSR'd page filled before React hydrates gets reset. */
+export function visit(page: Page, url: string) {
   return page.goto(url, { waitUntil: "networkidle" })
 }
 

@@ -7,10 +7,10 @@ import type { Stack } from "./stack"
 const messages = JSON.parse(readFileSync(join(webDir, "messages", "en-GB.json"), "utf8")) as Record<string, string>
 
 /** The web app's English wording for a message key, so a scenario doesn't break on a copy edit. */
-export function t(key: string): string {
+export function t(key: string, values: Record<string, string> = {}): string {
   const text = messages[key]
   if (text === undefined) throw new Error(`No en-GB message "${key}"`)
-  return text
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole)
 }
 
 /** A scenario step that failed because of the local model (it never produced what the step needs), not because of the app. */
