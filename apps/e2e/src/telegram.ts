@@ -3,7 +3,7 @@ import { e2eEnv } from "./env"
 import { CHAT_PAGE } from "./telegram-page"
 
 const BOT_ID = 9001
-const USER_ID = 5150
+const FIRST_USER_ID = 5150
 const BOT_USERNAME = "kaja_e2e_bot"
 export const BOT_TOKEN = "9001:e2e-fake-token"
 
@@ -40,12 +40,18 @@ export type Telegram = {
   say(page: Page, text: string): Promise<void>
   /** Opens a `t.me/<bot>?start=<token>` link the way Telegram would: the bot is sent `/start <token>`. */
   openLink(page: Page, link: string): Promise<void>
+  /** A message from a group chat, which the bot must ignore (not shown in the chat window). */
+  sayInGroup(text: string): Promise<void>
   /** Sends an image through the attach button, with an optional caption typed first. */
   attachImage(page: Page, file: string, caption?: string): Promise<void>
   /** Taps the inline button with this label on the bot's latest message that has one. */
   press(page: Page, label: string): Promise<void>
+  /** Waits for the bot's next real message after `after` (not its "…" placeholder, which later becomes the answer). */
+  waitForReply(after: number, timeoutMs?: number): Promise<BotMessage>
   /** Waits for a (new) bot message whose text matches; returns it. */
   waitForBot(match: string | RegExp, options?: { after?: number; timeoutMs?: number }): Promise<BotMessage>
+  /** A different Telegram user with an empty chat, so one scenario's link or history never reaches the next. */
+  reset(): void
   stop(): Promise<void>
 }
 
@@ -58,8 +64,9 @@ export async function startTelegram(): Promise<Telegram> {
   let nextUpdateId = 1
   let nextFileId = 1
 
-  const user = { id: USER_ID, is_bot: false, first_name: "Alice", language_code: "en" }
-  const chat = { id: USER_ID, type: "private", first_name: "Alice" }
+  let userId = FIRST_USER_ID
+  let user = { id: userId, is_bot: false, first_name: "Alice", language_code: "en" }
+  let chat = { id: userId, type: "private", first_name: "Alice" }
   const bot = { id: BOT_ID, is_bot: true, first_name: "Kaja E2E", username: BOT_USERNAME }
   const wire = (message: StoredMessage) => ({
     message_id: message.id,
@@ -208,13 +215,15 @@ export async function startTelegram(): Promise<Telegram> {
         return reply(messages.filter(message => !message.deleted))
       }
       if (url.pathname === "/user/message" && request.method === "POST") {
-        const { text } = (await request.json()) as { text: string }
+        const { text, group } = (await request.json()) as { text: string; group?: boolean }
         const message: StoredMessage = { id: nextMessageId++, from: "user", text, buttons: [] }
-        messages.push(message)
+        // A group's messages never appear in the private chat window
+        if (!group) messages.push(message)
         const command = text.startsWith("/")
           ? { entities: [{ type: "bot_command", offset: 0, length: text.split(" ")[0]!.length }] }
           : {}
-        enqueue({ message: { ...wire(message), ...command } })
+        const where = group ? { chat: { id: -1001, type: "supergroup", title: "Friends" } } : {}
+        enqueue({ message: { ...wire(message), ...where, ...command } })
         return reply(true)
       }
       if (url.pathname === "/user/photo" && request.method === "POST") {
@@ -268,6 +277,26 @@ export async function startTelegram(): Promise<Telegram> {
         }
       })
 
+  async function waitForBot(
+    match: string | RegExp,
+    { after = 0, timeoutMs = 60_000 }: { after?: number; timeoutMs?: number } = {}
+  ): Promise<BotMessage> {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      const found = botMessages().find(
+        message =>
+          message.id > after && (typeof match === "string" ? message.plain.includes(match) : match.test(message.plain))
+      )
+      if (found) return found
+      await Bun.sleep(200)
+    }
+    throw new Error(
+      `The bot never said ${match} within ${timeoutMs} ms. It said:\n${botMessages()
+        .map(m => `  ${m.plain}`)
+        .join("\n")}`
+    )
+  }
+
   const say = async (page: Page, text: string) => {
     await page.locator("#input").fill(text)
     await page.locator("#send").click()
@@ -278,6 +307,13 @@ export async function startTelegram(): Promise<Telegram> {
     url: `http://127.0.0.1:${server.port}`,
     botMessages,
     say,
+    async sayInGroup(text) {
+      await fetch(`http://127.0.0.1:${server.port}/user/message`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, group: true })
+      })
+    },
     async openLink(page, link) {
       const token = new URL(link).searchParams.get("start")
       if (!token) throw new Error(`No start token in ${link}`)
@@ -290,22 +326,16 @@ export async function startTelegram(): Promise<Telegram> {
     async press(page, label) {
       await page.locator(".msg:has(.btn)").last().getByRole("button", { name: label }).click()
     },
-    async waitForBot(match, { after = 0, timeoutMs = 60_000 } = {}) {
-      const deadline = Date.now() + timeoutMs
-      while (Date.now() < deadline) {
-        const found = botMessages().find(
-          message =>
-            message.id > after &&
-            (typeof match === "string" ? message.plain.includes(match) : match.test(message.plain))
-        )
-        if (found) return found
-        await Bun.sleep(200)
-      }
-      throw new Error(
-        `The bot never said ${match} within ${timeoutMs} ms. It said:\n${botMessages()
-          .map(m => `  ${m.plain}`)
-          .join("\n")}`
-      )
+    waitForBot,
+    reset() {
+      messages.length = 0
+      updates.length = 0
+      userId += 1
+      user = { ...user, id: userId }
+      chat = { ...chat, id: userId }
+    },
+    waitForReply(after, timeoutMs) {
+      return waitForBot(/[\p{L}\p{N}]/u, { after, timeoutMs })
     },
     async stop() {
       await server.stop(true)

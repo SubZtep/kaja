@@ -51,6 +51,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
     pages.push({ label, page: opened })
     return opened
   }
+  stack.telegram.reset()
   const page = await open("web")
   const started = performance.now()
   let current = "start"
@@ -88,7 +89,10 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   }
   // The recorder drops what changed in the last moments before the context closes
   if (scenario.video !== false) await Bun.sleep(LINGER_MS)
-  const recorded = pages.map(({ label, page: recordedPage }) => ({ label, video: recordedPage.video() }))
+  // A page the scenario never opened anything on has nothing to show
+  const recorded = pages
+    .filter(({ page: recordedPage }) => recordedPage.url() !== "about:blank")
+    .map(({ label, page: recordedPage }) => ({ label, video: recordedPage.video() }))
   await context.close()
   const videos: string[] = []
   for (const { label, video } of recorded) {
