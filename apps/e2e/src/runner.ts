@@ -89,10 +89,12 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   }
   // The recorder drops what changed in the last moments before the context closes
   if (scenario.video !== false) await Bun.sleep(LINGER_MS)
-  // A page the scenario never opened anything on has nothing to show
-  const recorded = pages
-    .filter(({ page: recordedPage }) => recordedPage.url() !== "about:blank")
-    .map(({ label, page: recordedPage }) => ({ label, video: recordedPage.video() }))
+  // A page the scenario never drew anything on has nothing to show (the terminal's is drawn without a URL)
+  const recorded: { label: string; video: ReturnType<Page["video"]> }[] = []
+  for (const { label, page: recordedPage } of pages) {
+    const drawn = await recordedPage.evaluate(() => document.body?.children.length ?? 0).catch(() => 0)
+    if (drawn > 0) recorded.push({ label, video: recordedPage.video() })
+  }
   await context.close()
   const videos: string[] = []
   for (const { label, video } of recorded) {

@@ -34,6 +34,8 @@ export type Tui = {
   chord(letter: string, options?: { alt?: boolean }): void
   /** Every URL the TUI handed to the "browser" (see bin/fake-browser.sh), oldest first. */
   openedUrls(): string[]
+  /** Resolves with the exit code once the program has ended (or throws if it doesn't within the time). */
+  waitForExit(timeoutMs?: number): Promise<number>
   stop(): Promise<void>
 }
 
@@ -72,14 +74,22 @@ async function drawTerminal(page: Page, send: (data: string) => void): Promise<v
  * Runs the real TUI (`apps/tui/cli.ts`, cloud mode) in a PTY against the stack and shows it on `page`.
  * It gets its own empty config, data and keychain entry (profile `e2e`), and its "browser" only records URLs.
  */
-export async function startTui(stack: Stack, page: Page, args: string[] = ["--cloud"]): Promise<Tui> {
+export async function startTui(
+  stack: Stack,
+  page: Page,
+  args: string[] = ["--cloud"],
+  { fresh = true }: { fresh?: boolean } = {}
+): Promise<Tui> {
   const home = join(e2eDir, e2eEnv.E2E_OUT_DIR, "tui-home")
-  rmSync(home, { recursive: true, force: true })
+  // `fresh: false` is a later launch of the same setup: its config and login are kept
+  if (fresh) {
+    rmSync(home, { recursive: true, force: true })
+    // A token from an earlier run belongs to a database that is gone
+    await Bun.secrets.delete({ service: `kaja-tui-${PROFILE}`, name: "token" }).catch(() => {})
+  }
   mkdirSync(home, { recursive: true })
   const opened = join(home, "opened-urls.txt")
   writeFileSync(opened, "")
-  // A token from an earlier run belongs to a database that is gone
-  await Bun.secrets.delete({ service: `kaja-tui-${PROFILE}`, name: "token" }).catch(() => {})
 
   let write: (data: string) => void = () => {}
   await drawTerminal(page, data => write(data))
@@ -177,6 +187,13 @@ export async function startTui(stack: Stack, page: Page, args: string[] = ["--cl
       write(options?.alt ? `\x1b${letter}` : code)
     },
     openedUrls: () => readFileSync(opened, "utf8").split("\n").filter(Boolean),
+    async waitForExit(timeoutMs = 15_000) {
+      const timedOut = Symbol("timeout")
+      const result = await Promise.race([child.exited, Bun.sleep(timeoutMs).then(() => timedOut)])
+      if (result === timedOut)
+        throw new Error(`The TUI was still running ${timeoutMs} ms later. Screen:\n${await screen()}`)
+      return result as number
+    },
     async stop() {
       child.kill()
       await child.exited
