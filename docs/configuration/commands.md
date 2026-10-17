@@ -3,7 +3,7 @@ layout: page
 title: Doctor & troubleshooting
 parent: Configuration
 nav_order: 6
-summary: "Find, refresh and test your config, and what to do when something's wrong."
+summary: Find, refresh and test your config, and what to do when something's wrong.
 icon: 🩺
 ---
 

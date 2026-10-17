@@ -3,7 +3,7 @@ layout: page
 title: Web app
 parent: Using Kaja
 nav_order: 2
-summary: "Your cloud account: keys, widgets, sandboxes and usage."
+summary: Your cloud account: keys, widgets, sandboxes and usage.
 icon: 🌐
 ---
 

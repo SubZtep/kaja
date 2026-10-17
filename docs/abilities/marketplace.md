@@ -3,7 +3,7 @@ layout: page
 title: Marketplace
 parent: Abilities
 nav_order: 7
-summary: "Where abilities come from, and how local and cloud users get them."
+summary: Where abilities come from, and how local and cloud users get them.
 icon: 🛒
 ---
 

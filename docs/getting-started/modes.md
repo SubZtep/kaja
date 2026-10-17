@@ -3,7 +3,7 @@ layout: page
 title: Cloud or local
 parent: Get started
 nav_order: 2
-summary: "Cloud or local: where the agent runs and what that changes."
+summary: Cloud or local: where the agent runs and what that changes.
 icon: ☁️
 ---
 

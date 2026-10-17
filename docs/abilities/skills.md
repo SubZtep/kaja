@@ -3,7 +3,7 @@ layout: page
 title: Skills
 parent: Abilities
 nav_order: 3
-summary: "Instructions the agent loads when a request matches."
+summary: Instructions the agent loads when a request matches.
 icon: 📜
 ---
 

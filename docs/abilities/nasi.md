@@ -3,7 +3,7 @@ layout: page
 title: Nasi
 parent: Abilities
 nav_order: 1
-summary: "The agent at the heart of Kaja and how it loops."
+summary: The agent at the heart of Kaja and how it loops.
 icon: 🌀
 ---
 

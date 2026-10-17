@@ -3,7 +3,7 @@ layout: page
 title: Settings
 parent: Configuration
 nav_order: 2
-summary: "settings.toml: preferences, voice, marketplace and storage."
+summary: settings.toml: preferences, voice, marketplace and storage.
 icon: ⚙️
 ---
 

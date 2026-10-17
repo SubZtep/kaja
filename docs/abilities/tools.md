@@ -3,7 +3,7 @@ layout: page
 title: Tools
 parent: Abilities
 nav_order: 4
-summary: "Built-in tools, HTTP APIs, shell commands and your own."
+summary: Built-in tools, HTTP APIs, shell commands and your own.
 icon: 🔧
 ---
 

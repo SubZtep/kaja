@@ -3,7 +3,7 @@ layout: page
 title: Secrets
 parent: Configuration
 nav_order: 4
-summary: "secrets.toml: every key and token in one place."
+summary: secrets.toml: every key and token in one place.
 icon: 🔑
 ---
 

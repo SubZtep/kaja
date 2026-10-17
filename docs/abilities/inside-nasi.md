@@ -3,7 +3,7 @@ layout: page
 title: Inside Nasi
 parent: Abilities
 nav_order: 8
-summary: "How the agent loop really works: rounds, pauses, and fitting a long chat into a small window."
+summary: How the agent loop really works: rounds, pauses, and fitting a long chat into a small window.
 icon: 🔬
 ---
 
