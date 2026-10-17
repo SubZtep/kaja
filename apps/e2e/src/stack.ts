@@ -41,11 +41,18 @@ async function buildDatabase(url: string, llama: Llama | undefined): Promise<voi
       "INSERT INTO provider (name, base_url, api_key) VALUES ('e2e', $1, $2) RETURNING id",
       [llama.baseUrl, llama.apiKey ?? null]
     )
-    await client.query(
-      `INSERT INTO model (provider_id, model, tasks, free, context_window, images)
-       VALUES ($1, $2, ARRAY['chat', 'summarize'], true, $3, false)`,
-      [provider.rows[0].id, llama.model, llama.apiKey ? null : e2eEnv.E2E_LLAMA_CONTEXT]
-    )
+    const models = [
+      // A hosted provider has a model per task; the local one does chat and summarising alone
+      { model: llama.model, tasks: llama.others ? ["chat"] : ["chat", "summarize"], images: false },
+      ...(llama.others ?? []).map(other => ({ images: false, ...other }))
+    ]
+    for (const entry of models) {
+      await client.query(
+        `INSERT INTO model (provider_id, model, tasks, free, context_window, images)
+         VALUES ($1, $2, $3, true, $4, $5)`,
+        [provider.rows[0].id, entry.model, entry.tasks, llama.apiKey ? null : e2eEnv.E2E_LLAMA_CONTEXT, entry.images]
+      )
+    }
   } finally {
     await client.end()
   }

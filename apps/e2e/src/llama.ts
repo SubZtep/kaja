@@ -3,7 +3,14 @@ import { join } from "node:path"
 import { e2eDir, e2eEnv } from "./env"
 
 /** The model the cloud turns use: a hosted provider or a local llama.cpp. */
-export type Llama = { baseUrl: string; model: string; apiKey?: string; stop(): Promise<void> }
+export type Llama = {
+  baseUrl: string
+  model: string
+  apiKey?: string
+  /** More models for the other tasks (a hosted provider has one per task); the chat model alone also summarises. */
+  others?: { model: string; tasks: string[]; images?: boolean }[]
+  stop(): Promise<void>
+}
 
 async function modelName(baseUrl: string): Promise<string | undefined> {
   try {
@@ -22,6 +29,11 @@ export async function startModel(): Promise<Llama> {
     baseUrl: e2eEnv.E2E_LLM_BASE_URL,
     model: e2eEnv.E2E_LLM_MODEL,
     apiKey: e2eEnv.E2E_LLM_API_KEY,
+    others: [
+      { model: e2eEnv.E2E_LLM_SUMMARIZE_MODEL, tasks: ["summarize"] },
+      { model: e2eEnv.E2E_LLM_VISION_MODEL, tasks: ["vision"], images: true },
+      { model: e2eEnv.E2E_LLM_RERANK_MODEL, tasks: ["rerank"] }
+    ],
     stop: async () => {}
   }
 }

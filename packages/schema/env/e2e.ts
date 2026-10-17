@@ -25,6 +25,15 @@ export const E2eEnvSchema = z.object({
     .describe(
       "Model name sent to the hosted provider (with E2E_LLM_API_KEY); a cheap one, since each run makes a few calls"
     ),
+  E2E_LLM_SUMMARIZE_MODEL: trimmed
+    .default("accounts/fireworks/models/glm-5p3-flash")
+    .describe("Model for context compaction at the hosted provider (with E2E_LLM_API_KEY)"),
+  E2E_LLM_VISION_MODEL: trimmed
+    .default("accounts/fireworks/models/glm-5p3-flash")
+    .describe("Model that describes images at the hosted provider (with E2E_LLM_API_KEY)"),
+  E2E_LLM_RERANK_MODEL: trimmed
+    .default("accounts/fireworks/models/qwen3-reranker-8b")
+    .describe("Reranker at the hosted provider (with E2E_LLM_API_KEY)"),
   E2E_LLAMA_URL: url
     .default("http://localhost:8080")
     .describe(

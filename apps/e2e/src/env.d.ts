@@ -20,6 +20,12 @@ declare module "bun" {
     E2E_LLM_BASE_URL?: string
     /** Model name sent to the hosted provider (with E2E_LLM_API_KEY); a cheap one, since each run makes a few calls */
     E2E_LLM_MODEL?: string
+    /** Model for context compaction at the hosted provider (with E2E_LLM_API_KEY) */
+    E2E_LLM_SUMMARIZE_MODEL?: string
+    /** Model that describes images at the hosted provider (with E2E_LLM_API_KEY) */
+    E2E_LLM_VISION_MODEL?: string
+    /** Reranker at the hosted provider (with E2E_LLM_API_KEY) */
+    E2E_LLM_RERANK_MODEL?: string
     /** llama.cpp server the stack's cloud turns use; one already answering there is reused, else E2E_LLAMA_MODEL starts one */
     E2E_LLAMA_URL?: string
     /** llama-server binary to start when none answers at E2E_LLAMA_URL; unset, llama-server on PATH */
