@@ -10,6 +10,7 @@ export const E2eEnvSchema = z.object({
     .meta({ example: "postgresql://testuser:testpass@localhost:5433/kaja_e2e" }),
   E2E_API_PORT: positiveInt.default(3101).describe("Port the E2E API listens on, apart from bun dev's"),
   E2E_WEB_PORT: positiveInt.default(3100).describe("Port the E2E web app listens on, apart from bun dev's"),
+  E2E_TELEGRAM_PORT: positiveInt.default(3102).describe("Port of the fake Telegram Bot API and chat window"),
   E2E_MAILDEV_URL: url.default("http://localhost:1080").describe("MailDev's web address, where sign-in codes are read"),
   E2E_STORAGE_BUCKET: trimmed.default("kaja-e2e").describe("Bucket the E2E API stores images in"),
   E2E_LLM_API_KEY: trimmed

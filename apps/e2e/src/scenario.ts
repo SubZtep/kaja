@@ -31,6 +31,19 @@ export function tuiText(key: string): string {
   return value
 }
 
+const apiMessages = Bun.TOML.parse(readFileSync(join(webDir, "..", "api", "locales", "en-GB.toml"), "utf8")) as Record<
+  string,
+  unknown
+>
+
+/** The API's English wording (emails, the Telegram bot) for a dotted key like `telegram.linkConfirm`; `{name}` placeholders are filled from `values`. */
+export function apiText(key: string, values: Record<string, string> = {}): string {
+  let value: unknown = apiMessages
+  for (const part of key.split(".")) value = (value as Record<string, unknown> | undefined)?.[part]
+  if (typeof value !== "string") throw new Error(`No API en-GB message "${key}"`)
+  return value.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole)
+}
+
 export type Context = {
   stack: Stack
   /** The scenario's first browser page (clip label `web`). */

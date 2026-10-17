@@ -16,6 +16,9 @@ export type Result = {
   kind?: "app" | "model"
 }
 
+/** How long a scenario's last screen stays up, so the clip ends on it. */
+const LINGER_MS = 1500
+
 const outDir = join(e2eDir, e2eEnv.E2E_OUT_DIR)
 
 function browserPath(): string {
@@ -83,6 +86,8 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
       await shown.screenshot({ path: join(outDir, `${file}.${label}.failed.png`) }).catch(() => {})
     }
   }
+  // The recorder drops what changed in the last moments before the context closes
+  if (scenario.video !== false) await Bun.sleep(LINGER_MS)
   const recorded = pages.map(({ label, page: recordedPage }) => ({ label, video: recordedPage.video() }))
   await context.close()
   const videos: string[] = []

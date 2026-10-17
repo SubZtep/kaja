@@ -5,11 +5,14 @@ import { applyMigrations, readMigrations } from "../../api/scripts/migrations"
 import { seedConfig } from "../../api/scripts/seed-config"
 import { apiDir, databaseUrl, e2eDir, e2eEnv, webDir, withDatabase } from "./env"
 import type { Llama } from "./llama"
+import { BOT_TOKEN, startTelegram, type Telegram } from "./telegram"
 
 export type Stack = {
   apiUrl: string
   webUrl: string
   databaseUrl: string
+  /** The fake Telegram the API's bot talks to. */
+  telegram: Telegram
   stop(): Promise<void>
 }
 
@@ -75,6 +78,9 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
   const dbUrl = databaseUrl()
   await buildDatabase(dbUrl, llama)
 
+  // Up before the API: its bot asks getMe on boot
+  const telegram = await startTelegram()
+
   const apiUrl = `http://localhost:${e2eEnv.E2E_API_PORT}`
   const webUrl = `http://localhost:${e2eEnv.E2E_WEB_PORT}`
 
@@ -95,8 +101,9 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
       RATE_LIMIT_ENABLED: "false",
       MODEL_ALLOW_PRIVATE_URLS: "true",
       TURNSTILE_SECRET: "",
-      // The dev bot's token would make this API poll the real Telegram
-      TELEGRAM_BOT_TOKEN: "",
+      // The dev bot's token would make this API poll the real Telegram; this one only knows the fake
+      TELEGRAM_BOT_TOKEN: BOT_TOKEN,
+      TELEGRAM_API_ROOT: telegram.apiRoot,
       SANDBOX_URL: ""
     },
     logDir
@@ -118,6 +125,7 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
   const stop = async () => {
     for (const child of [web, api]) child.kill()
     await Promise.all([web.exited, api.exited])
+    await telegram.stop()
   }
 
   try {
@@ -126,5 +134,5 @@ export async function startStack(llama: Llama | undefined): Promise<Stack> {
     await stop()
     throw new Error(`${(error as Error).message} (logs in ${logDir})`)
   }
-  return { apiUrl, webUrl, databaseUrl: dbUrl, stop }
+  return { apiUrl, webUrl, databaseUrl: dbUrl, telegram, stop }
 }

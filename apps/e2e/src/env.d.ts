@@ -8,6 +8,8 @@ declare module "bun" {
     E2E_API_PORT?: string
     /** Port the E2E web app listens on, apart from bun dev's */
     E2E_WEB_PORT?: string
+    /** Port of the fake Telegram Bot API and chat window */
+    E2E_TELEGRAM_PORT?: string
     /** MailDev's web address, where sign-in codes are read */
     E2E_MAILDEV_URL?: string
     /** Bucket the E2E API stores images in */
