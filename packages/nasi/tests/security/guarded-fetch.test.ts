@@ -90,3 +90,14 @@ test("a sender that fails never falls back to a direct connection", async () => 
   )
   expect(direct).toBe(false)
 })
+
+test("allowPrivate reaches a loopback server, which the default refuses", async () => {
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response("local model") })
+  try {
+    const url = `http://127.0.0.1:${server.port}/v1`
+    await expect(createGuardedFetch()(url)).rejects.toBeInstanceOf(UnsafeUrlError)
+    expect(await (await createGuardedFetch({ allowPrivate: true })(url)).text()).toBe("local model")
+  } finally {
+    await server.stop(true)
+  }
+})

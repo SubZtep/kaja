@@ -76,3 +76,9 @@ test("colours by name or hex", () => {
   expect(parseColor("#00ff00")).toBe(0x00ff00ff)
   expect(() => parseColor("teal-ish")).toThrow("Unknown colour")
 })
+
+test("its JSON schema has no boolean `items`, which llama.cpp refuses", () => {
+  expect(
+    JSON.stringify((editImageTool.definition as { function: { parameters: unknown } }).function.parameters)
+  ).not.toMatch(/"items":(false|true)|prefixItems/)
+})

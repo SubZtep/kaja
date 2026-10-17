@@ -1,6 +1,4 @@
-/** commitlint's level for an off rule (its RuleConfigSeverity.Disabled)  */
 const DISABLED = 0
-/** commitlint's level for a failing rule (its RuleConfigSeverity.Error) */
 const ERROR = 2
 
 export default {

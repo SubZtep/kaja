@@ -113,6 +113,12 @@ const apiEnvFields = z.object({
     .describe("Max turns per window per widget key, regardless of visitor/IP")
     .meta({ section: "Rate Limiting" }),
 
+  MODEL_ALLOW_PRIVATE_URLS: bool
+    .default(false)
+    .describe(
+      "Let cloud turns call model providers on private or loopback addresses (a local llama.cpp); for E2E and local development only, never on a public host"
+    ),
+
   NASI_STUB_MODEL: trimmed
     .optional()
     .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)"),
@@ -185,7 +191,13 @@ const apiEnvFields = z.object({
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")
-    .meta({ secret: true, section: "Telegram" })
+    .meta({ secret: true, section: "Telegram" }),
+  TELEGRAM_API_ROOT: url
+    .optional()
+    .describe(
+      "Bot API server the cloud bot talks to instead of https://api.telegram.org; for tests (a fake server) only"
+    )
+    .meta({ section: "Telegram" })
 })
 
 export const ApiEnvSchema = apiEnvFields.superRefine((env, ctx) => {

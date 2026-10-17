@@ -26,3 +26,6 @@ docs/vendor/
 
 # A dev sandbox's registration (SANDBOX_STATE_DIR)
 apps/sandbox/.sandbox/
+
+# E2E videos, screenshots and logs
+apps/e2e/e2e-out/

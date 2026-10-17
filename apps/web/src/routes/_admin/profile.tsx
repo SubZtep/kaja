@@ -70,7 +70,8 @@ function EditUser({ user }: Readonly<{ user: User }>) {
   const form = useAppForm({
     defaultValues: {
       name: user?.name,
-      image: user?.image
+      // No picture is an empty string, as "Remove picture" sets it: the schema takes no null
+      image: user?.image ?? ""
     },
     validators: {
       onSubmit: editSchema
