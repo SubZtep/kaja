@@ -3,19 +3,19 @@ import { z } from "zod"
 /** The persona every user always has, first in the roster. */
 export const DEFAULT_PERSONA = "default"
 
-/** Whether an ability needs the user's own API key: not at all, to work at all, or optional (it's keyless, or the server has its own key). */
+/** Whether an ability needs an API key: not at all, to work at all, or optional (it's keyless: a key only adds to it). */
 export const abilityKeyNeedSchema = z.enum(["none", "required", "optional"])
 
-/** An ability that takes the user's key (and some persona uses), for the Profile page's API keys list. */
+/** An ability that takes a key, for the admin's server-wide keys list. */
 export const abilityKeySchema = z.object({
   /** The ability's folder name, which the key is stored by. */
   name: z.string(),
   description: z.string(),
-  /** Required to work at all, or optional (it works without one, or the server has its own; the user may still bring theirs). */
+  /** Required to work at all, or optional (it works without one). */
   key: z.enum(["required", "optional"]),
   /** Where its calls go: a host, or `sandbox` for a stdio MCP server. */
   domain: z.string(),
-  /** Whether the user saved a key for it. */
+  /** Whether a server-wide key is saved for it. */
   saved: z.boolean()
 })
 
@@ -25,7 +25,7 @@ export const listAbilityKeysResponseSchema = z.object({
   keysEnabled: z.boolean()
 })
 
-/** An ability's key, as the user types it; stored encrypted and never sent back. */
+/** An ability's key, as the admin types it; stored encrypted and never sent back. */
 export const saveAbilityKeyRequestSchema = z.object({
   apiKey: z.string().trim().min(1).max(4096)
 })

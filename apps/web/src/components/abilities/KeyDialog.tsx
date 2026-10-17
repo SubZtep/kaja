@@ -10,23 +10,20 @@ import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 import { Text } from "../form/primitives/Text"
 import { DIALOG_TITLE, DialogShell } from "../ui/DialogShell"
-import { invalidateAbilityKeys, type KeyScope, keyPath } from "./queries"
+import { invalidateAbilityKeys, keyPath } from "./queries"
 
 /**
- * Asks for an ability's API key, saves it (encrypted on the server, never shown again) and reports the server's live
- * test. A failed test keeps the dialog open so another key can be tried; the key is saved either way. `scope` says
- * whether it's the user's own key or the server-wide one.
+ * Asks for an ability's server-wide API key, saves it (encrypted on the server, never shown again) and reports the
+ * server's live test. A failed test keeps the dialog open so another key can be tried; the key is saved either way.
  */
 export function KeyDialog({
   name,
   domain,
-  scope = "user",
   open,
   onOpenChange
 }: Readonly<{
   name: string
   domain: string
-  scope?: KeyScope
   open: boolean
   onOpenChange: (open: boolean) => void
 }>) {
@@ -38,7 +35,7 @@ export function KeyDialog({
   const save = useMutation({
     mutationFn: async () => {
       return saveAbilityKeyResponseSchema.parse(
-        await apiFetch<SaveAbilityKeyResponse>(keyPath(scope, name), { apiKey }, { method: "PUT" })
+        await apiFetch<SaveAbilityKeyResponse>(keyPath(name), { apiKey }, { method: "PUT" })
       )
     },
     onSuccess: ({ check }) => {
@@ -68,9 +65,7 @@ export function KeyDialog({
         <DialogShell className="w-120">
           <Dialog.Title className={DIALOG_TITLE}>{m.tools_key_dialog_title({ name })}</Dialog.Title>
           <Dialog.Description className="mb-6 text-muted text-sm">
-            {scope === "service"
-              ? m.service_key_dialog_description({ domain })
-              : m.tools_key_dialog_description({ domain })}
+            {m.service_key_dialog_description({ domain })}
           </Dialog.Description>
           <form
             noValidate

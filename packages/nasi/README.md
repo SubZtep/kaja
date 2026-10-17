@@ -4,7 +4,7 @@ Kaja's agent brain: an OpenAI-compatible tool loop, a store interface (sessions,
 
 Hosts construct it. This package has no Ink, Hono, Better Auth, sqlite, or pg, and **does not read `settings.toml`**. The host injects a store, the model client, prompt context, and whether local tools are on.
 
-How it works (the loop, events, turn statuses, system prompt, compaction) is written up once, in the docs: **[Agent brain](https://docs.kaja.io/development/nasi)**. This page is the quick map of the package.
+What it does for users (the loop, personas, memory) is in the docs: **[Nasi](https://docs.kaja.io/abilities/nasi)**. This page is the quick map of the package.
 
 ```
 src/
@@ -40,7 +40,7 @@ const agent = new Agent({ model, client, tools })
 for await (const event of run(agent, prompt, createSession(), owner)) { /* … */ }
 ```
 
-`Nasi.open` also takes `personas`, `promptContext`, `owner` and `deps`. The [docs](https://docs.kaja.io/development/nasi#inputs-and-outputs) explain each.
+`Nasi.open` also takes `personas`, `promptContext`, `owner` and `deps` (see `NasiOpenOptions` in `src/nasi.ts`).
 
 ## Stores and model client
 

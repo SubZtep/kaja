@@ -89,10 +89,12 @@ describe("abilities", () => {
     expect(names).not.toContain(scripted)
   })
 
-  test("/abilities/me needs sign-in, and the old catalog and toggles are gone", async () => {
-    expect((await app.request("/abilities/me")).status).toBe(401)
+  test("users have no ability routes: the old catalog, toggles and own keys are gone", async () => {
     expect((await app.request("/abilities")).status).toBe(404)
+    expect((await app.request("/abilities/me", { headers: auth() })).status).toBe(404)
     expect((await app.request(`/abilities/me/skill/${plain}`, { method: "PUT", headers: auth() })).status).toBe(404)
+    const key = { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey: "k" }) }
+    expect((await app.request("/abilities/me/keys/web-search", key)).status).toBe(404)
   })
 
   test("a skill removed upstream leaves turns, and comes back when restored", async () => {

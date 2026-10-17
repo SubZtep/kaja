@@ -76,9 +76,3 @@ agent's warnings: skipped abilities, missing keys, failed MCP connections.
 
 Open an issue on [GitHub](https://github.com/SubZtep/kaja/issues) with the `kaja doctor` output. Every
 config file except `secrets.toml` is safe to include.
-
----
-
-Next:
-
-[Development](/development){: .btn .btn-green .fs-5 }

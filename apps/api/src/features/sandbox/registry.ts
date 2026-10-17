@@ -142,7 +142,7 @@ export async function pickSandbox(
 /** How many other sandboxes a request that found its sandbox full tries. */
 const FULL_RETRIES = 3
 
-/** The key a user's turn would send an ability's calls with (theirs, else a server-wide one), if any. */
+/** The key an ability's calls carry (a local client's own through the relay, else a server-wide one), if any. */
 export type SandboxKeys = (ability: string) => AbilityKeyValue | undefined
 
 const TRUST_ORDER: SandboxTrust[] = ["any", "trusted", "official"]

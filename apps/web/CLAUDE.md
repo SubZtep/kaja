@@ -42,7 +42,7 @@ messages/    # Paraglide messages (en-GB.json is the source; see Translations in
 public/      favicons, install scripts, PWA bits
 ```
 
-Abilities: every one is on for everyone, and personas pick what a chat uses, so the web has no ability list. Profile → API keys (`components/abilities/ApiKeys.tsx`) lists the keyed abilities some persona uses from `GET /abilities/me`, with `KeyDialog` (saves the key write-only via `PUT /abilities/me/keys/{name}` and shows the server's check) and Remove; queries live in `components/abilities/queries.ts`. Admins get the marketplace sync panel on `/admin/dashboard` (`MarketplaceSection`). The widget page's persona list comes from `/nasi/personas` (the whole catalog, default first); the persona's `abilities` decide a widget's skills.
+Abilities: every one is on for everyone, and personas pick what a chat uses, so the web has no ability list, and users have no API keys of their own. Admins get the marketplace sync panel and the server-wide Service keys on `/admin/dashboard` (`MarketplaceSection`): `components/abilities/ApiKeys.tsx` lists the keyed abilities from `GET /admin/abilities/keys`, with `KeyDialog` (saves a key write-only via `PUT /admin/abilities/keys/{name}` and shows the server's check) and Remove; queries live in `components/abilities/queries.ts`. The widget page's persona list comes from `/nasi/personas` (the whole catalog, default first); the persona's `abilities` decide a widget's skills.
 
 Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
 Cards/titles: `Section`, `PageHeader` (admin).

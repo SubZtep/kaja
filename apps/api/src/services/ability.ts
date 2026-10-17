@@ -9,8 +9,7 @@ import {
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
-  parseSkillMd,
-  personaAbilities
+  parseSkillMd
 } from "@kaja/nasi"
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
 import { type AbilityKey, type AbilityKeyNeed, DEFAULT_PERSONA } from "@kaja/schema/api"
@@ -27,7 +26,7 @@ export type CloudSkill = { name: string; description: string; files: Record<stri
 /** A saved key and its live test (null when the ability has no test), or why it wasn't saved. */
 export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no_key"
 
-/** An ability that can take the user's key, parsed from its stored TOML. */
+/** An ability that can take a key, parsed from its stored TOML. */
 type KeyedAbility = { type: "tool"; ability: HttpToolAbility } | { type: "mcp"; ability: McpAbility }
 
 type ManifestRow = { type: string; name: string; description?: string; files: Record<string, string> }
@@ -54,10 +53,10 @@ export const SANDBOX_DOMAIN = "sandbox"
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
 
-/** An ability key a user's turn uses: `own` when it's the user's, else the server-wide one (which only the official sandbox may see). */
+/** An ability key a call carries: `own` when it's the user's (a local client's, through the relay), else the server-wide one (which only the official sandbox may see). */
 export type AbilityKeyValue = { value: string; own: boolean }
 
-/** Where an ability's API key lives in `user_secret`. */
+/** Where an ability's API key lives in `service_secret`. */
 function abilitySecretName(name: string): string {
   return `${KEY_PREFIX}${name}`
 }
@@ -114,36 +113,9 @@ export class AbilityService {
     this.#secrets = secrets
   }
 
-  /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
+  /** Whether server-wide keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
   get keysEnabled(): boolean {
     return this.#secrets.enabled
-  }
-
-  /**
-   * The abilities that take a key and some persona uses, one entry per ability, with whether the user saved one: the
-   * Profile page's API keys list. An ability with a server-wide key counts as optional.
-   */
-  async listKeys(userId: string): Promise<AbilityKey[]> {
-    const used = new Set((await this.personaCatalog()).flatMap(persona => [...personaAbilities(persona).keys()]))
-    const saved = new Set(await this.keyNames(userId))
-    const service = await this.#serviceKeyNames()
-    const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.description, p.files FROM ability p WHERE ${AVAILABLE} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
-    )
-    const keys = new Map<string, AbilityKey>()
-    for (const row of rows) {
-      const keyed = used.has(row.name) && !keys.has(row.name) ? this.#usable(row, service) : undefined
-      const need = keyed && this.#keyNeed(keyed.ability, service)
-      if (!(keyed && need && need !== "none")) continue
-      keys.set(row.name, {
-        name: row.name,
-        description: row.description,
-        key: need,
-        domain: domainOf(keyed),
-        saved: saved.has(row.name)
-      })
-    }
-    return [...keys.values()]
   }
 
   /**
@@ -157,7 +129,7 @@ export class AbilityService {
     )
     const keys = new Map<string, AbilityKey>()
     for (const row of rows) {
-      const keyed = keys.has(row.name) ? undefined : this.#usable(row, saved)
+      const keyed = keys.has(row.name) ? undefined : this.#usable(row)
       const need = keyed && keyNeed(keyed.ability)
       if (!(keyed && need && need !== "none")) continue
       keys.set(row.name, {
@@ -169,13 +141,6 @@ export class AbilityService {
       })
     }
     return [...keys.values()]
-  }
-
-  /** Abilities the user saved a key for. */
-  async keyNames(userId: string): Promise<string[]> {
-    return [...(await this.#secrets.names(userId, KEY_PREFIX))]
-      .map(name => name.slice(KEY_PREFIX.length))
-      .sort((a, b) => a.localeCompare(b))
   }
 
   /** Every available skill, with its files: a persona's `abilities` decides which of them a turn uses. */
@@ -228,45 +193,19 @@ export class AbilityService {
     return (await this.#keyedOfType("mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.ability] : []))
   }
 
-  /** The user's ability keys by ability name, decrypted, for their own turns only: their own, else a server-wide one. */
-  async keysForUser(userId: string): Promise<Map<string, AbilityKeyValue>> {
+  /** The server-wide ability keys by ability name, decrypted, for a turn: every user shares them. */
+  async serviceKeys(): Promise<Map<string, AbilityKeyValue>> {
     const keys = new Map<string, AbilityKeyValue>()
-    // Server-wide keys first, so the user's own key replaces one.
     for (const [name, value] of await this.#secrets.getAllService(KEY_PREFIX))
       keys.set(name.slice(KEY_PREFIX.length), { value, own: false })
-    for (const [name, value] of await this.#secrets.getAll(userId, KEY_PREFIX))
-      keys.set(name.slice(KEY_PREFIX.length), { value, own: true })
     return keys
   }
 
   /**
-   * Saves the user's key for an ability and tests it: its HTTP tool's `check` request, or connecting to its MCP
-   * server and listing the tools (a stdio one's in `sandbox`). Tests go through `send` when set and never reach a private host. The key is kept
-   * even when the test fails. Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
-   */
-  async saveKey(
-    userId: string,
-    name: string,
-    apiKey: string,
-    opts: { send?: FetchLike; sandbox?: McpSandbox } = {}
-  ): Promise<SaveKeyResult> {
-    const keyed = await this.#keyedByName(name)
-    if (!keyed) return "not_found"
-    if (keyed.ability.auth.type !== "apiKey") return "no_key"
-    await this.#secrets.set(userId, abilitySecretName(name), apiKey)
-    return { check: await checkKey(keyed, apiKey, opts) }
-  }
-
-  /** Removes the user's key for an ability; false when there's no such ability. */
-  async deleteKey(userId: string, name: string): Promise<boolean> {
-    if (!(await this.#isKeyedAbility(name))) return false
-    await this.#secrets.delete(userId, abilitySecretName(name))
-    return true
-  }
-
-  /**
-   * {@link saveKey} for the server-wide key every user without their own shares (an admin's). The caller's `send`
-   * and `sandbox` must reach only the official sandbox, the only one a server-wide key may go to.
+   * Saves an ability's server-wide key (an admin's, every user shares it) and tests it: its HTTP tool's `check`
+   * request, or connecting to its MCP server and listing the tools (a stdio one's in `sandbox`). The key is kept even
+   * when the test fails. The caller's `send` and `sandbox` must reach only the official sandbox, the only one a
+   * server-wide key may go to. Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
    */
   async saveServiceKey(
     name: string,
@@ -304,8 +243,7 @@ export class AbilityService {
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type IN ('tool', 'mcp') AND p.name = $1 AND ${AVAILABLE} ORDER BY p.type DESC`,
       [name]
     )
-    const service = await this.#serviceKeyNames()
-    const parts = rows.flatMap(row => this.#usable(row, service) ?? [])
+    const parts = rows.flatMap(row => this.#usable(row) ?? [])
     return parts.find(part => part.ability.auth.type === "apiKey") ?? parts[0]
   }
 
@@ -314,8 +252,7 @@ export class AbilityService {
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = $1 AND ${AVAILABLE} ORDER BY p.name`,
       [type]
     )
-    const service = await this.#serviceKeyNames()
-    return rows.flatMap(row => this.#usable(row, service) ?? [])
+    return rows.flatMap(row => this.#usable(row) ?? [])
   }
 
   /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
@@ -350,16 +287,10 @@ export class AbilityService {
     }
   }
 
-  /** An ability's key need, where a server-wide key (`service` names them) turns a required one optional: the user may still bring their own. */
-  #keyNeed(ability: HttpToolAbility | McpAbility, service: ReadonlySet<string>): AbilityKeyNeed {
-    const need = keyNeed(ability)
-    return need === "required" && service.has(ability.name) ? "optional" : need
-  }
-
   /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */
-  #usable(row: ManifestRow, service: ReadonlySet<string>): KeyedAbility | undefined {
+  #usable(row: ManifestRow): KeyedAbility | undefined {
     const keyed = this.#parse(row)
-    if (keyed && this.#keyNeed(keyed.ability, service) === "required" && !this.#secrets.enabled) return undefined
+    if (keyed && keyNeed(keyed.ability) === "required" && !this.#secrets.enabled) return undefined
     return keyed
   }
 }

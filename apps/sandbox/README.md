@@ -43,7 +43,7 @@ It starts with the Kaja monster and a summary (API, owner, servers, capacity), t
 
 ## Trust
 
-The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Keys follow one rule, for an HTTP tool's or remote MCP server's requests and for a keyed stdio server alike: a call without a key may go to any sandbox the user may use; one with the user's own key only to their own or the official sandbox; one with the server's key (shared by every user) only to the official sandbox. A key travels with each request and is never written to disk: a keyed stdio server gets it in the env var its manifest names, and starts anew when it changes. When a turn borrowed someone else's sandbox, the API sends `release` as it ends and the user's server stops at once, so no browser profile (cookies, logins) waits there for the operator; and the model is told not to send personal data through a tool that runs elsewhere when shared sandboxes are on. A manifest with `trustedSandbox = true` never runs in a shared one at all; chrome-devtools is one, so a browser only ever runs in its user's own sandbox or the official one.
+The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Keys follow one rule, for an HTTP tool's or remote MCP server's requests and for a keyed stdio server alike: a call without a key may go to any sandbox the user may use; one with the server's key (shared by every user; users have none of their own in the cloud) only to the official sandbox; one with a `--local` client's own key, through the API's relay, only to the user's own or the official sandbox. A key travels with each request and is never written to disk: a keyed stdio server gets it in the env var its manifest names, and starts anew when it changes. When a turn borrowed someone else's sandbox, the API sends `release` as it ends and the user's server stops at once, so no browser profile (cookies, logins) waits there for the operator; and the model is told not to send personal data through a tool that runs elsewhere when shared sandboxes are on. A manifest with `trustedSandbox = true` never runs in a shared one at all; chrome-devtools is one, so a browser only ever runs in its user's own sandbox or the official one.
 
 ## One Linux user per user
 
@@ -183,8 +183,6 @@ The real image, as production runs it (amd64 only: Chrome for Testing has no Lin
 ```sh
 docker compose up -d sandbox
 ```
-
-Deploying to production is covered in [Deployment](https://docs.kaja.io/development/deployment#mcp-sandbox).
 
 ## Configuration
 

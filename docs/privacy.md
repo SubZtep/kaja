@@ -36,7 +36,7 @@ When you create or use an account, Kaja collects:
 - when you open the sign-in or sign-up forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
 - email data needed to send account emails, such as sign-in and email change codes;
 - if you link Telegram, your Telegram user id, so the bot knows which account you are;
-- which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
+- which abilities (skills, personas, and tools) you have turned on.
 
 When you use **cloud chat**, Kaja additionally stores, against your account:
 

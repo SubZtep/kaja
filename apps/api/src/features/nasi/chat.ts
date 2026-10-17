@@ -202,10 +202,10 @@ export async function openNasiFor(opts: {
   const source = opts.abilities ?? { userId: opts.userId }
   // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.
   const personas = withOwnPersonas(await abilityService.personaCatalog(), opts.client?.personas ?? [])
-  // Only the user's own turns get their keys; a widget's skills-only source never needs one.
+  // Only a user's turns get the server-wide keys; a widget's skills-only source never needs one.
   const [keys, sandboxSettings] =
     "userId" in source
-      ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
+      ? await Promise.all([abilityService.serviceKeys(), sandboxService.settings(source.userId)])
       : [new Map<string, AbilityKeyValue>(), undefined]
   const keyOf: SandboxKeys = name => keys.get(name)
   return Nasi.open({

@@ -92,12 +92,12 @@ bun run --filter @kaja/sandbox build
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (the images bucket through `Bun.S3Client`: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set; public URLs, and the boot-time bucket setup through `@aws-sdk/client-s3`), `geo.ts` (IP geolocation for sandboxes), `lock.ts` (`withLock`: in-process per-key serialization, so the API runs as one instance), `env.ts` (parsed `ApiEnvSchema`)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (users' ability keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
 
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with widget and sandbox tabs, profile with API keys, and the admin-only `/admin/*` layout)
+- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with widget and sandbox tabs, profile, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
@@ -144,7 +144,7 @@ bun run --filter @kaja/sandbox build
 5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
 7. `2026-09-19-ability.sql` — `ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`; every user has every ability)
-8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`), `service_secret` (admins' server-wide ability keys, the same way)
+8. `2026-09-19-user-secret.sql` — `service_secret` (admins' server-wide ability API keys every user shares, AES-256-GCM with `USER_SECRET_KEY`; users have no keys of their own)
 9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings), `sandbox_sample` (heartbeat load, kept 7 days)
 
 Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).

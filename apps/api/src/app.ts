@@ -8,7 +8,6 @@ import pkg from "../package.json" with { type: "json" }
 import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
-import { abilityRoutes } from "./features/abilities"
 import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
@@ -77,7 +76,6 @@ app.route("/config", configExportRoutes)
 app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
-app.route("/abilities", abilityRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)

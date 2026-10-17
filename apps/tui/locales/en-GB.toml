@@ -214,7 +214,7 @@ invalidAt = "Invalid abilities file at {path}: {message}"
 
 [ability]
 usage               = "Usage: kaja abilities [update]"
-cloudHint           = "You're using Kaja cloud: every ability is on there, and its personas pick what a chat uses. Save API keys at {url}. Abilities on this machine are for local mode: `kaja --local abilities`."
+cloudHint           = "You're using Kaja cloud: every ability is on there, and its personas pick what a chat uses; Kaja provides the API keys. Abilities on this machine are for local mode: `kaja --local abilities`."
 firstSync           = "Fetching the marketplace for the first time..."
 updating            = "Updating the marketplace..."
 synced              = "Marketplace synced from {url} ({ref}) at {commit}."

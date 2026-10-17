@@ -103,7 +103,7 @@ describe("authentication flow", () => {
     })
 
     test("call a session route with the bearer token", async () => {
-      const res = await app.request("/abilities/me", {
+      const res = await app.request("/sandbox", {
         headers: { Authorization: `Bearer ${token}` }
       })
       expect(res.status).toBe(200)

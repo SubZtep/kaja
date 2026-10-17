@@ -20,7 +20,6 @@ Each is a file under `files/images/<sessionId>/` next to it, stored once per ses
 sha256. Messages refer to them, and deleting a session removes its folder.
 
 In cloud mode there's no local database: the same data lives in the server's Postgres, under your account.
-The [Database](/development/database) page compares the two.
 
 ## Tables
 

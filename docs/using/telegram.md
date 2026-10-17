@@ -3,93 +3,89 @@ layout: page
 title: Telegram
 parent: Using Kaja
 nav_order: 3
-summary: "Chat with Kaja from Telegram."
+summary: Chat with Kaja from Telegram.
 icon: 💬
 ---
 
 # Telegram
 
-There are two separate bots: a **local bot** you run yourself with `kaja telegram`, and the **cloud bot**
-that runs inside the Kaja API and links to your account.
+There are two ways to chat with Kaja on Telegram:
 
-| | Local bot | Cloud bot |
-| --- | --- | --- |
-| Runs | on your machine, while `kaja telegram` runs | always, on the API |
-| Agent | [local mode](/getting-started/modes#local-mode): your models, tools and shell | [cloud mode](/getting-started/modes#cloud-mode) |
-| Who can use it | people you paired with a one-time code | Kaja users who linked their Telegram account |
-| Abilities | what each [persona](/abilities/personas#abilities) lists | the same, with the keys saved in the [web app](/using/web-app) |
+- **Cloud bot**: kaja.io hosts it. Link your account and start chatting, nothing to install.
+- **Your own bot**: you create the bot and run it on your machine with `kaja telegram`, using your own models and tools.
 
-On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart from
-each other and from your terminal. A call that needs approval (a shell command, or an HTTP tool or MCP call
-that changes something) comes with Approve and Decline buttons, plus "for this chat" in the cloud bot.
-Replies stay short unless you ask for detail. Photos work both ways.
+## Cloud bot
 
-## Local bot
+1. Install [Telegram](https://telegram.org/apps) and log in, on the phone or computer where you'll open the link.
+2. Register or log in on [kaja.io](https://kaja.io).
+3. Go to the **Dashboard**.
+4. In the **Connect Telegram** card, click **Get Telegram link**.
+5. Open the link within 10 minutes. The bot recognises you and starts a chat.
 
-1. **Create a bot.** Message [@BotFather](https://t.me/BotFather), send `/newbot` and follow the prompts.
-   You get a token like `123456789:AAH...`.
-2. **Save the token** in [`secrets.toml`](/configuration/secrets), or let the
-   [setup wizard](/getting-started/wizard) ask for it:
+## Your own bot
+
+1. Create a bot with [@BotFather](https://t.me/BotFather): send `/newbot` and follow the steps.
+
+2. Save its token in [`secrets.toml`](/configuration/secrets), or enter it in the
+   [setup wizard](/getting-started/wizard):
 
    ```toml
    [telegram]
    bot_token = "123456789:AAH..."
    ```
 
-3. **Run it:**
+3. Start the bot. If the token is wrong, Kaja shows an error.
 
-   ```sh
+   ```bash
    kaja telegram              # with the terminal UI around it
    kaja --headless telegram   # no terminal UI, for services and containers
    ```
 
-   A bad token fails straight away with a one-line error.
-
-4. **Pair.** The first time, it prints a one-time code and a link:
+4. Pair your Telegram account. Kaja prints a one-time code and link. Open the link, or send the code to your bot:
 
    ```text
-   No one is paired with @my_kaja_bot yet, and it answers no one until you are.
-   Open https://t.me/my_kaja_bot?start=K7Q2-M9XD
-   or send it: /start K7Q2-M9XD
+   /start K7Q2-M9XD
    ```
 
-   Open the link on your phone, or send the bot that `/start` line. It confirms, and your Telegram id is
-   saved to `owner_ids` in `secrets.toml`, so later starts skip this.
+   Kaja saves your Telegram ID in `owner_ids`, so you only need to pair once.
 
-The bot only answers paired people. Anyone else gets no reply, and after five wrong codes it ignores them
-until it restarts. A paired person can use your tools and approve shell commands, so only pair people you
-trust.
+### Who can use the bot
 
-- **Pair someone else** (a partner, a second account): `kaja telegram --pair` prints a fresh code. Each
-  code works once.
-- **Remove someone:** delete their id from `owner_ids` in `secrets.toml` and restart the bot.
+Only the Telegram IDs in `owner_ids` can talk to your bot, and they can use your tools and approve shell commands.
+Keep it to your own ID unless you trust the others:
 
-Commands in the bot's menu:
+```toml
+[telegram]
+owner_ids = [123456789]
+```
 
-- `/new` starts a fresh conversation.
-- `/compact` summarises the conversation to free up space (add what to keep, like
-  `/compact keep the dates`). It also happens on its own.
-- `/abilities` shows the abilities each persona uses. The bot reads the marketplace folder once at start, so
-  restart `kaja telegram` after changing it.
+- **Add someone:** run `kaja telegram --pair` and share the one-time code with them. Kaja adds their ID
+  automatically and prints it in the terminal.
+- **Remove someone:** delete their ID from `owner_ids` and restart the bot.
+- After five wrong codes, the bot ignores that person until it restarts.
 
-## Cloud bot
+## Abilities
 
-Link your Telegram account once:
+Both bots use [abilities](/abilities) the same way: the chat's [persona](/abilities/personas#abilities) lists
+which ones the model gets. Where they run, and where their keys come from, differs:
 
-1. In the [web app](/using/web-app), open the **Dashboard**.
-2. In the **Connect Telegram** card, click **Get Telegram link**. It works once, for 10 minutes.
-3. Open it. Telegram starts a chat with the bot, and the bot confirms once you're linked.
+| | Cloud bot | Your own bot |
+| --- | --- | --- |
+| Runs on | a [sandbox](/abilities/mcp#in-the-cloud), never your computer | your machine |
+| Available | the cloud [marketplace](/abilities/marketplace#in-the-cloud) subset: no skills with scripts, and no local-only personas or computer tools | everything, including your own abilities |
+| API keys | kaja.io provides them, nothing to set up | [`secrets.toml`](/configuration/secrets) `[abilities.<name>] api_key`, or `kaja doctor` |
+| After a change | the next message, within the hour for marketplace updates | restart the bot |
 
-After that, message the bot like any chat. An account that isn't linked gets a reply pointing back to the
-dashboard.
+Calls that could change something wait for your Approve or Decline button.
 
-Commands:
+{: .note }
+Never send an API key to your bot: Telegram keeps the message history. Put it in `secrets.toml` instead.
 
-- `/new` and `/compact` work as above.
-- Keys are entered under API keys on your [Profile](https://kaja.io/profile), never in Telegram, where they'd
-  stay in the chat history.
+## Commands
 
-Running your own Kaja API? Set `TELEGRAM_BOT_TOKEN` in its environment and restart to start the cloud bot.
+- `/new` starts a new conversation.
+- `/compact` shortens the conversation. Add what to keep, for example `/compact keep the dates`. This also happens automatically.
+- `/abilities` (your own bot only) shows the abilities each persona uses.
 
 ---
 

@@ -125,17 +125,27 @@ const call = (id: string, name: string, args: object) => ({
 describe("MCP servers in the cloud", () => {
   let base: string
   let token: string
+  let adminToken: string
   let fixture: HttpMcpFixture
+  const adminEmail = faker.internet.email().toLowerCase()
   const realFetch = globalThis.fetch
-  const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
-  const saveKey = (apiKey: string) =>
-    app.request(`/abilities/me/keys/${things}`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
+  const auth = (as = token) => ({ Authorization: `Bearer ${as}`, "Content-Type": "application/json" })
+  // Server-wide keys, the only kind: an admin saves them and every user's turns use them.
+  const saveKey = (apiKey: string, name = things) =>
+    app.request(`/admin/abilities/keys/${name}`, {
+      method: "PUT",
+      headers: auth(adminToken),
+      body: JSON.stringify({ apiKey })
+    })
+  const keyList = async () => (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-mcp-test-"))
     token = await signUpAndSignIn(faker.internet.email(), "Mcp")
+    adminToken = await signUpAndSignIn(adminEmail, "Mcp Admin")
+    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
     secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
     // With a sender set the guard leaves DNS to it; this one is the faked fetch, which hands the fake host to the local fixture.
@@ -149,6 +159,8 @@ describe("MCP servers in the cloud", () => {
     secretService.setKey(env.USER_SECRET_KEY)
     setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
+    for (const name of [things, `stdio-keyed-${tag}`]) await secretService.deleteService(`ability:${name}`)
+    await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The fixture's default persona too, so later files get the built-in one again.
     await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
@@ -184,8 +196,8 @@ describe("MCP servers in the cloud", () => {
     expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
   })
 
-  test("the keys list shows where a keyed MCP server runs and that it needs the key", async () => {
-    const { abilities } = await (await app.request("/abilities/me", { headers: auth() })).json()
+  test("the admin's keys list shows where a keyed MCP server runs and that it needs the key", async () => {
+    const { abilities } = await keyList()
     expect(abilities.find((ability: { name: string }) => ability.name === things)).toMatchObject({
       key: "required",
       domain: host,
@@ -194,11 +206,7 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("a keyed stdio server's key is tested in a sandbox, never started here", async () => {
-    const res = await app.request(`/abilities/me/keys/stdio-keyed-${tag}`, {
-      method: "PUT",
-      headers: auth(),
-      body: JSON.stringify({ apiKey: "stdio-key" })
-    })
+    const res = await saveKey("stdio-key", `stdio-keyed-${tag}`)
     expect(res.status).toBe(200)
     expect((await res.json()).check.ok).toBe(false)
   })
@@ -209,7 +217,7 @@ describe("MCP servers in the cloud", () => {
     expect(await (await saveKey(GOOD_KEY)).json()).toEqual({ check: { ok: true } })
   })
 
-  test("a cloud turn connects the server with the user's key; a write waits for approval, then runs", async () => {
+  test("a cloud turn connects the server with the server-wide key; a write waits for approval, then runs", async () => {
     const sent: Parameters<typeof scriptedChat>[1] = []
     const client = scriptedChat(
       [
@@ -249,10 +257,13 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("removing the key takes a server that can't work without it out of turns", async () => {
-    const removed = await app.request(`/abilities/me/keys/${things}`, { method: "DELETE", headers: auth() })
+    const removed = await app.request(`/admin/abilities/keys/${things}`, {
+      method: "DELETE",
+      headers: auth(adminToken)
+    })
     expect(removed.status).toBe(200)
-    const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(mine.abilities.find((ability: { name: string }) => ability.name === things).saved).toBe(false)
+    const { abilities } = await keyList()
+    expect(abilities.find((ability: { name: string }) => ability.name === things).saved).toBe(false)
     const sent: Parameters<typeof scriptedChat>[1] = []
     setNasiChatResolver(async () => ({
       client: scriptedChat([{ content: "Hi." }], sent) as never,

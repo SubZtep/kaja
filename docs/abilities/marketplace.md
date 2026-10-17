@@ -85,12 +85,11 @@ still use your computer for the rest, see [Cloud or local](/getting-started/mode
 | HTTP tool | its `baseUrl` isn't a public address |
 | MCP server | it has no `tools` allowlist, or isn't on a public host (`stdio` ones [run in a sandbox](/abilities/mcp#in-the-cloud)) |
 
-**Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
-abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:
-the page only says "Key saved", with Replace and Remove. It's used for your own turns only, never reaches
-your terminal, and goes only to your own sandbox or Kaja's. An ability that takes a key stays out of your chats until you add one, unless it also works
-without one (like context7, where a key only raises the limits). Some abilities, like web search
-(`web-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
+**Keys.** Kaja provides them, so there's nothing to set up: an admin saves each ability's key once, and
+every user's chats share it. Kaja tests the key, stores it encrypted and never shows it again; it never
+reaches your terminal, and goes only to Kaja's own sandbox. An ability that takes a key stays out of chats
+until the server has one, unless it also works without one (like context7, where a key only raises the
+limits).
 
 **Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
 shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs
@@ -113,11 +112,10 @@ one first:
    `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.
 
-Once it's merged, local users get it with their next update and the cloud within the hour. How the syncing
-works is on [Marketplace internals](/development/marketplace).
+Once it's merged, local users get it with their next update and the cloud within the hour.
 
 ---
 
 Next:
 
-[Configuration](/configuration){: .btn .btn-green .fs-5 }
+[Inside Nasi](/abilities/inside-nasi){: .btn .btn-green .fs-5 }

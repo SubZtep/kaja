@@ -2,7 +2,7 @@
 
 Repo-wide dev and ops utilities, run from the monorepo root with `bun run scripts/<name>` (or `./scripts/<name>.sh` for shell scripts). Anything tied to one workspace's build, like Docker image contents, stays in that workspace (see `apps/api/migrate.ts`).
 
-Most of these run for you from git hooks. [Vibe coding](https://docs.kaja.io/development/vibe-coding) explains when, and [Development](https://docs.kaja.io/development#code-generation) lists the commands.
+Most of these run for you from git hooks (`.lefthook.toml`).
 
 ## Generators
 

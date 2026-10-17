@@ -214,7 +214,7 @@ invalidAt = "能力檔無效（{path}）：{message}"
 
 [ability]
 usage               = "用法：kaja abilities [update]"
-cloudHint           = "你咧用 Kaja 雲端：所有能力攏佇遐，由角色決定開講欲用啥物。請佇 {url} 存 API 鎖匙。這台電腦頂懸个能力是予本機模式用个：`kaja --local abilities`。"
+cloudHint           = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris"
 firstSync           = "頭一擺提市集..."
 updating            = "咧更新市集..."
 synced              = "市集已經對 {url}（{ref}）同步，版本 {commit}。"

@@ -71,8 +71,8 @@ other's, and none of it mixes into yours.
 
 A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud
 [built-in tools](/abilities/tools#built-ins) except `fetch_url`, and no HTTP tools or MCP servers. A key's
-abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with your
-API keys. Every persona in the catalog is available, starting with the key's own.
+abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with
+Kaja's API keys. Every persona in the catalog is available, starting with the key's own.
 
 ## Types
 

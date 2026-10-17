@@ -114,16 +114,23 @@ describe("HTTP tools in the cloud", () => {
   let base: string
   let token: string
   let userId: string
+  let adminToken: string
+  const adminEmail = faker.internet.email().toLowerCase()
   const requests: SentRequest[] = []
   const realFetch = globalThis.fetch
   const auth = (as = token) => ({ Authorization: `Bearer ${as}`, "Content-Type": "application/json" })
-  const saveKey = (name: string, apiKey: string, as = token) =>
-    app.request(`/abilities/me/keys/${name}`, {
+  // Server-wide keys, the only kind: an admin saves them and every user's turns use them.
+  const saveKey = (name: string, apiKey: string, as = adminToken) =>
+    app.request(`/admin/abilities/keys/${name}`, {
       method: "PUT",
       headers: auth(as),
       body: JSON.stringify({ apiKey })
     })
-  const mine = async (as = token) => (await app.request("/abilities/me", { headers: auth(as) })).json()
+  const removeKey = (name: string) =>
+    app.request(`/admin/abilities/keys/${name}`, { method: "DELETE", headers: auth(adminToken) })
+  const keyList = async () => (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()
+  const listed = async (name: string) =>
+    (await keyList()).abilities.find((ability: { name: string }) => ability.name === name)
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
   const useScript = (script: Parameters<typeof scriptedChat>[0]) => {
@@ -139,6 +146,8 @@ describe("HTTP tools in the cloud", () => {
     const email = faker.internet.email().toLowerCase()
     token = await signUpAndSignIn(email, "Tools")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
+    adminToken = await signUpAndSignIn(adminEmail, "Keys Admin")
+    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
     secretService.setKey(TEST_SECRET_KEY)
     // With a sender set, the SSRF guard leaves DNS to it, so the fake hosts below are reachable through the faked fetch.
     setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
@@ -159,6 +168,8 @@ describe("HTTP tools in the cloud", () => {
     secretService.setKey(env.USER_SECRET_KEY)
     setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
+    for (const name of [issues, extras]) await secretService.deleteService(`ability:${name}`)
+    await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The fixture's default persona too, so later files get the built-in one again.
     await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
@@ -180,32 +191,33 @@ describe("HTTP tools in the cloud", () => {
     expect(result.added.join()).not.toContain(`broken-${tag}`)
   })
 
-  test("the keys list shows each keyed tool a persona uses: where it calls and whether it needs the key", async () => {
-    const { abilities } = await mine()
-    const byName = (name: string) => abilities.find((ability: { name: string }) => ability.name === name)
-    expect(byName(issues)).toMatchObject({ key: "required", domain: host(issues), saved: false })
-    expect(byName(extras)).toMatchObject({ key: "optional", saved: false })
+  test("the admin's keys list shows each keyed tool: where it calls and whether it needs the key", async () => {
+    expect(await listed(issues)).toMatchObject({ key: "required", domain: host(issues), saved: false })
+    expect(await listed(extras)).toMatchObject({ key: "optional", saved: false })
     // It takes no key
-    expect(byName(weather)).toBeUndefined()
+    expect(await listed(weather)).toBeUndefined()
   })
 
-  test("a tool that needs a key stays out of turns until the user saves one; a saved key is tested and never sent back", async () => {
+  test("a tool that needs a key stays out of turns until an admin saves one; a saved key is tested and never sent back", async () => {
     const sent = useScript([{ content: "Hi." }])
     await turn({ message: "hi" })
     const offered = sent[0]!.tools!.map(t => t.function.name)
     expect(offered).toContain(forecastTool)
     expect(offered).not.toContain(createIssueTool)
 
+    // Users can't save keys, only admins
+    expect((await saveKey(issues, GOOD_KEY, token)).status).toBe(403)
     expect(await (await saveKey(issues, "wrong-key")).json()).toEqual({ check: { ok: false, reason: "HTTP 401" } })
     expect(await (await saveKey(issues, GOOD_KEY)).json()).toEqual({ check: { ok: true } })
     expect(requests.at(-1)).toMatchObject({ url: `https://${host(issues)}/me`, authorization: `Bearer ${GOOD_KEY}` })
 
-    const listed = await mine()
-    expect(listed.keysEnabled).toBe(true)
-    expect(listed.abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(true)
-    expect(JSON.stringify(listed)).not.toContain(GOOD_KEY)
-    const { rows } = await pool.query("SELECT ciphertext FROM user_secret WHERE user_id = $1", [userId])
+    const list = await keyList()
+    expect(list.keysEnabled).toBe(true)
+    expect(await listed(issues)).toMatchObject({ key: "required", saved: true })
+    expect(JSON.stringify(list)).not.toContain(GOOD_KEY)
+    const { rows } = await pool.query("SELECT ciphertext FROM service_secret WHERE name = $1", [`ability:${issues}`])
     expect(Buffer.from(rows[0].ciphertext).toString("utf8")).not.toContain(GOOD_KEY)
+    expect((await abilityService.serviceKeys()).get(issues)).toEqual({ value: GOOD_KEY, own: false })
 
     expect((await saveKey(weather, "x")).status).toBe(400)
     expect(await (await saveKey(extras, "extra-key")).json()).toEqual({ check: null })
@@ -444,107 +456,40 @@ describe("HTTP tools in the cloud", () => {
     expect(names).not.toContain(createIssueTool)
   })
 
-  test("keys are per user: another user sees none, and a copied row doesn't decrypt for them", async () => {
-    const email = faker.internet.email().toLowerCase()
-    const other = await signUpAndSignIn(email, "Other")
-    const otherId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
-    expect((await mine(other)).abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(false)
-
+  test("a service key copied to another name doesn't decrypt", async () => {
+    const copy = `ability:copy-${tag}`
     await pool.query(
-      `INSERT INTO user_secret (user_id, name, ciphertext, iv, tag)
-       SELECT $1, name, ciphertext, iv, tag FROM user_secret WHERE user_id = $2 AND name = $3`,
-      [otherId, userId, `ability:${issues}`]
+      `INSERT INTO service_secret (name, ciphertext, iv, tag)
+       SELECT $1, ciphertext, iv, tag FROM service_secret WHERE name = $2`,
+      [copy, `ability:${issues}`]
     )
-    expect(await secretService.get(otherId, `ability:${issues}`)).toBeUndefined()
-    expect(await secretService.get(userId, `ability:${issues}`)).toBe(GOOD_KEY)
+    try {
+      const all = await secretService.getAllService("ability:")
+      expect(all.get(`ability:${issues}`)).toBe(GOOD_KEY)
+      expect(all.has(copy)).toBe(false)
+    } finally {
+      await secretService.deleteService(copy)
+    }
   })
 
   test("removing the key takes a tool that can't work without it out of turns", async () => {
-    const removed = await app.request(`/abilities/me/keys/${issues}`, { method: "DELETE", headers: auth() })
-    expect(removed.status).toBe(200)
-    expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(false)
+    expect((await removeKey(issues)).status).toBe(200)
+    expect(await listed(issues)).toMatchObject({ saved: false })
     const sent = useScript([{ content: "Hi." }])
     await turn({ message: "hi" })
     const offered = sent[0]!.tools!.map(t => t.function.name)
     expect(offered).toContain(forecastTool)
     expect(offered).not.toContain(createIssueTool)
-    expect((await app.request("/abilities/me/keys/nope-nope", { method: "DELETE", headers: auth() })).status).toBe(404)
-  })
-
-  test("an admin's service key is every user's, tested and listed without its value; the user's own key still wins", async () => {
-    const adminEmail = faker.internet.email().toLowerCase()
-    const adminToken = await signUpAndSignIn(adminEmail, "Keys Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
-    const serviceKey = (apiKey: string, as = adminToken) =>
-      app.request(`/admin/abilities/keys/${issues}`, {
-        method: "PUT",
-        headers: auth(as),
-        body: JSON.stringify({ apiKey })
-      })
-    const listed = async () =>
-      (await (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()).abilities.find(
-        (ability: { name: string }) => ability.name === issues
-      )
-    try {
-      expect((await serviceKey(GOOD_KEY, token)).status).toBe(403)
-      expect(await listed()).toMatchObject({ key: "required", saved: false })
-
-      const saved = await serviceKey(GOOD_KEY)
-      expect(saved.status).toBe(200)
-      expect((await saved.json()).check).toEqual({ ok: true })
-      expect(JSON.stringify(await listed())).not.toContain(GOOD_KEY)
-      expect(await listed()).toMatchObject({ key: "required", saved: true })
-      // A user without their own key may bring one, but no longer needs to.
-      expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).key).toBe("optional")
-      expect((await abilityService.keysForUser(userId)).get(issues)).toEqual({ value: GOOD_KEY, own: false })
-      await secretService.set(userId, `ability:${issues}`, "own-key")
-      expect((await abilityService.keysForUser(userId)).get(issues)).toEqual({ value: "own-key", own: true })
-
-      const removed = await app.request(`/admin/abilities/keys/${issues}`, {
-        method: "DELETE",
-        headers: auth(adminToken)
-      })
-      expect(removed.status).toBe(200)
-      expect(await listed()).toMatchObject({ saved: false })
-      expect(
-        (
-          await app.request("/admin/abilities/keys/nope-nope", {
-            method: "PUT",
-            headers: auth(adminToken),
-            body: JSON.stringify({ apiKey: "x" })
-          })
-        ).status
-      ).toBe(404)
-    } finally {
-      await secretService.delete(userId, `ability:${issues}`)
-      await secretService.deleteService(`ability:${issues}`)
-      await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
-    }
-  })
-
-  test("a service key doesn't decrypt as a user's secret, nor the other way round", async () => {
-    await secretService.setService(`ability:${issues}`, "server-key")
-    try {
-      await pool.query(
-        `INSERT INTO user_secret (user_id, name, ciphertext, iv, tag)
-         SELECT $1, name, ciphertext, iv, tag FROM service_secret WHERE name = $2`,
-        [userId, `ability:${issues}`]
-      )
-      expect(await secretService.get(userId, `ability:${issues}`)).toBeUndefined()
-      expect((await secretService.getAllService("ability:")).get(`ability:${issues}`)).toBe("server-key")
-    } finally {
-      await secretService.delete(userId, `ability:${issues}`)
-      await secretService.deleteService(`ability:${issues}`)
-    }
+    expect((await removeKey("nope-nope")).status).toBe(404)
   })
 
   test("without USER_SECRET_KEY, key entry is off and tools that need a key are hidden", async () => {
     secretService.setKey(undefined)
     try {
       expect((await saveKey(extras, "x")).status).toBe(503)
-      const listed = await mine()
-      expect(listed.keysEnabled).toBe(false)
-      const names = listed.abilities.map((ability: { name: string }) => ability.name)
+      const list = await keyList()
+      expect(list.keysEnabled).toBe(false)
+      const names = list.abilities.map((ability: { name: string }) => ability.name)
       expect(names).toContain(extras)
       expect(names).not.toContain(issues)
     } finally {
