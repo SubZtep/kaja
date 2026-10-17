@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import { e2eDir } from "./env"
-import { startLlama } from "./llama"
+import { startModel } from "./llama"
 import { launchBrowser, type Result, runScenario } from "./runner"
 import type { Scenario } from "./scenario"
 import { startStack } from "./stack"
@@ -28,7 +28,7 @@ const scenarios = await Promise.all(
   }))
 )
 
-const llama = scenarios.some(({ scenario }) => scenario.llm) ? await startLlama() : undefined
+const llama = scenarios.some(({ scenario }) => scenario.llm) ? await startModel() : undefined
 console.log("Starting the stack (fresh database, API, web)...")
 const stack = await startStack(llama)
 const browser = await launchBrowser()

@@ -30,17 +30,18 @@ async function buildDatabase(url: string, llama: Llama | undefined): Promise<voi
   try {
     await applyMigrations(client, readMigrations(join(apiDir, "migrations")), { log: () => {} })
     await seedConfig(client)
-    // Only the local model (none without one): the seeded hosted ones are free too, and a turn picks a random free model
+    // Only the E2E model (none without one): the seeded hosted ones are free too, and a turn picks a random free model
     await client.query("DELETE FROM model")
     await client.query("DELETE FROM provider")
     if (!llama) return
-    const provider = await client.query("INSERT INTO provider (name, base_url) VALUES ('llama', $1) RETURNING id", [
-      llama.baseUrl
-    ])
+    const provider = await client.query(
+      "INSERT INTO provider (name, base_url, api_key) VALUES ('e2e', $1, $2) RETURNING id",
+      [llama.baseUrl, llama.apiKey ?? null]
+    )
     await client.query(
       `INSERT INTO model (provider_id, model, tasks, free, context_window, images)
        VALUES ($1, $2, ARRAY['chat', 'summarize'], true, $3, false)`,
-      [provider.rows[0].id, llama.model, e2eEnv.E2E_LLAMA_CONTEXT]
+      [provider.rows[0].id, llama.model, llama.apiKey ? null : e2eEnv.E2E_LLAMA_CONTEXT]
     )
   } finally {
     await client.end()

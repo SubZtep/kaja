@@ -12,6 +12,18 @@ export const E2eEnvSchema = z.object({
   E2E_WEB_PORT: positiveInt.default(3100).describe("Port the E2E web app listens on, apart from bun dev's"),
   E2E_MAILDEV_URL: url.default("http://localhost:1080").describe("MailDev's web address, where sign-in codes are read"),
   E2E_STORAGE_BUCKET: trimmed.default("kaja-e2e").describe("Bucket the E2E API stores images in"),
+  E2E_LLM_API_KEY: trimmed
+    .optional()
+    .describe("API key of a hosted model provider the cloud turns use; set, it replaces the local llama.cpp below")
+    .meta({ secret: true }),
+  E2E_LLM_BASE_URL: url
+    .default("https://api.fireworks.ai/inference/v1")
+    .describe("OpenAI-compatible base URL of the hosted provider (with E2E_LLM_API_KEY)"),
+  E2E_LLM_MODEL: trimmed
+    .default("accounts/fireworks/models/minimax-m3")
+    .describe(
+      "Model name sent to the hosted provider (with E2E_LLM_API_KEY); a cheap one, since each run makes a few calls"
+    ),
   E2E_LLAMA_URL: url
     .default("http://localhost:8080")
     .describe(

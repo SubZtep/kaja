@@ -9,7 +9,11 @@ Run by hand with `bun e2e [scenario-name...]` from the repo root (never in CI, n
 - `waitForCode(email)` reads the sign-in code from MailDev, once per mail.
 - After `goto`, wait for `networkidle`: filling the SSR page before React hydrates gets reset.
 
-## Local model
+## The model
+
+- Set `E2E_LLM_API_KEY` in the gitignored `apps/e2e/.env` to use a hosted provider (Fireworks's `minimax-m3` by default, `E2E_LLM_BASE_URL`/`E2E_LLM_MODEL` change it): quick and cheap, and the way to run on a machine without a usable GPU. Unset, the local llama.cpp below is used.
+
+### Local llama.cpp
 
 - A scenario with `{ llm: true }` makes the run start llama.cpp (`src/llama.ts`): a server already answering at `E2E_LLAMA_URL` is reused, else `E2E_LLAMA_BIN -m E2E_LLAMA_MODEL --jinja` is started and stopped after the run. Without a file in `.env` the run needs them on the command line.
 - The stack's database keeps only that model (the seeded hosted ones are free too, and a turn picks a random free model), and its API runs with `MODEL_ALLOW_PRIVATE_URLS` so the cloud's SSRF guard lets it reach localhost. Never set that flag on a public host.

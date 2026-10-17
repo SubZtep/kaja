@@ -2,7 +2,8 @@ import { mkdirSync, openSync } from "node:fs"
 import { join } from "node:path"
 import { e2eDir, e2eEnv } from "./env"
 
-export type Llama = { baseUrl: string; model: string; stop(): Promise<void> }
+/** The model the cloud turns use: a hosted provider or a local llama.cpp. */
+export type Llama = { baseUrl: string; model: string; apiKey?: string; stop(): Promise<void> }
 
 async function modelName(baseUrl: string): Promise<string | undefined> {
   try {
@@ -11,6 +12,17 @@ async function modelName(baseUrl: string): Promise<string | undefined> {
     return ((await response.json()) as { data?: { id: string }[] }).data?.[0]?.id
   } catch {
     return undefined
+  }
+}
+
+/** The model for scenarios that need one: the hosted provider when E2E_LLM_API_KEY is set, else {@link startLlama}. */
+export async function startModel(): Promise<Llama> {
+  if (!e2eEnv.E2E_LLM_API_KEY) return startLlama()
+  return {
+    baseUrl: e2eEnv.E2E_LLM_BASE_URL,
+    model: e2eEnv.E2E_LLM_MODEL,
+    apiKey: e2eEnv.E2E_LLM_API_KEY,
+    stop: async () => {}
   }
 }
 
