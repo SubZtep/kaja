@@ -115,7 +115,7 @@ test("a second approval in the same round, or one beside ask_user, is answered i
   ])
   const session = createSession()
   const events = await collect(run(agent, "file two bugs", session))
-  expect(events.at(-1)).toEqual({ type: "ask_user", question: "Which repo?" })
+  expect(events.at(-1)).toEqual({ type: "ask_user", question: "Which repo?", fromTool: true })
   const answered = session.messages
     .filter(m => m.role === "tool")
     .map(m => (m as { tool_call_id: string }).tool_call_id)

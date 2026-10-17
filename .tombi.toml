@@ -37,6 +37,16 @@ include = [
 
 
 [[schemas]]
+path    = "docs/config/schemas/hooks.json"
+include = [
+  "docs/config/hooks.toml",
+  "**/.config/kaja*/hooks.toml",
+  "**/Library/Preferences/kaja*/hooks.toml",
+  "**/kaja*/Config/hooks.toml"
+]
+
+
+[[schemas]]
 path    = "docs/config/schemas/http-tool.json"
 include = [
   "marketplace/abilities/*/tool.toml",

@@ -92,7 +92,13 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("message"), content: z.string() }),
   z.object({ type: z.literal("tool_call"), name: z.string(), arguments: z.string() }),
   z.object({ type: z.literal("tool_result"), name: z.string(), preview: z.string() }),
-  z.object({ type: z.literal("ask_user"), question: z.string(), note: z.string().optional() }),
+  z.object({
+    type: z.literal("ask_user"),
+    question: z.string(),
+    note: z.string().optional(),
+    /** The model called the ask_user tool; absent for a plain reply that just ends in a question mark. */
+    fromTool: z.literal(true).optional()
+  }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("confirm_command"), command: z.string(), description: z.string() }),
   /** A tool call waiting for the user's OK; answer with the next turn's `approval`. `summary` is the request in one line. */
@@ -132,7 +138,13 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
     arguments: z.string(),
     summary: z.string()
   }),
-  z.object({ type: z.literal("ask_user"), question: z.string(), note: z.string().optional() }),
+  z.object({
+    type: z.literal("ask_user"),
+    question: z.string(),
+    note: z.string().optional(),
+    /** The model called the ask_user tool; absent for a plain reply that just ends in a question mark. */
+    fromTool: z.literal(true).optional()
+  }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("client_tool_calls"), calls: z.array(NasiClientCallSchema) }),
   z.object({

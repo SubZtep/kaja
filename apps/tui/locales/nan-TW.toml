@@ -46,6 +46,7 @@ images         = "工作階段圖片"
 backups        = "檔案備份"
 models         = "模型"
 commands       = "安全指令"
+hooks          = "掛鉤"
 marketplace    = "市集"
 temp           = "臨時檔"
 

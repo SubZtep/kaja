@@ -77,6 +77,21 @@ does anything flagged as dangerous (`rm -rf`, `sudo`, a force push, ...), whatev
 pattern that isn't a valid regex is skipped with a warning. The list applies to the local TUI and to
 `kaja telegram`; the cloud agent never runs shell commands.
 
+## `hooks.toml`: commands that run on chat events
+
+Optional: Kaja never creates this file. Each hook is a shell one-liner that the terminal UI starts in the
+background (it never waits for it) when something happens in the chat, in local and cloud mode:
+
+```toml
+message  = "espeak-ng --stdin"                           # the assistant wrote in the chat: read it aloud
+question = 'notify-send "Kaja asks" "$KAJA_TEXT"'        # Kaja asks you a question: show a notification
+```
+
+The text, without Markdown, is in `$KAJA_TEXT` and on the command's stdin; `$KAJA_HOOK` is `message` or
+`question`. `question` is for when Kaja stops to ask you something; a reply that merely ends in a question mark is a `message`. A hook that fails is only logged (see [Logs](/configuration/commands#logs)). Every reply starts its own
+process, so a slow command can overlap with the next one, and one still running when you quit carries on. A
+session you resume doesn't replay its old messages, and `kaja telegram` has no hooks.
+
 ## `[marketplace]`
 
 | Field | Purpose |

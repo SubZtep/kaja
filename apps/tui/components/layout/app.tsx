@@ -9,6 +9,7 @@ import { useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useCodeView } from "../../hooks/use-code-view"
+import { useHooks } from "../../hooks/use-hooks"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useQuitGuard } from "../../hooks/use-quit-guard"
@@ -174,6 +175,7 @@ function Chrome({
   } = usePreferences(initialPreferences)
   const theme = useTheme(initialTheme)
   useSound(events, sounds)
+  useHooks(events)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)

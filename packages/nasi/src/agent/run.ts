@@ -606,7 +606,7 @@ function* handlePendingHandoff(
 
   if (ask) {
     session.pendingAskUserId = ask.id
-    yield { type: "ask_user", question: ask.question, note: ask.note }
+    yield { type: "ask_user", question: ask.question, note: ask.note, fromTool: true }
     return true
   }
 

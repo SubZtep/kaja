@@ -27,6 +27,7 @@ export function listPaths(all = false, configDir = getPaths().config) {
     items.push(
       { label: t("paths.models"), path: join(configDir, "models.toml") },
       { label: t("paths.commands"), path: join(configDir, "commands.toml") },
+      { label: t("paths.hooks"), path: join(configDir, "hooks.toml") },
       { label: t("paths.marketplace"), path: join(configDir, "marketplace") },
       { label: t("paths.backups"), path: getBackupDir() },
       { label: t("paths.temp"), path: paths.temp }

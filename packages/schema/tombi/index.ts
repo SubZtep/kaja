@@ -5,6 +5,7 @@ import { McpAbilitySchema } from "../abilities/mcp"
 import { PersonaSchema } from "../abilities/persona"
 import { CatalogFileSchema } from "../config/catalog"
 import { CommandsFileSchema } from "../config/commands"
+import { HooksFileSchema } from "../config/hooks"
 import { ModelsFileSchema } from "../config/models"
 import { SecretsFileSchema } from "../config/secrets"
 import { KajaConfigSchema } from "../config/settings"
@@ -24,6 +25,7 @@ export const tombiSchemas = {
   "models.json": z.toJSONSchema(ModelsFileSchema, { io: "input" }),
   "catalog.json": z.toJSONSchema(CatalogFileSchema, { io: "input" }),
   "commands.json": z.toJSONSchema(CommandsFileSchema, { io: "input" }),
+  "hooks.json": z.toJSONSchema(HooksFileSchema, { io: "input" }),
   "persona.json": z.toJSONSchema(PersonaSchema, { io: "input" }),
   "dataset.json": z.toJSONSchema(DatasetSchema, { io: "input" }),
   "http-tool.json": z.toJSONSchema(HttpToolAbilitySchema, { io: "input" }),
