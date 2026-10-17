@@ -12,6 +12,26 @@ export const E2eEnvSchema = z.object({
   E2E_WEB_PORT: positiveInt.default(3100).describe("Port the E2E web app listens on, apart from bun dev's"),
   E2E_MAILDEV_URL: url.default("http://localhost:1080").describe("MailDev's web address, where sign-in codes are read"),
   E2E_STORAGE_BUCKET: trimmed.default("kaja-e2e").describe("Bucket the E2E API stores images in"),
+  E2E_LLAMA_URL: url
+    .default("http://localhost:8080")
+    .describe(
+      "llama.cpp server the stack's cloud turns use; one already answering there is reused, else E2E_LLAMA_MODEL starts one"
+    ),
+  E2E_LLAMA_BIN: trimmed
+    .optional()
+    .describe("llama-server binary to start when none answers at E2E_LLAMA_URL; unset, llama-server on PATH")
+    .meta({ example: "/home/me/llama.cpp/build/bin/llama-server" }),
+  E2E_LLAMA_MODEL: trimmed
+    .optional()
+    .describe("GGUF file the started llama-server loads (required when none answers at E2E_LLAMA_URL)")
+    .meta({ example: "/home/me/Models/Ministral-3-3B-Reasoning-2512-Q4_K_M.gguf" }),
+  E2E_LLAMA_ARGS: trimmed
+    .optional()
+    .describe("Extra llama-server flags (space separated), e.g. to keep it off a flaky GPU")
+    .meta({ example: "-ngl 0" }),
+  E2E_LLAMA_CONTEXT: positiveInt
+    .default(16384)
+    .describe("Context size (tokens) of the started llama-server and of the model row the API reads"),
   E2E_BROWSER: trimmed
     .optional()
     .describe("Chromium or Chrome binary to drive; unset, the first of chromium, google-chrome and chrome on PATH")

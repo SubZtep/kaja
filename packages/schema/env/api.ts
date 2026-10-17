@@ -113,6 +113,12 @@ const apiEnvFields = z.object({
     .describe("Max turns per window per widget key, regardless of visitor/IP")
     .meta({ section: "Rate Limiting" }),
 
+  MODEL_ALLOW_PRIVATE_URLS: bool
+    .default(false)
+    .describe(
+      "Let cloud turns call model providers on private or loopback addresses (a local llama.cpp); for E2E and local development only, never on a public host"
+    ),
+
   NASI_STUB_MODEL: trimmed
     .optional()
     .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)"),

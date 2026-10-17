@@ -12,6 +12,16 @@ declare module "bun" {
     E2E_MAILDEV_URL?: string
     /** Bucket the E2E API stores images in */
     E2E_STORAGE_BUCKET?: string
+    /** llama.cpp server the stack's cloud turns use; one already answering there is reused, else E2E_LLAMA_MODEL starts one */
+    E2E_LLAMA_URL?: string
+    /** llama-server binary to start when none answers at E2E_LLAMA_URL; unset, llama-server on PATH */
+    E2E_LLAMA_BIN?: string
+    /** GGUF file the started llama-server loads (required when none answers at E2E_LLAMA_URL) */
+    E2E_LLAMA_MODEL?: string
+    /** Extra llama-server flags (space separated), e.g. to keep it off a flaky GPU */
+    E2E_LLAMA_ARGS?: string
+    /** Context size (tokens) of the started llama-server and of the model row the API reads */
+    E2E_LLAMA_CONTEXT?: string
     /** Chromium or Chrome binary to drive; unset, the first of chromium, google-chrome and chrome on PATH */
     E2E_BROWSER?: string
     /** Show the browser window while the scenarios run */

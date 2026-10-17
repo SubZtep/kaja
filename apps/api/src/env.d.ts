@@ -66,6 +66,8 @@ declare module "bun" {
     WIDGET_KEY_RATE_LIMIT_WINDOW_MS?: string
     /** Max turns per window per widget key, regardless of visitor/IP */
     WIDGET_KEY_RATE_LIMIT_MAX?: string
+    /** Let cloud turns call model providers on private or loopback addresses (a local llama.cpp); for E2E and local development only, never on a public host */
+    MODEL_ALLOW_PRIVATE_URLS?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
     /** Encrypts the admins' server-wide ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */

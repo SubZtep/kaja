@@ -2,10 +2,18 @@ import { mkdirSync, renameSync } from "node:fs"
 import { join } from "node:path"
 import { type Browser, chromium } from "playwright-core"
 import { e2eDir, e2eEnv } from "./env"
-import type { Scenario } from "./scenario"
+import { ModelFailure, type Scenario } from "./scenario"
 import type { Stack } from "./stack"
 
-export type Result = { name: string; ok: boolean; seconds: number; video?: string; error?: string }
+export type Result = {
+  name: string
+  ok: boolean
+  seconds: number
+  video?: string
+  error?: string
+  /** Who failed: the app, or the model behind it (a flaky answer, not necessarily a bug). */
+  kind?: "app" | "model"
+}
 
 const outDir = join(e2eDir, e2eEnv.E2E_OUT_DIR)
 
@@ -29,16 +37,31 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
   const context = await browser.newContext({
     locale: "en-GB",
     viewport: { width: 1280, height: 720 },
-    recordVideo: { dir: join(outDir, "raw"), size: { width: 1280, height: 720 } }
+    ...(scenario.video === false
+      ? {}
+      : { recordVideo: { dir: join(outDir, "raw"), size: { width: 1280, height: 720 } } })
   })
   const page = await context.newPage()
   const started = performance.now()
   let current = "start"
   let error: string | undefined
+  let kind: Result["kind"]
   try {
     await scenario.run({
       stack,
       page,
+      model: async step => {
+        try {
+          return await step()
+        } catch (first) {
+          console.log(`  ↻ model step failed, retrying once: ${(first as Error).message}`)
+          try {
+            return await step()
+          } catch (second) {
+            throw new ModelFailure((second as Error).message)
+          }
+        }
+      },
       newEmail: () => `e2e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}@example.test`,
       step: name => {
         current = name
@@ -47,6 +70,7 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
     })
   } catch (caught) {
     error = `at "${current}": ${(caught as Error).message}`
+    kind = caught instanceof ModelFailure ? "model" : "app"
     await page.screenshot({ path: join(outDir, `${file}.failed.png`) }).catch(() => {})
   }
   const video = page.video()
@@ -57,5 +81,11 @@ export async function runScenario(browser: Browser, stack: Stack, scenario: Scen
     renameSync(await video.path(), clip)
   }
   const seconds = (performance.now() - started) / 1000
-  return { name: scenario.name, ok: !error, seconds, ...(clip ? { video: clip } : {}), ...(error ? { error } : {}) }
+  return {
+    name: scenario.name,
+    ok: !error,
+    seconds,
+    ...(clip ? { video: clip } : {}),
+    ...(error ? { error, kind } : {})
+  }
 }

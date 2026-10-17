@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import { e2eDir } from "./env"
+import { startLlama } from "./llama"
 import { launchBrowser, type Result, runScenario } from "./runner"
 import type { Scenario } from "./scenario"
 import { startStack } from "./stack"
@@ -20,25 +21,33 @@ if (files.length === 0) {
   process.exit(1)
 }
 
+const scenarios = await Promise.all(
+  files.map(async file => ({
+    file,
+    scenario: ((await import(join(scenariosDir, `${file}${suffix}`))) as { default: Scenario }).default
+  }))
+)
+
+const llama = scenarios.some(({ scenario }) => scenario.llm) ? await startLlama() : undefined
 console.log("Starting the stack (fresh database, API, web)...")
-const stack = await startStack()
+const stack = await startStack(llama)
 const browser = await launchBrowser()
 const results: Result[] = []
 
 try {
-  for (const file of files) {
-    const { default: scenario } = (await import(join(scenariosDir, `${file}${suffix}`))) as { default: Scenario }
+  for (const { file, scenario } of scenarios) {
     console.log(`\n▶ ${scenario.name}`)
     const result = await runScenario(browser, stack, scenario, file)
     results.push(result)
-    console.log(result.ok ? `  ✓ ${result.seconds.toFixed(1)} s` : `  ✗ ${result.error}`)
+    console.log(result.ok ? `  ✓ ${result.seconds.toFixed(1)} s` : `  ✗ [${result.kind}] ${result.error}`)
   }
 } finally {
   await browser.close()
   await stack.stop()
+  await llama?.stop()
 }
 
 console.log("")
 for (const result of results)
-  console.log(`${result.ok ? "✓" : "✗"} ${result.name}${result.video ? `  ${result.video}` : ""}`)
+  console.log(`${result.ok ? "✓" : `✗ [${result.kind}]`} ${result.name}${result.video ? `  ${result.video}` : ""}`)
 process.exit(results.every(result => result.ok) ? 0 : 1)

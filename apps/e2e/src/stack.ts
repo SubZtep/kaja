@@ -4,6 +4,7 @@ import { Client } from "pg"
 import { applyMigrations, readMigrations } from "../../api/scripts/migrations"
 import { seedConfig } from "../../api/scripts/seed-config"
 import { apiDir, databaseUrl, e2eDir, e2eEnv, webDir, withDatabase } from "./env"
+import type { Llama } from "./llama"
 
 export type Stack = {
   apiUrl: string
@@ -13,7 +14,7 @@ export type Stack = {
 }
 
 /** Drops and rebuilds the E2E database from the migrations and the config seed, as a deploy would. */
-async function buildDatabase(url: string): Promise<void> {
+async function buildDatabase(url: string, llama: Llama | undefined): Promise<void> {
   const name = new URL(url).pathname.slice(1)
   const quoted = `"${name.replaceAll('"', '""')}"`
   const admin = new Client({ connectionString: withDatabase(url, "postgres") })
@@ -29,6 +30,18 @@ async function buildDatabase(url: string): Promise<void> {
   try {
     await applyMigrations(client, readMigrations(join(apiDir, "migrations")), { log: () => {} })
     await seedConfig(client)
+    // Only the local model (none without one): the seeded hosted ones are free too, and a turn picks a random free model
+    await client.query("DELETE FROM model")
+    await client.query("DELETE FROM provider")
+    if (!llama) return
+    const provider = await client.query("INSERT INTO provider (name, base_url) VALUES ('llama', $1) RETURNING id", [
+      llama.baseUrl
+    ])
+    await client.query(
+      `INSERT INTO model (provider_id, model, tasks, free, context_window, images)
+       VALUES ($1, $2, ARRAY['chat', 'summarize'], true, $3, false)`,
+      [provider.rows[0].id, llama.model, e2eEnv.E2E_LLAMA_CONTEXT]
+    )
   } finally {
     await client.end()
   }
@@ -54,12 +67,12 @@ async function waitFor(url: string, name: string, process: Bun.Subprocess, timeo
 }
 
 /** Starts the isolated stack: a fresh database, the API and the web dev server, each logging to the output folder. */
-export async function startStack(): Promise<Stack> {
+export async function startStack(llama: Llama | undefined): Promise<Stack> {
   const logDir = join(e2eDir, e2eEnv.E2E_OUT_DIR, "logs")
   mkdirSync(logDir, { recursive: true })
 
   const dbUrl = databaseUrl()
-  await buildDatabase(dbUrl)
+  await buildDatabase(dbUrl, llama)
 
   const apiUrl = `http://localhost:${e2eEnv.E2E_API_PORT}`
   const webUrl = `http://localhost:${e2eEnv.E2E_WEB_PORT}`
@@ -79,6 +92,7 @@ export async function startStack(): Promise<Stack> {
       SSR_SECRET: "",
       STORAGE_BUCKET: e2eEnv.E2E_STORAGE_BUCKET,
       RATE_LIMIT_ENABLED: "false",
+      MODEL_ALLOW_PRIVATE_URLS: "true",
       TURNSTILE_SECRET: "",
       // The dev bot's token would make this API poll the real Telegram
       TELEGRAM_BOT_TOKEN: "",

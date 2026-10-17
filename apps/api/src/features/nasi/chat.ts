@@ -54,9 +54,11 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
 
 /** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this host. */
 function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
-  const guarded = createGuardedFetch()
+  const guarded = createGuardedFetch({ allowPrivate: env.MODEL_ALLOW_PRIVATE_URLS })
   return (input, init) => guarded(input instanceof Request ? input.url : input, init)
 }
+
+const modelUrlAllowed = (url: string) => env.MODEL_ALLOW_PRIVATE_URLS || isPublicHttpUrl(url)
 
 async function defaultChatResolver(pinnedModel?: string) {
   const stub = env.NASI_STUB_MODEL
@@ -69,7 +71,7 @@ async function defaultChatResolver(pinnedModel?: string) {
   }
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) throw new NoModelError()
-  if (!isPublicHttpUrl(result.provider.baseUrl)) throw new Error("unsafe_model_url")
+  if (!modelUrlAllowed(result.provider.baseUrl)) throw new Error("unsafe_model_url")
   const modelFetch = cloudModelFetch()
   const window = await resolveContextWindow(
     {
@@ -96,7 +98,7 @@ async function defaultChatResolver(pinnedModel?: string) {
 async function resolveDescriber() {
   if (env.NASI_STUB_MODEL) return undefined
   const result = await modelService.getRandomModelWithProvider("vision")
-  if (!result || !isPublicHttpUrl(result.provider.baseUrl)) return undefined
+  if (!result || !modelUrlAllowed(result.provider.baseUrl)) return undefined
   return {
     client: createOpenAIClient({
       baseURL: result.provider.baseUrl,
@@ -111,7 +113,7 @@ async function resolveDescriber() {
 async function resolveSummarizer() {
   if (env.NASI_STUB_MODEL) return undefined
   const result = await modelService.getRandomModelWithProvider("summarize")
-  if (!result || !isPublicHttpUrl(result.provider.baseUrl)) return undefined
+  if (!result || !modelUrlAllowed(result.provider.baseUrl)) return undefined
   const target = {
     baseUrl: result.provider.baseUrl,
     apiKey: result.provider.apiKey ?? undefined,
