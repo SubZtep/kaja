@@ -85,8 +85,8 @@ api_key = "ollama"
 
 ## Examples
 
-Example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). They're
-generated from [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/docs/config/catalog.toml), the
+Example files live in [`config`](https://github.com/SubZtep/kaja/tree/main/config). They're
+generated from [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/config/catalog.toml), the
 same provider catalog the setup wizard writes `models.toml` from. Each example shows one model per task, and
 the wizard also keeps the models it didn't pick, for pins and switching.
 

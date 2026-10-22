@@ -2,8 +2,8 @@ import { join } from "node:path"
 import type { PersonaModels } from "@kaja/schema/cli"
 import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// What `kaja config fetch --offline` writes: the default example generated from docs/config/catalog.toml.
-import TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
+// What `kaja config fetch --offline` writes: the default example generated from config/catalog.toml.
+import TEMPLATE from "../../../../config/models.default.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
 import { secrets } from "../config/secrets"
@@ -81,7 +81,7 @@ export async function saveCommentedOutModels(ids: string[]) {
   if (next !== text) await write(f, next)
 }
 
-/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.default.toml template, backing up any existing (differing) file first. */
+/** The `kaja config fetch` subcommand: (re-)writes the bundled config/models.default.toml template, backing up any existing (differing) file first. */
 export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
   return writeTemplateConfig(TEMPLATE, getModelsPath())
 }

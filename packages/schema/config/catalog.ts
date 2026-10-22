@@ -28,7 +28,7 @@ const CatalogProviderSchema = z.object({
 /** The generated example that `kaja config fetch --offline` writes and the cloud seed loads. */
 export const DEFAULT_MODELS_FILE = "models.default.toml"
 
-// An example file in docs/config, generated from a mix of providers.
+// An example file in config, generated from a mix of providers.
 const CatalogExampleSchema = z.object({
   file: z.string().regex(/^models\.[a-z0-9-]+\.toml$/),
   // Written in catalog order whatever the order here, so a contested task goes to the provider listed first in the catalog.
@@ -37,7 +37,7 @@ const CatalogExampleSchema = z.object({
   pick: z.partialRecord(TaskSchema, z.string()).optional()
 })
 
-/** docs/config/catalog.toml: the one source of model defaults, for the setup wizard and the generated examples. */
+/** config/catalog.toml: the one source of model defaults, for the setup wizard and the generated examples. */
 export const CatalogFileSchema = z
   .object({
     providers: z.array(CatalogProviderSchema).min(1),

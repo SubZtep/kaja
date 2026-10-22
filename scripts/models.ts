@@ -4,7 +4,7 @@ import { EXAMPLES, exampleToml } from "../apps/tui/lib/models/catalog"
 import { toolPath } from "./lib/tools"
 
 const rootDir = join(import.meta.dir, "..")
-const configDir = join(rootDir, "docs/config")
+const configDir = join(rootDir, "config")
 
 /** `text` as `tombi format` leaves it (.tombi.toml's rules), so the lint never rewrites a generated file. */
 async function tombiFormat(text: string): Promise<string> {
@@ -47,11 +47,11 @@ if (process.argv.includes("--check")) {
   for (const name of await readdir(configDir)) {
     if (/^models\..+\.toml$/.test(name) && !expected.has(name)) {
       hasDiff = true
-      console.error(`✗ docs/config/${name} is not an example in docs/config/catalog.toml — delete it or add it there`)
+      console.error(`✗ config/${name} is not an example in config/catalog.toml — delete it or add it there`)
     }
   }
   if (hasDiff) process.exit(1)
-  console.log("model catalog and docs/config/models.*.toml are in sync")
+  console.log("model catalog and config/models.*.toml are in sync")
 } else {
   for (const target of targets) {
     await Bun.write(target.outPath, target.text)

@@ -40,8 +40,8 @@ Only `secrets.toml` holds credentials, so the other files are safe to share or p
 ## Editor support
 
 JSON Schemas for every file ship in
-[`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas), and
-[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config) has example files. With the
+[`config/schemas`](https://github.com/SubZtep/kaja/tree/main/config/schemas), and
+[`config`](https://github.com/SubZtep/kaja/tree/main/config) has example files. With the
 recommended VS Code TOML extension you get completion and validation as you edit.
 
 ---

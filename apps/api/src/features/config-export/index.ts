@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import COMMANDS_TEMPLATE from "../../../../../docs/config/commands.toml" with { type: "text" }
+import COMMANDS_TEMPLATE from "../../../../../config/commands.toml" with { type: "text" }
 import { modelService } from "../../services"
 import { renderModelsToml } from "../../services/config-export"
 import type { RouteProps } from "../../types"

@@ -7,7 +7,7 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
-      - "docs/config/*.toml"
+      - "config/*.toml"
       - "marketplace/personas/**"
       - "marketplace/abilities/*/mcp.toml"
   workflow_dispatch:
@@ -36,12 +36,12 @@ jobs:
             api:
               - 'apps/api/**'
               - 'packages/**'
-              - 'docs/config/*.toml'
+              - 'config/*.toml'
               - 'marketplace/personas/**'
             tui:
               - 'apps/tui/**'
               - 'packages/**'
-              - 'docs/config/*.toml'
+              - 'config/*.toml'
               - 'marketplace/personas/default.toml'
             web:
               - 'apps/web/**'
