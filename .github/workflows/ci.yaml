@@ -39,6 +39,9 @@ jobs:
       - name: Setup Tombi
         uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
 
+      - name: Generate Paraglide messages
+        run: bun --filter @kaja/web generate:paraglide
+
       - name: Lint
         run: bun lint
 
