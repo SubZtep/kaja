@@ -59,6 +59,9 @@ export async function runSubcommand(cli: typeof Cli) {
   const { resolveTheme } = await import("../lib/terminal-background")
   const theme = await resolveTheme(preferences?.theme)
 
+  // Each mounted row using Ink's useWindowSize adds a resize listener, so a long chat would trip Node's leak warning on the terminal
+  process.stdout.setMaxListeners(100)
+
   // Alternate screen: full-viewport app, restores primary buffer on exit, no scrollback while running
   // Kitty keyboard (auto): so Shift+Enter is distinct from Enter — plain TTYs send the same `\r` for both
   const { waitUntilExit } = render(
