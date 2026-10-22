@@ -25,6 +25,9 @@ const CatalogProviderSchema = z.object({
   models: z.array(CatalogModelSchema).min(1)
 })
 
+/** The catalog shape's version, sent with `GET /config/catalog`: a client that doesn't know it keeps its bundled catalog. Bump on a change an older client can't read. */
+export const CATALOG_VERSION = 1
+
 /** The generated example that `kaja config fetch --offline` writes and the cloud seed loads. */
 export const DEFAULT_MODELS_FILE = "models.default.toml"
 

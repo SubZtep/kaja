@@ -40,7 +40,7 @@ src/
     auth/                # Better Auth config + routes + middleware
     admin/               # /admin — providers, models, abilities/sync and server-wide ability keys, sandbox
     config/              # /config — resolve model (CONFIG_API_TOKEN)
-    config-export/       # /config/export — the admin-managed models bundle `kaja config fetch|diff` reads
+    config-export/       # /config/export — the admin-managed models bundle `kaja config fetch|diff` reads; also the public defaults, /config/catalog and /config/templates/<file> (`defaults.ts`, embedded from the repo's `config/` by `services/config-defaults.ts`)
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
     sandbox/             # /sandbox — sandboxes' WebSocket (/sandbox/connect), routing, users' sandbox keys and settings, the --local relay (relay.ts)
     stats/               # /stats — a user's own activity numbers

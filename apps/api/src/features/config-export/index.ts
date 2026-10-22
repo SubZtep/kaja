@@ -2,11 +2,12 @@ import { createHash } from "node:crypto"
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import COMMANDS_TEMPLATE from "../../../../../config/commands.toml" with { type: "text" }
 import { modelService } from "../../services"
+import { defaultTemplates } from "../../services/config-defaults"
 import { renderModelsToml } from "../../services/config-export"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
+import { registerConfigDefaults } from "./defaults"
 
 const errorSchema = z.object({ error: z.string() })
 
@@ -17,7 +18,7 @@ async function buildFiles(): Promise<Record<string, string>> {
 
   return {
     "models.toml": renderModelsToml(providers, models),
-    "commands.toml": COMMANDS_TEMPLATE
+    "commands.toml": defaultTemplates.get("commands.toml")!
   }
 }
 
@@ -31,6 +32,7 @@ function etagFor(files: Record<string, string>): string {
 }
 
 export const configExportRoutes = new OpenAPIHono<RouteProps>()
+registerConfigDefaults(configExportRoutes)
 
 const exportBundleRoute = createRoute({
   method: "get",
