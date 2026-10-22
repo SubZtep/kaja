@@ -27,7 +27,7 @@ import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
-import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 import { m } from "../../../paraglide/messages.js"
 import { EditWidgetDialog, parseOrigins } from "./-components/EditWidgetDialog"
 
@@ -79,15 +79,29 @@ function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey,
   return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function ActionsCell({
-  widgetKey,
-  edit,
-  onRevoke
-}: Readonly<{ widgetKey: WidgetKey; edit: React.ReactNode; onRevoke: (id: string) => void }>) {
+type WidgetActionsMeta = Readonly<{
+  personas: NasiPersonasResponse["personas"]
+  isSaving: boolean
+  onSave: (id: string, payload: UpdateWidgetKeyRequest) => Promise<unknown>
+  onRevoke: (id: string) => void
+}>
+
+function ActionsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, unknown>) {
+  const widgetKey = info.row.original
+  const { personas, isSaving, onSave, onRevoke } = cellActions<WidgetActionsMeta>(info.column.columnDef.meta)
   if (!widgetKey.enabled) return null
   return (
     <div className="flex justify-end gap-1">
-      {edit}
+      <EditWidgetDialog
+        widgetKey={widgetKey}
+        personas={personas}
+        isPending={isSaving}
+        onSave={payload => onSave(widgetKey.id, payload)}
+      >
+        <IconButton aria-label={m.widget_edit_title()}>
+          <Pencil size={18} />
+        </IconButton>
+      </EditWidgetDialog>
       <ConfirmDialog
         title={m.widget_revoke_confirm_title()}
         description={m.widget_revoke_confirm_description({ label: widgetKey.label })}
@@ -209,24 +223,15 @@ function WidgetPage() {
     columnHelper.display({
       id: "actions",
       header: "",
-      cell: info => (
-        <ActionsCell
-          widgetKey={info.row.original}
-          edit={
-            <EditWidgetDialog
-              widgetKey={info.row.original}
-              personas={personas ?? []}
-              isPending={updateKey.isPending}
-              onSave={payload => updateKey.mutateAsync({ id: info.row.original.id, payload })}
-            >
-              <IconButton aria-label={m.widget_edit_title()}>
-                <Pencil size={18} />
-              </IconButton>
-            </EditWidgetDialog>
-          }
-          onRevoke={id => revokeKey.mutate(id)}
-        />
-      )
+      meta: {
+        actions: {
+          personas: personas ?? [],
+          isSaving: updateKey.isPending,
+          onSave: (id, payload) => updateKey.mutateAsync({ id, payload }),
+          onRevoke: id => revokeKey.mutate(id)
+        } satisfies WidgetActionsMeta
+      },
+      cell: ActionsCell
     })
   ])
 

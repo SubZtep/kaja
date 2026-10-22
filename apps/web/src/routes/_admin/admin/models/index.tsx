@@ -28,7 +28,7 @@ import { ValueBox } from "../../../../components/ui/ValueBox"
 import { useApiFetch } from "../../../../lib/api-fetch"
 import { useAppForm } from "../../../../lib/form"
 import { seo } from "../../../../lib/seo"
-import { tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
+import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
 import { m } from "../../../../paraglide/messages.js"
 import { EditModelDialog } from "./-components/EditModelDialog"
 import { EditProviderDialog } from "./-components/EditProviderDialog"
@@ -74,17 +74,15 @@ function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Pro
   return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
-function ProviderActionsCell({
-  provider,
-  onDelete,
-  onSave,
-  isSaving
-}: Readonly<{
-  provider: Provider
+type ProviderActionsMeta = Readonly<{
   onDelete: (id: string) => void
   onSave: (id: string, payload: UpdateProviderRequest) => Promise<unknown>
   isSaving: boolean
-}>) {
+}>
+
+function ProviderActionsCell(info: CellContext<typeof tableFeaturesConfig, Provider, unknown>) {
+  const provider = info.row.original
+  const { onDelete, onSave, isSaving } = cellActions<ProviderActionsMeta>(info.column.columnDef.meta)
   return (
     <div className="flex justify-end gap-1">
       <EditProviderDialog provider={provider} isPending={isSaving} onSave={payload => onSave(provider.id, payload)}>
@@ -123,15 +121,19 @@ function ModelTasksCell(info: CellContext<typeof tableFeaturesConfig, Model, Mod
   return <span className="text-muted text-xs">{info.getValue().join(", ")}</span>
 }
 
-function ModelProviderCell({ providerId, providers }: Readonly<{ providerId: string; providers: Provider[] }>) {
-  const provider = providers.find(p => p.id === providerId)
+type ModelProvidersMeta = Readonly<{ providers: Provider[] }>
+
+function ModelProviderCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
+  const { providers } = cellActions<ModelProvidersMeta>(info.column.columnDef.meta)
+  const provider = providers.find(p => p.id === info.getValue())
   return <span className="text-muted font-mono text-xs">{provider?.name ?? "—"}</span>
 }
 
-function ModelEnabledCell({
-  model,
-  onToggle
-}: Readonly<{ model: Model; onToggle: (args: { id: string; enabled: boolean }) => void }>) {
+type ModelEnabledMeta = Readonly<{ onToggle: (args: { id: string; enabled: boolean }) => void }>
+
+function ModelEnabledCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
+  const model = info.row.original
+  const { onToggle } = cellActions<ModelEnabledMeta>(info.column.columnDef.meta)
   return (
     <Checkbox
       checked={model.enabled}
@@ -141,10 +143,11 @@ function ModelEnabledCell({
   )
 }
 
-function ModelFreeCell({
-  model,
-  onToggle
-}: Readonly<{ model: Model; onToggle: (args: { id: string; free: boolean }) => void }>) {
+type ModelFreeMeta = Readonly<{ onToggle: (args: { id: string; free: boolean }) => void }>
+
+function ModelFreeCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
+  const model = info.row.original
+  const { onToggle } = cellActions<ModelFreeMeta>(info.column.columnDef.meta)
   return (
     <Checkbox
       checked={model.free}
@@ -163,19 +166,16 @@ function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model
   return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function ModelActionsCell({
-  model,
-  providers,
-  onDelete,
-  onSave,
-  isSaving
-}: Readonly<{
-  model: Model
+type ModelActionsMeta = Readonly<{
   providers: Provider[]
   onDelete: (id: string) => void
   onSave: (id: string, payload: UpdateModelRequest) => Promise<unknown>
   isSaving: boolean
-}>) {
+}>
+
+function ModelActionsCell(info: CellContext<typeof tableFeaturesConfig, Model, unknown>) {
+  const model = info.row.original
+  const { providers, onDelete, onSave, isSaving } = cellActions<ModelActionsMeta>(info.column.columnDef.meta)
   return (
     <div className="flex justify-end gap-1">
       <EditModelDialog
@@ -359,14 +359,14 @@ function ModelsPage() {
     providerColumnHelper.display({
       id: "actions",
       header: "",
-      cell: info => (
-        <ProviderActionsCell
-          provider={info.row.original}
-          onDelete={id => deleteProvider.mutate(id)}
-          onSave={(id, payload) => updateProvider.mutateAsync({ id, payload })}
-          isSaving={updateProvider.isPending}
-        />
-      )
+      meta: {
+        actions: {
+          onDelete: id => deleteProvider.mutate(id),
+          onSave: (id, payload) => updateProvider.mutateAsync({ id, payload }),
+          isSaving: updateProvider.isPending
+        } satisfies ProviderActionsMeta
+      },
+      cell: ProviderActionsCell
     })
   ])
 
@@ -382,17 +382,20 @@ function ModelsPage() {
     }),
     modelColumnHelper.accessor("providerId", {
       header: m.models_column_provider(),
-      cell: info => <ModelProviderCell providerId={info.getValue()} providers={providers} />,
+      meta: { actions: { providers } satisfies ModelProvidersMeta },
+      cell: ModelProviderCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("enabled", {
       header: m.models_enabled(),
-      cell: info => <ModelEnabledCell model={info.row.original} onToggle={args => toggleModelEnabled.mutate(args)} />,
+      meta: { actions: { onToggle: args => toggleModelEnabled.mutate(args) } satisfies ModelEnabledMeta },
+      cell: ModelEnabledCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("free", {
       header: m.models_column_free(),
-      cell: info => <ModelFreeCell model={info.row.original} onToggle={args => toggleModelFree.mutate(args)} />,
+      meta: { actions: { onToggle: args => toggleModelFree.mutate(args) } satisfies ModelFreeMeta },
+      cell: ModelFreeCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("contextWindow", {
@@ -413,15 +416,15 @@ function ModelsPage() {
     modelColumnHelper.display({
       id: "actions",
       header: "",
-      cell: info => (
-        <ModelActionsCell
-          model={info.row.original}
-          providers={providers}
-          onDelete={id => deleteModel.mutate(id)}
-          onSave={(id, payload) => updateModel.mutateAsync({ id, payload })}
-          isSaving={updateModel.isPending}
-        />
-      )
+      meta: {
+        actions: {
+          providers,
+          onDelete: id => deleteModel.mutate(id),
+          onSave: (id, payload) => updateModel.mutateAsync({ id, payload }),
+          isSaving: updateModel.isPending
+        } satisfies ModelActionsMeta
+      },
+      cell: ModelActionsCell
     })
   ])
 
