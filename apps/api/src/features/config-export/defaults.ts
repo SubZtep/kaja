@@ -2,13 +2,16 @@ import { createHash } from "node:crypto"
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi"
 import { configCatalogSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import { catalogBundle, defaultTemplates } from "../../services/config-defaults"
+import { catalogBundle, defaultSchemas, defaultTemplates } from "../../services/config-defaults"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
 
 const errorSchema = z.object({ error: z.string() })
 
-const catalogEtag = `"${createHash("sha256").update(JSON.stringify(catalogBundle)).digest("hex")}"`
+const etagOf = (text: string) => `"${createHash("sha256").update(text).digest("hex")}"`
+
+const catalogEtag = etagOf(JSON.stringify(catalogBundle))
+const schemaEtags = new Map([...defaultSchemas].map(([file, schema]) => [file, etagOf(JSON.stringify(schema))]))
 
 // Same caching as /config/export: the content only changes with a deploy.
 function notModified(c: Context<RouteProps>, etag: string): boolean {
@@ -45,6 +48,23 @@ const templateRoute = createRoute({
   }
 })
 
+const schemaRoute = createRoute({
+  method: "get",
+  path: "/schemas/{file}",
+  tags: ["Config"],
+  summary: "A JSON Schema for one of the TOML config files, for editors (Tombi, taplo)",
+  request: {
+    params: z.object({
+      file: z.string().openapi({ param: { name: "file", in: "path" }, example: "models.json" })
+    })
+  },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: z.record(z.string(), z.unknown()) } } },
+    304: { description: "Not modified" },
+    404: { description: "Not found", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
 /** Public, unauthenticated: the same defaults the CLI bundles, so it carries no keys. */
 export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
   routes.openapi(catalogRoute, c => {
@@ -57,7 +77,16 @@ export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
     const content = defaultTemplates.get(file)
     if (content === undefined) return notFound(c, `Unknown template "${file}"`)
 
-    if (notModified(c, `"${createHash("sha256").update(content).digest("hex")}"`)) return c.body(null, 304)
+    if (notModified(c, etagOf(content))) return c.body(null, 304)
     return c.text(content, 200, { "Content-Type": "text/plain; charset=utf-8" })
+  })
+
+  routes.openapi(schemaRoute, c => {
+    const { file } = c.req.valid("param")
+    const schema = defaultSchemas.get(file)
+    if (schema === undefined) return notFound(c, `Unknown schema "${file}"`)
+
+    if (notModified(c, schemaEtags.get(file)!)) return c.body(null, 304)
+    return c.json(schema as Record<string, unknown>, 200)
   })
 }

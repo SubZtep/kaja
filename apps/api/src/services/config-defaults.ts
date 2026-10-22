@@ -1,4 +1,5 @@
 import { CATALOG_VERSION, CatalogFileSchema } from "@kaja/schema/config"
+import { tombiSchemas } from "@kaja/schema/tombi"
 import { TOML } from "bun"
 import CATALOG_TOML from "../../../../config/catalog.toml" with { type: "text" }
 import COMMANDS_TOML from "../../../../config/commands.toml" with { type: "text" }
@@ -22,3 +23,6 @@ export const defaultTemplates: ReadonlyMap<string, string> = new Map([
   ["models.openrouter.toml", MODELS_OPENROUTER_TOML],
   ["models.xai.toml", MODELS_XAI_TOML]
 ])
+
+/** JSON Schemas for the TOML files (`settings.json`, `models.json`, ...), derived from the runtime validators, so they match this build. */
+export const defaultSchemas: ReadonlyMap<string, object> = new Map(Object.entries(tombiSchemas))
