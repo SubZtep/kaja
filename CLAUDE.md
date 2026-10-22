@@ -27,7 +27,6 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | What                     | Path                                                                                                                                                                                                                                                                                                      |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Docker Compose           | `compose.yaml`                                                                                                                                                                                                                                                                                            |
-| Biome config             | `.biome.json` at the root, plus `apps/{web,tui,api}/biome.json` that extend it (`"extends": "//"`; Biome only finds the dotted name at the root, so these keep the plain one)                                                                                                                             |
 | Root TS config           | `tsconfig.json`                                                                                                                                                                                                                                                                                           |
 | Lockfile                 | `bun.lock`                                                                                                                                                                                                                                                                                                |
 | API env examples         | `apps/api/.env.example`                                                                                                                                                                                                                                                                                   |
@@ -57,7 +56,8 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 
 # Lint / types / tests
 bun lint
-bun lint:fix
+bun fmt
+bun lint:fix           # bun lint --fix, bun fmt, then Tombi
 bun tailwind:fix       # rewrite apps/web classes to their canonical form (@tailwindcss/upgrade; needs a clean tree, also bumps Tailwind); CI fails if src/ would change
 bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
 bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
@@ -99,7 +99,7 @@ bun run --filter @kaja/sandbox build
 
 - TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with widget and sandbox tabs, profile, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
-- Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
+- Generated route tree: `routeTree.gen.ts` (ignored by `bun fmt` via `bunfig.toml`)
 
 ### Sandbox (`apps/sandbox/`)
 
@@ -153,18 +153,16 @@ Each file only creates; there are no patch migrations, so a schema change until 
 
 ## Code Style
 
-- Biome (`.biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
-- Biome rules: the root `.biome.json` holds the formatter and the repo-wide rules (test, import-graph and type-aware ones; those make a full lint scan the project, ~3-4 s); each package with its own needs has a `biome.json` that extends it with `"extends": "//"` (web: React, DOM and Tailwind rules, and the `routeTree.gen.ts` ignore; tui: React rules; api: React and DOM rules for `src/emails`). Root `overrides` and `files.includes` paths don't reach into a package that has its own config, so package rules go in that package's file, with paths relative to it; every `$schema` URL must name the same Biome version (`scripts/lib/tools.ts` fails the lint otherwise)
-- Biome and Tombi aren't dependencies: the lint scripts run the machine's `biome` and `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install a missing one and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins them (Biome's from `.biome.json`'s `$schema` URL), and CI installs those versions with `biomejs/setup-biome` and `tombi-toml/setup-tombi`
-- VS Code's Biome extension should use the system CLI via `biome.lsp.bin` in user settings (the path `which biome` prints); keep that machine-specific path out of `.vscode/settings.json`
-- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
+- `bun lint` and `bun fmt`, both configured in the root `bunfig.toml` (`[lint]`, `[fmt]`): double quotes, no semicolons, no trailing commas; type-aware lint rules; suppress a rule with `// oxlint-disable-next-line <rule> -- why`
+- Tombi isn't a dependency: the TOML lint scripts run the machine's `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install it and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins it, and CI installs that version with `tombi-toml/setup-tombi`
+- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint:toml`/`lint:fix` run `tombi format`/`tombi lint` on TOML files
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
 - Prefer surgical diffs; do not drive-by refactor
 - Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values — VSCode surfaces these on hover; `// ...` for internal notes (locals, implementation asides)
 
 ## Notes
 
-- Git hooks already run `bun lint:fix:safe` (safe fixes only, staged) and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
+- Git hooks already run `bun lint --fix --staged` and `bun fmt --staged` and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `config/` (not under `apps/tui/`).
 - model defaults: edit `config/catalog.toml`, run `bun generate:models`, never edit `config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`). The API serves the catalog (`GET /config/catalog`, versioned by `CATALOG_VERSION`) and the template files (`GET /config/templates/<file>`) publicly, embedded from `config/` at build time; the setup wizard prefers the API's catalog and falls back to the bundled one, so a catalog change takes effect on an API deploy.
 - env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit the api/web/sandbox `.env.example` by hand (tui's is hand-written) — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
@@ -174,7 +172,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
 - CLI has a large unit suite under `apps/tui/tests/`
-- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
+- CI (`.github/workflows/ci.yaml`): lint (`bun lint`, `bun fmt --check`, Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
 - Docker Scout (`.github/workflows/scout.yaml`) runs on every PR: it builds `apps/sandbox/Dockerfile` (repo root context, the same image the release pushes) into the runner's local image store and comments what the PR changes against the released `subztep/kaja-sandbox:latest` (`compare`, critical and high only, unchanged left out); the full quickview and critical/high CVEs go to the run summary only. Scout only reads images, never builds them, so that build is what the scan needs (`fs://` reads a directory as an SBOM with no base image, which `quickview` rejects). A fork's PR has no secrets and a read-only token, so there it only logs in anonymously and leaves the report in the summary
 

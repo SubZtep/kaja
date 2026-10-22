@@ -1,5 +1,5 @@
-// Runs Biome or Tombi from this machine (neither is a dependency), or says how to install it; `--pinned` prints the version the repo expects instead.
-// Usage: bun scripts/tool.ts <biome|tombi> <args> | bun scripts/tool.ts <biome|tombi> --pinned
+// Runs Tombi from this machine (it is not a dependency), or says how to install it; `--pinned` prints the version the repo expects instead.
+// Usage: bun scripts/tool.ts <tombi> <args> | bun scripts/tool.ts <tombi> --pinned
 
 import { TOOLS, type ToolName, toolPath } from "./lib/tools"
 

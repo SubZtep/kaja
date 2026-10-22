@@ -94,7 +94,7 @@ GitHub Pages content is also under monorepo `docs/`.
 
 ### Code style
 
-- Biome formatting (double quotes, etc. via monorepo config)
+- Formatting via `bun fmt` (double quotes, etc. from the root `bunfig.toml`)
 - Prefer small focused modules under `lib/`, grouped into the domain subfolder they belong to
 - Dangerous shell commands: gate via `lib/agent/command-risk.ts` / confirm UX
 

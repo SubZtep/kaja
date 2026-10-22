@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "biomejs.biome",
     "bradlc.vscode-tailwindcss",
     "editorconfig.editorconfig",
     "oven.bun-vscode",

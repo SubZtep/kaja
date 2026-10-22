@@ -71,13 +71,11 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
     if (width > 0 && width !== containerWidth) setContainerWidth(width)
   })
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `target` is a new object every render; its size is what should restart the wait
   useEffect(() => {
     const timer = setTimeout(() => setSettled(target), RESIZE_SETTLE_MS)
     return () => clearTimeout(timer)
   }, [target.columns, target.rows])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `size` is a new object every render; the measures in the deps are what a drawing changes with
   useEffect(() => {
     let cancelled = false
     // Another picture starts blank; a resize keeps the one on screen up until the resized one is ready.

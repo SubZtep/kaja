@@ -144,7 +144,7 @@ function isConfirmedWin(answer: string): boolean {
 
 /** Strips newlines/control chars from model-generated text before it's logged. */
 function forLog(text: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control chars, not matching content
+  // oxlint-disable-next-line no-control-regex -- stripping control chars, not matching content
   return text.replace(/[\x00-\x1f]+/g, " ").trim()
 }
 

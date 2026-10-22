@@ -86,7 +86,6 @@ export function UserInput({
   const prefix = statusPrefix(mic, speaking, sttState)
   const windowFocused = useWindowFocus()
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `pending` and `input` aren't read; any change restarts the hint and border timers
   useEffect(() => {
     setHintHidden(false)
     setPower(false)

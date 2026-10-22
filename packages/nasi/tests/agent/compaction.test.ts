@@ -40,7 +40,6 @@ function fakeClient(
           const error = streamErrors.shift()
           rounds.push(structuredClone(body.messages))
           return {
-            // biome-ignore lint/correctness/useYield: a failing stream throws before its first chunk
             async *[Symbol.asyncIterator]() {
               if (error) throw error
             },

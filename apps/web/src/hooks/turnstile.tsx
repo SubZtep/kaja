@@ -98,7 +98,6 @@ export function useTurnstile(): Captcha {
     if (widgetId.current) window.turnstile?.reset(widgetId.current)
   }, [store])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` is the retry trigger, not an input
   useEffect(() => {
     if (!siteKey) return
     const host = document.createElement("div")

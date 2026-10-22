@@ -3,7 +3,7 @@ import { Readable } from "node:stream"
 import { render } from "ink"
 import type { ReactNode } from "react"
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI escapes requires matching the ESC byte
+// oxlint-disable-next-line no-control-regex -- stripping ANSI escapes requires matching the ESC byte
 const ansi = /\x1b\[[0-9;?]*[a-zA-Z]/g
 
 /**

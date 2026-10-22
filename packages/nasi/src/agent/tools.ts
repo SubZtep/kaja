@@ -66,7 +66,6 @@ export type ToolOrigin = "official" | "community"
  * A tool an {@link Agent} can call, pairing the OpenAI function definition
  * with the local implementation that runs when the model calls it. A bare `Tool` is any tool, for the mixed lists hosts pass around.
  */
-// biome-ignore lint/suspicious/noExplicitAny: a list holds tools with different arguments, and `execute`'s parameter rules out `unknown`
 export type Tool<Args = any> = {
   definition: ChatCompletionTool
   /**

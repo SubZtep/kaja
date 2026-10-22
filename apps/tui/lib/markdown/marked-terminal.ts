@@ -418,7 +418,7 @@ function reflowSection(section: string, width: number, state: ReflowState) {
   // Split the section by escape codes so that we can
   // deal with them separately. RegExp constructor (not a literal) so the \x1b
   // escape stays a string escape sequence instead of a raw control character.
-  // biome-ignore lint/complexity/useRegexLiterals: literal form trips noControlCharactersInRegex on \x1b
+  // oxlint-disable-next-line no-control-regex -- matches SGR escape sequences
   const fragments = section.split(new RegExp("(\\x1b\\[(?:\\d{1,3})(?:;\\d{1,3})*m)", "g"))
   let lastWasEscapeChar = false
 

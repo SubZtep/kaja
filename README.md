@@ -79,11 +79,10 @@ The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at
 
 Besides Bun, Docker Compose and Git from above, install these on your machine; none of them is an npm dependency:
 
-- [Biome](https://biomejs.dev/guides/manual-installation/): linter and formatter
 - [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
 - [Lefthook](https://lefthook.dev/installation/): runs the Git hooks, so run `lefthook install` once after cloning
 
-`bun lint` warns when the installed Biome or Tombi differs from the version pinned in [`scripts/lib/tools.ts`](./scripts/lib/tools.ts) (Biome's comes from the `$schema` URL in `.biome.json`).
+`bun lint:toml` warns when the installed Tombi differs from the version pinned in [`scripts/lib/tools.ts`](./scripts/lib/tools.ts).
 
 Optional, for parts of the repo:
 
