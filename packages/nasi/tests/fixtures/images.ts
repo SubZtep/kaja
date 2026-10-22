@@ -29,23 +29,35 @@ function fillPixels(
     }
 }
 
-/** A real PNG of one colour (RGB, or RGBA with `alpha`), built in memory; `noise` makes it compress badly. */
-export function png(width: number, height: number, opts: { alpha?: number; noise?: boolean } = {}): Uint8Array {
-  const channels = opts.alpha === undefined ? 3 : 4
-  const row = width * channels + 1
-  const raw = Buffer.alloc(row * height)
-  fillPixels(raw, width, height, opts, channels, row)
+function assemble(width: number, height: number, colorType: number, raw: Buffer): Uint8Array {
   const header = Buffer.alloc(13)
   header.writeUInt32BE(width, 0)
   header.writeUInt32BE(height, 4)
   header[8] = 8
-  header[9] = opts.alpha === undefined ? 2 : 6
+  header[9] = colorType
   return Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
     pngChunk("IHDR", header),
     pngChunk("IDAT", deflateSync(raw)),
     pngChunk("IEND", Buffer.alloc(0))
   ])
+}
+
+/** A real PNG of one colour (RGB, or RGBA with `alpha`), built in memory; `noise` makes it compress badly. */
+export function png(width: number, height: number, opts: { alpha?: number; noise?: boolean } = {}): Uint8Array {
+  const channels = opts.alpha === undefined ? 3 : 4
+  const row = width * channels + 1
+  const raw = Buffer.alloc(row * height)
+  fillPixels(raw, width, height, opts, channels, row)
+  return assemble(width, height, opts.alpha === undefined ? 2 : 6, raw)
+}
+
+/** A real RGB PNG whose pixels `at` colours. */
+export function bitmap(width: number, height: number, at: (x: number, y: number) => [number, number, number]) {
+  const row = width * 3 + 1
+  const raw = Buffer.alloc(row * height)
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) raw.set(at(x, y), y * row + 1 + x * 3)
+  return assemble(width, height, 2, raw)
 }
 
 /** A real JPEG, encoded from {@link png}. */

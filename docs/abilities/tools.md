@@ -28,7 +28,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `generate_image` | text-to-image | ✓ |
 | `read_file` / `list_files` | read a file, list a directory | your computer |
 | `view_image` | look at an image file | ✓ for the chat's own images, your computer for a file path |
-| `edit_image` | crop, zoom, resize, rotate or flip a chat image, adjust its tone, blur, sharpen or pixelate it, or draw a box or arrow on it | ✓ |
+| `edit_image` | resize, rotate (by 90°) or flip a chat image, make it brighter or darker, or turn it greyscale | ✓ |
 | `run_command` | run a shell command | your computer, opt-in |
 
 Locally, `generate_image` needs a model listing `image-generation` in
