@@ -38,6 +38,9 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
     }
   })
 
+  // Every mounted component using Ink's useWindowSize adds its own resize listener, so a chat with more than ten rows would trip Node's leak warning
+  stdout.setMaxListeners(100)
+
   const app = render(node, {
     // Fakes with only what Ink uses, not whole TTY streams
     stdout: stdout as unknown as NodeJS.WriteStream,
