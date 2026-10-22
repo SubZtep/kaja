@@ -1,5 +1,4 @@
-telemetry = false
-preload   = [
+preload = [
   "zod/compile"
 ]
 
