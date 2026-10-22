@@ -71,23 +71,13 @@ typeAware = true
 
 
 [fmt]
-printWidth      = 120
 semi            = false
 singleQuote     = false
 arrowParens     = "avoid"
 trailingComma   = "none"
-useTabs         = false
 sortImports     = false
 sortTailwindcss = false
 ignorePatterns  = [
   "**/*.toml",
-  "**/*.md",
-  "**/*.mdx",
-  "**/*.yaml",
-  "**/*.yml",
-  "**/*.html",
-  "routeTree.gen.ts",
-  "**/*.css",
-  "**/*.scss",
-  "config/schemas/"
+  "apps/web/src/routeTree.gen.ts"
 ]

@@ -39,7 +39,7 @@ function pixelSize(
 /** The IDAT chunks of a PNG, concatenated. */
 function collectIdat(view: Buffer): Buffer {
   const idat: Buffer[] = []
-  for (let at = PNG_SIGNATURE_LENGTH; at < view.length; ) {
+  for (let at = PNG_SIGNATURE_LENGTH; at < view.length;) {
     const length = view.readUInt32BE(at)
     if (view.toString("latin1", at + 4, at + 8) === "IDAT") idat.push(view.subarray(at + 8, at + 8 + length))
     at += 12 + length

@@ -28,10 +28,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "prompt"
-        ]
+        "required": ["name", "prompt"]
       }
     },
     "revalidateAfterDays": {
@@ -44,8 +41,5 @@
       "type": "boolean"
     }
   },
-  "required": [
-    "label",
-    "fields"
-  ]
+  "required": ["label", "fields"]
 }

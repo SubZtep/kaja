@@ -14,7 +14,7 @@ icon: 🌀
 ---
 
 > Think of Nasi as Kaja’s business logic rather than a service. There’s no Nasi server to connect to: it’s a library that whatever hosts it carries along and runs in-process. The terminal app embeds it, the web API embeds it, and so can any future piece of Kaja. Each host gets the same code and the same behaviour, and only supplies the surroundings: a model, a place to store things and a set of tools.
-{: .headsup }
+> {: .headsup }
 
 Everything else in this section plugs into Nasi: [personas](/abilities/personas) give it a voice,
 [skills](/abilities/skills) teach it procedures, [tools](/abilities/tools) (built-in and HTTP)

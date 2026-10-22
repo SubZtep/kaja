@@ -63,9 +63,7 @@ const MAX_FAILING_CLIENT_ROUNDS = 3
 
 /** What one turn request carries besides the session and the terminal's declarations. */
 type TurnRequest =
-  | { message: string; toolResults?: NasiToolResult[] }
-  | { approval: CloudApproval }
-  | { toolResults: NasiToolResult[] }
+  { message: string; toolResults?: NasiToolResult[] } | { approval: CloudApproval } | { toolResults: NasiToolResult[] }
 
 // A run's first request: a message also answers the calls the failure guard held back.
 function withHeldResults(first: TurnRequest, held: NasiToolResult[] | undefined): TurnRequest {

@@ -8,9 +8,8 @@ import type { args as Cli } from "../lib/cli/args"
 export async function runSubcommand(cli: typeof Cli) {
   const { config } = await import("../lib/config/config")
   const { t } = await import("../lib/i18n")
-  const { bootstrapLocalAgentDeps, installShutdownHandlers, requireConfiguredProvider } = await import(
-    "../lib/cli/headless"
-  )
+  const { bootstrapLocalAgentDeps, installShutdownHandlers, requireConfiguredProvider } =
+    await import("../lib/cli/headless")
 
   // Imported after the config guard (already validated by the time cli.ts calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
   const { default: App } = await import("../components/layout/app")

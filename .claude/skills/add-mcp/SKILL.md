@@ -1,5 +1,4 @@
 ---
-
 name: add-mcp
 description: Turn a pasted MCP server config (usually JSON) into a marketplace/abilities/<name>/mcp.toml ability, with its tools listed live from the server. Only when the user runs /add-mcp.
 argument-hint: "<MCP server config, e.g. JSON>"
@@ -16,6 +15,7 @@ $ARGUMENTS
 ```
 
 The input is usually JSON in one of the common client shapes:
+
 - `{ "mcpServers": { "<id>": {...} } }` (Claude Desktop, Cursor)
 - `{ "servers": {...} }` or `{ "mcp": { "servers": {...} } }` (VS Code)
 - a bare server object
@@ -32,6 +32,7 @@ It may also be a `claude mcp add ...` command line, or prose with a URL; read th
 ## 1. Learn the format
 
 Read these before writing anything:
+
 - `marketplace/README.md`, the MCP bullets
 - `packages/schema/abilities/mcp.ts`: `McpAbilitySchema` is the source of truth. It generates `config/schemas/mcp-ability.json`, which tombi applies to `marketplace/abilities/*/mcp.toml`.
 - every existing `marketplace/abilities/*/mcp.toml`, as style examples
@@ -58,11 +59,13 @@ bun .claude/skills/add-mcp/scripts/list-tools.ts marketplace/abilities/<name>/mc
 ```
 
 It prints JSON: each tool's `name`, `readOnlyHint`, `destructiveHint`, `args` (optional ones end in `?`) and a shortened `description`. On failure it prints `list-tools: <reason>` and exits with 1 (2 for a usage error).
+
 - A keyed server needs the key in front: `MCP_KEY=<key> bun .claude/skills/add-mcp/scripts/list-tools.ts ...`. The key goes where `[auth]` says and is never printed.
 - A stdio server's first run downloads its package, so it gets up to 3 minutes.
 - If the server refuses without a key you don't have, is legacy sse, or its command isn't installed here, take the tool list from the server's README (WebFetch) instead, and say so in the report.
 
 Then choose:
+
 - **`tools`**: the ones useful to a chat assistant, read tools first. Leave out admin, debug, duplicate and rarely useful tools, and keep the list short.
 - **`approval`**:
   - `"never"` when every kept tool only reads.
@@ -74,6 +77,7 @@ Then choose:
 ## 4. Write the manifest
 
 Match the existing files:
+
 - **Header comment**, saying:
   - what the server is, with the project link;
   - for stdio: what must be installed locally (`bunx` needs Bun, `uvx` needs uv), and that the cloud runs it in the MCP sandbox (`apps/sandbox`) instead;
@@ -90,12 +94,14 @@ Match the existing files:
    ```sh
    bun -e 'import { parseMcpManifest } from "@kaja/nasi"; console.log(parseMcpManifest(await Bun.file("../../marketplace/abilities/<name>/mcp.toml").text(), "<name>"))'
    ```
+
 2. Format and lint: `bun scripts/tool.ts tombi format marketplace/abilities/<name>/mcp.toml && bun scripts/tool.ts tombi lint marketplace/abilities/<name>/mcp.toml`
 3. Rerun `list-tools.ts` if you haven't since the last edit, to confirm every name in `tools` exists.
 
 ## 6. Report
 
 Show the final file, then say:
+
 - **Tools**: where the names came from (live listing or docs), and which you left out and why.
 - **Cloud (stdio)**: whether the sandbox image (`apps/sandbox/Dockerfile`, which has node/npx, bun/bunx and uv/uvx) can run the command.
   - A server that needs more (a browser, a binary, docker) works only locally until the sandbox gets it, and `apps/sandbox/overrides.json` may need a pinned entry like `chrome-devtools`'s.

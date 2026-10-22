@@ -9,6 +9,7 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 ## Project Overview
 
 Kaja is a TypeScript monorepo built with Bun:
+
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Images**: never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)`, nasi's `ObjectStore` under a per-session prefix: API Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, TUI plain files in `files/` beside the SQLite file; only the normalised copy is kept, with its description as `<id>.json`, and opening an image opens that copy). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal

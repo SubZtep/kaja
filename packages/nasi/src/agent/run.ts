@@ -257,8 +257,7 @@ async function* streamRound(
     for await (const chunk of stream) {
       noteChunk(meta, chunk)
       const delta = chunk.choices[0]?.delta as
-        | { reasoning_content?: string; reasoning?: string; content?: string }
-        | undefined
+        { reasoning_content?: string; reasoning?: string; content?: string } | undefined
       const reasoning = delta?.reasoning_content ?? delta?.reasoning
       if (reasoning) {
         thinking += reasoning

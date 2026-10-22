@@ -26,8 +26,7 @@ const STDERR_LINES = 20
 
 type Reply = { result?: unknown; error?: { code: number; message: string; data?: unknown } }
 type Pending =
-  | { session: WebStandardStreamableHTTPServerTransport; id: RequestId }
-  | { resolve: (reply: Reply) => void }
+  { session: WebStandardStreamableHTTPServerTransport; id: RequestId } | { resolve: (reply: Reply) => void }
 
 /**
  * One running stdio MCP server shared by any number of Streamable HTTP sessions (a new one each turn), relaying raw

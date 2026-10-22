@@ -485,10 +485,12 @@ export function createSqliteStore(dbPath: string): NasiStore {
       const id = sessionIdOf(data.session)
       const write = await storeInline(id, data)
       db.transaction(() => {
-        db.query(`
+        db.query(
+          `
           INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner)
           VALUES ($id, $createdAt, $updatedAt, $persona, $model, $title, $owner)
-        `).run({
+        `
+        ).run({
           $id: id,
           $createdAt: now,
           $updatedAt: now,
@@ -558,13 +560,15 @@ export function createSqliteStore(dbPath: string): NasiStore {
     loadPromptHistory(limit = 100) {
       return Promise.try(() => {
         const rows = db
-          .query(`
+          .query(
+            `
             SELECT e.payload ->> 'text' AS text
             FROM session_events AS e JOIN sessions AS s ON s.id = e.sessionId
             WHERE e.type = 'user'
             ORDER BY s.updatedAt DESC, s.id DESC, e.seq DESC
             LIMIT $limit
-          `)
+          `
+          )
           .all({ $limit: limit }) as { text: unknown }[]
         const prompts: string[] = []
         for (const row of rows) {

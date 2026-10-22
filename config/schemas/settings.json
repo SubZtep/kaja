@@ -91,10 +91,7 @@
           },
           "additionalProperties": {
             "type": "string",
-            "enum": [
-              "computer",
-              "sandbox"
-            ]
+            "enum": ["computer", "sandbox"]
           }
         }
       }
@@ -110,11 +107,7 @@
         "toolDisplay": {
           "description": "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header (default: minimal)",
           "type": "string",
-          "enum": [
-            "minimal",
-            "verbose",
-            "corner"
-          ]
+          "enum": ["minimal", "verbose", "corner"]
         },
         "codePreviewLines": {
           "description": "Lines of a code block or approval command shown before it is cut short (default: 5)",
@@ -133,39 +126,22 @@
         "locale": {
           "description": "Language for the chat and application",
           "type": "string",
-          "enum": [
-            "en-GB",
-            "en-US",
-            "hu-HU",
-            "nan-TW",
-            "zh-TW"
-          ]
+          "enum": ["en-GB", "en-US", "hu-HU", "nan-TW", "zh-TW"]
         },
         "mode": {
           "description": "Which backend `kaja` starts: the cloud API, or the local agent against your own provider",
           "type": "string",
-          "enum": [
-            "cloud",
-            "local"
-          ]
+          "enum": ["cloud", "local"]
         },
         "hotkeyModifier": {
           "description": "Modifier key for the help/persona hotkeys (default: alt)",
           "type": "string",
-          "enum": [
-            "alt",
-            "ctrl"
-          ]
+          "enum": ["alt", "ctrl"]
         },
         "theme": {
           "description": "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)",
           "type": "string",
-          "enum": [
-            "auto",
-            "dark",
-            "light",
-            "terminal"
-          ]
+          "enum": ["auto", "dark", "light", "terminal"]
         },
         "yolo": {
           "description": "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)",

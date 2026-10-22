@@ -32,7 +32,11 @@ Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (session
 
 ```ts
 // Hosted (API, widget): load a session, run one turn, save it
-const nasi = await Nasi.open({ store, chat: { client, model }, includeLocalTools: false })
+const nasi = await Nasi.open({
+  store,
+  chat: { client, model },
+  includeLocalTools: false
+})
 const response = await nasi.turnBuffered({ message: "Hello" })
 
 // In-process (local CLI): you own persistence
@@ -47,6 +51,7 @@ for await (const event of run(agent, prompt, createSession(), owner)) {
 ## Stores and model client
 
 `Nasi.open({ store })` takes a `NasiStore`. Nasi never opens a database itself.
+
 - CLI: sqlite via `createSqliteStore(path)` (`apps/tui/lib/store/sqlite.ts`)
 - API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
 - Tests: `createMemoryStore()`

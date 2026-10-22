@@ -388,9 +388,11 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
          ORDER BY answered_at ASC`,
         [userId, topic, ownerKey(owner), version]
       )
-      return result.rows.map(
-        (row): DatasetAnswer => ({ field: row.field, value: row.value, answeredAt: iso(row.answeredAt) })
-      )
+      return result.rows.map((row): DatasetAnswer => ({
+        field: row.field,
+        value: row.value,
+        answeredAt: iso(row.answeredAt)
+      }))
     },
 
     async saveDatasetAnswer(topic, owner, version, field, value) {

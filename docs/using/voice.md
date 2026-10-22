@@ -10,7 +10,7 @@ icon: 🎙️
 # Voice & language
 
 > Voice is a work in progress 🐞 Expect rough edges.
-{: .warning }
+> {: .warning }
 
 ## Voice
 
@@ -58,13 +58,13 @@ Then `Ctrl+T` toggles dictation while you type, and `preferences.voice = true` r
 
 The interface and the assistant's replies follow `preferences.locale`:
 
-| Code | Language |
-| --- | --- |
-| `en-GB` | British English |
-| `en-US` | American English |
-| `hu-HU` | Magyar |
+| Code     | Language                 |
+| -------- | ------------------------ |
+| `en-GB`  | British English          |
+| `en-US`  | American English         |
+| `hu-HU`  | Magyar                   |
 | `nan-TW` | 臺語 (Taiwanese Hokkien) |
-| `zh-TW` | 繁體中文 |
+| `zh-TW`  | 繁體中文                 |
 
 The wizard asks first. With no saved value, your system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`),
 and anything unsupported becomes British English. In cloud mode your account's language is used, and the

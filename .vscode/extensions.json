@@ -7,8 +7,5 @@
     "redhat.vscode-yaml",
     "tombi-toml.tombi"
   ],
-  "unwantedRecommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode"
-  ]
+  "unwantedRecommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
 }

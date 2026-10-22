@@ -1,5 +1,4 @@
 ---
-
 name: translate
 description: Translate the untranslated "[<locale>] lorem ipsum" placeholders in every non-en-GB locale file. Only when the user runs /translate.
 argument-hint: "[locale...]"
@@ -8,6 +7,7 @@ allowed-tools: Bash(bun sync:locales --todo), Bash(bun sync:locales --apply *), 
 ---
 
 Fill in the placeholders that `bun sync:locales` leaves in the non-en-GB locale files. Never read or edit those files directly; go only through the script.
+
 1. Run `bun sync:locales --todo` and write its output to `todo.json` in your scratchpad directory. It is a JSON array of `{ file, key, english, nearby }`, one entry per untranslated key and language; the locale is the file name (`apps/tui/locales/hu-HU.toml` → hu-HU). `nearby` holds already-translated keys from the same section, with their English and translation. If arguments were given ($ARGUMENTS), handle only those locales. If the array is empty, say so and stop.
 2. Spawn the `translate-context` agent with the todo file's path and a `notes.json` path next to it. It returns notes on where each key shows up in the UI, its space limits and what its `{params}` hold. Read the notes file.
 3. Translate each `english` into its file's language, using the key's note and its `nearby` translations. Language notes: en-US is American English (US spelling and vocabulary; otherwise keep the en-GB wording), hu-HU is Hungarian (informal "te" form), nan-TW is Taiwanese Hokkien written in Han-ji, zh-TW is Traditional Chinese (Taiwan); infer any other from its code.

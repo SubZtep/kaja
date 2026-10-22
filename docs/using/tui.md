@@ -58,29 +58,29 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 
 ### Sending and editing
 
-| Key | Action |
-|---|---|
-| `Enter` | Send the prompt |
-| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | New line |
-| `←` / `→` | Move one character |
-| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word |
-| `Home` / `End` | Start/end of the line |
-| `Backspace` / `Delete` | Delete before/after the cursor |
-| `↑` / `↓` | Previous/next prompt from history (on the first/last line), otherwise move between lines |
-| `Ctrl+T` | Toggle mic [dictation](/using/voice) |
-| `Esc` | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
-| `Ctrl+C` | Interrupt / exit |
+| Key                                                    | Action                                                                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter`                                                | Send the prompt                                                                                                                       |
+| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | New line                                                                                                                              |
+| `←` / `→`                                              | Move one character                                                                                                                    |
+| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`)                  | Move one word                                                                                                                         |
+| `Home` / `End`                                         | Start/end of the line                                                                                                                 |
+| `Backspace` / `Delete`                                 | Delete before/after the cursor                                                                                                        |
+| `↑` / `↓`                                              | Previous/next prompt from history (on the first/last line), otherwise move between lines                                              |
+| `Ctrl+T`                                               | Toggle mic [dictation](/using/voice)                                                                                                  |
+| `Esc`                                                  | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
+| `Ctrl+C`                                               | Interrupt / exit                                                                                                                      |
 
 Prompt history spans all past sessions, newest first.
 
 ### Scrolling
 
-| Key | Action |
-|---|---|
-| `PageUp` / `PageDown` | One page |
-| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | 3 lines |
-| `Ctrl+Home` | Top |
-| `Ctrl+End` | Bottom, and follow new output again |
+| Key                              | Action                              |
+| -------------------------------- | ----------------------------------- |
+| `PageUp` / `PageDown`            | One page                            |
+| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | 3 lines                             |
+| `Ctrl+Home`                      | Top                                 |
+| `Ctrl+End`                       | Bottom, and follow new output again |
 
 ### Key bar
 
@@ -88,11 +88,11 @@ Every entry but Cancel and Decline is also a button you can click, handy when yo
 the hotkey. Quit needs the same double press while something runs. Expand shows only while some code on
 screen is longer than `codePreviewLines`.
 
-| Key | Action |
-|---|---|
-| `<modifier>+L` | Open these docs in your browser |
-| `<modifier>+P` | Open the persona picker (hidden while a turn runs) |
-| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
+| Key            | Action                                                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `<modifier>+L` | Open these docs in your browser                                                                                                  |
+| `<modifier>+P` | Open the persona picker (hidden while a turn runs)                                                                               |
+| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                                                               |
 | `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in

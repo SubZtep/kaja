@@ -77,12 +77,12 @@ Kaja's API keys. Every persona in the catalog is available, starting with the ke
 
 ## Types
 
-| Type | UI |
-| --- | --- |
-| `chat` | a normal chat bubble and panel |
-| `barkochba` | the Twenty Questions game |
+| Type        | UI                             |
+| ----------- | ------------------------------ |
+| `chat`      | a normal chat bubble and panel |
+| `barkochba` | the Twenty Questions game      |
 
-The persona decides *how the model behaves*, the type decides *what the page shows*, and you can mix them.
+The persona decides _how the model behaves_, the type decides _what the page shows_, and you can mix them.
 kaja.io runs the `barkochba` widget on its landing page.
 
 ## Limits and safety

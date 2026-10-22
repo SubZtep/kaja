@@ -6,9 +6,8 @@ import { write } from "bun"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
 
 const { setConfigDirOverride } = await import("../../../lib/config/config")
-const { loadModelsFile, resolveActiveModel, findModelById, resolveModels, getModelsPath } = await import(
-  "../../../lib/models/models"
-)
+const { loadModelsFile, resolveActiveModel, findModelById, resolveModels, getModelsPath } =
+  await import("../../../lib/models/models")
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
 type ResolvedModelsFile = Awaited<ReturnType<typeof loadModelsFile>>
 

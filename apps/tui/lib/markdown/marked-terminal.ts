@@ -609,7 +609,7 @@ function identity(str: string) {
 function compose(...funcs: ((...args: any[]) => any)[]) {
   return function (this: any, ...args: any[]) {
     let result: any = args
-    for (let i = funcs.length; i-- > 0; ) {
+    for (let i = funcs.length; i-- > 0;) {
       result = [funcs[i]!.apply(this, result)]
     }
     return result[0]

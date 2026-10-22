@@ -7,6 +7,7 @@ Most of these run for you from git hooks (`.lefthook.toml`).
 ## Generators
 
 Never hand-edit their output. Change the input, then regenerate.
+
 - **`env.ts`** writes each app's `.env.example` from `packages/schema/env/`. `bun generate:env` writes, `bun check:env` fails on drift (and on a `compose.yaml` key no schema knows). The TUI's is hand-written.
 - **`env-types.ts`** writes each workspace's ambient `Bun.Env` typing from the same schemas: `bun generate:env-types`.
 - **`models.ts`** writes `config/models.*.toml` from `config/catalog.toml`: `bun generate:models`, and `bun check:models` fails on drift (CI and the catalog test).
@@ -19,6 +20,7 @@ Never hand-edit their output. Change the input, then regenerate.
   bun sync:locales --todo    # list placeholders still to translate, as JSON
   bun sync:locales --apply f # write translations back from that JSON (the /translate skill drives these two)
   ```
+
 - **`translate_push.sh`** is the last pre-push job. When `check:locales` fails it runs `claude -p "/translate"`, commits and pushes the translations itself, and exits 1 so the original, now stale push stops.
 
 `lib/env-schema.ts` is a shared helper for the two env generators, not a script.

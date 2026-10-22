@@ -35,9 +35,8 @@ provider = "default"
 const { invalidateConfigCache } = await import("../../../lib/config/config")
 const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../lib/agent/agents")
 const { peekStore } = await import("../../../lib/memory/store")
-const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } = await import(
-  "../../../lib/session/store"
-)
+const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } =
+  await import("../../../lib/session/store")
 const { telegramOwner } = await import("@kaja/schema/store")
 const { createTelegramDriver } = await import("../../../lib/telegram/driver")
 const { t } = await import("../../../lib/i18n")

@@ -65,6 +65,7 @@ Zod schemas for this app's config/store/domain types live in `@kaja/schema/confi
 ### Shared monorepo docs
 
 Default config **templates** (setup wizard) live at **repo root** `config/`:
+
 - `config/settings.toml`
 - `config/models.default.toml` (what `kaja config fetch --offline` writes and the API seed loads), `models.ollama.toml`, `models.llama.toml`, `models.xai.toml`, `models.openrouter.toml` — generated from `config/catalog.toml` by `bun generate:models`; never edit by hand
 

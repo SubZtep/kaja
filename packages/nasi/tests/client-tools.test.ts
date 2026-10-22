@@ -74,7 +74,9 @@ test("a round's client calls pause the turn together, and their results resume i
   // A later turn opens its own instance, as the API does. The results' images are sent from what was just stored,
   // never fetched back from the store
   const get = spyOn(objects, "get")
-  const second = await (await open(script.slice(1), sent, { store })).turnBuffered({
+  const second = await (
+    await open(script.slice(1), sent, { store })
+  ).turnBuffered({
     session: first.session,
     toolResults: [
       { id: "c1", text: "alpha" },
@@ -98,7 +100,9 @@ test("a message instead of results answers the waiting calls as gone, then goes 
   const store = createMemoryStore()
   const script = [{ content: null, tool_calls: [call("c1", "read_file", { path: "/a" })] }, { content: "Never mind." }]
   const first = await (await open(script, sent, { store })).turnBuffered({ message: "read it" })
-  const second = await (await open(script.slice(1), sent, { store })).turnBuffered({
+  const second = await (
+    await open(script.slice(1), sent, { store })
+  ).turnBuffered({
     session: first.session,
     message: "forget it"
   })

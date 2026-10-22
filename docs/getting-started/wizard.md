@@ -23,12 +23,12 @@ second run, the wizard starts from your previous answers.
 
 ## Moving around
 
-| Key | What it does |
-| --- | --- |
-| <kbd>↑</kbd> <kbd>↓</kbd> | Move through a list |
-| <kbd>Space</kbd> | Tick or untick an item, in lists where you can pick several |
-| <kbd>Enter</kbd> | Confirm and go on |
-| <kbd>Esc</kbd> | Cancel the wizard from a list. Nothing is saved |
+| Key                       | What it does                                                |
+| ------------------------- | ----------------------------------------------------------- |
+| <kbd>↑</kbd> <kbd>↓</kbd> | Move through a list                                         |
+| <kbd>Space</kbd>          | Tick or untick an item, in lists where you can pick several |
+| <kbd>Enter</kbd>          | Confirm and go on                                           |
+| <kbd>Esc</kbd>            | Cancel the wizard from a list. Nothing is saved             |
 
 In a field you type into, <kbd>Enter</kbd> on an empty value skips it. An address keeps its usual default.
 Your answers stay on screen with a ✓, so you can see what you've chosen so far.
@@ -46,6 +46,7 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
      set them up.
 
    Starting with `kaja --cloud` or `kaja --local` answers this for you.
+
 4. **Providers.** Tick every provider you can use (at least one):
    - **Fireworks**, **xAI** and **OpenRouter** run online, so you give an API key.
    - **Ollama**, **llama.cpp** and **Speaches** run on your machine, so you confirm where the server
@@ -107,17 +108,17 @@ The first time, the chat starts right after. After `kaja config wizard`, you're 
 
 Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 
-| You answer | It becomes | In |
-| --- | --- | --- |
-| Language | `[preferences] locale` | [`settings.toml`](/configuration/config) |
-| Colours | `[preferences] theme` | `settings.toml` |
-| How to run Kaja | `[preferences] mode` | `settings.toml` |
-| Providers, custom provider | `[providers.<name>]` tables and their models | [`models.toml`](/configuration/models) |
-| Which model, per task | the picked model comes first among the `[models.<id>]` listing that task; every model offered stays | `models.toml` |
-| A server address | `[providers.<name>] base_url` | `models.toml` |
-| Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
-| A provider's API key | `[providers.<name>] api_key` | [`secrets.toml`](/configuration/secrets) |
-| Telegram bot token | `[telegram] bot_token` | `secrets.toml` |
+| You answer                 | It becomes                                                                                          | In                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Language                   | `[preferences] locale`                                                                              | [`settings.toml`](/configuration/config) |
+| Colours                    | `[preferences] theme`                                                                               | `settings.toml`                          |
+| How to run Kaja            | `[preferences] mode`                                                                                | `settings.toml`                          |
+| Providers, custom provider | `[providers.<name>]` tables and their models                                                        | [`models.toml`](/configuration/models)   |
+| Which model, per task      | the picked model comes first among the `[models.<id>]` listing that task; every model offered stays | `models.toml`                            |
+| A server address           | `[providers.<name>] base_url`                                                                       | `models.toml`                            |
+| Speaches address           | `[stt] speachesUrl`, `[tts] speachesUrl`                                                            | `settings.toml`                          |
+| A provider's API key       | `[providers.<name>] api_key`                                                                        | [`secrets.toml`](/configuration/secrets) |
+| Telegram bot token         | `[telegram] bot_token`                                                                              | `secrets.toml`                           |
 
 ## Running it again
 

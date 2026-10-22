@@ -25,9 +25,7 @@
               "const": "none"
             }
           },
-          "required": [
-            "type"
-          ]
+          "required": ["type"]
         },
         {
           "type": "object",
@@ -38,10 +36,7 @@
             },
             "in": {
               "type": "string",
-              "enum": [
-                "header",
-                "query"
-              ]
+              "enum": ["header", "query"]
             },
             "name": {
               "type": "string",
@@ -58,11 +53,7 @@
               "type": "boolean"
             }
           },
-          "required": [
-            "type",
-            "in",
-            "name"
-          ]
+          "required": ["type", "in", "name"]
         }
       ]
     },
@@ -84,13 +75,7 @@
         "method": {
           "default": "GET",
           "type": "string",
-          "enum": [
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE"
-          ]
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
         },
         "path": {
           "type": "string",
@@ -98,9 +83,7 @@
           "pattern": "^\\/.*"
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     },
     "tools": {
       "minItems": 1,
@@ -120,13 +103,7 @@
           "method": {
             "default": "GET",
             "type": "string",
-            "enum": [
-              "GET",
-              "POST",
-              "PUT",
-              "PATCH",
-              "DELETE"
-            ]
+            "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
           },
           "path": {
             "type": "string",
@@ -166,23 +143,13 @@
                 }
               }
             },
-            "required": [
-              "type"
-            ],
+            "required": ["type"],
             "additionalProperties": {}
           }
         },
-        "required": [
-          "name",
-          "description",
-          "path"
-        ]
+        "required": ["name", "description", "path"]
       }
     }
   },
-  "required": [
-    "description",
-    "baseUrl",
-    "tools"
-  ]
+  "required": ["description", "baseUrl", "tools"]
 }

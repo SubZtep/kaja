@@ -51,9 +51,8 @@ export const editImageTool = tool({
       // Bun.Image runs its operations in a fixed order, so each step is its own pass to keep the model's order
       for (const [i, s] of args.steps.entries()) {
         const image = await applyStep(data, s)
-        data = await (i === args.steps.length - 1 && mimeType === "image/jpeg"
-          ? image.jpeg({ quality: 90 })
-          : image.png()
+        data = await (
+          i === args.steps.length - 1 && mimeType === "image/jpeg" ? image.jpeg({ quality: 90 }) : image.png()
         ).bytes()
       }
     } catch (error) {

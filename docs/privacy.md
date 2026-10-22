@@ -18,7 +18,7 @@ Contact: subztep@gmail.com
 
 Kaja can run two ways, and the difference matters here.
 
-**Local mode** (`kaja --local`) runs entirely on your own computer. Your conversations, memory notes, and dataset answers are stored in a SQLite file in your home directory; your configuration is plain text files there too. None of it reaches Kaja's servers. If you point Kaja at a local model, nothing leaves your machine at all; if you point it at a third-party LLM provider, or enable an ability that calls an outside service, what is sent there falls under *their* privacy policy, not this one. **This policy does not apply to local mode**, apart from the account sections if you also have an account.
+**Local mode** (`kaja --local`) runs entirely on your own computer. Your conversations, memory notes, and dataset answers are stored in a SQLite file in your home directory; your configuration is plain text files there too. None of it reaches Kaja's servers. If you point Kaja at a local model, nothing leaves your machine at all; if you point it at a third-party LLM provider, or enable an ability that calls an outside service, what is sent there falls under _their_ privacy policy, not this one. **This policy does not apply to local mode**, apart from the account sections if you also have an account.
 
 **Cloud mode** (the default `kaja`, the website, the Kaja Telegram bot, and the embeddable widget) runs the agent on Kaja's servers against an account. That is what this policy covers.
 
@@ -49,7 +49,7 @@ Sandboxes can be run by Kaja, by you, or by other people who share theirs. By de
 
 If you **run a sandbox**, Kaja stores, for as long as it's registered: its public IP address and the location our geolocation service ([ip2geo](https://github.com/SubZtep/geo-service), run by Kaja on MaxMind GeoLite2 data) finds for it (country, city, coordinates), when it was online, the name you gave it, and its hardware and load (CPU, memory, how many tools it's running). Its city and country are shown to Kaja's administrators. A sandbox run without your key is anonymous, and its record is deleted a week after it was last online.
 
-When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against *that site owner's* Kaja account, not yours. The site owner is the controller of that data and Kaja processes it on their behalf (see [Widgets](#widgets)). A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
+When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against _that site owner's_ Kaja account, not yours. The site owner is the controller of that data and Kaja processes it on their behalf (see [Widgets](#widgets)). A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
 
 IP address handling details:
 
@@ -71,16 +71,16 @@ Kaja is not a medical service, and its replies are not medical advice.
 
 ## How We Use Data, And Our Legal Basis
 
-| Purpose | Data | Legal basis |
-|---|---|---|
-| Create and run your account, sign you in, send account emails | account, authentication, and email data | contract (Article 6(1)(b)) |
-| Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers | contract (Article 6(1)(b)) |
-| Health information you choose to share | conversation content and memory notes about your health | explicit consent (Article 9(2)(a)) |
-| Fill in your name and picture from your public Gravatar profile when you sign up with your email address | a hash of your email address; the profile's display name and picture | legitimate interests (Article 6(1)(f)) — so you don't have to type them; you can change or remove them at any time |
-| Link the Telegram bot to your account | Telegram user id | contract (Article 6(1)(b)) |
-| Keep the service secure: rate limiting, abuse prevention, bot checks on the sign-in and sign-up forms, error monitoring, debugging | technical data, IP addresses, browser signals, error logs | legitimate interests (Article 6(1)(f)) — running a service that works and isn't abused |
-| Keep a record of your consent | consent timestamp | legal obligation (Article 6(1)(c)) — to be able to show consent was given |
-| Respond to legal requests and exercise legal claims | whatever the request concerns | legal obligation (Article 6(1)(c)) or legitimate interests (Article 6(1)(f)) |
+| Purpose                                                                                                                            | Data                                                                 | Legal basis                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Create and run your account, sign you in, send account emails                                                                      | account, authentication, and email data                              | contract (Article 6(1)(b))                                                                                         |
+| Answer you in cloud chat, remember what you asked it to, run the abilities your personas use                                       | conversation content, memory notes, dataset answers                  | contract (Article 6(1)(b))                                                                                         |
+| Health information you choose to share                                                                                             | conversation content and memory notes about your health              | explicit consent (Article 9(2)(a))                                                                                 |
+| Fill in your name and picture from your public Gravatar profile when you sign up with your email address                           | a hash of your email address; the profile's display name and picture | legitimate interests (Article 6(1)(f)) — so you don't have to type them; you can change or remove them at any time |
+| Link the Telegram bot to your account                                                                                              | Telegram user id                                                     | contract (Article 6(1)(b))                                                                                         |
+| Keep the service secure: rate limiting, abuse prevention, bot checks on the sign-in and sign-up forms, error monitoring, debugging | technical data, IP addresses, browser signals, error logs            | legitimate interests (Article 6(1)(f)) — running a service that works and isn't abused                             |
+| Keep a record of your consent                                                                                                      | consent timestamp                                                    | legal obligation (Article 6(1)(c)) — to be able to show consent was given                                          |
+| Respond to legal requests and exercise legal claims                                                                                | whatever the request concerns                                        | legal obligation (Article 6(1)(c)) or legitimate interests (Article 6(1)(f))                                       |
 
 Kaja does not use your data for advertising, does not sell it, and does not make decisions about you by automated means that have legal or similarly significant effects.
 
@@ -98,17 +98,16 @@ Kaja does not use advertising or analytics cookies. If any non-essential cookies
 
 Personal data is processed by these service providers, on Kaja's behalf, only as needed to run the service:
 
-| Provider | What they receive | Where |
-|---|---|---|
-| Hetzner Online GmbH | everything stored in cloud mode (hosting, database and image storage) | Germany |
-| Brevo | your email address and the account emails sent to you | France |
-| Cloudflare | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in and sign-up forms and the Google sign-in buttons check you're not a bot | United States and EU |
-| Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
-| Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
-| xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
-| Brave | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting | United States |
-| Webshare | the addresses Kaja's own sandbox connects to for you (web pages the assistant fetches, the services behind HTTP tools and MCP servers, pages its browser opens); those connections leave through this proxy rather than directly from Kaja's servers, and it can read only unencrypted (`http://`) ones | United States |
-
+| Provider            | What they receive                                                                                                                                                                                                                                                                                                                                                                   | Where                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| Hetzner Online GmbH | everything stored in cloud mode (hosting, database and image storage)                                                                                                                                                                                                                                                                                                               | Germany              |
+| Brevo               | your email address and the account emails sent to you                                                                                                                                                                                                                                                                                                                               | France               |
+| Cloudflare          | your IP address and browser signals (such as user agent and TLS fingerprint) while the sign-in and sign-up forms and the Google sign-in buttons check you're not a bot                                                                                                                                                                                                              | United States and EU |
+| Sentry              | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States        |
+| Fireworks AI        | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training                                                                                                                                                                                                                                                                         | United States        |
+| xAI                 | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training                                                                                                                                                                                                                                                   | United States        |
+| Brave               | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting                                                                                                                                                                                                                                                              | United States        |
+| Webshare            | the addresses Kaja's own sandbox connects to for you (web pages the assistant fetches, the services behind HTTP tools and MCP servers, pages its browser opens); those connections leave through this proxy rather than directly from Kaja's servers, and it can read only unencrypted (`http://`) ones                                                                             | United States        |
 
 Some conversations are answered by models Kaja runs itself, on its own servers in the EU; those don't leave Kaja's infrastructure.
 

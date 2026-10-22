@@ -12,13 +12,13 @@ what matters – until the job is done.
 
 There are two [ways to run](/getting-started/modes) it:
 
-| | **Cloud** | **Local** |
-|---|---|---|
-| Agent loop runs | On `api.kaja.io` | On your machine |
-| Needs an account | Yes (device login) | No |
-| Needs your own LLM | No | Yes |
-| Sessions & memory stored | Postgres, server-side | SQLite, in your home dir |
-| Your files, shell and own MCP servers | No | Yes |
+|                                       | **Cloud**             | **Local**                |
+| ------------------------------------- | --------------------- | ------------------------ |
+| Agent loop runs                       | On `api.kaja.io`      | On your machine          |
+| Needs an account                      | Yes (device login)    | No                       |
+| Needs your own LLM                    | No                    | Yes                      |
+| Sessions & memory stored              | Postgres, server-side | SQLite, in your home dir |
+| Your files, shell and own MCP servers | No                    | Yes                      |
 
 ## What’s in the box
 
@@ -50,5 +50,6 @@ Next:
 
 [Installation](/getting-started/installation){: .btn .btn-green .fs-5 }
 
-[^1]: Agent: the thing that acts  
+[^1]: Agent: the thing that acts
+
 [^2]: Harness: the system that lets the agent act reliably
