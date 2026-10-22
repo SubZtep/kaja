@@ -12,7 +12,10 @@ declare module "bun" {
     DATABASE_URL?: string
     /** Better Auth signing secret */
     BETTER_AUTH_SECRET?: string
-    /** Shared with the web's SSR_SECRET; the web's server-side calls send it with the visitor's IP so rate limits key on the visitor, not the web host */
+    /**
+     * Shared with the web's SSR_SECRET; the web's server-side calls send it with the visitor's IP so rate limits key on
+     * the visitor, not the web host
+     */
     SSR_SECRET?: string
     /** Public base URL of this API, used by Better Auth */
     BETTER_AUTH_URL?: string
@@ -26,7 +29,10 @@ declare module "bun" {
     GOOGLE_CLIENT_SECRET?: string
     /** Cloudflare Turnstile secret key; when set, emailing a sign-in code and Google sign-in need a captcha token */
     TURNSTILE_SECRET?: string
-    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's test secrets); never localhost in production */
+    /**
+     * Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's
+     * test secrets); never localhost in production
+     */
     TURNSTILE_HOSTNAMES?: string
     /** SMTP server hostname */
     SMTP_HOST?: string
@@ -40,7 +46,10 @@ declare module "bun" {
     SMTP_PASS?: string
     /** Set by the CI runner; skips SMTP verification on boot when present */
     CI?: string
-    /** Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes (generate with: openssl rand -hex 32) */
+    /**
+     * Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes (generate with:
+     * openssl rand -hex 32)
+     */
     CONFIG_API_TOKEN?: string
     /** Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile */
     BUN_TEST?: string
@@ -68,13 +77,19 @@ declare module "bun" {
     WIDGET_KEY_RATE_LIMIT_MAX?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
-    /** Encrypts the admins' server-wide ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */
+    /**
+     * Encrypts the admins' server-wide ability API keys (AES-256-GCM); required in production, elsewhere unset turns
+     * key entry off and hides tools that need one
+     */
     USER_SECRET_KEY?: string
     /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string
     /** Branch (or tag) of MARKETPLACE_REPO to sync */
     MARKETPLACE_REF?: string
-    /** Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user falls back to */
+    /**
+     * Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user
+     * falls back to
+     */
     SANDBOX_SYSTEM_KEY?: string
     /** IP geolocation service (github.com/SubZtep/geo-service) a sandbox's public IP is looked up in when it connects */
     GEO_API_URL?: string
@@ -86,7 +101,10 @@ declare module "bun" {
     STORAGE_REGION?: string
     /** S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI) */
     STORAGE_ENDPOINT?: string
-    /** STORAGE_ENDPOINT as clients reach it, for image URLs; only when it differs (the compose API: storage:9000 vs localhost:9000) */
+    /**
+     * STORAGE_ENDPOINT as clients reach it, for image URLs; only when it differs (the compose API: storage:9000 vs
+     * localhost:9000)
+     */
     STORAGE_PUBLIC_ENDPOINT?: string
     /** Object storage access key */
     STORAGE_ACCESS_KEY_ID?: string

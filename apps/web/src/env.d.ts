@@ -2,19 +2,34 @@
 
 declare module "bun" {
   interface Env {
-    /** Server-to-server API base URL — the container-network address in compose (e.g. http://api:3001), the public API URL on Disco; takes precedence over VITE_API_URL when both are set */
+    /**
+     * Server-to-server API base URL — the container-network address in compose (e.g. http://api:3001), the public API
+     * URL on Disco; takes precedence over VITE_API_URL when both are set
+     */
     API_URL?: string
-    /** Shared with the API's SSR_SECRET; server-side session checks send it with the visitor's IP so the API rate-limits per visitor instead of per web host */
+    /**
+     * Shared with the API's SSR_SECRET; server-side session checks send it with the visitor's IP so the API rate-limits
+     * per visitor instead of per web host
+     */
     SSR_SECRET?: string
     /** Browser-facing API base URL, baked into the client bundle */
     VITE_API_URL?: string
     /** Public web app URL */
     VITE_APP_URL?: string
-    /** Widget key pinned to the barkochba persona, used by the landing page's playable hero demo. Intentionally public — the Origin allowlist is the real gate, not key secrecy. */
+    /**
+     * Widget key pinned to the barkochba persona, used by the landing page's playable hero demo. Intentionally public —
+     * the Origin allowlist is the real gate, not key secrecy.
+     */
     VITE_WIDGET_BARKOCHBA_KEY?: string
-    /** Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script. */
+    /**
+     * Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget
+     * script.
+     */
     VITE_WIDGET_CHAT_KEY?: string
-    /** Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's TURNSTILE_SECRET */
+    /**
+     * Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's
+     * TURNSTILE_SECRET
+     */
     VITE_TURNSTILE_SITE_KEY?: string
     /** Sentry auth token used by the build-time Vite plugin to upload source maps */
     SENTRY_AUTH_TOKEN?: string
