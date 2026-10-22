@@ -11,12 +11,12 @@ import { MonsterMate } from "./monster"
 /**
  * Live top bar: the current persona on the left; on the right, in-flight tool activity or the active model name, the
  * prompt tokens when known, then a red YOLO badge while every approval is skipped and a badge for where the agent runs
- * (local or cloud, plus the `KAJA_PROFILE`). The right side's parts share the first row while they fit and wrap
- * onto the rows below otherwise, each flush right, so the model always keeps the top-right corner.
+ * (local or cloud, plus the `KAJA_PROFILE`). The right side's parts share the first row while they fit and wrap onto
+ * the rows below otherwise, each flush right, so the model always keeps the top-right corner.
  *
  * `width` must be the full terminal width, so the right side has a real track to lay out against. Every part truncates
- * to one line, so the header is never taller than three rows, one per part (an unbounded one overflows the
- * full-screen frame and garbles the redraw).
+ * to one line, so the header is never taller than three rows, one per part (an unbounded one overflows the full-screen
+ * frame and garbles the redraw).
  */
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
@@ -44,7 +44,7 @@ export function Header({
   mode: "local" | "cloud"
   /** `KAJA_PROFILE`, after the mode, e.g. "LOCAL·dev". */
   profile?: string
-  /** settings.toml's `yolo` is on: nothing asks for approval. */
+  /** Settings.toml's `yolo` is on: nothing asks for approval. */
   yolo?: boolean
   persona: string
   model: string

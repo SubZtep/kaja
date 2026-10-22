@@ -25,7 +25,10 @@ const host = `mcp-${tag}.test`
 const GOOD_KEY = `mcp-key-${tag}`
 const TEST_SECRET_KEY = Buffer.alloc(32, 9).toString("base64")
 
-/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and six the cloud must skip. */
+/**
+ * A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and six the cloud must
+ * skip.
+ */
 function marketplace(base: string) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {

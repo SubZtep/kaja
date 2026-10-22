@@ -16,7 +16,10 @@ import { TunnelServer } from "../src/tunnel"
 // Spawning bun children is slow on a busy machine, so every test that starts one gets room.
 const SPAWN_TIMEOUT_MS = 30_000
 
-/** Polls `check` until it holds, for up to `timeoutMs` (a busy machine takes its time), instead of sleeping a fixed guess. */
+/**
+ * Polls `check` until it holds, for up to `timeoutMs` (a busy machine takes its time), instead of sleeping a fixed
+ * guess.
+ */
 async function until(check: () => boolean | Promise<boolean>, timeoutMs = 10_000) {
   const deadline = Date.now() + timeoutMs
   while (!(await check())) {
@@ -49,7 +52,10 @@ afterAll(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
-/** A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over the socket. */
+/**
+ * A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over
+ * the socket.
+ */
 function sandbox(
   opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> & {
     send?: (request: Request) => Promise<Response>

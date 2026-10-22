@@ -2,7 +2,10 @@ import { existsSync } from "node:fs"
 import { extname } from "node:path"
 import { deepEquals, file, TOML, write } from "bun"
 
-/** First non-existent path among <name>.bak.<ext>, <name>.bak.2.<ext>, ... — the extension stays last so editors still highlight and validate the backup. */
+/**
+ * First non-existent path among <name>.bak.<ext>, <name>.bak.2.<ext>, ... — the extension stays last so editors still
+ * highlight and validate the backup.
+ */
 export async function nextBackupPath(path: string): Promise<string> {
   const ext = extname(path)
   const stem = path.slice(0, path.length - ext.length)

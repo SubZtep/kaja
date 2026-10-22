@@ -27,8 +27,8 @@ function backedUpPath(name: string, roots: RootFolder[], path: string, writes: b
 
 /**
  * `list_backups` and `restore_backup` over the copies Kaja makes in `backupDir` before a roots-taking MCP server writes
- * into a backed-up folder (`roots()` gives the active persona's folders). A restore backs the current file up first,
- * so it can be undone too.
+ * into a backed-up folder (`roots()` gives the active persona's folders). A restore backs the current file up first, so
+ * it can be undone too.
  */
 export function backupTools(backupDir: string, roots: () => RootFolder[]): Tool[] {
   const listTool = tool({

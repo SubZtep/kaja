@@ -16,14 +16,20 @@ export function personaAbilities(persona: Pick<Persona, "abilities">): Map<strin
   return new Map((persona.abilities ?? []).map(entry => [entryOf(entry).name, entryOf(entry)]))
 }
 
-/** How `persona` uses `skill`: its entry's `skill`, else the SKILL.md's sticky suggestion, else `load`; `off` when the persona doesn't list it. */
+/**
+ * How `persona` uses `skill`: its entry's `skill`, else the SKILL.md's sticky suggestion, else `load`; `off` when the
+ * persona doesn't list it.
+ */
 export function skillMode(skill: SkillSummary, persona: Pick<Persona, "abilities">): SkillMode {
   const entry = personaAbilities(persona).get(skill.name)
   if (!entry) return "off"
   return entry.skill ?? (skill.sticky ? "sticky" : "load")
 }
 
-/** Whether `persona` gets load_skill: it has a skill to load, or a sticky one whose instructions may point to its other files. */
+/**
+ * Whether `persona` gets load_skill: it has a skill to load, or a sticky one whose instructions may point to its other
+ * files.
+ */
 export function personaLoadsSkills(persona: Pick<Persona, "abilities">, skills: SkillSummary[]): boolean {
   return skills.some(skill => {
     const mode = skillMode(skill, persona)
@@ -31,14 +37,20 @@ export function personaLoadsSkills(persona: Pick<Persona, "abilities">, skills: 
   })
 }
 
-/** Builtins a persona with an `abilities` list gets only by listing them, under these names: they reach the web, cost per call, or only matter to a persona that works with images. */
+/**
+ * Builtins a persona with an `abilities` list gets only by listing them, under these names: they reach the web, cost
+ * per call, or only matter to a persona that works with images.
+ */
 export const OPT_IN_BUILTINS: Readonly<Record<string, string>> = {
   fetch_url: "fetch-url",
   generate_image: "generate-image",
   edit_image: "edit-image"
 }
 
-/** Whether `persona` gets the builtin tool `name`: every one without an `abilities` list, else an opt-in one only when listed. */
+/**
+ * Whether `persona` gets the builtin tool `name`: every one without an `abilities` list, else an opt-in one only when
+ * listed.
+ */
 export function personaGetsBuiltin(persona: Pick<Persona, "abilities">, name: string): boolean {
   const optIn = OPT_IN_BUILTINS[name]
   return optIn === undefined || persona.abilities === undefined || personaAbilities(persona).has(optIn)
@@ -51,8 +63,9 @@ export function abilityOfTool(tool: Tool): string | undefined {
 
 /**
  * The tools `persona` gets: every tool that isn't an ability's (the builtins, the opt-in ones only as
- * {@link personaGetsBuiltin} says), plus the tools of the abilities it lists, narrowed to an entry's `tools` when it sets them. `load_skill` comes along only when the persona needs it
- * (see {@link personaLoadsSkills}); `skills` says which skills that tool serves.
+ * {@link personaGetsBuiltin} says), plus the tools of the abilities it lists, narrowed to an entry's `tools` when it
+ * sets them. `load_skill` comes along only when the persona needs it (see {@link personaLoadsSkills}); `skills` says
+ * which skills that tool serves.
  */
 export function toolsForPersona(tools: Tool[], persona: Pick<Persona, "abilities">, skills: SkillSummary[]): Tool[] {
   const entries = personaAbilities(persona)

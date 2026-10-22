@@ -5,14 +5,13 @@ import { createStt, type Stt, type SttState } from "../lib/audio/stt"
 import { log } from "../lib/logger"
 
 /**
- * Dictation for the text input: while `listening`, spoken phrases are
- * transcribed (speaches realtime STT with server-side VAD) and delivered one
- * at a time through `onUtterance`. The mic capture and connection spin up
- * lazily on the first listen and are paused — not torn down — when listening
- * stops, so toggling back on is instant. Torn down for real on unmount.
+ * Dictation for the text input: while `listening`, spoken phrases are transcribed (speaches realtime STT with
+ * server-side VAD) and delivered one at a time through `onUtterance`. The mic capture and connection spin up lazily on
+ * the first listen and are paused — not torn down — when listening stops, so toggling back on is instant. Torn down for
+ * real on unmount.
  *
- * Returns the server's current {@link SttState} so the UI can show progress
- * (a slow model spends many seconds in "transcribing").
+ * Returns the server's current {@link SttState} so the UI can show progress (a slow model spends many seconds in
+ * "transcribing").
  */
 export function useDictation(
   listening: boolean,

@@ -15,7 +15,8 @@ export function Problem({ children }: Readonly<{ children: string }>) {
 /**
  * Asks for one typed answer: a key (`secret`, masked and never prefilled) or a plain value such as an address. The
  * trimmed answer goes through `validate`, and a refused one keeps the question open with the reason under it. With
- * `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for the caller to read.
+ * `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for the caller to
+ * read.
  */
 export function InputPrompt({
   title,
@@ -64,7 +65,10 @@ export function InputPrompt({
   )
 }
 
-/** A yes/no question with "no" first, so Enter and Esc both pick the safe answer — unless `defaultYes` says the safe answer is yes. */
+/**
+ * A yes/no question with "no" first, so Enter and Esc both pick the safe answer — unless `defaultYes` says the safe
+ * answer is yes.
+ */
 export function YesNoPrompt({
   title,
   yesLabel,

@@ -1,7 +1,10 @@
 import * as z from "zod"
 import { SkillNameSchema } from "./skill"
 
-/** Optional chat completion sampling overrides; unset means provider default. Shared with lib/agents.ts's Agent.sampling. */
+/**
+ * Optional chat completion sampling overrides; unset means provider default. Shared with lib/agents.ts's
+ * Agent.sampling.
+ */
 export const SamplingParamsSchema = z.object({
   /** Randomness of token selection, 0 (deterministic) to 2 (most random). */
   temperature: z.number().min(0).max(2).optional(),
@@ -34,7 +37,10 @@ const PersonaModelsSchema = z
   })
   .optional()
 
-/** How a persona uses an ability's skill: listed for load_skill (`load`), always in the system prompt (`sticky`), or left out (`off`). */
+/**
+ * How a persona uses an ability's skill: listed for load_skill (`load`), always in the system prompt (`sticky`), or
+ * left out (`off`).
+ */
 export const SkillModeSchema = z.enum(["load", "sticky", "off"])
 
 // One `roots` folder: a path (writable), or a table that can make it read-only or backed up.

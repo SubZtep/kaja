@@ -12,7 +12,10 @@ import {
 } from "@kaja/schema/api"
 import { reportError } from "./report"
 
-/** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a tool's outgoing request, a release of one, and the stats. */
+/**
+ * What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a tool's outgoing request, a release of
+ * one, and the stats.
+ */
 export type SandboxHandler = {
   /** `key`: a keyed server's key, which it starts with. */
   mcp: (user: string, ability: string, request: Request, key?: string) => Promise<Response>
@@ -165,7 +168,8 @@ export function connectUrl(apiUrl: string): string {
 
 /**
  * Keeps the sandbox connected to the API: says hello with `info`, keeps the id it's welcomed with in `stateDir`, sends
- * the load every minute, serves the API's requests, and reconnects (backing off up to a minute) whenever the socket drops.
+ * the load every minute, serves the API's requests, and reconnects (backing off up to a minute) whenever the socket
+ * drops.
  */
 export function connectTunnel(opts: {
   apiUrl: string

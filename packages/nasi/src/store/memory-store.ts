@@ -23,7 +23,10 @@ function datasetKey(topic: string, owner: string | null, version: number, field?
   return field !== undefined ? `${base}\0${field}` : base
 }
 
-/** In-memory store for tests and hosts that do not persist; `objects` holds the session images (in memory too by default). */
+/**
+ * In-memory store for tests and hosts that do not persist; `objects` holds the session images (in memory too by
+ * default).
+ */
 export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiStore {
   const objects = opts.objects ?? memoryObjects()
   const sessions = new Map<string, PersistedSession>()

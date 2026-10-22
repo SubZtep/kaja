@@ -6,7 +6,10 @@ import { useAppForm } from "../../lib/form"
 import { m } from "../../paraglide/messages.js"
 import { Button } from "./primitives/Button"
 
-/** An emailed code's step (signing in or up, changing the email): the code, a way back, and a resend when `resend` is given. */
+/**
+ * An emailed code's step (signing in or up, changing the email): the code, a way back, and a resend when `resend` is
+ * given.
+ */
 export function CodeForm({
   email,
   submit,

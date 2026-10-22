@@ -27,9 +27,9 @@ export function withTag(model: string): string {
 }
 
 /**
- * What this server already has, or undefined when nothing Ollama-shaped answers — a cloud provider,
- * llama.cpp (which serves the model it was started with and can't fetch another), or a server that
- * isn't running. Undefined means "don't offer downloads", never "nothing is installed".
+ * What this server already has, or undefined when nothing Ollama-shaped answers — a cloud provider, llama.cpp (which
+ * serves the model it was started with and can't fetch another), or a server that isn't running. Undefined means "don't
+ * offer downloads", never "nothing is installed".
  */
 async function installedModels(baseUrl: string): Promise<Set<string> | undefined> {
   try {
@@ -48,9 +48,9 @@ async function installedModels(baseUrl: string): Promise<Set<string> | undefined
 }
 
 /**
- * The configured models their server hasn't got yet, deduplicated — what the setup wizard offers to
- * download in one go. Servers that can't fetch a model are skipped, so an empty list also covers
- * "there is nothing sensible to offer here".
+ * The configured models their server hasn't got yet, deduplicated — what the setup wizard offers to download in one go.
+ * Servers that can't fetch a model are skipped, so an empty list also covers "there is nothing sensible to offer
+ * here".
  */
 export async function missingModels(models: CliResolvedModel[]): Promise<PullTarget[]> {
   const byUrl = new Map<string, CliResolvedModel[]>()
@@ -109,7 +109,10 @@ async function errorText(res: Response): Promise<string> {
   return typeof body?.error === "string" ? body.error : `HTTP ${res.status}`
 }
 
-/** Forwards each progress event and returns the error the stream ended on, if any: a pull that fails partway still answers 200 and says why in the stream. */
+/**
+ * Forwards each progress event and returns the error the stream ended on, if any: a pull that fails partway still
+ * answers 200 and says why in the stream.
+ */
 async function reportPullStream(body: ReadableStream<Uint8Array>, onProgress: (progress: PullProgress) => void) {
   let failure: string | undefined
   for await (const event of streamEvents(body)) {
@@ -123,8 +126,8 @@ async function reportPullStream(body: ReadableStream<Uint8Array>, onProgress: (p
 }
 
 /**
- * Downloads one model, reporting progress as the server sends it. Never throws: a server that goes
- * away mid-download is just another failed model, and the wizard carries on to the next one.
+ * Downloads one model, reporting progress as the server sends it. Never throws: a server that goes away mid-download is
+ * just another failed model, and the wizard carries on to the next one.
  */
 export async function pullModel(
   target: PullTarget,

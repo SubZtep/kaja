@@ -15,9 +15,8 @@ import {
 } from "react"
 
 /**
- * Imperative surface of {@link VirtualScroll} — mirrors the subset of
- * ink-scroll-view's ScrollViewRef that ChatViewport uses, so swapping the
- * implementations doesn't ripple into the viewport logic.
+ * Imperative surface of {@link VirtualScroll} — mirrors the subset of ink-scroll-view's ScrollViewRef that ChatViewport
+ * uses, so swapping the implementations doesn't ripple into the viewport logic.
  */
 export type VirtualScrollRef = {
   scrollTo: (offset: number) => void
@@ -32,9 +31,9 @@ export type VirtualScrollRef = {
 const RemeasureContext = createContext<() => void>(() => {})
 
 /**
- * Re-measures the enclosing {@link VirtualScroll} item. For content that changes its own height after mounting (an
- * image that loads later), which the item's once-per-mount measurement can't see; call it from a layout effect, when
- * the new layout is already computed.
+ * Re-measures the enclosing {@link VirtualScroll} item. For content that changes its own height after mounting (an image
+ * that loads later), which the item's once-per-mount measurement can't see; call it from a layout effect, when the new
+ * layout is already computed.
  */
 export const useRemeasure = () => useContext(RemeasureContext)
 
@@ -44,11 +43,9 @@ const ViewportHeightContext = createContext(0)
 export const useViewportHeight = () => useContext(ViewportHeightContext)
 
 /**
- * Measures its child once laid out and reports the height. Memoized so a
- * scroll tick (which re-renders VirtualScroll) doesn't re-render or
- * re-measure items whose element identity hasn't changed — only new
- * children (fresh elements, e.g. the streaming partial) or an epoch bump
- * (width change invalidating all heights) re-run the measurement.
+ * Measures its child once laid out and reports the height. Memoized so a scroll tick (which re-renders VirtualScroll)
+ * doesn't re-render or re-measure items whose element identity hasn't changed — only new children (fresh elements, e.g.
+ * the streaming partial) or an epoch bump (width change invalidating all heights) re-run the measurement.
  */
 const MeasuredItem = memo(function MeasuredItemView({
   id,
@@ -79,18 +76,14 @@ const MeasuredItem = memo(function MeasuredItemView({
 })
 
 /**
- * A windowed replacement for ink-scroll-view's ScrollView: only the
- * children intersecting the viewport are mounted, so scroll ticks and
- * streaming re-renders cost O(viewport), not O(history). ink-scroll-view
- * keeps every child mounted, which made Ink re-layout and re-render the
- * whole conversation on every frame — the "frozen on long conversations"
+ * A windowed replacement for ink-scroll-view's ScrollView: only the children intersecting the viewport are mounted, so
+ * scroll ticks and streaming re-renders cost O(viewport), not O(history). ink-scroll-view keeps every child mounted,
+ * which made Ink re-layout and re-render the whole conversation on every frame — the "frozen on long conversations"
  * bug.
  *
- * How it works: every child is measured once (via {@link MeasuredItem})
- * when it first mounts; heights are cached by child key. While any height
- * is unknown (initial mount, width change) all children render — one
- * expensive pass. Once all heights are known, only the visible slice
- * mounts, shifted by the overflow-hidden container's contentOffsetY for
+ * How it works: every child is measured once (via {@link MeasuredItem}) when it first mounts; heights are cached by
+ * child key. While any height is unknown (initial mount, width change) all children render — one expensive pass. Once
+ * all heights are known, only the visible slice mounts, shifted by the overflow-hidden container's contentOffsetY for
  * sub-item scroll positions.
  */
 export function VirtualScroll({

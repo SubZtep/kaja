@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
     "build": "vite build && cp instrument.server.mjs .output/server",
-    "preview": "vite preview",
-    "test": "echo \"no tests\"",
-    "generate:routes": "tsr generate",
+    "dev": "vite dev --port 3000",
     "generate:paraglide": "bun scripts/generate-paraglide.ts",
-    "tailwind:fix": "bunx @tailwindcss/upgrade"
+    "generate:routes": "tsr generate",
+    "preview": "vite preview",
+    "tailwind:fix": "bunx @tailwindcss/upgrade",
+    "test": "echo \"no tests\""
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

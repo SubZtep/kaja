@@ -33,9 +33,9 @@ async function checkedAddress(hostname: string): Promise<Pin | undefined> {
 }
 
 /**
- * The request for a pinned hop: the checked address in the URL, the host kept in `Host` and in `tls.serverName`, so
- * SNI and the certificate check still name the host (Bun's documented way to connect to an address you resolved).
- * A name with several addresses gets no fallback to the others.
+ * The request for a pinned hop: the checked address in the URL, the host kept in `Host` and in `tls.serverName`, so SNI
+ * and the certificate check still name the host (Bun's documented way to connect to an address you resolved). A name
+ * with several addresses gets no fallback to the others.
  */
 function pinned(
   url: string,
@@ -163,9 +163,11 @@ export type FetchPublicHttpOptions = {
 }
 
 /**
- * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against {@link isPublicHttpUrl}.
+ * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against
+ * {@link isPublicHttpUrl}.
  *
- * @param opts.send - Sends every hop (redirects too) instead of a direct, DNS-pinned connection; never falls back to one.
+ * @param opts.send - Sends every hop (redirects too) instead of a direct, DNS-pinned connection; never falls back to
+ *   one.
  */
 export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -199,9 +201,9 @@ export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Respo
 
 /**
  * A `fetch` for long-lived clients such as the MCP SDK's transports: every hop gets the same checks as
- * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
- * followed here and only within the same origin (headers may carry the user's key), and the body is
- * streamed rather than buffered, so an SSE stream stays open. Sends every hop through `send` when set, never direct.
+ * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are followed here and only
+ * within the same origin (headers may carry the user's key), and the body is streamed rather than buffered, so an SSE
+ * stream stays open. Sends every hop through `send` when set, never direct.
  */
 export function createGuardedFetch(opts: { send?: FetchLike; maxRedirects?: number } = {}): FetchLike {
   const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS

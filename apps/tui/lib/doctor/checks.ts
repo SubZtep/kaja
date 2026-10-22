@@ -7,10 +7,10 @@ import { probeModel } from "../models/check"
 /**
  * A credential's live test: it works, or why not.
  *
- * `kind` separates "the service looked at this value and refused it" from "the service was never
- * reached, so the value was never judged". Only the first is worth asking the user to retype —
- * a local model server that isn't running needs starting, not a new API key. Absent means
- * "credential": every other check here only runs against a service that answered.
+ * `kind` separates "the service looked at this value and refused it" from "the service was never reached, so the value
+ * was never judged". Only the first is worth asking the user to retype — a local model server that isn't running needs
+ * starting, not a new API key. Absent means "credential": every other check here only runs against a service that
+ * answered.
  */
 export type CheckResult = { ok: true } | { ok: false; reason: string; kind?: "credential" | "unreachable" }
 
@@ -47,7 +47,10 @@ export async function checkProvider(model: CliResolvedModel, apiKey: string | un
   return { ok: false, reason: apiKey ? reason.replaceAll(apiKey, "•••") : reason, kind }
 }
 
-/** Runs the ability's `check` request with `apiKey`; undefined when the manifest has no `check`. Local, so private hosts are fine. */
+/**
+ * Runs the ability's `check` request with `apiKey`; undefined when the manifest has no `check`. Local, so private hosts
+ * are fine.
+ */
 export function checkAbilityKey(ability: HttpToolAbility, apiKey: string): Promise<CheckResult | undefined> {
   return checkHttpToolKey(ability, apiKey, { allowPrivate: true })
 }

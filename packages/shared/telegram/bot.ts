@@ -3,7 +3,10 @@ import { createHash } from "node:crypto"
 /** Telegram allows about one edit a second per message; a 429 doubles the wait, up to the cap. */
 const DEFAULT_EDIT_INTERVALS = { minMs: 1000, maxMs: 4000 }
 
-/** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
+/**
+ * Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call
+ * ids vary in length).
+ */
 export function approvalToken(callId: string): string {
   return createHash("sha256").update(callId).digest("hex").slice(0, 16)
 }
@@ -30,7 +33,10 @@ export function albumCollector<T>(onAlbum: (items: T[]) => void, waitMs = ALBUM_
   }
 }
 
-/** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
+/**
+ * Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them
+ * into links.
+ */
 export function escapeHtml(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 }
@@ -57,10 +63,9 @@ export class TelegramRateLimitError extends Error {
 }
 
 /**
- * Coalesces rapid delta events into at most one Telegram edit per
- * `intervalMs`, using only the latest accumulated text (never queuing
- * multiple edits). Tuned for Telegram's ~1 edit/sec per-message budget, with
- * 429 backoff since Telegram (unlike a local terminal) can reject bursts.
+ * Coalesces rapid delta events into at most one Telegram edit per `intervalMs`, using only the latest accumulated text
+ * (never queuing multiple edits). Tuned for Telegram's ~1 edit/sec per-message budget, with 429 backoff since Telegram
+ * (unlike a local terminal) can reject bursts.
  */
 export class EditThrottle {
   private intervalMs: number
@@ -113,10 +118,9 @@ export class EditThrottle {
   }
 
   /**
-   * Cancels any pending trailing-edge edit without sending it — call before
-   * a caller-driven edit that's about to supersede it anyway (final,
-   * ask_user, confirm_command), so the throttle doesn't fire a redundant
-   * edit moments after (or race with) that one.
+   * Cancels any pending trailing-edge edit without sending it — call before a caller-driven edit that's about to
+   * supersede it anyway (final, ask_user, confirm_command), so the throttle doesn't fire a redundant edit moments after
+   * (or race with) that one.
    */
   cancel() {
     if (this.timer) {
@@ -146,11 +150,9 @@ export function asRateLimitError(error: unknown): TelegramRateLimitError | undef
 }
 
 /**
- * Runs `send` once, and on a single 429 sleeps for its retry_after and tries
- * exactly once more — for one-shot sends (there's no throttle to defer to,
- * unlike an edit stream, which lets TelegramRateLimitError propagate to
- * EditThrottle's own backoff). A second failure, or a 429 with no
- * retry_after, propagates.
+ * Runs `send` once, and on a single 429 sleeps for its retry_after and tries exactly once more — for one-shot sends
+ * (there's no throttle to defer to, unlike an edit stream, which lets TelegramRateLimitError propagate to
+ * EditThrottle's own backoff). A second failure, or a 429 with no retry_after, propagates.
  */
 export async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
   try {

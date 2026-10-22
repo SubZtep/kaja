@@ -43,7 +43,10 @@ type SessionRow = {
 const SESSION_COLUMNS =
   "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind, granted_tools"
 
-/** Rebuilds a session from its rows (images stay refs: a model request fetches the ones it sends). The cloud keeps no timeline, so `events` is always empty. */
+/**
+ * Rebuilds a session from its rows (images stay refs: a model request fetches the ones it sends). The cloud keeps no
+ * timeline, so `events` is always empty.
+ */
 async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | undefined> {
   const [messages, calls, summary] = await Promise.all([
     db.query(

@@ -1,6 +1,9 @@
 const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])
 
-/** IPv4 ranges not safe to forward to: "this network" (0.0.0.0 reaches loopback), loopback, link-local (incl. cloud metadata), CGNAT, RFC1918, multicast and reserved. */
+/**
+ * IPv4 ranges not safe to forward to: "this network" (0.0.0.0 reaches loopback), loopback, link-local (incl. cloud
+ * metadata), CGNAT, RFC1918, multicast and reserved.
+ */
 function isPrivateIpv4(ipv4: string): boolean {
   const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ipv4)
   if (!match) return false
@@ -53,7 +56,10 @@ function embeddedIpv4(groups: number[]): string | null {
   return null
 }
 
-/** Private IPv6: any form carrying a private IPv4, local-use NAT64 (64:ff9b:1::/48), link-local, site-local, unique-local and multicast. Anything unparseable counts as private. */
+/**
+ * Private IPv6: any form carrying a private IPv4, local-use NAT64 (64:ff9b:1::/48), link-local, site-local,
+ * unique-local and multicast. Anything unparseable counts as private.
+ */
 function isPrivateIpv6(address: string): boolean {
   const groups = ipv6Groups(address)
   if (!groups) return true
@@ -68,15 +74,18 @@ function isPrivateIpv6(address: string): boolean {
   return false
 }
 
-/** Whether a bare IP address (no scheme/hostname wrapping) falls in a private/loopback/link-local range, including IPv6 forms that carry a private IPv4 (e.g. `::ffff:127.0.0.1`). */
+/**
+ * Whether a bare IP address (no scheme/hostname wrapping) falls in a private/loopback/link-local range, including IPv6
+ * forms that carry a private IPv4 (e.g. `::ffff:127.0.0.1`).
+ */
 export function isPrivateAddress(address: string): boolean {
   if (address.includes(":")) return isPrivateIpv6(address)
   return isPrivateIpv4(address)
 }
 
 /**
- * @returns `true` if `url` is an http(s) URL pointing at a public host — guards
- * against SSRF to loopback/link-local/private addresses (e.g. cloud metadata endpoints).
+ * @returns `true` if `url` is an http(s) URL pointing at a public host — guards against SSRF to
+ *   loopback/link-local/private addresses (e.g. cloud metadata endpoints).
  */
 export function isPublicHttpUrl(url: string): boolean {
   try {

@@ -3,9 +3,9 @@ import { useEffect } from "react"
 import { MOUSE_DISABLE, MOUSE_ENABLE } from "../lib/terminal-input"
 
 /**
- * Enable terminal mouse reporting for the lifetime of the component tree.
- * Wheel, click and hover CSI sequences then arrive on stdin for ChatViewport and the key bar (via useTerminalReports).
- * Always disables on unmount / process exit so the shell is not left sticky.
+ * Enable terminal mouse reporting for the lifetime of the component tree. Wheel, click and hover CSI sequences then
+ * arrive on stdin for ChatViewport and the key bar (via useTerminalReports). Always disables on unmount / process exit
+ * so the shell is not left sticky.
  */
 export function useMouseTracking(enabled = true) {
   const { stdout } = useStdout()

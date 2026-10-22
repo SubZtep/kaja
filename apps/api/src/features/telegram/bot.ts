@@ -17,12 +17,18 @@ import { telegramLinkService } from "../../services"
 import { createCloudTelegramDriver, type TelegramButton } from "./driver"
 import { botLanguage } from "./language"
 
-/** Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself (a lock or database error before its own try) is reported, never left an unhandled rejection. */
+/**
+ * Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself (a lock or database
+ * error before its own try) is reported, never left an unhandled rejection.
+ */
 function inBackground(what: string, work: Promise<unknown>) {
   work.catch(error => reportError(what, error))
 }
 
-/** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
+/**
+ * Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits
+ * comfortably.
+ */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
   return `link:${action}:${token}`
 }
@@ -49,7 +55,10 @@ type IncomingPhoto = {
 /** How long to wait before polling again while another instance holds the getUpdates connection. */
 const POLL_CONFLICT_RETRY_MS = 10_000
 
-/** The Telegram app language each translated command menu is for; nan-TW has no two-letter code, so it gets the default (English) one, and en-US shares it with en-GB. */
+/**
+ * The Telegram app language each translated command menu is for; nan-TW has no two-letter code, so it gets the default
+ * (English) one, and en-US shares it with en-GB.
+ */
 const MENU_LANGUAGE: [Locale, LanguageCode][] = [
   ["hu-HU", "hu"],
   ["zh-TW", "zh"]
@@ -65,11 +74,10 @@ function commandsIn(locale: Locale) {
 }
 
 /**
- * The only grammy-aware file: constructs the Bot, implements driver.ts's
- * TelegramSender against bot.api, wires the message and callback handlers,
- * and owns startup validation (getMe preflight) and shutdown (bot.stop()).
- * Inline keyboards serve the account-link confirm/cancel flow below and the
- * driver's tool approvals (`tool:*` callbacks); the driver never imports grammy.
+ * The only grammy-aware file: constructs the Bot, implements driver.ts's TelegramSender against bot.api, wires the
+ * message and callback handlers, and owns startup validation (getMe preflight) and shutdown (bot.stop()). Inline
+ * keyboards serve the account-link confirm/cancel flow below and the driver's tool approvals (`tool:*` callbacks); the
+ * driver never imports grammy.
  */
 export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const bot = new Bot(config.botToken)

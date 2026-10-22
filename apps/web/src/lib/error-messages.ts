@@ -30,7 +30,10 @@ const AUTH_ERRORS: Record<string, () => string> = {
   MISSING_RESPONSE: m.auth_error_captcha
 }
 
-/** A Better Auth error in the page's language: a known code or a rate limit gets its translation, anything else Better Auth's own (English) message rather than nothing. */
+/**
+ * A Better Auth error in the page's language: a known code or a rate limit gets its translation, anything else Better
+ * Auth's own (English) message rather than nothing.
+ */
 export function authErrorMessage(error: { code?: string; message?: string; status?: number; statusText?: string }) {
   const known = error.code ? AUTH_ERRORS[error.code] : undefined
   if (known) return known()

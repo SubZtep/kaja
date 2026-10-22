@@ -26,9 +26,15 @@ import { warn } from "./warn"
 
 export type NasiOpenOptions = {
   store: NasiStore
-  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row); `seesImages`: whether it takes images (its row lists `vision`), unset meaning it does. */
+  /**
+   * `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row);
+   * `seesImages`: whether it takes images (its row lists `vision`), unset meaning it does.
+   */
   chat: { client: OpenAI; model: string; contextWindow?: number; seesImages?: boolean }
-  /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
+  /**
+   * Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to
+   * {@link chat}.
+   */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Describes arriving images (the vision task's model); unset, an image keeps its alt text. */
   describer?: Describer
@@ -37,11 +43,17 @@ export type NasiOpenOptions = {
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
-  /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `generate_image` needs `imageGeneration`). */
+  /**
+   * Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `generate_image` needs
+   * `imageGeneration`).
+   */
   deps?: Omit<NasiToolDeps, "chat">
   /** Where this caller's enabled abilities come from (the cloud: Postgres); their tools join through `loadAbilities`. */
   abilities?: AbilityStore
-  /** Sends the turn's tool requests (the cloud: through a sandbox): `egress()` for `fetch_url`, `egress(name)` for an ability's HTTP tool or remote MCP server. Unset connects from this host; a cloud turn then has no `fetch_url`. */
+  /**
+   * Sends the turn's tool requests (the cloud: through a sandbox): `egress()` for `fetch_url`, `egress(name)` for an
+   * ability's HTTP tool or remote MCP server. Unset connects from this host; a cloud turn then has no `fetch_url`.
+   */
   egress?: (ability?: string) => FetchLike
   /** An ability's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
   abilityKey?: (abilityName: string) => string | undefined
@@ -55,7 +67,10 @@ export type NasiOpenOptions = {
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
-/** A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the message. */
+/**
+ * A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the
+ * message.
+ */
 export type NasiTurnInput = NasiTurnRequest & { images?: string[] }
 
 /** How a message sent with a photo shows in history and titles: "📷", then its caption. */
@@ -319,10 +334,9 @@ export class Nasi {
   }
 
   /**
-   * What the turn feeds the loop. A pending tool approval is answered here, on the server: `approve` runs
-   * the call the session saved (never one the client describes), `decline` or a plain message skips it.
-   * Calls waiting on the client are answered with its results (or as gone); with no message, the loop
-   * carries on from them.
+   * What the turn feeds the loop. A pending tool approval is answered here, on the server: `approve` runs the call the
+   * session saved (never one the client describes), `decline` or a plain message skips it. Calls waiting on the client
+   * are answered with its results (or as gone); with no message, the loop carries on from them.
    */
   private async promptFor(
     agent: Agent,
@@ -371,17 +385,16 @@ export class Nasi {
   }
 
   /**
-   * Streams one turn live: yields every {@link AgentEvent} as it happens
-   * (including `delta` chunks), then returns the same buffered-shaped
-   * response `turnBuffered` would have, once the session is persisted.
+   * Streams one turn live: yields every {@link AgentEvent} as it happens (including `delta` chunks), then returns the
+   * same buffered-shaped response `turnBuffered` would have, once the session is persisted.
    */
   turn(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     return this.turnInner(input)
   }
 
   /**
-   * `/compact`: summarises a stored session now, keeping only its latest turn word for word, and saves it.
-   * Undefined when there is nothing to summarise yet. Throws like a turn for a session that isn't this caller's.
+   * `/compact`: summarises a stored session now, keeping only its latest turn word for word, and saves it. Undefined
+   * when there is nothing to summarise yet. Throws like a turn for a session that isn't this caller's.
    */
   async compact(sessionId: string, focus?: string): Promise<Compaction | undefined> {
     const loaded = await this.loadTurn({ session: sessionId })

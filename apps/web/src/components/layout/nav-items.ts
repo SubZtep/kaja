@@ -1,10 +1,16 @@
 import { type LucideIcon, UserCog } from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
-/** An internal link (`to`) or an external one (`href`, opens in a new tab); with an `icon` the desktop menu shows only the icon and `label` becomes its accessible name; `exact` marks a section's index tab, active only on its own path. */
+/**
+ * An internal link (`to`) or an external one (`href`, opens in a new tab); with an `icon` the desktop menu shows only
+ * the icon and `label` becomes its accessible name; `exact` marks a section's index tab, active only on its own path.
+ */
 export type NavItem = { label: string; icon?: LucideIcon; to?: string; href?: string; exact?: boolean }
 
-/** Top menu: signed-out visitors get the public links; signed-in users get one item per section (its pages are tabs inside it), plus Admin for admins. */
+/**
+ * Top menu: signed-out visitors get the public links; signed-in users get one item per section (its pages are tabs
+ * inside it), plus Admin for admins.
+ */
 export const getHeaderItems = (user: { role?: string | null } | null): NavItem[] => {
   // const home = { to: "/", label: m.nav_home() }
   if (!user) {

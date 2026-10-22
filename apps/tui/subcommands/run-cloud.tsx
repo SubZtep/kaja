@@ -143,11 +143,10 @@ export async function resolveToken(apiUrl: string): Promise<string> {
 }
 
 /**
- * Cloud path: reached via `--cloud`, or by default when no local config
- * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials, or device login), then renders App in cloud mode, against
- * cloud Nasi over SSE (`<apiUrl>/nasi/*`). No local agent loop or sqlite; this
- * computer's own tools (lib/cloud/computer.ts) run the calls cloud turns hand it.
+ * Cloud path: reached via `--cloud`, or by default when no local config exists yet (see cli.ts's useLocal check).
+ * Resolves an API token (stored credentials, or device login), then renders App in cloud mode, against cloud Nasi over
+ * SSE (`<apiUrl>/nasi/*`). No local agent loop or sqlite; this computer's own tools (lib/cloud/computer.ts) run the
+ * calls cloud turns hand it.
  */
 export async function runCloudSubcommand() {
   const apiUrl = getApiBaseUrl()

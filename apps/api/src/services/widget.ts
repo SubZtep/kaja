@@ -80,7 +80,10 @@ export class WidgetService {
     return result.rowCount !== null && result.rowCount > 0
   }
 
-  /** Resolves a raw widget key from an incoming request to its owning account and origin allowlist, or null if unknown/disabled. */
+  /**
+   * Resolves a raw widget key from an incoming request to its owning account and origin allowlist, or null if
+   * unknown/disabled.
+   */
   async resolveByRawKey(
     rawKey: string
   ): Promise<{ id: string; userId: string; allowedOrigins: string[]; config: WidgetConfig } | null> {

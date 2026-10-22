@@ -13,10 +13,16 @@ export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResul
 export type PromptContext = {
   /** Override the default OS/home line. Callers that are not a user machine should describe their environment. */
   environment?: string
-  /** Override the default ask_user tool contract, which assumes a terminal. Hosts with a chat UI should describe that instead. */
+  /**
+   * Override the default ask_user tool contract, which assumes a terminal. Hosts with a chat UI should describe that
+   * instead.
+   */
   askUserInstruction?: string
   replyLanguageInstruction?: string
-  /** How replies should read where the human sees them, e.g. {@link TELEGRAM_CHANNEL_INSTRUCTION}; unset means no guidance. */
+  /**
+   * How replies should read where the human sees them, e.g. {@link TELEGRAM_CHANNEL_INSTRUCTION}; unset means no
+   * guidance.
+   */
   channelInstruction?: string
   loadStickyNotes?: () => Promise<[string, { content: string }][]>
   loadDataset?: (topic: string) => Promise<{ label: string } | undefined>
@@ -24,9 +30,7 @@ export type PromptContext = {
   loadDatasets?: () => Promise<Map<string, Dataset>>
 }
 
-/**
- * A model plus the tools it's allowed to call.
- */
+/** A model plus the tools it's allowed to call. */
 export class Agent {
   name: string
   model: string
@@ -46,23 +50,39 @@ export class Agent {
   /** Builds a client for a resolved model. Required for persona-pinned model swaps. */
   createClient?: (model: CliResolvedModel) => OpenAI
   store?: NasiStore
-  /** The current model's context window in tokens; when unset, {@link run} resolves it from the matching {@link models} entry. */
+  /**
+   * The current model's context window in tokens; when unset, {@link run} resolves it from the matching {@link models}
+   * entry.
+   */
   contextWindow?: number
   /** Writes compaction summaries (the summarize task's model); defaults to this agent's own chat model. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
-  /** Describes arriving images (the vision task's model, or the persona's `models.vision` pin); unset, an image keeps its alt text. */
+  /**
+   * Describes arriving images (the vision task's model, or the persona's `models.vision` pin); unset, an image keeps
+   * its alt text.
+   */
   describer?: Describer
   /** The host's describer, which a persona without a `models.vision` pin goes back to. */
   readonly defaultDescriber?: Describer
-  /** Whether the chat model takes images; unset, it does unless its {@link models} entry says `images = false`. See {@link seesImages}. */
+  /**
+   * Whether the chat model takes images; unset, it does unless its {@link models} entry says `images = false`. See
+   * {@link seesImages}.
+   */
   chatSeesImages?: boolean
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
   /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
   safeCommands?: RegExp[]
-  /** Never pause for approval: every command and every tool that would ask runs straight away (settings.toml's `yolo`). Refusals still stand. */
+  /**
+   * Never pause for approval: every command and every tool that would ask runs straight away (settings.toml's `yolo`).
+   * Refusals still stand.
+   */
   yolo?: boolean
-  /** Connects the named abilities' MCP servers (every ability's when unnamed) if they aren't yet and returns the whole tool list, theirs included; {@link run} calls it for the active persona, whose id picks a roots-taking server's folders. Unset: {@link tools} is all there is. */
+  /**
+   * Connects the named abilities' MCP servers (every ability's when unnamed) if they aren't yet and returns the whole
+   * tool list, theirs included; {@link run} calls it for the active persona, whose id picks a roots-taking server's
+   * folders. Unset: {@link tools} is all there is.
+   */
   ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
 
   constructor(config: {
@@ -192,12 +212,10 @@ export const switchPersonaTool = tool({
 })
 
 /**
- * Applies a persona's fields to an agent. Swaps the model only when the
- * persona pins one and the host provided {@link Agent.setModel} via the
- * returned model — callers that want a client swap must call setModel themselves
- * after looking up the model. Here we only set model id if we have a matching
- * resolved model AND a way to build a client; hosts pass models[] and a
- * `createClient` on the agent when they want auto-swap.
+ * Applies a persona's fields to an agent. Swaps the model only when the persona pins one and the host provided
+ * {@link Agent.setModel} via the returned model — callers that want a client swap must call setModel themselves after
+ * looking up the model. Here we only set model id if we have a matching resolved model AND a way to build a client;
+ * hosts pass models[] and a `createClient` on the agent when they want auto-swap.
  */
 export function applyPersona(agent: Agent, persona: Persona) {
   agent.personaId = persona.id
@@ -219,7 +237,10 @@ export function applyVisionPin(agent: Agent, persona: Persona | undefined) {
     vision && agent.createClient ? { client: agent.createClient(vision), model: vision.model } : agent.defaultDescriber
 }
 
-/** What one model round cost, recorded beside the assistant message it produced; `at` is that message's row index (the system prompt not counted). */
+/**
+ * What one model round cost, recorded beside the assistant message it produced; `at` is that message's row index (the
+ * system prompt not counted).
+ */
 export type StepStat = {
   at: number
   /** The provider-reported model that served the round, else the requested one. */
@@ -232,12 +253,18 @@ export type StepStat = {
   finishReason?: string
 }
 
-/** How a tool call went: `ok`/`error` when it ran, `declined` (the human said no) or `skipped` (they typed instead). Unset when a person or a client answered it. */
+/**
+ * How a tool call went: `ok`/`error` when it ran, `declined` (the human said no) or `skipped` (they typed instead).
+ * Unset when a person or a client answered it.
+ */
 export type CallStatus = "ok" | "error" | "declined" | "skipped"
 
 export type CallStat = { status?: CallStatus; approval?: "approved" | "declined"; durationMs?: number }
 
-/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool, or an image's description. */
+/**
+ * What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the
+ * summarize tool, or an image's description.
+ */
 export type ModelCallStat = {
   kind: "compact" | "condense" | "summarize" | "describe"
   /** The provider-reported model, else the requested one. */
@@ -247,12 +274,18 @@ export type ModelCallStat = {
   latencyMs: number
 }
 
-/** Numbers {@link run} and the hosts record as they go; a store takes them off the session when it saves (see `clearTelemetry`). Calls are keyed by the provider's call id. */
+/**
+ * Numbers {@link run} and the hosts record as they go; a store takes them off the session when it saves (see
+ * `clearTelemetry`). Calls are keyed by the provider's call id.
+ */
 export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallStat>; modelCalls?: ModelCallStat[] }
 
 /** Conversation state threaded through repeated {@link run} calls. */
 export type Session = {
-  /** Its id from the start, so images can be stored under it before the first save (unset: a session built by hand, whose images stay inline). */
+  /**
+   * Its id from the start, so images can be stored under it before the first save (unset: a session built by hand,
+   * whose images stay inline).
+   */
   id?: string
   messages: import("openai/resources/chat/completions").ChatCompletionMessageParam[]
   telemetry?: SessionTelemetry
@@ -270,7 +303,10 @@ export type Session = {
   toolSummaries?: Record<string, string>
 }
 
-/** Whether the agent's chat model is sent images, or only their labels: it is unless its models.toml entry says `images = false`. */
+/**
+ * Whether the agent's chat model is sent images, or only their labels: it is unless its models.toml entry says `images
+ * = false`.
+ */
 export function seesImages(agent: Agent): boolean {
   if (agent.chatSeesImages !== undefined) return agent.chatSeesImages
   return !agent.models?.some(entry => entry.model === agent.model && entry.images === false)
@@ -291,12 +327,18 @@ export type AgentEvent =
   | { type: "reasoning"; text: string }
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
-  /** A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the object hosts show it from, `alt` its text until a description replaces it. */
+  /**
+   * A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the
+   * object hosts show it from, `alt` its text until a description replaces it.
+   */
   | { type: "tool_image"; ref: string; key?: string; mimeType: string; alt: string }
   /** An image's description was written (in the background, after its `tool_image`); `ref` is the image's. */
   | { type: "image_described"; ref: string; description: string }
   | { type: "display_image"; url: string; alt: string }
-  /** `fromTool` is set when the model called the ask_user tool; a plain reply ending in "?" arrives as ask_user too, without it. */
+  /**
+   * `fromTool` is set when the model called the ask_user tool; a plain reply ending in "?" arrives as ask_user too,
+   * without it.
+   */
   | { type: "ask_user"; question: string; note?: string; fromTool?: true }
   | { type: "confirm_command"; command: string; description: string }
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
@@ -305,7 +347,10 @@ export type AgentEvent =
   /** Calls the client runs on the user's computer; the session waits on their results (`session.pendingClientCalls`). */
   | { type: "client_tool_calls"; calls: ClientCall[] }
   | { type: "final"; content: string | null }
-  /** The conversation was compacted before a round; `dropped` when the summarizer failed and older messages were cut without one. */
+  /**
+   * The conversation was compacted before a round; `dropped` when the summarizer failed and older messages were cut
+   * without one.
+   */
   | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
   /** A tool result too big for the window was condensed before a round; the model is sent the shorter version. */
   | { type: "condensed"; tool: string; beforeTokens: number; afterTokens: number }

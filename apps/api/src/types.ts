@@ -16,7 +16,7 @@ export type RouteVariables = {
   modelService: ModelService
 }
 
-/** common route properties. */
+/** Common route properties. */
 export type RouteProps = { Variables: RouteVariables }
 
 /** Register functions properties for route register helpers. */

@@ -39,19 +39,22 @@ export type WizardCustom = {
 const CUSTOM = "custom"
 
 /**
- * Everything the wizard collects. The keys are asked for here rather than by the credential pass afterwards, so a
- * key is typed while its question is still on screen; but nothing is written here: the caller hands them to that
- * pass, which tests and saves each one.
+ * Everything the wizard collects. The keys are asked for here rather than by the credential pass afterwards, so a key
+ * is typed while its question is still on screen; but nothing is written here: the caller hands them to that pass,
+ * which tests and saves each one.
  *
- * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs both: a key the
- * user has already declined must not be asked for a second time.
+ * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs both: a key the user
+ * has already declined must not be asked for a second time.
  */
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
   /** Prefilled with the saved theme, else the one detected from the terminal's background. */
   theme?: ThemeName
-  /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked: local mode can't start without one. */
+  /**
+   * The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked:
+   * local mode can't start without one.
+   */
   providers?: string[]
   custom?: WizardCustom
   /** Typed API keys by provider id; only hosted providers are asked. */
@@ -72,8 +75,8 @@ export type WizardSaved = {
 }
 
 /**
- * One question. The key, address and model steps repeat, so they carry what they are about:
- * `key:fireworks`, `address:ollama`, `model:chat`.
+ * One question. The key, address and model steps repeat, so they carry what they are about: `key:fireworks`,
+ * `address:ollama`, `model:chat`.
  */
 type Step =
   | "mode"
@@ -161,17 +164,20 @@ export function chosenProviders(result: WizardResult): CatalogProvider[] {
   return custom ? [...catalogChoices(result), custom] : catalogChoices(result)
 }
 
-/** The tasks more than one ticked provider can serve: the only model questions worth asking (vision follows the chat pick, see `buildModelsToml`). */
+/**
+ * The tasks more than one ticked provider can serve: the only model questions worth asking (vision follows the chat
+ * pick, see `buildModelsToml`).
+ */
 function contestedTasks(result: WizardResult): ModelTask[] {
   const candidates = candidatesByTask(chosenProviders(result))
   return TASK_ORDER.filter(task => task !== "vision" && (candidates[task]?.length ?? 0) > 1)
 }
 
 /**
- * Every question this set of answers leads to, in order. Cloud needs no provider; a hosted provider
- * is asked for a key and a local one for an address; a model is asked about only where the ticked
- * providers overlap; and each extra's follow-up only when that extra was ticked. Recomputed after
- * every answer, so a skipped step never mounts just to advance out of itself.
+ * Every question this set of answers leads to, in order. Cloud needs no provider; a hosted provider is asked for a key
+ * and a local one for an address; a model is asked about only where the ticked providers overlap; and each extra's
+ * follow-up only when that extra was ticked. Recomputed after every answer, so a skipped step never mounts just to
+ * advance out of itself.
  */
 function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
@@ -214,7 +220,10 @@ function providerName(id: string): string {
   return catalogProvider(id)?.name ?? (id === CUSTOM ? "Custom" : id)
 }
 
-/** What happened to a key step: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
+/**
+ * What happened to a key step: typed, left empty over one already saved, or left empty. Undefined when the step never
+ * applied.
+ */
 function keyState(typed: string | undefined, alreadySaved: boolean | undefined): string | undefined {
   if (typed === undefined) return undefined
   if (typed) return t("wizard.keyStateEntered")
@@ -289,8 +298,8 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
 }
 
 /**
- * The line a finished step leaves behind. Never a key's value, only what became of it. A step that
- * recorded nothing (no extras ticked) leaves no line.
+ * The line a finished step leaves behind. Never a key's value, only what became of it. A step that recorded nothing (no
+ * extras ticked) leaves no line.
  */
 function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): AnswerLine {
   const [kind, subject = ""] = step.split(":") as [string, string | undefined]
@@ -307,11 +316,11 @@ function Header() {
 }
 
 /**
- * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`. Every step opens
- * on the current value, so holding Enter walks a configured machine through unchanged, and the last answer finishes
- * it with no confirmation. Escape on a list cancels the whole wizard; Backspace/Delete don't, unlike other
- * {@link SelectMenu}s, since a typo-fixing reflex shouldn't throw every answer away. Nothing is written here: the
- * caller applies the collected {@link WizardResult} once `onDone` fires.
+ * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`. Every step opens on
+ * the current value, so holding Enter walks a configured machine through unchanged, and the last answer finishes it
+ * with no confirmation. Escape on a list cancels the whole wizard; Backspace/Delete don't, unlike other
+ * {@link SelectMenu}s, since a typo-fixing reflex shouldn't throw every answer away. Nothing is written here: the caller
+ * applies the collected {@link WizardResult} once `onDone` fires.
  */
 export function ConfigWizard({
   prefill,

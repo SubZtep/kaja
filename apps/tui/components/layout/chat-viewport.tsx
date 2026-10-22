@@ -81,8 +81,8 @@ function lastCopyableText(events: TimelineEvent[]): string | null {
 }
 
 /**
- * Clamp to the real bottom offset (VirtualScroll clamps internally too;
- * kept here so the input handlers stay self-evidently safe).
+ * Clamp to the real bottom offset (VirtualScroll clamps internally too; kept here so the input handlers stay
+ * self-evidently safe).
  */
 function clampScrollTo(view: VirtualScrollRef, offset: number) {
   const bottom = view.getBottomOffset()
@@ -98,15 +98,12 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
 /**
  * Scrollable middle pane: finalized history + streaming partial + activity.
  *
- * Content is bottom-anchored (chat grows upward from the input). A dynamic
- * top spacer fills unused viewport rows when history is short, so you never
- * see a floating block at the top of an empty pane.
+ * Content is bottom-anchored (chat grows upward from the input). A dynamic top spacer fills unused viewport rows when
+ * history is short, so you never see a floating block at the top of an empty pane.
  *
- * Key ownership (chat vs text field):
- *   PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport
- *   ↑/↓, ←/→, Home/End (no ctrl), Ctrl+←/→ → TextInput cursor
- *   Ctrl+T → mic
- *   the copy button / <modifier>+R (app.tsx) → uiEvents "copy" → this viewport copies the latest message
+ * Key ownership (chat vs text field): PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport ↑/↓, ←/→,
+ * Home/End (no ctrl), Ctrl+←/→ → TextInput cursor Ctrl+T → mic the copy button / <modifier>+R (app.tsx) → uiEvents
+ * "copy" → this viewport copies the latest message
  *
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
@@ -126,9 +123,10 @@ export function ChatViewport({
   partial: PartialMessageData | null
   pending: boolean
   sounds: boolean
-  /** Changes whenever the sibling below (input / confirm prompt) swaps to a
-   * differently-sized layout, so the viewport remeasures even though none of
-   * the other props changed. */
+  /**
+   * Changes whenever the sibling below (input / confirm prompt) swaps to a differently-sized layout, so the viewport
+   * remeasures even though none of the other props changed.
+   */
   bottomChromeKey?: string | number
   /** Shown in place of the empty timeline before the first message. */
   startupPanel?: ReactNode
@@ -161,9 +159,8 @@ export function ChatViewport({
   }
 
   /**
-   * Keep messages bottom-aligned when they don't fill the viewport:
-   * topPad = max(0, viewport - messageHeight), with messageHeight excluding
-   * the spacer itself.
+   * Keep messages bottom-aligned when they don't fill the viewport: topPad = max(0, viewport - messageHeight), with
+   * messageHeight excluding the spacer itself.
    */
   const syncTopPad = () => {
     const view = scrollRef.current

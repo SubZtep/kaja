@@ -7,10 +7,9 @@ import type { ReactNode } from "react"
 const ansi = /\x1b\[[0-9;?]*[a-zA-Z]/g
 
 /**
- * Renders an Ink tree against fake TTY streams so component behavior can be
- * asserted in `bun test`: stdin is a real Readable (Ink 7 consumes input via
- * `readable` events, so plain EventEmitters won't do), stdout records every
- * chunk written for later inspection.
+ * Renders an Ink tree against fake TTY streams so component behavior can be asserted in `bun test`: stdin is a real
+ * Readable (Ink 7 consumes input via `readable` events, so plain EventEmitters won't do), stdout records every chunk
+ * written for later inspection.
  */
 export function renderForTest(node: ReactNode, options?: { columns?: number; rows?: number }) {
   const stdin = Object.assign(new Readable({ read() {} }), {
@@ -54,12 +53,10 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
   const tick = () => Bun.sleep(100)
 
   /**
-   * Waits for output to settle after a keypress: polls until writeCount has
-   * stopped growing for a short quiet window, capped by an overall deadline
-   * generous enough for a loaded CI runner. A legitimately no-op keypress
-   * (e.g. ↑ at the oldest history entry) never writes, so this returns after
-   * the input parser has had time to settle rather than waiting the full
-   * deadline.
+   * Waits for output to settle after a keypress: polls until writeCount has stopped growing for a short quiet window,
+   * capped by an overall deadline generous enough for a loaded CI runner. A legitimately no-op keypress (e.g. ↑ at the
+   * oldest history entry) never writes, so this returns after the input parser has had time to settle rather than
+   * waiting the full deadline.
    */
   const waitForRepaint = async () => {
     const deadline = Date.now() + 2000
@@ -96,8 +93,8 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
     /** Everything written so far, ANSI escapes stripped. */
     output: () => chunks.join("").replace(ansi, ""),
     /**
-     * Returns a function capturing everything written from this point on,
-     * escapes stripped — for asserting what a <Static> remount reprints.
+     * Returns a function capturing everything written from this point on, escapes stripped — for asserting what a
+     * <Static> remount reprints.
      */
     mark: () => {
       const from = chunks.length

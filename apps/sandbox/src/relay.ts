@@ -31,7 +31,8 @@ type Pending =
 /**
  * One running stdio MCP server shared by any number of Streamable HTTP sessions (a new one each turn), relaying raw
  * JSON-RPC: request ids are renumbered on the way in so sessions can't collide, and answers go back to whoever asked.
- * The server is initialized once; later sessions get that first answer, so its state (a browser's open pages) lives on.
+ * The server is initialized once; later sessions get that first answer, so its state (a browser's open pages) lives
+ * on.
  */
 export class McpRelay {
   readonly #child: StdioClientTransport
@@ -114,7 +115,10 @@ export class McpRelay {
     return this.#child.pid
   }
 
-  /** Serves one HTTP request: an existing session's, or a new session's `initialize` (404 for a session this relay doesn't have). */
+  /**
+   * Serves one HTTP request: an existing session's, or a new session's `initialize` (404 for a session this relay
+   * doesn't have).
+   */
   handle(request: Request): Promise<Response> {
     const sessionId = request.headers.get("mcp-session-id")
     if (sessionId) {

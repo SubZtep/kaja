@@ -9,8 +9,8 @@ import { TextInput } from "../elem/text-input"
 import { useKajaTheme } from "../theme"
 
 /**
- * Outer box max rows (padding/border included). Content lines for the field
- * leave room for SolidBorder padding (1+1) or PowerBorder edges (~1+1).
+ * Outer box max rows (padding/border included). Content lines for the field leave room for SolidBorder padding (1+1) or
+ * PowerBorder edges (~1+1).
  */
 const INPUT_MAX_HEIGHT = 8
 const INPUT_CONTENT_LINES = 6
@@ -23,14 +23,11 @@ const POWER_BORDER_MS = 30_000
 const PREFIX_COLS = 2
 
 /**
- * Status mark for the input gutter. Pure ASCII so multi-line hang-indent
- * matches the first line exactly.
+ * Status mark for the input gutter. Pure ASCII so multi-line hang-indent matches the first line exactly.
  *
- *   >  ready to type
- *   *  mic on, idle
- *   o  recording speech
- *   ~  transcribing
- *   x  mic muted while agent speaks
+ * > Ready to type
+ *
+ * - Mic on, idle o recording speech ~ transcribing x mic muted while agent speaks
  */
 function statusPrefix(mic: boolean, speaking: boolean, sttState: string): string {
   if (!mic) return "> "

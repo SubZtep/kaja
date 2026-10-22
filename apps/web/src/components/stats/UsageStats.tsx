@@ -102,7 +102,10 @@ function BarList({
   )
 }
 
-/** The stats page's body: when the user talked, what it cost in tokens and time, how the tools did, and which channels, personas and models replied. */
+/**
+ * The stats page's body: when the user talked, what it cost in tokens and time, how the tools did, and which channels,
+ * personas and models replied.
+ */
 export function UsageStats() {
   const [days, setDays] = useState<(typeof RANGES)[number]>(30)
   const stats = useUsageStats(days)

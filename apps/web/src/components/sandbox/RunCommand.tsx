@@ -5,7 +5,10 @@ import { m } from "../../paraglide/messages.js"
 import { Checkbox } from "../form/primitives/Checkbox"
 import { CommandBox } from "../ui/CommandBox"
 
-/** The sandbox's `docker run` (with `sandboxKey`, linked to that account), a switch that adds the memory and CPU limits, what that means, and a copy button. */
+/**
+ * The sandbox's `docker run` (with `sandboxKey`, linked to that account), a switch that adds the memory and CPU limits,
+ * what that means, and a copy button.
+ */
 export function RunCommand({ sandboxKey, look = "plain" }: Readonly<{ sandboxKey?: string; look?: "crt" | "plain" }>) {
   const [limited, setLimited] = useState(true)
   const command = runCommand(sandboxKey, limited)

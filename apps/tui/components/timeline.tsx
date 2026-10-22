@@ -21,10 +21,9 @@ const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
 }
 
 /**
- * One finalized timeline entry (user message, tool call, final reply, …), after a blank line when `spaced`.
- * Memoized: events are immutable once appended, so scroll ticks and
- * streaming flushes (which re-render the whole ScrollView subtree) bail
- * out here instead of re-rendering every history item.
+ * One finalized timeline entry (user message, tool call, final reply, …), after a blank line when `spaced`. Memoized:
+ * events are immutable once appended, so scroll ticks and streaming flushes (which re-render the whole ScrollView
+ * subtree) bail out here instead of re-rendering every history item.
  */
 export const TimelineItem = memo(function TimelineItemView({
   item,

@@ -136,7 +136,10 @@ function makeThinkerMessages(): ChatMessage[] {
   ]
 }
 
-/** Only trust a "correct" claim when the thinker's own answer names the secret — a stray "correct" (e.g. confirming an unrelated guess) must not end the game. */
+/**
+ * Only trust a "correct" claim when the thinker's own answer names the secret — a stray "correct" (e.g. confirming an
+ * unrelated guess) must not end the game.
+ */
 function isConfirmedWin(answer: string): boolean {
   if (!/correct/i.test(answer)) return false
   return answer.toLowerCase().includes(SECRET.toLowerCase())

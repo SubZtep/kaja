@@ -1,6 +1,9 @@
 import type { TimelineEvent } from "../hooks/use-agent"
 
-/** A finished turn's tool calls folded into one line (minimal `toolDisplay`); `last` is the turn's final call, whose identity keys the row. */
+/**
+ * A finished turn's tool calls folded into one line (minimal `toolDisplay`); `last` is the turn's final call, whose
+ * identity keys the row.
+ */
 export type ToolSummary = { type: "tool_summary"; last: TimelineEvent; names: string[]; count: number }
 
 export type DisplayEvent = TimelineEvent | ToolSummary

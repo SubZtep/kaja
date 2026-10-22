@@ -26,7 +26,10 @@ export function googlePictureUrl(url: string): string {
   return url.replace(/=s\d+(-c)?$/, `=s${AVATAR_SIZE}-c`)
 }
 
-/** The public Gravatar profile's display name, if it has a usable one (no profile, or over the 100-an-hour keyless limit, gives none). */
+/**
+ * The public Gravatar profile's display name, if it has a usable one (no profile, or over the 100-an-hour keyless
+ * limit, gives none).
+ */
 export async function gravatarName(email: string, fetcher: Fetch = fetch): Promise<string | undefined> {
   const res = await fetcher(`https://api.gravatar.com/v3/profiles/${gravatarHash(email)}`, {
     signal: AbortSignal.timeout(TIMEOUT_MS)
@@ -37,7 +40,10 @@ export async function gravatarName(email: string, fetcher: Fetch = fetch): Promi
   return name.length >= 2 ? name : undefined
 }
 
-/** Copies a picture into the user's images as a WebP of at most {@link AVATAR_SIZE} (no EXIF), returning its public URL; undefined when the source has none. */
+/**
+ * Copies a picture into the user's images as a WebP of at most {@link AVATAR_SIZE} (no EXIF), returning its public URL;
+ * undefined when the source has none.
+ */
 export async function storeAvatar(userId: string, source: string, fetcher: Fetch = fetch): Promise<string | undefined> {
   const res = await fetcher(source, { signal: AbortSignal.timeout(TIMEOUT_MS) })
   if (!res.ok) return undefined

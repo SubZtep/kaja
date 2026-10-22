@@ -45,7 +45,7 @@ export const modelSchema = z.object({
   free: z.boolean(),
   /** Tokens the model takes in; null means it's detected from the provider. */
   contextWindow: z.number().int().positive().nullable(),
-  /** false for a text-only chat model, which is sent image descriptions instead of pixels. */
+  /** False for a text-only chat model, which is sent image descriptions instead of pixels. */
   images: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -68,7 +68,7 @@ export const updateModelRequestSchema = z.object({
   tasks: z.array(modelTaskSchema).min(1).optional(),
   enabled: z.boolean().optional(),
   free: z.boolean().optional(),
-  /** null clears it back to detection. */
+  /** Null clears it back to detection. */
   contextWindow: z.number().int().positive().nullable().optional(),
   images: z.boolean().optional()
 })

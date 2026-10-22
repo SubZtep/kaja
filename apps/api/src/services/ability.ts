@@ -32,8 +32,8 @@ type KeyedAbility = { type: "tool"; ability: HttpToolAbility } | { type: "mcp"; 
 type ManifestRow = { type: string; name: string; description?: string; files: Record<string, string> }
 
 /**
- * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
- * public host or a stdio one an MCP sandbox runs (a key comes with each request), and not local-only.
+ * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on
+ * a public host or a stdio one an MCP sandbox runs (a key comes with each request), and not local-only.
  */
 export function cloudMcpProblem(ability: McpAbility): string | undefined {
   if (!ability.tools?.length) return "no `tools` allowlist"
@@ -53,7 +53,10 @@ export const SANDBOX_DOMAIN = "sandbox"
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
 
-/** An ability key a call carries: `own` when it's the user's (a local client's, through the relay), else the server-wide one (which only the official sandbox may see). */
+/**
+ * An ability key a call carries: `own` when it's the user's (a local client's, through the relay), else the server-wide
+ * one (which only the official sandbox may see).
+ */
 export type AbilityKeyValue = { value: string; own: boolean }
 
 /** Where an ability's API key lives in `service_secret`. */
@@ -82,7 +85,10 @@ function stickyOf(skillMd: string | undefined, name: string): boolean {
   }
 }
 
-/** Tests a key the way a turn would use it: its HTTP tool's `check` request, or connecting to its MCP server (a stdio one's in `sandbox`); null when there's no test. */
+/**
+ * Tests a key the way a turn would use it: its HTTP tool's `check` request, or connecting to its MCP server (a stdio
+ * one's in `sandbox`); null when there's no test.
+ */
 async function checkKey(
   keyed: KeyedAbility,
   apiKey: string,
@@ -113,7 +119,10 @@ export class AbilityService {
     this.#secrets = secrets
   }
 
-  /** Whether server-wide keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
+  /**
+   * Whether server-wide keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left
+   * out everywhere.
+   */
   get keysEnabled(): boolean {
     return this.#secrets.enabled
   }
@@ -164,7 +173,10 @@ export class AbilityService {
     return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
   }
 
-  /** Every dataset in the marketplace by topic, for nasi's dataset loaders; one that no longer parses is left out with a warning. */
+  /**
+   * Every dataset in the marketplace by topic, for nasi's dataset loaders; one that no longer parses is left out with a
+   * warning.
+   */
   async datasets(): Promise<Map<string, Dataset>> {
     const { rows } = await this.#db.query(
       `SELECT p.name, p.files FROM ability p WHERE p.type = 'dataset' AND ${AVAILABLE} ORDER BY p.name`
@@ -237,7 +249,10 @@ export class AbilityService {
     return new Set([...names].map(name => name.slice(KEY_PREFIX.length)))
   }
 
-  /** The ability's part that takes a key (its HTTP tool before its MCP server), else its first usable part; undefined when it has none here. */
+  /**
+   * The ability's part that takes a key (its HTTP tool before its MCP server), else its first usable part; undefined
+   * when it has none here.
+   */
   async #keyedByName(name: string): Promise<KeyedAbility | undefined> {
     const { rows } = await this.#db.query(
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type IN ('tool', 'mcp') AND p.name = $1 AND ${AVAILABLE} ORDER BY p.type DESC`,

@@ -7,7 +7,10 @@ import { nextBackupPath } from "../config/fetch"
 /** Sits in the marketplace folder; the leading dot keeps it out of skill listings and out of the sync itself. */
 export const LOCK_FILE = ".sync-lock.json"
 
-/** What the last sync wrote: its source, and each file's hash as written, so a later sync can tell your edits from untouched upstream copies. */
+/**
+ * What the last sync wrote: its source, and each file's hash as written, so a later sync can tell your edits from
+ * untouched upstream copies.
+ */
 export type SyncLock = {
   source?: { url: string; ref: string; commit: string }
   files: Record<string, string>
@@ -34,7 +37,10 @@ export async function readSyncLock(marketplaceDir: string): Promise<SyncLock | u
   }
 }
 
-/** The abilities the last sync wrote, as `skills/<name>` or `personas/<id>.toml` (a file's first two path parts); anything else on disk is your own. */
+/**
+ * The abilities the last sync wrote, as `skills/<name>` or `personas/<id>.toml` (a file's first two path parts);
+ * anything else on disk is your own.
+ */
 export async function syncedAbilityPaths(marketplaceDir: string): Promise<Set<string>> {
   const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
   return new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
@@ -85,10 +91,9 @@ async function pruneEmptyDirs(root: string, path: string) {
 }
 
 /**
- * Copies an upstream marketplace folder into the local one. Files are compared to the lock
- * from the previous sync: untouched copies follow upstream, edited ones are backed up
- * (`name.bak.ext`, `name.bak.2.ext`, …) before upstream replaces them, and files the lock never recorded and
- * upstream doesn't have are yours and never touched.
+ * Copies an upstream marketplace folder into the local one. Files are compared to the lock from the previous sync:
+ * untouched copies follow upstream, edited ones are backed up (`name.bak.ext`, `name.bak.2.ext`, …) before upstream
+ * replaces them, and files the lock never recorded and upstream doesn't have are yours and never touched.
  */
 export async function syncMarketplace(
   upstreamDir: string,

@@ -1,12 +1,11 @@
 import { file, TOML, write } from "bun"
 
 /**
- * Adds a table to a TOML config file when it isn't there yet, by appending text rather than
- * re-serializing: these files are hand-edited and mostly commented-out examples, all of which a
- * parse-and-stringify round trip would throw away.
+ * Adds a table to a TOML config file when it isn't there yet, by appending text rather than re-serializing: these files
+ * are hand-edited and mostly commented-out examples, all of which a parse-and-stringify round trip would throw away.
  *
- * Returns false and changes nothing when the table is already present, so a section the user has
- * configured themselves is never overwritten.
+ * Returns false and changes nothing when the table is already present, so a section the user has configured themselves
+ * is never overwritten.
  */
 export async function appendTomlSection(path: string, table: string, lines: string[]): Promise<boolean> {
   const f = file(path)
@@ -27,10 +26,10 @@ export async function appendTomlSection(path: string, table: string, lines: stri
 }
 
 /**
- * `key = value` inside `[table]` of TOML text: replaces the key's line when it is there, adds it under
- * the table's header when it isn't, and appends the whole table when that is missing. Line-based, for
- * the same reason as {@link appendTomlSection}: a re-serialize would drop the file's comments.
- * `literal` is already TOML, e.g. `JSON.stringify(url)`.
+ * `key = value` inside `[table]` of TOML text: replaces the key's line when it is there, adds it under the table's
+ * header when it isn't, and appends the whole table when that is missing. Line-based, for the same reason as
+ * {@link appendTomlSection}: a re-serialize would drop the file's comments. `literal` is already TOML, e.g.
+ * `JSON.stringify(url)`.
  */
 export function setTomlValueInText(text: string, table: string, key: string, literal: string): string {
   const lines = text.split("\n")
@@ -52,8 +51,8 @@ export function setTomlValueInText(text: string, table: string, key: string, lit
 }
 
 /**
- * Sets `[table] key` in a TOML file, unlike {@link appendTomlSection} also when the table already
- * exists, so a changed answer takes effect on a re-run. An unparseable file is left alone.
+ * Sets `[table] key` in a TOML file, unlike {@link appendTomlSection} also when the table already exists, so a changed
+ * answer takes effect on a re-run. An unparseable file is left alone.
  */
 export async function setTomlValue(path: string, table: string, key: string, literal: string): Promise<void> {
   const f = file(path)

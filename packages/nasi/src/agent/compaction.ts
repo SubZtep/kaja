@@ -76,9 +76,9 @@ function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletio
 }
 
 /**
- * What the model is sent: the full log (with oversized tool results condensed, and images from before the
- * last {@link KEEP_IMAGE_TURNS} user prompts left out), or once compacted the system prompt with the summary
- * appended, then the messages from `summary.from` on. The session's own log is never shortened.
+ * What the model is sent: the full log (with oversized tool results condensed, and images from before the last
+ * {@link KEEP_IMAGE_TURNS} user prompts left out), or once compacted the system prompt with the summary appended, then
+ * the messages from `summary.from` on. The session's own log is never shortened.
  */
 export function contextMessages(session: Session): ChatCompletionMessageParam[] {
   const { summary } = session
@@ -99,9 +99,9 @@ function summarisedUpTo(session: Session): number {
 }
 
 /**
- * Picks where the word-for-word tail starts: the earliest point whose tail fits `budget` tokens, preferring
- * the start of a user turn, else any assistant message (a tool result never starts the tail, so each call
- * keeps its result). Undefined when nothing new can be summarised.
+ * Picks where the word-for-word tail starts: the earliest point whose tail fits `budget` tokens, preferring the start
+ * of a user turn, else any assistant message (a tool result never starts the tail, so each call keeps its result).
+ * Undefined when nothing new can be summarised.
  */
 export function chooseCut(session: Session, budget: number): number | undefined {
   const messages = condensed(session, session.messages)
@@ -156,7 +156,10 @@ const SUMMARY_INSTRUCTIONS =
   "what is done and what remains. Leave out pleasantries and repeated tool output. Write notes only, never a reply " +
   "to the user. Write them in the language the user writes in; never translate them into another one."
 
-/** Notes a conversation can carry on from; the language rule is repeated after the text, since some models otherwise drift into their own default language. */
+/**
+ * Notes a conversation can carry on from; the language rule is repeated after the text, since some models otherwise
+ * drift into their own default language.
+ */
 export const CONVERSATION_STYLE: SummaryStyle = {
   instructions: SUMMARY_INSTRUCTIONS,
   reminder: "(Write the notes in the same language as the user's messages above.)",
@@ -228,8 +231,8 @@ function chunk(entries: string[], limit: number): string[] {
 }
 
 /**
- * Summarises transcript entries (after an earlier summary, if any) with the summarizer: in one request when
- * they fit its window, else part by part and then the parts' summaries together, as often as needed.
+ * Summarises transcript entries (after an earlier summary, if any) with the summarizer: in one request when they fit
+ * its window, else part by part and then the parts' summaries together, as often as needed.
  */
 export async function summarize(
   chat: { client: OpenAI; model: string; contextWindow?: number },
@@ -261,10 +264,9 @@ export async function summarize(
 }
 
 /**
- * Compacts the session: summarises everything before a tail that fits a quarter of the window (or, with
- * `lastTurnOnly`, before the latest user message), and records it
- * as {@link Session.summary}. When the summarizer fails, the older part is dropped with a note instead, so the
- * conversation can go on. Undefined when there is nothing new to summarise.
+ * Compacts the session: summarises everything before a tail that fits a quarter of the window (or, with `lastTurnOnly`,
+ * before the latest user message), and records it as {@link Session.summary}. When the summarizer fails, the older part
+ * is dropped with a note instead, so the conversation can go on. Undefined when there is nothing new to summarise.
  */
 export async function compactSession(
   agent: Agent,
@@ -317,9 +319,9 @@ function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: s
 export type Condensed = { tool: string; beforeTokens: number; afterTokens: number }
 
 /**
- * Condenses each tool result bigger than a quarter of the window, once: the summarizer rewrites it (in parts
- * when it doesn't fit), and the model is sent that instead of the full output, which stays in the log.
- * When the summarizer fails, the start of the output is kept with a note. Returns what was condensed.
+ * Condenses each tool result bigger than a quarter of the window, once: the summarizer rewrites it (in parts when it
+ * doesn't fit), and the model is sent that instead of the full output, which stays in the log. When the summarizer
+ * fails, the start of the output is kept with a note. Returns what was condensed.
  */
 export async function condenseOversizedResults(agent: Agent, session: Session): Promise<Condensed[]> {
   if (!agent.contextWindow) return []

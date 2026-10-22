@@ -7,11 +7,10 @@ export type VisualLine = {
 }
 
 /**
- * Soft-wrap `text` to `width` terminal columns (emoji-aware via Bun.stringWidth).
- * Breaks at spaces so words stay whole; a word wider than the line is split by column.
- * Spaces at a soft break are left out of both lines, so no line starts with one.
- * Hard newlines (`\n`) always break. Empty string yields a single empty line
- * so the cursor has a row to sit on.
+ * Soft-wrap `text` to `width` terminal columns (emoji-aware via Bun.stringWidth). Breaks at spaces so words stay whole;
+ * a word wider than the line is split by column. Spaces at a soft break are left out of both lines, so no line starts
+ * with one. Hard newlines (`\n`) always break. Empty string yields a single empty line so the cursor has a row to sit
+ * on.
  */
 export function softWrapLines(text: string, width: number): VisualLine[] {
   const w = Math.max(1, Math.floor(width))
@@ -52,7 +51,10 @@ function endLine(s: WrapState, end: number, nextStart: number, soft: boolean) {
   s.breakText = 0
 }
 
-/** A word overflows the line: carry it to the next line minus the spaces before it, or, with no break point, split by column at `i`. */
+/**
+ * A word overflows the line: carry it to the next line minus the spaces before it, or, with no break point, split by
+ * column at `i`.
+ */
 function breakLine(s: WrapState, i: number) {
   if (s.breakText === 0) {
     endLine(s, i, i, true)
@@ -108,9 +110,7 @@ export function cursorLineIndex(lines: VisualLine[], cursorOffset: number): numb
   return lines.length - 1
 }
 
-/**
- * Keep `cursorLine` inside the visible window `[windowStart, windowStart + maxVisible)`.
- */
+/** Keep `cursorLine` inside the visible window `[windowStart, windowStart + maxVisible)`. */
 export function clampWindowStart(
   cursorLine: number,
   windowStart: number,
@@ -132,10 +132,7 @@ export function layoutLines(text: string, width?: number): VisualLine[] {
   return softWrapLines(text, width && width > 0 ? width : HARD_LINES_ONLY)
 }
 
-/**
- * Display-width column of `cursorOffset` within its visual line
- * (emoji-aware via Bun.stringWidth).
- */
+/** Display-width column of `cursorOffset` within its visual line (emoji-aware via Bun.stringWidth). */
 export function displayColumnAt(lines: VisualLine[], cursorOffset: number): number {
   if (lines.length === 0) return 0
   const line = lines[cursorLineIndex(lines, cursorOffset)]!
@@ -143,9 +140,7 @@ export function displayColumnAt(lines: VisualLine[], cursorOffset: number): numb
   return Bun.stringWidth(line.text.slice(0, within))
 }
 
-/**
- * Map a preferred display column onto a visual line (clamped to the line end).
- */
+/** Map a preferred display column onto a visual line (clamped to the line end). */
 export function offsetAtDisplayColumn(line: VisualLine, preferredCol: number): number {
   if (preferredCol <= 0 || line.text.length === 0) return line.start
   let col = 0
@@ -166,10 +161,7 @@ export function lineStartOffset(value: string, cursorOffset: number, width?: num
   return lines[cursorLineIndex(lines, cursorOffset)]!.start
 }
 
-/**
- * End of content on the visual line containing `cursorOffset`
- * (before a trailing hard newline, if any).
- */
+/** End of content on the visual line containing `cursorOffset` (before a trailing hard newline, if any). */
 export function lineEndOffset(value: string, cursorOffset: number, width?: number): number {
   const lines = layoutLines(value, width)
   const line = lines[cursorLineIndex(lines, cursorOffset)]!
@@ -177,9 +169,8 @@ export function lineEndOffset(value: string, cursorOffset: number, width?: numbe
 }
 
 /**
- * Move the cursor one visual line up (`-1`) or down (`+1`).
- * Sticky `preferredColumn` is re-seeded from the current position when null.
- * At the first/last line the offset is unchanged but preferred column is still set.
+ * Move the cursor one visual line up (`-1`) or down (`+1`). Sticky `preferredColumn` is re-seeded from the current
+ * position when null. At the first/last line the offset is unchanged but preferred column is still set.
  */
 export function moveVertical(
   value: string,

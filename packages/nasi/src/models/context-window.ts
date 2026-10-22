@@ -12,7 +12,7 @@ export type ContextWindowTarget = {
   apiKey?: string
   /** The provider-facing model name. */
   model: string
-  /** models.toml `context_window` (or the cloud model row's); wins over detection. */
+  /** Models.toml `context_window` (or the cloud model row's); wins over detection. */
   contextWindow?: number
 }
 
@@ -117,9 +117,9 @@ async function detect(fetchFn: Fetch, target: ContextWindowTarget) {
 }
 
 /**
- * A model's context window in tokens: its configured `contextWindow`, else what its server reports
- * (llama.cpp, Ollama, an OpenAI-compatible /models entry, or Fireworks' model API), else {@link DEFAULT_CONTEXT_WINDOW}.
- * Detection runs once per server and model; failed probes are silent.
+ * A model's context window in tokens: its configured `contextWindow`, else what its server reports (llama.cpp, Ollama,
+ * an OpenAI-compatible /models entry, or Fireworks' model API), else {@link DEFAULT_CONTEXT_WINDOW}. Detection runs
+ * once per server and model; failed probes are silent.
  */
 export function resolveContextWindow(
   target: ContextWindowTarget,

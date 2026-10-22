@@ -33,8 +33,9 @@ function GoogleMark() {
 
 /**
  * Starts the Google OAuth flow via the API; on success Better Auth redirects back to `callbackPath` on this origin.
- * Only `signUp` (the sign-up page, after its consent boxes) may create a new account; elsewhere an unknown Google address comes back to /signin with `error=signup_disabled`.
- * Stays disabled until the page's first Turnstile check passes; a click waits for a fresh token if a background check is still running.
+ * Only `signUp` (the sign-up page, after its consent boxes) may create a new account; elsewhere an unknown Google
+ * address comes back to /signin with `error=signup_disabled`. Stays disabled until the page's first Turnstile check
+ * passes; a click waits for a fresh token if a background check is still running.
  */
 export function GoogleButton({
   className,

@@ -134,12 +134,10 @@ function findImages(source: string, tokens: Token[], from: number, images: Image
 }
 
 /**
- * marked-terminal renders images as a link (`alt (href)`), the same as any
- * other link token — there's no terminal image protocol wired into the
- * renderer itself. To actually display images inline, the source is split
- * around each `![alt](href)` token ({@link findImages}) into text/image
- * segments; text segments still go through the normal marked-terminal
- * pipeline, images render via {@link TerminalImage}.
+ * Marked-terminal renders images as a link (`alt (href)`), the same as any other link token — there's no terminal image
+ * protocol wired into the renderer itself. To actually display images inline, the source is split around each
+ * `![alt](href)` token ({@link findImages}) into text/image segments; text segments still go through the normal
+ * marked-terminal pipeline, images render via {@link TerminalImage}.
  */
 export function splitSegments(source: string): Segment[] {
   // Lexing the whole text costs as much as rendering it; with no image syntax there's nothing to find

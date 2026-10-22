@@ -6,7 +6,10 @@ export interface EnvFieldMeta {
   description?: string
   example?: string
   secret?: boolean
-  /** Ship `example` uncommented despite being optional — for a real, safe-to-commit working default (as opposed to a rotated secret). */
+  /**
+   * Ship `example` uncommented despite being optional — for a real, safe-to-commit working default (as opposed to a
+   * rotated secret).
+   */
   devDefault?: boolean
   section?: string
 }

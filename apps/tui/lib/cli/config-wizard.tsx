@@ -13,9 +13,9 @@ import type { PullProgress } from "../models/pull"
 import { refreshCatalog } from "../models/remote-catalog"
 
 /**
- * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API
- * for speech-to-text and its plain HTTP one for text-to-speech, so one address is written in both
- * forms. Sets the value even when the table exists, so an address changed on a re-run takes effect.
+ * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API for speech-to-text
+ * and its plain HTTP one for text-to-speech, so one address is written in both forms. Sets the value even when the
+ * table exists, so an address changed on a re-run takes effect.
  */
 async function applySpeachesUrl(url: string, print: (line: string) => void) {
   const { getConfigPath, invalidateConfigCache } = await import("../config/config")
@@ -70,10 +70,10 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
 }
 
 /**
- * Asks whether to use the online marketplace and records it in settings.toml's `[marketplace]`. "No" means
- * Kaja never goes online for abilities. "Yes" checks git (the one thing the fetch needs), fetches once, and only
- * then asks about fetching periodically, so the question comes with something the user has seen work. A git that
- * can't fetch leaves the marketplace off rather than on and failing at every start.
+ * Asks whether to use the online marketplace and records it in settings.toml's `[marketplace]`. "No" means Kaja never
+ * goes online for abilities. "Yes" checks git (the one thing the fetch needs), fetches once, and only then asks about
+ * fetching periodically, so the question comes with something the user has seen work. A git that can't fetch leaves the
+ * marketplace off rather than on and failing at every start.
  */
 export async function offerMarketplace(print: (line: string) => void) {
   const { marketplaceSettings } = await import("../abilities/abilities-file")
@@ -110,9 +110,9 @@ export async function offerMarketplace(print: (line: string) => void) {
 }
 
 /**
- * A value the wizard collected, in the shape the credential pass wants: a key to test and save, or
- * `null` for one the user was offered and turned down, so it isn't asked for all over again.
- * An absent value means the step never applied, and the pass behaves as if the wizard hadn't run.
+ * A value the wizard collected, in the shape the credential pass wants: a key to test and save, or `null` for one the
+ * user was offered and turned down, so it isn't asked for all over again. An absent value means the step never applied,
+ * and the pass behaves as if the wizard hadn't run.
  */
 function offer(where: string, value: string | undefined): OfferedValues {
   return value === undefined ? {} : { [where]: value || null }
@@ -120,8 +120,8 @@ function offer(where: string, value: string | undefined): OfferedValues {
 
 /**
  * The ticked extras' keys, handed to the credential pass rather than saved here, so each is still tested before it's
- * written. `extra` is the items that pass can't discover on its own: a token that isn't saved yet leaves nothing in
- * the config to look for.
+ * written. `extra` is the items that pass can't discover on its own: a token that isn't saved yet leaves nothing in the
+ * config to look for.
  */
 async function applyExtras(result: WizardResult): Promise<{ extra: CredentialItem[]; offered: OfferedValues }> {
   if (!result.extras?.includes("telegram")) return { extra: [], offered: {} }
@@ -131,8 +131,8 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
 }
 
 /**
- * One rewritten line while a model downloads, e.g. "  llama3.2:1b: pulling manifest 42%". Only a
- * terminal gets it — a redirected log would collect one line per progress update otherwise.
+ * One rewritten line while a model downloads, e.g. " llama3.2:1b: pulling manifest 42%". Only a terminal gets it — a
+ * redirected log would collect one line per progress update otherwise.
  */
 function progressLine(model: string) {
   let width = 0
@@ -152,10 +152,10 @@ function progressLine(model: string) {
 }
 
 /**
- * Offers to download the models the local server hasn't got. One question for the lot rather than
- * one per model: nothing about them is a choice — the config already names them, and either the
- * machine has them or it doesn't. Runs before the credential pass so its probes meet a real model
- * instead of reporting every task as broken. Servers that can't fetch a model ask nothing.
+ * Offers to download the models the local server hasn't got. One question for the lot rather than one per model:
+ * nothing about them is a choice — the config already names them, and either the machine has them or it doesn't. Runs
+ * before the credential pass so its probes meet a real model instead of reporting every task as broken. Servers that
+ * can't fetch a model ask nothing.
  */
 async function offerModelDownloads(print: (line: string) => void) {
   const { loadModels } = await import("../models/models")
@@ -197,9 +197,9 @@ type LooseModelsFile = {
 }
 
 /**
- * The providers models.toml already uses, where each local one listens, and which provider serves
- * each task more than one could — for re-offering what the machine already runs. Tolerant: nothing
- * when the file is missing or unparseable.
+ * The providers models.toml already uses, where each local one listens, and which provider serves each task more than
+ * one could — for re-offering what the machine already runs. Tolerant: nothing when the file is missing or
+ * unparseable.
  */
 async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom">> {
   try {
@@ -262,8 +262,8 @@ async function readPrefill(): Promise<WizardResult> {
 }
 
 /**
- * Which secrets already exist, for the key steps — the values themselves are never shown or
- * prefilled, so all a step needs is whether pressing Enter would keep something or skip it.
+ * Which secrets already exist, for the key steps — the values themselves are never shown or prefilled, so all a step
+ * needs is whether pressing Enter would keep something or skip it.
  */
 async function readSavedSecrets(): Promise<WizardSaved> {
   const { secrets } = await import("../config/secrets")
@@ -277,9 +277,9 @@ async function readSavedSecrets(): Promise<WizardSaved> {
 }
 
 /**
- * Tests the models the wizard just wrote, the same pass `kaja doctor` runs, so a broken one is found
- * now, while its alternative is one keypress away. Nothing was tested while the questions were being
- * answered: that kept them quick. Returns how many tasks are still without a working model.
+ * Tests the models the wizard just wrote, the same pass `kaja doctor` runs, so a broken one is found now, while its
+ * alternative is one keypress away. Nothing was tested while the questions were being answered: that kept them quick.
+ * Returns how many tasks are still without a working model.
  */
 async function checkModels(): Promise<number> {
   const { loadModels } = await import("../models/models")
@@ -294,9 +294,9 @@ async function checkModels(): Promise<number> {
 }
 
 /**
- * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config,
- * so Enter at every step keeps what is already set. Non-interactive stdin or `--headless` can't answer a
- * prompt: it writes the bundled templates untouched, no questions, same fallback as before.
+ * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config, so Enter at
+ * every step keeps what is already set. Non-interactive stdin or `--headless` can't answer a prompt: it writes the
+ * bundled templates untouched, no questions, same fallback as before.
  */
 export async function runConfigWizard({
   headless,

@@ -24,7 +24,10 @@ export function sessionImagesFor(agent: Agent, session: Session): SessionImages 
   return agent.store && session.id ? agent.store.images(session.id) : inlineImages
 }
 
-/** An arriving image as stored: the ref its message holds (a data URL when inline), the object key hosts show it from, and its size. */
+/**
+ * An arriving image as stored: the ref its message holds (a data URL when inline), the object key hosts show it from,
+ * and its size.
+ */
 export type ArrivedImage = {
   ref: string
   key?: string
@@ -53,9 +56,9 @@ export function altFrom(text: string | undefined, fallback: string): string {
 }
 
 /**
- * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo). Its label starts as `alt`, which the vision model's description replaces once it's
- * written (see `describeInBackground`); seen before in this session, it takes that description at once. One that
- * can't be used comes back as the reason why.
+ * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo). Its label starts as
+ * `alt`, which the vision model's description replaces once it's written (see `describeInBackground`); seen before in
+ * this session, it takes that description at once. One that can't be used comes back as the reason why.
  */
 export async function storeImage(
   agent: Agent,
@@ -90,8 +93,8 @@ export async function storeImage(
 }
 
 /**
- * What a provider is sent: `messages` with each stored image's ref swapped for its bytes as a data URL (only the
- * images still in them: compaction already left out the old ones). A missing image becomes {@link MISSING_IMAGE}.
+ * What a provider is sent: `messages` with each stored image's ref swapped for its bytes as a data URL (only the images
+ * still in them: compaction already left out the old ones). A missing image becomes {@link MISSING_IMAGE}.
  */
 export async function resolveImageRefs(
   agent: Agent,

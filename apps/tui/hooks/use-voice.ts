@@ -21,15 +21,13 @@ function speakableText(event: TimelineEvent): string | null {
 }
 
 /**
- * Speaks each newly arrived assistant reply ({@link speakableText}) through
- * the local speakers via the speaches TTS server. The sink and TTS client are
- * created lazily on the first spoken event, so nothing is spawned while the
- * setting is off. Utterances queue in arrival order (see createTts); a failed
- * synthesis (e.g. server down) is logged, never thrown. Events arriving while
- * disabled are marked as spoken, so enabling doesn't replay the backlog.
+ * Speaks each newly arrived assistant reply ({@link speakableText}) through the local speakers via the speaches TTS
+ * server. The sink and TTS client are created lazily on the first spoken event, so nothing is spawned while the setting
+ * is off. Utterances queue in arrival order (see createTts); a failed synthesis (e.g. server down) is logged, never
+ * thrown. Events arriving while disabled are marked as spoken, so enabling doesn't replay the backlog.
  *
- * Returns whether speech is audibly in flight, so the mic can be muted while
- * the agent talks (half-duplex — otherwise it transcribes its own voice).
+ * Returns whether speech is audibly in flight, so the mic can be muted while the agent talks (half-duplex — otherwise
+ * it transcribes its own voice).
  */
 export function useVoice(events: TimelineEvent[], enabled = false, personaModels?: PersonaModels): boolean {
   const spoken = useRef(0)

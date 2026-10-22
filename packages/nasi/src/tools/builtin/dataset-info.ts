@@ -17,11 +17,9 @@ type Args = z.output<typeof ArgsSchema>
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 /**
- * Resolves the version of `topic` that's currently active for `owner`:
- * the latest version if it's still incomplete or not yet stale, otherwise a
- * fresh next version. Returns the version number, whether it was just
- * freshly started, and its already-recorded answers (empty for a fresh
- * version).
+ * Resolves the version of `topic` that's currently active for `owner`: the latest version if it's still incomplete or
+ * not yet stale, otherwise a fresh next version. Returns the version number, whether it was just freshly started, and
+ * its already-recorded answers (empty for a fresh version).
  */
 async function resolveActiveVersion(
   store: NasiStore,
@@ -157,13 +155,11 @@ async function handleStartNewVersion(store: NasiStore, datasetId: string, owner:
 }
 
 /**
- * Collects a dataset's fields from a user conversationally, one at a time,
- * persisting answers across sessions and supporting versioned re-collection.
- * Datasets are topic-agnostic config files under ~/.config/kaja/datasets/
- * (see lib/datasets.ts) — each defines a label, a list of fields (a name, a
- * prompt to ask, and optionally a fixed list of accepted answers), and an
- * optional revalidateAfterDays that controls when a completed version
- * becomes eligible for a fresh one.
+ * Collects a dataset's fields from a user conversationally, one at a time, persisting answers across sessions and
+ * supporting versioned re-collection. Datasets are topic-agnostic config files under ~/.config/kaja/datasets/ (see
+ * lib/datasets.ts) — each defines a label, a list of fields (a name, a prompt to ask, and optionally a fixed list of
+ * accepted answers), and an optional revalidateAfterDays that controls when a completed version becomes eligible for a
+ * fresh one.
  */
 export const datasetInfoTool = tool({
   name: DATASET_INFO_TOOL,

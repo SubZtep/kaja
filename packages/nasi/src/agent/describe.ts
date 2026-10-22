@@ -18,7 +18,10 @@ const MAX_DESCRIPTION = 400
 /** How long a turn waits for a description before it goes on with the alt text. */
 export const DESCRIBE_TIMEOUT_MS = 30_000
 
-/** The text part that stands for an image in its message: what it is (`text`: the alt, then its description), and the link to view it again. */
+/**
+ * The text part that stands for an image in its message: what it is (`text`: the alt, then its description), and the
+ * link to view it again.
+ */
 export function imageLabel(ref: string, size: { width: number; height: number } | undefined, text: string): string {
   const link = ref.startsWith("data:") ? "" : ` ${ref}`
   const dims = size ? ` (${size.width}×${size.height})` : ""
@@ -66,9 +69,9 @@ export function describeInBackground(
 }
 
 /**
- * Puts the descriptions written so far into their images' labels, and says which (for the hosts' image rows). With `wait`, first waits for the ones still being
- * written (at most {@link DESCRIBE_TIMEOUT_MS}): a chat model that can't see has nothing else to go on, and a turn
- * ends with them in, so the saved session keeps them.
+ * Puts the descriptions written so far into their images' labels, and says which (for the hosts' image rows). With
+ * `wait`, first waits for the ones still being written (at most {@link DESCRIBE_TIMEOUT_MS}): a chat model that can't
+ * see has nothing else to go on, and a turn ends with them in, so the saved session keeps them.
  */
 export async function applyDescriptions(
   session: Session,

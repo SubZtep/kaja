@@ -44,7 +44,10 @@ export function setNasiDescriberResolver(resolver: DescriberResolver | undefined
   describerResolver = resolver
 }
 
-/** Reuses an existing session's model so it doesn't change mid-conversation; falls back to a fresh random pick if that model was since disabled/deleted (or there's no pinned model yet, i.e. a new session). */
+/**
+ * Reuses an existing session's model so it doesn't change mid-conversation; falls back to a fresh random pick if that
+ * model was since disabled/deleted (or there's no pinned model yet, i.e. a new session).
+ */
 export async function resolveModelWithProvider(pinnedModel?: string) {
   return pinnedModel
     ? ((await modelService.getModelWithProviderByName(pinnedModel)) ??
@@ -52,7 +55,11 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
     : modelService.getRandomModelWithProvider()
 }
 
-/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this host. */
+/**
+ * Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat
+ * completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this
+ * host.
+ */
 function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
   const guarded = createGuardedFetch()
   return (input, init) => guarded(input instanceof Request ? input.url : input, init)
@@ -92,7 +99,10 @@ async function defaultChatResolver(pinnedModel?: string) {
   }
 }
 
-/** A free, enabled `vision` model (the catalog's default is seeded), which describes arriving images; else undefined and they keep their alt text. */
+/**
+ * A free, enabled `vision` model (the catalog's default is seeded), which describes arriving images; else undefined and
+ * they keep their alt text.
+ */
 async function resolveDescriber() {
   if (env.NASI_STUB_MODEL) return undefined
   const result = await modelService.getRandomModelWithProvider("vision")
@@ -130,7 +140,10 @@ async function resolveSummarizer() {
   }
 }
 
-/** Host-neutral replacement for the CLI's terminal-flavored ask_user contract — cloud chat is a normal message UI, not a terminal that blocks on tool calls. */
+/**
+ * Host-neutral replacement for the CLI's terminal-flavored ask_user contract — cloud chat is a normal message UI, not a
+ * terminal that blocks on tool calls.
+ */
 const CLOUD_ASK_USER_INSTRUCTION =
   `You talk to the human through a chat interface, and they can only reply ` +
   `when you call the ${ASK_USER_TOOL} tool — plain text output is shown to ` +
@@ -158,7 +171,10 @@ export function setNasiEgressOverride(egress: ((userId: string) => Egress) | und
   egressOverride = egress
 }
 
-/** Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host, and one the key a call carries may go to (`keys`; without them an ability's calls only go to the official sandbox). */
+/**
+ * Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host,
+ * and one the key a call carries may go to (`keys`; without them an ability's calls only go to the official sandbox).
+ */
 export function cloudEgress(userId: string, keys?: SandboxKeys): Egress {
   return egressOverride ? egressOverride(userId) : egressFor(userId, keys)
 }
@@ -181,13 +197,19 @@ export function cloudSandbox(userId: string, keys: SandboxKeys): McpSandbox {
   return (sandboxOverride ?? mcpSandboxFor)(userId, keys)
 }
 
-/** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
+/**
+ * Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows
+ * within it. The caller closes it after the turn (its MCP connections).
+ */
 export async function openNasiFor(opts: {
   userId: string
   owner?: string | null
   pinnedModel?: string
   language?: string
-  /** Whose abilities the turn gets; defaults to the user's own (every ability, with their keys); a widget passes skills only. */
+  /**
+   * Whose abilities the turn gets; defaults to the user's own (every ability, with their keys); a widget passes skills
+   * only.
+   */
   abilities?: CloudAbilitySource
   /** How replies should read where they're shown (see `PromptContext.channelInstruction`). */
   channelInstruction?: string
@@ -238,7 +260,10 @@ const TERMINAL_ENVIRONMENT =
   "You are Kaja cloud chat, talking to the user's terminal: some of your tools run on their own computer through it " +
   "(their files, programs and, if they allowed it, their shell), each asking them first when it needs to. "
 
-/** What a terminal declares with a turn: the tools and skills it runs on the user's computer, and the user's own personas. */
+/**
+ * What a terminal declares with a turn: the tools and skills it runs on the user's computer, and the user's own
+ * personas.
+ */
 export type TurnClient = {
   tools: NonNullable<NasiTurnRequest["clientTools"]>
   skills: NonNullable<NasiTurnRequest["clientSkills"]>
@@ -251,7 +276,10 @@ export function clientOf(body: NasiTurnRequest): TurnClient | undefined {
   return { tools: body.clientTools ?? [], skills: body.clientSkills ?? [], personas: body.clientPersonas ?? [] }
 }
 
-/** The catalog with the user's own personas added; one with a catalog persona's id takes its place, `default` staying first. */
+/**
+ * The catalog with the user's own personas added; one with a catalog persona's id takes its place, `default` staying
+ * first.
+ */
 export function withOwnPersonas(catalog: Persona[], own: Persona[]): Persona[] {
   if (own.length === 0) return catalog
   const mine = new Map(own.map(persona => [persona.id, persona]))
@@ -261,12 +289,18 @@ export function withOwnPersonas(catalog: Persona[], own: Persona[]): Persona[] {
   ]
 }
 
-/** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */
+/**
+ * Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the
+ * read-modify-write around session persistence; a new session (no id yet) has no shared row to race on.
+ */
 function withSessionLock<T>(userId: string, body: NasiTurnRequest, fn: () => Promise<T>): Promise<T> {
   return body.session ? withLock(`${userId}:${body.session}`, fn) : fn()
 }
 
-/** The model an existing session last used, so a resumed turn re-resolves the same model instead of a fresh random pick. Undefined for a brand-new session. */
+/**
+ * The model an existing session last used, so a resumed turn re-resolves the same model instead of a fresh random pick.
+ * Undefined for a brand-new session.
+ */
 export async function pinnedModelFor(userId: string, sessionId: string | undefined): Promise<string | undefined> {
   if (!sessionId) return undefined
   const result = await pool.query<{ model: string }>("SELECT model FROM nasi_session WHERE id = $1 AND user_id = $2", [

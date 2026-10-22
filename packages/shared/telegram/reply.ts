@@ -14,7 +14,10 @@ export type ReplyChannel<Photo> = {
   /** Deletes a sent message: the placeholder, when a turn pauses for an approval before writing anything. */
   remove(messageId: number): Promise<void>
   sendPhoto(photo: Photo, caption?: string): Promise<void>
-  /** Where a reply's `![alt](src)` image comes from, or undefined to leave it out: each host decides what a reply may send. */
+  /**
+   * Where a reply's `![alt](src)` image comes from, or undefined to leave it out: each host decides what a reply may
+   * send.
+   */
   photoSource(src: string): Photo | undefined
   /** What a reply with no text and no image says, in the user's language. */
   emptyReply: string
@@ -22,23 +25,35 @@ export type ReplyChannel<Photo> = {
   warn(message: string, error: unknown): void
 }
 
-/** A turn's reply in the making: a "…" placeholder the streamed text edits in place, then the finished message, with a message of its own for each round that went on to call tools. */
+/**
+ * A turn's reply in the making: a "…" placeholder the streamed text edits in place, then the finished message, with a
+ * message of its own for each round that went on to call tools.
+ */
 export type Reply = {
   /** The text streamed into the current message so far. */
   readonly streamed: string
   /** Adds a content delta; the message catches up at the throttle's pace. */
   append(text: string): void
-  /** A round that goes on to call tools: its text (`content`) becomes a finished message, and the next round's text starts a new one. */
+  /**
+   * A round that goes on to call tools: its text (`content`) becomes a finished message, and the next round's text
+   * starts a new one.
+   */
   endRound(content: string): Promise<void>
   /** Writes the finished reply: its HTML (split over more messages past Telegram's limit), then its images as photos. */
   finish(rawText: string): Promise<void>
-  /** Before a prompt that pauses the turn (an approval): what was streamed becomes the finished text, and an untouched placeholder is removed. */
+  /**
+   * Before a prompt that pauses the turn (an approval): what was streamed becomes the finished text, and an untouched
+   * placeholder is removed.
+   */
   settle(): Promise<void>
   /** Shows `text` as it is (an error line) in place of the current message, ending the stream. */
   fail(text: string): Promise<void>
 }
 
-/** Sends the placeholder and returns the {@link Reply} that fills it. Edits go out one at a time, in order, and only a delivered one counts, so a failed edit is tried again by the next identical one. */
+/**
+ * Sends the placeholder and returns the {@link Reply} that fills it. Edits go out one at a time, in order, and only a
+ * delivered one counts, so a failed edit is tried again by the next identical one.
+ */
 export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Reply> {
   // The message being written; undefined after a finished round, until the next round's text arrives
   let messageId: number | undefined = (await channel.send(PLACEHOLDER)).messageId
@@ -57,7 +72,10 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
     return run
   }
 
-  /** {@link show} for a finished text: nothing after it would fix a failure, so it sits out one rate limit, then only logs. */
+  /**
+   * {@link show} for a finished text: nothing after it would fix a failure, so it sits out one rate limit, then only
+   * logs.
+   */
   async function showFinal(text: string) {
     try {
       await show(text)
@@ -132,7 +150,10 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
   }
 }
 
-/** The chat line for a compaction, its numbers in `locale`; `t` translates the host's `telegram.compacted` and `telegram.compactedDropped`. */
+/**
+ * The chat line for a compaction, its numbers in `locale`; `t` translates the host's `telegram.compacted` and
+ * `telegram.compactedDropped`.
+ */
 export function compactedLine(
   result: { beforeTokens: number; afterTokens: number; dropped: boolean },
   t: (key: string, params: Record<string, string>) => string,

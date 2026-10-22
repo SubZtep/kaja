@@ -30,7 +30,10 @@ const DOTS_SPINNERS = [
 
 const BLOCK_SPINNERS = ["growVertical", "growHorizontal", "noise", "boxBounce", "boxBounce2", "triangle"] as const
 
-/** Block-families are a list of [cli-spinners](https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json)'s SpinnerName. */
+/**
+ * Block-families are a list of [cli-spinners](https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json)'s
+ * SpinnerName.
+ */
 const SPINNER_TEMPLATES = {
   dots: DOTS_SPINNERS,
   block: BLOCK_SPINNERS
@@ -38,7 +41,10 @@ const SPINNER_TEMPLATES = {
 
 export type SpinnerTemplate = keyof typeof SPINNER_TEMPLATES
 
-/** Picks a uniformly random index in [0, length) using crypto.getRandomValues, rejecting values that would bias the modulo. */
+/**
+ * Picks a uniformly random index in [0, length) using crypto.getRandomValues, rejecting values that would bias the
+ * modulo.
+ */
 function randomIndex(length: number): number {
   const max = 2 ** 32
   const limit = max - (max % length)

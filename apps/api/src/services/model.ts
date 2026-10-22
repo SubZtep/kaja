@@ -9,7 +9,10 @@ import type {
 } from "@kaja/schema/api"
 import type { Pool } from "pg"
 
-/** `Provider` with the real api_key value — never returned from the admin API, only used to authenticate an actual outbound call to the provider. */
+/**
+ * `Provider` with the real api_key value — never returned from the admin API, only used to authenticate an actual
+ * outbound call to the provider.
+ */
 type ProviderWithSecret = Omit<Provider, "hasApiKey"> & { apiKey: string | null }
 
 // Rows as pg returns them (timestamptz as Date); `last_used_at` only where a query joins usage in.
@@ -183,7 +186,10 @@ export class ModelService {
     }
   }
 
-  /** A specific free+enabled chat model by name, with its resolved provider — used to re-resolve a session's previously pinned model. */
+  /**
+   * A specific free+enabled chat model by name, with its resolved provider — used to re-resolve a session's previously
+   * pinned model.
+   */
   async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
     const { rows } = await this.#db.query(
       `

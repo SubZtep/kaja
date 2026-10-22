@@ -65,7 +65,10 @@ export class SandboxService {
     return rows[0]?.user_id
   }
 
-  /** Makes (or replaces) the user's sandbox key and returns it: the only time it's readable, since only its hash is kept. */
+  /**
+   * Makes (or replaces) the user's sandbox key and returns it: the only time it's readable, since only its hash is
+   * kept.
+   */
   async createKey(userId: string): Promise<string> {
     const key = `${KEY_PREFIX}${randomBytes(24).toString("base64url")}`
     await this.#db.query(

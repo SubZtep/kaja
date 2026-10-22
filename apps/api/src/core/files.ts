@@ -6,13 +6,19 @@ const credentials = { accessKeyId: env.STORAGE_ACCESS_KEY_ID, secretAccessKey: e
 const endpoint = env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`
 const region = env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION
 
-/** The images bucket: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests, CI). */
+/**
+ * The images bucket: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests,
+ * CI).
+ */
 const bucket = new Bun.S3Client({ bucket: env.STORAGE_BUCKET, endpoint, region, ...credentials })
 
 /** What anyone may read: the images, never a listing (see {@link prepareBucket}). */
 const PUBLIC_PREFIX = "images/"
 
-/** The endpoint without its trailing slashes, so the key path below adds exactly one (a regex would backtrack on a run of them). */
+/**
+ * The endpoint without its trailing slashes, so the key path below adds exactly one (a regex would backtrack on a run
+ * of them).
+ */
 function withoutTrailingSlashes(value: string): string {
   let end = value.length
   while (end > 0 && value[end - 1] === "/") end -= 1

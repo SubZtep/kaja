@@ -32,10 +32,9 @@ export interface AudioSource {
 
 export interface AudioSink {
   /**
-   * Play one utterance, consuming `pcm` as it is synthesized.
-   * `consumed` resolves when the input has been fully read (the next
-   * utterance may start synthesizing); `done` when the audio has audibly
-   * finished playing. Utterances play back in call order.
+   * Play one utterance, consuming `pcm` as it is synthesized. `consumed` resolves when the input has been fully read
+   * (the next utterance may start synthesizing); `done` when the audio has audibly finished playing. Utterances play
+   * back in call order.
    */
   play(pcm: AsyncIterable<Uint8Array>): {
     consumed: Promise<void>
@@ -44,10 +43,7 @@ export interface AudioSink {
   stop(): void
 }
 
-/**
- * Unbounded push queue drained by a single async-iterating consumer.
- * push() after end() is a no-op.
- */
+/** Unbounded push queue drained by a single async-iterating consumer. push() after end() is a no-op. */
 export function createAsyncQueue<T>() {
   const items: T[] = []
   let ended = false

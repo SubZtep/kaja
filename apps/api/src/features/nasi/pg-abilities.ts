@@ -8,10 +8,10 @@ const SKILL_FILE = "SKILL.md"
 export type CloudAbilitySource = { userId: string } | { skillsOnly: true }
 
 /**
- * {@link AbilityStore} over the `ability` table for one cloud turn: every available skill, HTTP tool and MCP server
- * (the turn's persona picks which it uses). Skill files come from the stored bundle, so there's no disk and no
- * skill folder path, and skills with scripts never get here. A widget's source is skills only, so no visitor ever
- * calls a tool or MCP server with the owner's key.
+ * {@link AbilityStore} over the `ability` table for one cloud turn: every available skill, HTTP tool and MCP server (the
+ * turn's persona picks which it uses). Skill files come from the stored bundle, so there's no disk and no skill folder
+ * path, and skills with scripts never get here. A widget's source is skills only, so no visitor ever calls a tool or
+ * MCP server with the owner's key.
  */
 export function createPostgresAbilityStore(source: CloudAbilitySource): AbilityStore {
   let loaded: Promise<CloudSkill[]> | undefined

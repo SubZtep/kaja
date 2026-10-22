@@ -28,8 +28,8 @@ export class ImageError extends Error {
 /**
  * Makes any image a model-sized JPEG or PNG: EXIF orientation applied and its metadata (GPS) dropped, fitted inside
  * {@link MAX_IMAGE_EDGE}, a PNG kept PNG (and a GIF or a transparent WebP made one: JPEG would turn transparency
- * black), everything else JPEG. One already normalised comes back as it is, so normalising twice costs nothing.
- * Throws {@link ImageError} for bytes that aren't an image this host can read, or one too big even when smaller.
+ * black), everything else JPEG. One already normalised comes back as it is, so normalising twice costs nothing. Throws
+ * {@link ImageError} for bytes that aren't an image this host can read, or one too big even when smaller.
  */
 export async function normalizeImage(bytes: Uint8Array): Promise<NormalizedImage> {
   const meta = await decoding(() => new Bun.Image(bytes, { maxPixels: MAX_PIXELS }).metadata())

@@ -62,9 +62,8 @@ type FakeMessage = {
 }
 
 /**
- * A stand-in for the OpenAI client's `chat.completions.stream()`: each call
- * pops the next scripted message, replays its content as a single delta
- * chunk, and returns it whole from `finalChatCompletion()`.
+ * A stand-in for the OpenAI client's `chat.completions.stream()`: each call pops the next scripted message, replays its
+ * content as a single delta chunk, and returns it whole from `finalChatCompletion()`.
  */
 function fakeClient(
   script: FakeMessage[],

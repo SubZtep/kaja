@@ -3,11 +3,11 @@
   "version": "0.22.15",
   "private": true,
   "scripts": {
-    "dev": "bun run --hot src/core/server.ts",
     "build": "bun run build:widget && bun build --minify --target bun --external @aws-sdk/lib-storage --outfile dist/server.js src/core/server.ts",
     "build:widget": "bun build --target=browser --format=iife --minify --outfile public/widget.js widgets/src/index.ts",
-    "start": "bun run dist/server.js",
-    "seed:config": "bun run scripts/seed-config.ts"
+    "dev": "bun run --hot src/core/server.ts",
+    "seed:config": "bun run scripts/seed-config.ts",
+    "start": "bun run dist/server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1155.0",

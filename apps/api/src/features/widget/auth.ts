@@ -9,10 +9,10 @@ export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: st
 export type WidgetVariables = { widgetKey: ResolvedWidgetKey }
 
 /**
- * Authenticates a widget request via the `X-Kaja-Widget-Key` header (deliberately not
- * `Authorization: Bearer`, to avoid confusion with Better Auth bearer tokens in logs/proxies).
- * The key itself is not secret — it's visible in the embedding page's source — so the real
- * security boundary is the Origin check against the key's stored allowlist, not key secrecy.
+ * Authenticates a widget request via the `X-Kaja-Widget-Key` header (deliberately not `Authorization: Bearer`, to avoid
+ * confusion with Better Auth bearer tokens in logs/proxies). The key itself is not secret — it's visible in the
+ * embedding page's source — so the real security boundary is the Origin check against the key's stored allowlist, not
+ * key secrecy.
  */
 export const widgetKeyAuthMiddleware = createMiddleware<{ Variables: WidgetVariables }>(async (c, next) => {
   const rawKey = c.req.header("x-kaja-widget-key")

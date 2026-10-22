@@ -7,7 +7,10 @@ const migrationsDir = join(import.meta.dir, "..", "migrations")
 // Any number works; it only has to be the same for every `bun test` that might race to build the database.
 const BUILD_LOCK = 7_261_947
 
-/** The migrations as one fingerprint: they're edited in place until v1.0, so a changed file means a rebuilt test database. */
+/**
+ * The migrations as one fingerprint: they're edited in place until v1.0, so a changed file means a rebuilt test
+ * database.
+ */
 function migrationsFingerprint(): { files: Migration[]; hash: string } {
   const files = readMigrations(migrationsDir)
   const hash = createHash("sha256")
@@ -33,10 +36,10 @@ async function builtHash(url: string): Promise<string | undefined> {
 }
 
 /**
- * Points the tests at their own database, `<dev database>_test` beside the dev one (or TEST_DATABASE_URL),
- * so a running `bun dev` — its marketplace sync on every (hot) start, its cron — can't change rows a test
- * relies on. The database is (re)built from the migrations whenever they differ from what it was built from.
- * Postgres being down only warns: the API tests then fail on their own, and the CLI tests don't need it.
+ * Points the tests at their own database, `<dev database>_test` beside the dev one (or TEST_DATABASE_URL), so a running
+ * `bun dev` — its marketplace sync on every (hot) start, its cron — can't change rows a test relies on. The database is
+ * (re)built from the migrations whenever they differ from what it was built from. Postgres being down only warns: the
+ * API tests then fail on their own, and the CLI tests don't need it.
  */
 export async function switchToTestDatabase(): Promise<void> {
   const devUrl = Bun.env.DATABASE_URL

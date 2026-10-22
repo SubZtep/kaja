@@ -33,7 +33,8 @@ function OpenLink({ target }: Readonly<{ target: string }>) {
 }
 
 /**
- * A tool's image with what it shows (its alt text, then its description once written) and a way to open it: beside the picture on a wide terminal, under it on a narrow one.
+ * A tool's image with what it shows (its alt text, then its description once written) and a way to open it: beside the
+ * picture on a wide terminal, under it on a narrow one.
  */
 export function ImageRow({ path, text }: Readonly<{ path: string; text?: string }>) {
   const { columns } = useWindowSize()

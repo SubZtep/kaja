@@ -2,14 +2,12 @@ import { cn } from "@kaja/shared/ui"
 import { useEffect, useRef } from "react"
 
 /**
- * Interactive stand-in for `/monster.gif`, traced pixel-for-pixel off the gif's own
- * 8px grid (41x14 cells) and split into five independently animatable parts. Tilts
- * in CSS3D toward the pointer, the pupils track it inside their sockets, and it
- * blinks and twitches its mouth on the same loose idle cadence as the source gif.
+ * Interactive stand-in for `/monster.gif`, traced pixel-for-pixel off the gif's own 8px grid (41x14 cells) and split
+ * into five independently animatable parts. Tilts in CSS3D toward the pointer, the pupils track it inside their
+ * sockets, and it blinks and twitches its mouth on the same loose idle cadence as the source gif.
  *
- * Mounted client-only (lazy + Suspense in hero.tsx) over the real `<img>`, which stays
- * in the markup as the LCP element and the reduced-motion / no-JS fallback.
- * Regenerate these cell lists by re-tracing the gif if its art ever changes.
+ * Mounted client-only (lazy + Suspense in hero.tsx) over the real `<img>`, which stays in the markup as the LCP element
+ * and the reduced-motion / no-JS fallback. Regenerate these cell lists by re-tracing the gif if its art ever changes.
  */
 
 const CELL = 10
@@ -172,7 +170,10 @@ const GROUPS = [
   { key: "bracketR", cols: 7, x: 34, depth: 0 }
 ] as const
 
-/** Pauses between idle moves (1.8–4.4 s, like the gif) and which move comes next: blinks each eye 3 times in 8, twitches the mouth twice. */
+/**
+ * Pauses between idle moves (1.8–4.4 s, like the gif) and which move comes next: blinks each eye 3 times in 8, twitches
+ * the mouth twice.
+ */
 const IDLE_GAPS_MS = [2600, 3900, 2100, 4300, 3100, 1900, 3600, 2800, 4100, 2300, 3400]
 const IDLE_ACTIONS = ["eyeL", "eyeR", "mouth", "eyeL", "eyeR", "eyeL", "mouth", "eyeR"] as const
 
@@ -186,7 +187,10 @@ function Pixels({ cells }: Readonly<{ cells: readonly Cell[] }>) {
   )
 }
 
-/** Renders nothing under prefers-reduced-motion (the gif stays); otherwise calls `onReady` once it has faded in, so the gif below can hide. */
+/**
+ * Renders nothing under prefers-reduced-motion (the gif stays); otherwise calls `onReady` once it has faded in, so the
+ * gif below can hide.
+ */
 export function MonsterFace({ className, onReady }: Readonly<{ className?: string; onReady?: () => void }>) {
   const rootRef = useRef<HTMLDivElement>(null)
   const faceRef = useRef<HTMLDivElement>(null)

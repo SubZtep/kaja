@@ -23,7 +23,7 @@ function put(path: string, content: string) {
 
 const stdio = (extra = "") => `description = "x"\ntransport = "stdio"\ncommand = "true"\ntools = ["t"]\n${extra}`
 
-/** settings.toml with `hosts`, and a marketplace where everything but `own` came from a sync. */
+/** Settings.toml with `hosts`, and a marketplace where everything but `own` came from a sync. */
 function setUp(hosts: string) {
   put(join(getConfigDir(), "settings.toml"), `[preferences]\nlocale = "en-GB"\n\n[tools.hosts]\n${hosts}\n`)
   const root = getMarketplaceDir()

@@ -4,13 +4,10 @@ import { FOCUS_REPORTING_DISABLE, FOCUS_REPORTING_ENABLE, windowFocusReport } fr
 import { useTerminalReports } from "./use-terminal-reports"
 
 /**
- * Tracks whether the terminal window has OS-level focus, via xterm's
- * focus-reporting mode (DECSET 1004): the terminal sends `ESC[I` on
- * focus-in, `ESC[O` on focus-out, once asked. Not universally supported —
- * an unsupported terminal just never sends either, so this stays `true`
- * (the default), the same as before this existed. Always disables on
- * unmount / process exit so the terminal is not left sticky, mirroring
- * {@link useMouseTracking}.
+ * Tracks whether the terminal window has OS-level focus, via xterm's focus-reporting mode (DECSET 1004): the terminal
+ * sends `ESC[I` on focus-in, `ESC[O` on focus-out, once asked. Not universally supported — an unsupported terminal just
+ * never sends either, so this stays `true` (the default), the same as before this existed. Always disables on unmount /
+ * process exit so the terminal is not left sticky, mirroring {@link useMouseTracking}.
  */
 export function useWindowFocus(): boolean {
   const { stdout } = useStdout()

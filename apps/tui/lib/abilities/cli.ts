@@ -47,7 +47,10 @@ export async function runAbilityUpdate(onStep: () => void = () => {}): Promise<{
   }
 }
 
-/** Syncs the marketplace the first time, so there is something to load. A failure is reported and leaves whatever is already on disk. */
+/**
+ * Syncs the marketplace the first time, so there is something to load. A failure is reported and leaves whatever is
+ * already on disk.
+ */
 export async function ensureMarketplace(print: (line: string) => void): Promise<void> {
   const { readSyncLock } = await import("./sync")
   if (!(await marketplaceSettings()).enabled || (await readSyncLock(getMarketplaceDir()))) return

@@ -25,9 +25,9 @@ function deviceVerificationUrl() {
 }
 
 /**
- * Fire-and-forget email send (Better Auth: do not await — avoids timing leaks).
- * Failures are logged for ops; the user already got a success response from the auth action.
- * Re-delivery / in-app banners can be layered on later without blocking the request path.
+ * Fire-and-forget email send (Better Auth: do not await — avoids timing leaks). Failures are logged for ops; the user
+ * already got a success response from the auth action. Re-delivery / in-app banners can be layered on later without
+ * blocking the request path.
  */
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   // Tests never mail anyone; they read codes from the database
@@ -42,12 +42,18 @@ const CODE_PURPOSE: Partial<Record<string, CodePurpose>> = {
   "change-email": "newEmail"
 }
 
-/** The language a code email goes out in when the address has no account yet: the web sends its page locale as `Accept-Language`. */
+/**
+ * The language a code email goes out in when the address has no account yet: the web sends its page locale as
+ * `Accept-Language`.
+ */
 function requestLocale(request: Request | undefined): string | undefined {
   return request?.headers.get("accept-language")?.split(/[,;]/)[0]?.trim()
 }
 
-/** True when a new account comes from the sign-up page with its consent boxes ticked: an email code sign-in's body, or a Google sign-up's OAuth state (the page passes both). */
+/**
+ * True when a new account comes from the sign-up page with its consent boxes ticked: an email code sign-in's body, or a
+ * Google sign-up's OAuth state (the page passes both).
+ */
 async function signUpConsented(ctx: { path?: string; body?: unknown } | null | undefined): Promise<boolean> {
   if (ctx?.path === "/sign-in/email-otp") return (ctx.body as { consent?: unknown } | undefined)?.consent === true
   const state = await getOAuthState()

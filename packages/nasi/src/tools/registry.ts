@@ -21,7 +21,10 @@ import { viewImageTool } from "./builtin/view-image"
 import type { NasiToolDeps } from "./deps"
 import { setToolDeps } from "./deps"
 
-/** Builtins safe to expose when `includeLocalTools` is false (cloud mode) — an allowlist so a new builtin is cloud-exposed only once someone opts it in here, not by default. */
+/**
+ * Builtins safe to expose when `includeLocalTools` is false (cloud mode) — an allowlist so a new builtin is
+ * cloud-exposed only once someone opts it in here, not by default.
+ */
 const CLOUD_SAFE = new Set([
   "ask_user",
   "switch_persona",
@@ -48,25 +51,37 @@ export type CreateToolsOptions = {
   /** Tools the host brings in besides the builtins, e.g. `loadAbilities`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
   /**
-   * MCP servers from abilities (`loadAbilities`' `mcp`), connected as community tools.
-   * In the cloud (`includeLocalTools` false) only these connect, and only remote (http/sse) ones, through `mcpFetch`,
-   * with images dropped and results capped.
+   * MCP servers from abilities (`loadAbilities`' `mcp`), connected as community tools. In the cloud
+   * (`includeLocalTools` false) only these connect, and only remote (http/sse) ones, through `mcpFetch`, with images
+   * dropped and results capped.
    */
   mcpAbilities?: McpAbilityTarget[]
-  /** Abilities' MCP servers connect only when `ensureAbilities` names them (a persona that uses them is active), not up front. Default false. */
+  /**
+   * Abilities' MCP servers connect only when `ensureAbilities` names them (a persona that uses them is active), not up
+   * front. Default false.
+   */
   lazyMcpAbilities?: boolean
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
-  /** Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities don't connect without it. Locally, only sandboxed abilities use it. */
+  /**
+   * Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities
+   * don't connect without it. Locally, only sandboxed abilities use it.
+   */
   mcpFetch?: (ability: string) => FetchLike
-  /** Local only: where files in a persona's backed-up roots are copied before an MCP server writes them; unset turns backups off. */
+  /**
+   * Local only: where files in a persona's backed-up roots are copied before an MCP server writes them; unset turns
+   * backups off.
+   */
   backupDir?: string
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
 /** What a cloud MCP result may hand the model, like an HTTP tool's body. */
 const CLOUD_MCP_MAX_RESULT_CHARS = 32 * 1024
-/** The largest raw MCP image a cloud turn takes in; run() then shrinks it to a model-sized copy, so this only guards memory. */
+/**
+ * The largest raw MCP image a cloud turn takes in; run() then shrinks it to a model-sized copy, so this only guards
+ * memory.
+ */
 const CLOUD_MCP_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 /** A sandboxed server may have to start first (a browser, say), so it gets longer than the usual connect timeout. */
 const SANDBOX_MCP_CONNECT_TIMEOUT_MS = 30_000
@@ -92,9 +107,9 @@ export type SkippedTool = {
 const ORIGIN_ORDER: ToolOrigin[] = ["official", "community"]
 
 /**
- * One namespace for every tool: stamps each group's origin/source onto its tools and drops
- * duplicate names, so the model never gets two functions with the same name. Official names
- * are reserved; among the others, the first one in wins.
+ * One namespace for every tool: stamps each group's origin/source onto its tools and drops duplicate names, so the
+ * model never gets two functions with the same name. Official names are reserved; among the others, the first one in
+ * wins.
  */
 export function mergeTools(groups: ToolGroup[]): { tools: Tool[]; skipped: SkippedTool[] } {
   const ordered = groups.toSorted((a, b) => ORIGIN_ORDER.indexOf(a.origin) - ORIGIN_ORDER.indexOf(b.origin))
@@ -144,7 +159,10 @@ type McpTarget = {
   pathArgs?: string[]
 }
 
-/** Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed rather than left running. */
+/**
+ * Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed
+ * rather than left running.
+ */
 async function connectWithTimeout(target: McpTarget, defaultTimeoutMs: number): Promise<McpConnection> {
   const timeoutMs = target.timeoutMs ?? defaultTimeoutMs
   const pending = connectMcpServer(target.server, target.opts)
@@ -186,7 +204,10 @@ function backupToolGroup(
   return [{ origin: "community", source: backedUp.id, tools: backupTools(backupDir, () => rootsOf(backedUp.id)) }]
 }
 
-/** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting anything. */
+/**
+ * Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for
+ * `includeLocalTools: false`, without connecting anything.
+ */
 export async function listCloudToolNames(deps?: NasiToolDeps): Promise<string[]> {
   const { tools } = await createTools({ deps })
   return tools.map(toolName)
@@ -310,9 +331,9 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     /**
      * Connects the MCP servers of the named abilities (every ability's when `names` is unset) that haven't been tried
      * yet (see `lazyMcpAbilities`) and returns every tool, theirs included. A server that fails stays failed; names
-     * without an MCP ability are ignored. A roots-taking server gets `personaId`'s folders (told when they change);
-     * for a persona that gives it none it isn't started, and its tools are left out of the list, as are its tools
-     * that may write when every folder the persona gives it is read-only.
+     * without an MCP ability are ignored. A roots-taking server gets `personaId`'s folders (told when they change); for
+     * a persona that gives it none it isn't started, and its tools are left out of the list, as are its tools that may
+     * write when every folder the persona gives it is read-only.
      */
     ensureAbilities: async (names?: Iterable<string>, personaId?: string): Promise<Tool[]> => {
       const wanted = names && new Set([...names].map(name => `ability:${name}`))

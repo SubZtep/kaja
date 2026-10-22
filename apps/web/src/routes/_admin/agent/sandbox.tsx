@@ -175,7 +175,10 @@ function SandboxRow({ sandbox }: Readonly<{ sandbox: Sandbox }>) {
   )
 }
 
-/** The user's own MCP sandboxes: the key that links one to them, whether they share and use shared ones, and each sandbox's state. */
+/**
+ * The user's own MCP sandboxes: the key that links one to them, whether they share and use shared ones, and each
+ * sandbox's state.
+ */
 function SandboxPage() {
   const apiFetch = useApiFetch()
   const { data, error, isLoading } = useQuery({

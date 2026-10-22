@@ -26,10 +26,9 @@ function KeyBarItem({
 }
 
 /**
- * Bottom-of-screen key bar, nano/Midnight-Commander style: a row of
- * `<key> <label>` pairs, the key in reverse video. On a narrow terminal the
- * pairs wrap onto further rows whole, never split mid-label.
- * An entry with `onPress` is also a button: it dims under the mouse and a click runs it.
+ * Bottom-of-screen key bar, nano/Midnight-Commander style: a row of `<key> <label>` pairs, the key in reverse video. On
+ * a narrow terminal the pairs wrap onto further rows whole, never split mid-label. An entry with `onPress` is also a
+ * button: it dims under the mouse and a click runs it.
  */
 export function KeyBar({ items }: Readonly<{ items: KeyBarEntry[] }>) {
   const barRef = useRef<DOMElement>(null)

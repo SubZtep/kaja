@@ -36,11 +36,11 @@ export type EgressOptions = {
 }
 
 /**
- * A forward proxy on 127.0.0.1 that the sandbox's browsers must go through (`--proxyServer` in overrides.json):
- * it resolves each host itself and connects only when every address is public, to the address it checked, so neither
- * a private IP, a name pointing at one, nor DNS rebinding reaches the host's own network or the cloud metadata service.
- * HTTPS and WebSockets come as CONNECT tunnels; plain HTTP is forwarded one request per connection.
- * With `upstream`, every connection instead goes through that proxy as a CONNECT tunnel to the checked address.
+ * A forward proxy on 127.0.0.1 that the sandbox's browsers must go through (`--proxyServer` in overrides.json): it
+ * resolves each host itself and connects only when every address is public, to the address it checked, so neither a
+ * private IP, a name pointing at one, nor DNS rebinding reaches the host's own network or the cloud metadata service.
+ * HTTPS and WebSockets come as CONNECT tunnels; plain HTTP is forwarded one request per connection. With `upstream`,
+ * every connection instead goes through that proxy as a CONNECT tunnel to the checked address.
  */
 export function startEgressProxy(opts: EgressOptions): Promise<Server> {
   const allow = opts.allow ?? (address => !isPrivateAddress(address))

@@ -14,9 +14,9 @@ const editFormSchema = z.object({
 })
 
 /**
- * Edits an existing provider's name, base URL, and API key. The key field is left blank by
- * default and only sent when filled in — an absent key means "leave unchanged" to the API, and
- * leaving it blank on submit avoids ever having to round-trip the secret back into the form.
+ * Edits an existing provider's name, base URL, and API key. The key field is left blank by default and only sent when
+ * filled in — an absent key means "leave unchanged" to the API, and leaving it blank on submit avoids ever having to
+ * round-trip the secret back into the form.
  */
 export function EditProviderDialog({
   provider,

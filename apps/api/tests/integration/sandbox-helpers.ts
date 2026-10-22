@@ -25,7 +25,10 @@ export type TestSandbox = {
   close: () => Promise<void>
 }
 
-/** A real sandbox process pool running the counter fixture as `abilities`, connected to `apiUrl` with `key` (none: anonymous). */
+/**
+ * A real sandbox process pool running the counter fixture as `abilities`, connected to `apiUrl` with `key` (none:
+ * anonymous).
+ */
 export async function startSandbox(opts: {
   apiUrl: string
   abilities: string[]

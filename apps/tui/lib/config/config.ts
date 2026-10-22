@@ -45,7 +45,10 @@ export async function validate() {
   return KajaConfigSchema.safeParse(data).success
 }
 
-/** Tolerant reader for the config wizard prefill: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */
+/**
+ * Tolerant reader for the config wizard prefill: returns whatever is in the file (possibly schema-invalid), or {} when
+ * missing/unparseable.
+ */
 export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   try {
     const data = TOML.parse(await file(getConfigPath()).text())
@@ -56,10 +59,16 @@ export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   return {}
 }
 
-/** Cached after the first read: the file only changes via saveConfig/savePreferences below (and invalidateConfigCache, for writers outside this module), so other readers (stt/tts/geo, called per-utterance) don't hit disk each time. */
+/**
+ * Cached after the first read: the file only changes via saveConfig/savePreferences below (and invalidateConfigCache,
+ * for writers outside this module), so other readers (stt/tts/geo, called per-utterance) don't hit disk each time.
+ */
 let cached: KajaConfig | undefined
 
-/** Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting a resolved default path into settings.toml. */
+/**
+ * Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting
+ * a resolved default path into settings.toml.
+ */
 export function invalidateConfigCache() {
   cached = undefined
 }
@@ -100,7 +109,10 @@ export async function create() {
   await write(getConfigPath(), stringifyToml(TEMPLATE_TOML))
 }
 
-/** Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the cloud client). */
+/**
+ * Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent
+ * concept) and no stt/tts/memory sections (those don't apply to the cloud client).
+ */
 export async function createCloud() {
   await write(getConfigPath(), stringifyToml({ preferences: { locale: detectLanguage() } }))
 }

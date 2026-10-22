@@ -1,6 +1,9 @@
 import { toolName } from "./tools"
 
-/** What a tool is called in an allow list: `<source>:<name>`, e.g. `ability:github:create_issue`. A tool with no source (a builtin) has none, and is never allow-listed. */
+/**
+ * What a tool is called in an allow list: `<source>:<name>`, e.g. `ability:github:create_issue`. A tool with no source
+ * (a builtin) has none, and is never allow-listed.
+ */
 export function allowKey(tool: Parameters<typeof toolName>[0] & { source?: string }): string | undefined {
   return tool.source ? `${tool.source}:${toolName(tool)}` : undefined
 }

@@ -1,5 +1,35 @@
 {
   "name": "kaja",
+  "private": true,
+  "description": "monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check:env": "bun scripts/env.ts --check",
+    "check:locales": "bun scripts/locales.ts --check",
+    "check:models": "bun scripts/models.ts --check",
+    "clean:tui-temp": "bun run apps/tui/scripts/clean-temp.ts",
+    "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
+    "dev:api": "bun run --filter @kaja/api dev",
+    "dev:docs": "cd docs && bundle exec jekyll serve --watch --incremental --livereload",
+    "dev:sandbox": "bun run --filter @kaja/sandbox dev",
+    "dev:tui": "bun run --env-file=apps/tui/.env apps/tui/cli.ts",
+    "dev:tui:log": "KAJA_LOG_LEVEL=debug KAJA_LOG_FILE=/tmp/kaja-tui.log bun run --env-file=apps/tui/.env apps/tui/cli.ts",
+    "dev:tui:log:show": "tail -f /tmp/kaja-tui.log",
+    "dev:web": "bun run --filter @kaja/web dev",
+    "generate:env": "bun scripts/env.ts",
+    "generate:env-types": "bun scripts/env-types.ts",
+    "generate:models": "bun scripts/models.ts",
+    "generate:schemas": "bun run packages/schema/tombi/generate.ts",
+    "seed:config": "bun run --filter @kaja/api seed:config",
+    "session": "bun run apps/tui/scripts/session.ts",
+    "sync:locales": "bun scripts/locales.ts",
+    "tailwind:fix": "bun run --filter @kaja/web tailwind:fix",
+    "test:tz": "for tz in Asia/Tokyo America/Los_Angeles Pacific/Kiritimati; do TZ=$tz bun test apps/api/tests/integration/timezone.test.ts apps/api/tests/integration/stats.test.ts apps/api/tests/integration/pg-store.test.ts packages/shared/tests/time.test.ts packages/nasi/tests/tools/current-time.test.ts apps/web/src/lib/period.test.ts apps/tui/tests/lib/session/store.test.ts || exit 1; done",
+    "typecheck": "set -e; for pkg in apps/* apps/*/* packages/* .claude/skills scripts; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
@@ -9,37 +39,7 @@
     "typescript": "^7.0.2",
     "zod": "^4.6.7"
   },
-  "description": "monorepo",
   "packageManager": "bun@1.4.4",
-  "private": true,
-  "scripts": {
-    "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
-    "dev:api": "bun run --filter @kaja/api dev",
-    "dev:docs": "cd docs && bundle exec jekyll serve --watch --incremental --livereload",
-    "dev:sandbox": "bun run --filter @kaja/sandbox dev",
-    "dev:tui": "bun run --env-file=apps/tui/.env apps/tui/cli.ts",
-    "dev:tui:log": "KAJA_LOG_LEVEL=debug KAJA_LOG_FILE=/tmp/kaja-tui.log bun run --env-file=apps/tui/.env apps/tui/cli.ts",
-    "dev:tui:log:show": "tail -f /tmp/kaja-tui.log",
-    "dev:web": "bun run --filter @kaja/web dev",
-    "check:env": "bun scripts/env.ts --check",
-    "check:locales": "bun scripts/locales.ts --check",
-    "check:models": "bun scripts/models.ts --check",
-    "generate:env": "bun scripts/env.ts",
-    "generate:env-types": "bun scripts/env-types.ts",
-    "generate:models": "bun scripts/models.ts",
-    "generate:schemas": "bun run packages/schema/tombi/generate.ts",
-    "seed:config": "bun run --filter @kaja/api seed:config",
-    "session": "bun run apps/tui/scripts/session.ts",
-    "clean:tui-temp": "bun run apps/tui/scripts/clean-temp.ts",
-    "sync:locales": "bun scripts/locales.ts",
-    "tailwind:fix": "bun run --filter @kaja/web tailwind:fix",
-    "test:tz": "for tz in Asia/Tokyo America/Los_Angeles Pacific/Kiritimati; do TZ=$tz bun test apps/api/tests/integration/timezone.test.ts apps/api/tests/integration/stats.test.ts apps/api/tests/integration/pg-store.test.ts packages/shared/tests/time.test.ts packages/nasi/tests/tools/current-time.test.ts apps/web/src/lib/period.test.ts apps/tui/tests/lib/session/store.test.ts || exit 1; done",
-    "typecheck": "set -e; for pkg in apps/* apps/*/* packages/* .claude/skills scripts; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "patchedDependencies": {
     "ink@8.0.0": "patches/ink@8.0.0.patch"
   }

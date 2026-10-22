@@ -18,7 +18,10 @@ const editFormSchema = z.object({
   persona: z.string()
 })
 
-/** Comma or newline separated origins, e.g. "https://example.com, https://www.example.com"; a URL of the site is cut to its origin, anything else goes to the API as typed (which refuses it). */
+/**
+ * Comma or newline separated origins, e.g. "https://example.com, https://www.example.com"; a URL of the site is cut to
+ * its origin, anything else goes to the API as typed (which refuses it).
+ */
 export function parseOrigins(input: string): string[] {
   return input
     .split(/[\n,]/)
@@ -30,7 +33,10 @@ export function parseOrigins(input: string): string[] {
     })
 }
 
-/** Edits a widget key's label, origins, type and persona (whose `abilities` decide the visitors' skills). The key itself never changes, so the embed snippet keeps working. */
+/**
+ * Edits a widget key's label, origins, type and persona (whose `abilities` decide the visitors' skills). The key itself
+ * never changes, so the embed snippet keeps working.
+ */
 export function EditWidgetDialog({
   widgetKey,
   personas,

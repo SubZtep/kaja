@@ -10,7 +10,7 @@ import { secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { buildModelsToml, type ModelsSelection } from "./catalog"
 
-/** models.toml's [providers.*], with secrets.toml's [providers.<name>].api_key folded back in. */
+/** Models.toml's [providers.*], with secrets.toml's [providers.<name>].api_key folded back in. */
 export type ResolvedModelsFile = Omit<KajaModelsFile, "providers"> & {
   providers: Record<string, KajaModelsFile["providers"][string] & { api_key?: string }>
 }
@@ -25,9 +25,9 @@ export async function writeModelsFromCatalog(selection: ModelsSelection) {
 }
 
 /**
- * Points `[providers.<name>]`'s base_url at `baseUrl` in models.toml text, for the setup wizard's
- * "where does your server listen?" step. Edits the one line rather than re-serializing the parsed
- * file, which would drop the template's comments; unchanged when that table has no base_url.
+ * Points `[providers.<name>]`'s base_url at `baseUrl` in models.toml text, for the setup wizard's "where does your
+ * server listen?" step. Edits the one line rather than re-serializing the parsed file, which would drop the template's
+ * comments; unchanged when that table has no base_url.
  */
 export function setProviderBaseUrl(text: string, provider: string, baseUrl: string): string {
   const lines = text.split("\n")
@@ -51,9 +51,9 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
 const TABLE_HEADER = /^\s*\[[^\]"=]+\]\s*(#.*)?$/
 
 /**
- * Comments out each `[models.<id>]` table in models.toml text, for the doctor dropping a broken model so
- * the next one serving its task takes over. Only the table's own lines get a `# `: comments and blank
- * lines before the next table stay as they are, and a missing id is skipped.
+ * Comments out each `[models.<id>]` table in models.toml text, for the doctor dropping a broken model so the next one
+ * serving its task takes over. Only the table's own lines get a `# `: comments and blank lines before the next table
+ * stay as they are, and a missing id is skipped.
  */
 export function commentOutModels(text: string, ids: string[]): string {
   const lines = text.split("\n")
@@ -72,7 +72,10 @@ export function commentOutModels(text: string, ids: string[]): string {
   return lines.join("\n")
 }
 
-/** Reads models.toml, comments out the given models (see {@link commentOutModels}), and writes it back. No-op when the file is missing. */
+/**
+ * Reads models.toml, comments out the given models (see {@link commentOutModels}), and writes it back. No-op when the
+ * file is missing.
+ */
 export async function saveCommentedOutModels(ids: string[]) {
   const f = file(getModelsPath())
   if (!(await f.exists())) return
@@ -81,7 +84,10 @@ export async function saveCommentedOutModels(ids: string[]) {
   if (next !== text) await write(f, next)
 }
 
-/** The `kaja config fetch` subcommand: (re-)writes the bundled config/models.default.toml template, backing up any existing (differing) file first. */
+/**
+ * The `kaja config fetch` subcommand: (re-)writes the bundled config/models.default.toml template, backing up any
+ * existing (differing) file first.
+ */
 export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
   return writeTemplateConfig(TEMPLATE, getModelsPath())
 }
@@ -117,7 +123,10 @@ export function findModelById(
   return models.find(m => m.id === id && (!task || m.task === task))
 }
 
-/** Resolves the model to use for a task: a persona's pin for that task wins, else the first model in the file that lists it. */
+/**
+ * Resolves the model to use for a task: a persona's pin for that task wins, else the first model in the file that lists
+ * it.
+ */
 export function resolveActiveModel(
   data: ResolvedModelsFile,
   task: ModelTask,

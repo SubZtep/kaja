@@ -107,7 +107,7 @@ export const KajaToolsSchema = z.object({
     )
 })
 
-/** telegram (external service credentials) lives in secrets.toml */
+/** Telegram (external service credentials) lives in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

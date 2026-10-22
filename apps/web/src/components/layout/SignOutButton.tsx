@@ -6,7 +6,10 @@ import { loadAuthClient } from "../../hooks/load-auth-client"
 import { m } from "../../paraglide/messages.js"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
-/** A header stamp like the menu items; `compact` (the desktop bar) shows just the icon, with the label as its accessible name. */
+/**
+ * A header stamp like the menu items; `compact` (the desktop bar) shows just the icon, with the label as its accessible
+ * name.
+ */
 export function SignOutButton({ compact, onClick }: Readonly<{ compact?: boolean; onClick?: () => void }>) {
   const navigate = useNavigate()
   const { apiUrl } = useLoaderData({ from: "__root__" })

@@ -32,9 +32,8 @@ import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
 
 /**
- * What the chat timeline is made of: the human's own messages, the agent's
- * finalized events, and errors from failed runs (e.g. a model that isn't
- * deployed) — surfaced in the timeline instead of crashing the app.
+ * What the chat timeline is made of: the human's own messages, the agent's finalized events, and errors from failed
+ * runs (e.g. a model that isn't deployed) — surfaced in the timeline instead of crashing the app.
  */
 export type TimelineEvent =
   | { type: "user"; text: string }
@@ -54,31 +53,26 @@ export type TimelineEvent =
   | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" | "image_described" }>
 
 /**
- * The message currently streaming in, accumulated from delta events. Cleared
- * whenever a finalized event replaces it in the timeline.
+ * The message currently streaming in, accumulated from delta events. Cleared whenever a finalized event replaces it in
+ * the timeline.
  */
 export type PartialMessage = { reasoning: string; content: string }
 
 /**
- * Minimum time between partial-message re-renders while streaming. Deltas
- * can arrive far faster than this; capping the render rate keeps Ink's
- * frame repaints (and terminals that struggle with tall, fast-changing
- * content) from falling behind on long responses.
+ * Minimum time between partial-message re-renders while streaming. Deltas can arrive far faster than this; capping the
+ * render rate keeps Ink's frame repaints (and terminals that struggle with tall, fast-changing content) from falling
+ * behind on long responses.
  */
 const DELTA_INTERVAL_MS = 80
 
 /**
- * Drives an {@link Agent} from React state: constructs the agent and its
- * {@link Session} once, and exposes a `send` function that runs a prompt to
- * completion, collecting the yielded events as they arrive. `events` is the
- * finalized timeline (including the user's own messages); `partial` holds
- * the in-flight streaming message, if any.
+ * Drives an {@link Agent} from React state: constructs the agent and its {@link Session} once, and exposes a `send`
+ * function that runs a prompt to completion, collecting the yielded events as they arrive. `events` is the finalized
+ * timeline (including the user's own messages); `partial` holds the in-flight streaming message, if any.
  *
- * With `resume`, both are seeded from a persisted session instead of empty:
- * the restored messages already contain their system prompt (run() only
- * builds one for an empty session), so the original persona instructions
- * and sticky notes stay baked in — by design. After every completed turn
- * the session is saved back to the store, fire-and-forget.
+ * With `resume`, both are seeded from a persisted session instead of empty: the restored messages already contain their
+ * system prompt (run() only builds one for an empty session), so the original persona instructions and sticky notes
+ * stay baked in — by design. After every completed turn the session is saved back to the store, fire-and-forget.
  */
 export function useAgent(
   config: ConstructorParameters<typeof Agent>[0] & {

@@ -48,7 +48,10 @@ const LANGUAGE_NAME: Record<string, string> = {
   "zh-TW": "Traditional Chinese (Taiwan)"
 }
 
-/** Builds a PromptContext.replyLanguageInstruction for a UI language code — "en-GB" is omitted (it's already the model's default), any other known code tells the model to reply in that language. */
+/**
+ * Builds a PromptContext.replyLanguageInstruction for a UI language code — "en-GB" is omitted (it's already the model's
+ * default), any other known code tells the model to reply in that language.
+ */
 export function replyLanguageInstructionFor(language: string): string | undefined {
   if (language === "en-GB") return undefined
   const name = LANGUAGE_NAME[language]
@@ -161,8 +164,8 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
 }
 
 /**
- * One `## Skill: <name>` section per skill the active persona keeps in the system prompt: its SKILL.md body as
- * written, then where its other files are, since its instructions may point to them (load_skill opens them).
+ * One `## Skill: <name>` section per skill the active persona keeps in the system prompt: its SKILL.md body as written,
+ * then where its other files are, since its instructions may point to them (load_skill opens them).
  */
 async function buildStickySkillSections(agent: Agent): Promise<string[]> {
   const loadSkill = loadSkillToolOf(agent)
@@ -193,7 +196,10 @@ async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<
   return dataset ? datasetInstructions(agent.dataset, dataset.label) : undefined
 }
 
-/** "About the user" from every profile dataset: what the user already shared, and how the rest gets filled in. Owner-scoped like memory. */
+/**
+ * "About the user" from every profile dataset: what the user already shared, and how the rest gets filled in.
+ * Owner-scoped like memory.
+ */
 async function buildProfileBlock(
   agent: Agent,
   toolNames: Set<string>,
@@ -250,10 +256,7 @@ export const TELEGRAM_CHANNEL_INSTRUCTION =
   "chat message: a few sentences, no headings, lists only when they really help. Go longer only when the user " +
   "asks for detail or the task needs it (code, step-by-step instructions)."
 
-/**
- * Assembles the system prompt for a fresh session with the given agent.
- * Returns `undefined` if every block is empty.
- */
+/** Assembles the system prompt for a fresh session with the given agent. Returns `undefined` if every block is empty. */
 export async function buildSystemPrompt(agent: Agent, owner: string | null = LOCAL_OWNER): Promise<string | undefined> {
   const toolNames = new Set(personaTools(agent).map(t => toolName(t)))
   const ctx = agent.promptContext ?? {}
@@ -294,11 +297,11 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
 }
 
 /**
- * Keeps a running conversation in step with the skills and personas available now (sticky skills' bodies too): they're written into
- * the system prompt when the conversation starts, so one changed since (a marketplace sync, a new key) would
- * otherwise never reach it. When the `## Skills`, `## Personas` or a sticky `## Skill:` section no longer matches, the prompt
- * is rebuilt in place, as a persona switch does; unchanged lists leave the message untouched, so prompt
- * caching holds.
+ * Keeps a running conversation in step with the skills and personas available now (sticky skills' bodies too): they're
+ * written into the system prompt when the conversation starts, so one changed since (a marketplace sync, a new key)
+ * would otherwise never reach it. When the `## Skills`, `## Personas` or a sticky `## Skill:` section no longer
+ * matches, the prompt is rebuilt in place, as a persona switch does; unchanged lists leave the message untouched, so
+ * prompt caching holds.
  */
 export async function refreshAbilitiesInPrompt(
   agent: Agent,
@@ -337,8 +340,8 @@ function hasSection(content: string, title: string, block: string | undefined): 
 }
 
 /**
- * {@link applyPersona} plus rewriting `messages`' system message in place so
- * the next completion request reflects the new persona.
+ * {@link applyPersona} plus rewriting `messages`' system message in place so the next completion request reflects the
+ * new persona.
  */
 export async function applyPersonaToMessages(
   agent: Agent,

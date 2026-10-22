@@ -2,9 +2,9 @@ import type { CliResolvedModel } from "@kaja/schema/config"
 import OpenAI from "openai"
 
 /**
- * Like {@link checkModelAvailability}, but says why it failed (e.g. "401 Incorrect API key",
- * "Connection error."). `status` is the provider's HTTP status when there was one — absent for a
- * connection that never landed, which is how callers tell a refused key from an unreachable server.
+ * Like {@link checkModelAvailability}, but says why it failed (e.g. "401 Incorrect API key", "Connection error.").
+ * `status` is the provider's HTTP status when there was one — absent for a connection that never landed, which is how
+ * callers tell a refused key from an unreachable server.
  */
 export async function probeModel(
   model: CliResolvedModel
@@ -20,9 +20,8 @@ export async function probeModel(
 }
 
 /**
- * Confirms a model is servable: chat/embedding use a real 1-token/1-word
- * request (GET /models omits some servable models on Fireworks); speaches
- * STT probes via POST /v1/models/{id}; everything else falls back to GET /models.
+ * Confirms a model is servable: chat/embedding use a real 1-token/1-word request (GET /models omits some servable
+ * models on Fireworks); speaches STT probes via POST /v1/models/{id}; everything else falls back to GET /models.
  */
 export async function checkModelAvailability(model: CliResolvedModel): Promise<boolean> {
   try {

@@ -13,10 +13,9 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 })
 
 /**
- * Shared-secret bearer for /config/* (no per-user auth).
- * Fail-closed: missing/empty CONFIG_API_TOKEN denies every request so provider
- * API keys in models.toml / model JSON cannot be scraped when misconfigured; in production the
- * API won't boot with the .env.example placeholder either (see ApiEnvSchema).
+ * Shared-secret bearer for /config/* (no per-user auth). Fail-closed: missing/empty CONFIG_API_TOKEN denies every
+ * request so provider API keys in models.toml / model JSON cannot be scraped when misconfigured; in production the API
+ * won't boot with the .env.example placeholder either (see ApiEnvSchema).
  */
 export function isValidConfigToken(authHeader: string | undefined | null, token: string | undefined | null): boolean {
   if (!token) return false

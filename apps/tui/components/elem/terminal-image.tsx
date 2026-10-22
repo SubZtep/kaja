@@ -28,8 +28,8 @@ export function maxImageRows(terminalRows: number): number {
 }
 
 /**
- * The size an image is drawn at. The terminal alone gives a share of its width and its rows minus the chrome;
- * the real container width and viewport height, once measured (0 = unknown), can only shrink that.
+ * The size an image is drawn at. The terminal alone gives a share of its width and its rows minus the chrome; the real
+ * container width and viewport height, once measured (0 = unknown), can only shrink that.
  */
 export function imageBox(opts: {
   terminalColumns: number
@@ -46,9 +46,8 @@ export function imageBox(opts: {
 }
 
 /**
- * Renders an image inline as ANSI half-blocks. Shows the dim alt text while resolving, and
- * keeps showing it if rendering fails, followed by the reason (e.g. HTTP 404)
- * so a broken link doesn't look like a missing feature.
+ * Renders an image inline as ANSI half-blocks. Shows the dim alt text while resolving, and keeps showing it if
+ * rendering fails, followed by the reason (e.g. HTTP 404) so a broken link doesn't look like a missing feature.
  */
 export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
   const remeasure = useRemeasure()

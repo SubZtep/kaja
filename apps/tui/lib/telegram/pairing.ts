@@ -19,9 +19,9 @@ function normalizeCode(text: string): string {
 export type PairingVerdict = "owner" | "paired" | "ignore"
 
 /**
- * Who may use the local bot: the owners saved in secrets.toml, plus whoever sends the one-time code while
- * it's open. Anyone else gets silence, and a user who sends too many wrong codes is ignored until restart.
- * Pure state; the caller saves a new owner and sends the replies.
+ * Who may use the local bot: the owners saved in secrets.toml, plus whoever sends the one-time code while it's open.
+ * Anyone else gets silence, and a user who sends too many wrong codes is ignored until restart. Pure state; the caller
+ * saves a new owner and sends the replies.
  */
 export function createPairing(init: { ownerIds: number[]; code: string | undefined }) {
   const owners = new Set(init.ownerIds)
@@ -36,7 +36,10 @@ export function createPairing(init: { ownerIds: number[]; code: string | undefin
     isOwner(userId: number) {
       return owners.has(userId)
     },
-    /** Checks a text message: an owner passes, a matching `/start <code>` or bare code pairs its sender and closes pairing. */
+    /**
+     * Checks a text message: an owner passes, a matching `/start <code>` or bare code pairs its sender and closes
+     * pairing.
+     */
     check(userId: number, text: string): PairingVerdict {
       if (owners.has(userId)) return "owner"
       if (!code) return "ignore"

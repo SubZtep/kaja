@@ -10,7 +10,10 @@ const FRESH_MS = 150_000
 
 type Health = { connected: boolean; at: number }
 
-/** Records whether the sandbox is connected to the API right now; called on welcome, every heartbeat and every disconnect. */
+/**
+ * Records whether the sandbox is connected to the API right now; called on welcome, every heartbeat and every
+ * disconnect.
+ */
 export function markHealth(connected: boolean): void {
   try {
     writeFileSync(HEALTH_FILE, JSON.stringify({ connected, at: Date.now() } satisfies Health))
@@ -19,7 +22,10 @@ export function markHealth(connected: boolean): void {
   }
 }
 
-/** `bun sandbox.js health`, the Docker HEALTHCHECK: exit 0 when connected with a recent heartbeat, 1 otherwise (and why). */
+/**
+ * `bun sandbox.js health`, the Docker HEALTHCHECK: exit 0 when connected with a recent heartbeat, 1 otherwise (and
+ * why).
+ */
 export function runHealthCheck(): never {
   try {
     const health = JSON.parse(readFileSync(HEALTH_FILE, "utf8")) as Health

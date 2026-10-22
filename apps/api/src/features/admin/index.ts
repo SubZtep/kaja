@@ -13,8 +13,8 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 })
 
 /**
- * Platform-admin-only: /admin/providers/*, /admin/models/*,
- * /admin/abilities/sync and /admin/abilities/keys/*, /admin/sandbox.
+ * Platform-admin-only: /admin/providers/_, /admin/models/_, /admin/abilities/sync and /admin/abilities/keys/*,
+ * /admin/sandbox.
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)

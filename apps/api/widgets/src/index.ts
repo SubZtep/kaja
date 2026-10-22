@@ -77,9 +77,9 @@ function appendMessage(container: HTMLElement, text: string, role: "user" | "bot
 }
 
 /**
- * `document.currentScript` is only reliable for a classic parser-inserted <script> — it's null (or already
- * reset) for a <script> a framework injects into the DOM programmatically, e.g. React rendering it as JSX.
- * Fall back to finding any <script> tag whose src points at a widget bundle.
+ * `document.currentScript` is only reliable for a classic parser-inserted <script> — it's null (or already reset) for a
+ * <script> a framework injects into the DOM programmatically, e.g. React rendering it as JSX. Fall back to finding any
+ * <script> tag whose src points at a widget bundle.
  */
 function findEmbedScript(): HTMLScriptElement | null {
   const current = document.currentScript as HTMLScriptElement | null

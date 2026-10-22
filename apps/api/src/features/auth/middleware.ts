@@ -52,7 +52,10 @@ export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(as
   await next()
 })
 
-/** The signed-in user on a route behind {@link requireAuthMiddleware}; a route mounted without it answers 401 instead of running without one. */
+/**
+ * The signed-in user on a route behind {@link requireAuthMiddleware}; a route mounted without it answers 401 instead of
+ * running without one.
+ */
 export function sessionUser(c: Context<{ Variables: RouteVariables }>): AuthSessionUser {
   const user = c.get("user")
   if (!user) throw new HTTPException(401, { res: Response.json({ error: "Unauthorized" }, { status: 401 }) })

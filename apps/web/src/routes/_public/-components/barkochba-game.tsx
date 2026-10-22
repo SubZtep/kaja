@@ -113,9 +113,9 @@ async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTu
 }
 
 /**
- * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring
- * match, so it works for any language — then drops a short trailing label left behind by a
- * removal (e.g. "Question 2:"), identified purely by length/punctuation, not vocabulary.
+ * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring match, so it works
+ * for any language — then drops a short trailing label left behind by a removal (e.g. "Question 2:"), identified purely
+ * by length/punctuation, not vocabulary.
  */
 function withoutQuestion(content: string, question: string): string {
   if (!question) return content.trim()

@@ -16,7 +16,10 @@ import { chatModelId, client, summarizer } from "../lib/models/openai"
 import { getBackupDir, getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
-/** Every tool the local agent gets. `lazyMcp` (default) leaves abilities' MCP servers for `ensureAbilities` to connect once a persona that uses them is active; the doctor turns it off to test them all. */
+/**
+ * Every tool the local agent gets. `lazyMcp` (default) leaves abilities' MCP servers for `ensureAbilities` to connect
+ * once a persona that uses them is active; the doctor turns it off to test them all.
+ */
 export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: { lazyMcp?: boolean } = {}) {
   setDatasetLoaders({ loadDataset, loadDatasets })
 

@@ -1,6 +1,4 @@
-/**
- * Standardized error response types for API routes
- */
+/** Standardized error response types for API routes */
 
 import { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "@kaja/nasi"
 import type { Context } from "hono"

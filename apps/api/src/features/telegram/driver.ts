@@ -34,11 +34,9 @@ const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
 export type TelegramButton = { text: string; data: string }
 
 /**
- * Abstraction over the actual Telegram API calls, so the driver has zero
- * import of grammy itself. bot.ts implements this against the real bot.api,
- * translating grammy's own errors (429s, "message is not modified") at that
- * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`);
- * cloud Nasi never emits confirm_command. Editing a
+ * Abstraction over the actual Telegram API calls, so the driver has zero import of grammy itself. bot.ts implements
+ * this against the real bot.api, translating grammy's own errors (429s, "message is not modified") at that boundary.
+ * Buttons (rows of them) serve tool approvals (`confirm_tool`); cloud Nasi never emits confirm_command. Editing a
  * message without `rows` removes its buttons.
  */
 export type TelegramSender = {
@@ -73,16 +71,12 @@ function errorLine(error: unknown, t: Translate): string {
 }
 
 /**
- * Cloud counterpart to apps/tui/lib/telegram/driver.ts. Each Telegram user
- * must link their own Kaja account first (see bot.ts's /start handler); the
- * owning `userId` is resolved fresh per message via `resolveLinkedUser`,
- * never fixed. `telegramOwner(userId)` is still used as the `owner` within
- * that account's Postgres partition, so a linked user's bot conversations
- * stay separate from their web/lite ones (same mechanism widget visitors
- * use — see runWidgetTurn). No per-user Agent cache: `openNasiFor` is
- * called fresh per turn, same as every HTTP /nasi/turn call — state
- * round-trips through Postgres via the session id instead of living in
- * memory.
+ * Cloud counterpart to apps/tui/lib/telegram/driver.ts. Each Telegram user must link their own Kaja account first (see
+ * bot.ts's /start handler); the owning `userId` is resolved fresh per message via `resolveLinkedUser`, never fixed.
+ * `telegramOwner(userId)` is still used as the `owner` within that account's Postgres partition, so a linked user's bot
+ * conversations stay separate from their web/lite ones (same mechanism widget visitors use — see runWidgetTurn). No
+ * per-user Agent cache: `openNasiFor` is called fresh per turn, same as every HTTP /nasi/turn call — state round-trips
+ * through Postgres via the session id instead of living in memory.
  */
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   const { resolveLinkedUser, sender } = config
@@ -112,7 +106,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** A tool's image as a photo: by its public URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
+  /**
+   * A tool's image as a photo: by its public URL, or as bytes when Telegram can't fetch that (the local dev storage,
+   * say); a failed send is logged, never ends the turn.
+   */
   async function sendToolImage(chatId: number, image: { ref: string; key?: string; alt: string }) {
     try {
       if (image.key && isPublicHttpUrl(imageUrl(image.key)))
@@ -134,7 +131,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays above it. */
+  /**
+   * Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays above
+   * it.
+   */
   async function sendApproval(
     reply: Reply,
     chatId: number,
@@ -158,7 +158,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     await sender.sendMessage(chatId, text.join("\n"), buttons)
   }
 
-  /** Handles one event; ask_user, confirm_tool and final end the turn. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
+  /**
+   * Handles one event; ask_user, confirm_tool and final end the turn. A tool image (an MCP screenshot) goes out as a
+   * photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them.
+   */
   async function handleFinalizedEvent(
     reply: Reply,
     chatId: number,
@@ -213,7 +216,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     })
   }
 
-  /** Dispatches one finalized event, logging a failed send rather than stopping the turn. Returns whether the turn ended. */
+  /**
+   * Dispatches one finalized event, logging a failed send rather than stopping the turn. Returns whether the turn
+   * ended.
+   */
   async function dispatchFinalizedEvent(
     reply: Reply,
     chatId: number,
@@ -233,8 +239,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /**
-   * Reads a turn's events to the end, handling each as it arrives. A failed send never stops it: the turn is
-   * saved only once its events have all been read.
+   * Reads a turn's events to the end, handling each as it arrives. A failed send never stops it: the turn is saved only
+   * once its events have all been read.
    */
   async function readTurn(
     turn: AsyncIterable<AgentEvent>,
@@ -353,10 +359,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /**
-   * A button press: Approve/Decline on a tool call. The pressing user comes
-   * from Telegram (never the payload). An approval must match the call their latest session is still waiting
-   * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
-   * `messageText` is the prompt's own text, kept above the answer. Returns false for callback data that isn't ours.
+   * A button press: Approve/Decline on a tool call. The pressing user comes from Telegram (never the payload). An
+   * approval must match the call their latest session is still waiting on, so an old or foreign button does nothing;
+   * the server then runs (or skips) the call it saved. `messageText` is the prompt's own text, kept above the answer.
+   * Returns false for callback data that isn't ours.
    */
   async function handleCallback(
     telegramUserId: number,

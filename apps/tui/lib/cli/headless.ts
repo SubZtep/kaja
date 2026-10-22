@@ -1,13 +1,15 @@
 /**
- * Shared setup for any entry point that runs the local agent loop without
- * Ink — today just `--local telegram`, eventually other headless consumers
- * (a local daemon/HTTP server, etc.). Factored out of subcommands/run.tsx
- * and subcommands/telegram.ts, which used to duplicate this.
+ * Shared setup for any entry point that runs the local agent loop without Ink — today just `--local telegram`,
+ * eventually other headless consumers (a local daemon/HTTP server, etc.). Factored out of subcommands/run.tsx and
+ * subcommands/telegram.ts, which used to duplicate this.
  */
 
 const SHUTDOWN_TIMEOUT_MS = 3000
 
-/** loadModels + loadPersonas + getDefaultTools, the bootstrap every local-loop entry point needs; `lazyMcp` as in getDefaultTools. */
+/**
+ * LoadModels + loadPersonas + getDefaultTools, the bootstrap every local-loop entry point needs; `lazyMcp` as in
+ * getDefaultTools.
+ */
 export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {}) {
   const { loadModels } = await import("../models/models")
   const { loadPersonas } = await import("../personas/personas")
@@ -35,7 +37,10 @@ export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {
   }
 }
 
-/** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */
+/**
+ * Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry
+ * points.
+ */
 export async function requireConfiguredProvider() {
   const { t } = await import("../i18n")
   const { isFreeChat } = await import("../models/openai")
@@ -47,11 +52,9 @@ export async function requireConfiguredProvider() {
 }
 
 /**
- * SIGINT/SIGTERM → shutdown → process.exit(0), guarded so SIGINT, normal
- * exit, and a crashed render can't all close tools twice. Force-exits after
- * a timeout so a hung MCP subprocess can't make Ctrl+C stop working.
- * `onSignal` lets a caller (e.g. telegram's bot.stop()) hook into the same
- * signals without installing a second, unguarded handler.
+ * SIGINT/SIGTERM → shutdown → process.exit(0), guarded so SIGINT, normal exit, and a crashed render can't all close
+ * tools twice. Force-exits after a timeout so a hung MCP subprocess can't make Ctrl+C stop working. `onSignal` lets a
+ * caller (e.g. telegram's bot.stop()) hook into the same signals without installing a second, unguarded handler.
  */
 export function installShutdownHandlers(closeTools: () => Promise<void>, options?: { onSignal?: () => void }) {
   let closed = false

@@ -5,8 +5,8 @@ import { COLOR_SCHEME_REPORTING_DISABLE, COLOR_SCHEME_REPORTING_ENABLE, colorSch
 import { useTerminalReports } from "./use-terminal-reports"
 
 /**
- * The chat's theme. Starts on the one resolved before render; while settings.toml says `auto` it follows the
- * terminal's colour-scheme reports (DECSET 2031 — a terminal without them just never sends one).
+ * The chat's theme. Starts on the one resolved before render; while settings.toml says `auto` it follows the terminal's
+ * colour-scheme reports (DECSET 2031 — a terminal without them just never sends one).
  */
 export function useTheme(initial: ThemeName) {
   const { stdout } = useStdout()

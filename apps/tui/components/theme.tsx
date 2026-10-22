@@ -13,7 +13,10 @@ import {
 
 export type { ThemeName }
 
-/** A colour scheme, shaped like a terminal's: what a theme is made of. Colours are `#rrggbb`; the terminal theme also names ANSI colours where the terminal didn't report them. */
+/**
+ * A colour scheme, shaped like a terminal's: what a theme is made of. Colours are `#rrggbb`; the terminal theme also
+ * names ANSI colours where the terminal didn't report them.
+ */
 export type Scheme = {
   /** Text on a tint (the highlighted menu row). */
   foreground: string
@@ -33,7 +36,10 @@ export type Scheme = {
 /** A scheme colour a tint can be mixed from. */
 export type Hue = Exclude<keyof Scheme, "foreground" | "background">
 
-/** What the TUI paints with, worked out from a scheme by {@link paletteFrom}: a colour per role, plus tints. Ink and chalk take colour names or hex. */
+/**
+ * What the TUI paints with, worked out from a scheme by {@link paletteFrom}: a colour per role, plus tints. Ink and
+ * chalk take colour names or hex.
+ */
 export type Palette = {
   accent: string
   /** Borders, the progress bar, reasoning, the thinking spinner and markdown table heads. */
@@ -106,7 +112,8 @@ const ANSI: Record<Exclude<Hue, "accent" | "gray">, [number, ForegroundColorName
 
 /**
  * The terminal theme's scheme: the colours the terminal reported, and ANSI names for those it didn't, so they still
- * show in its scheme. On a dark background the bright colours, which read better there; on a light one the normal ones.
+ * show in its scheme. On a dark background the bright colours, which read better there; on a light one the normal
+ * ones.
  */
 export function terminalScheme(colours: TerminalColours | null, brightness: Brightness): Scheme {
   const bright = brightness === "dark"
@@ -216,7 +223,7 @@ function buildTheme(p: Palette): Theme {
 
 const palettes: Record<Brightness, Palette> = { dark: darkPalette, light: lightPalette }
 
-/** chalk for a palette colour, which is a hex code or one of chalk's colour names. */
+/** Chalk for a palette colour, which is a hex code or one of chalk's colour names. */
 export function paint(colour: string) {
   return colour.startsWith("#") ? chalk.hex(colour) : chalk[colour as ForegroundColorName]
 }
@@ -226,7 +233,10 @@ export function consolePalette(): Palette {
   return paletteFor(consoleTheme() ?? "dark")
 }
 
-/** The dark and light @inkjs/ui themes: Kaja's own colours plus ink-ui's components repainted from the same palette; {@link themeFor} also has the terminal's. */
+/**
+ * The dark and light @inkjs/ui themes: Kaja's own colours plus ink-ui's components repainted from the same palette;
+ * {@link themeFor} also has the terminal's.
+ */
 export const themes: Record<Brightness, Theme> = {
   dark: buildTheme(darkPalette),
   light: buildTheme(lightPalette)
@@ -262,7 +272,10 @@ function useKajaComponentTheme(): KajaComponentTheme {
   return useComponentTheme<KajaComponentTheme>("Kaja") ?? unthemed
 }
 
-/** Kaja's own colour styles from the nearest ThemeProvider; ink-ui's default context has no "Kaja", so outside one it's {@link unthemed}. */
+/**
+ * Kaja's own colour styles from the nearest ThemeProvider; ink-ui's default context has no "Kaja", so outside one it's
+ * {@link unthemed}.
+ */
 export function useKajaTheme(): KajaStyles {
   return useKajaComponentTheme().styles
 }
@@ -272,7 +285,10 @@ export function usePalette(): Palette {
   return useKajaComponentTheme().palette
 }
 
-/** Wraps a tree Ink renders on its own (doctor prompts, progress bars, status lines, the ability picker) in the console theme; before one is known, ink-ui's defaults. */
+/**
+ * Wraps a tree Ink renders on its own (doctor prompts, progress bars, status lines, the ability picker) in the console
+ * theme; before one is known, ink-ui's defaults.
+ */
 export function ConsoleTheme({ children }: Readonly<{ children: ReactNode }>) {
   const name = consoleTheme()
   return name ? <ThemeProvider theme={themeFor(name)}>{children}</ThemeProvider> : children

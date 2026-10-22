@@ -23,7 +23,10 @@ export type MessageRow = {
   step?: StepRow
 }
 
-/** A conversation split for row storage: the system prompt and pending call live on the session row, the rest is append-only. */
+/**
+ * A conversation split for row storage: the system prompt and pending call live on the session row, the rest is
+ * append-only.
+ */
 export type ConversationRows = {
   systemPrompt: string | null
   pending: { callId: string; kind: PendingKind } | null
@@ -32,7 +35,10 @@ export type ConversationRows = {
   summary: { text: string; from: number } | null
   /** Condensed oversized tool results by call id, kept beside the call; the message keeps the full output. */
   toolSummaries: Record<string, string>
-  /** Tools the user approved for the rest of the session (allow keys); a store that has no column for them leaves it out. */
+  /**
+   * Tools the user approved for the rest of the session (allow keys); a store that has no column for them leaves it
+   * out.
+   */
   grantedTools?: string[]
   /** Set on saving, never read back. */
   calls?: CallUpdate[]
@@ -72,7 +78,10 @@ function toRow(message: RawMessage): MessageRow {
   }
 }
 
-/** Splits a replayable session into rows. Lossless for what the agent writes; other provider fields on a message are dropped. */
+/**
+ * Splits a replayable session into rows. Lossless for what the agent writes; other provider fields on a message are
+ * dropped.
+ */
 export function splitConversation(session: unknown): ConversationRows {
   const { messages: all = [], telemetry, ...rest } = session as Omit<Session, "messages"> & { messages?: RawMessage[] }
   const [first, ...others] = all

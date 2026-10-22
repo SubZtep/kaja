@@ -17,7 +17,10 @@ const editFormSchema = z.object({
   contextWindow: z.string().regex(/^\d*$/, m.models_validation_context_window())
 })
 
-/** Edits an existing model's provider, name, tasks, whether it takes images and context window; clearing the window goes back to asking the provider. */
+/**
+ * Edits an existing model's provider, name, tasks, whether it takes images and context window; clearing the window goes
+ * back to asking the provider.
+ */
 export function EditModelDialog({
   model,
   providers,

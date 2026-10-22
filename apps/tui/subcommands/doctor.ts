@@ -47,7 +47,10 @@ const ORIGIN_LABEL_KEY: Record<ToolOrigin, string> = {
 // " [source]" after a tool name, or nothing for a tool without one.
 const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
 
-/** Names grouped by source, e.g. "click, fill [ability:chrome-devtools]"; official tools have no source so they stay one plain list. */
+/**
+ * Names grouped by source, e.g. "click, fill [ability:chrome-devtools]"; official tools have no source so they stay one
+ * plain list.
+ */
 function namesBySource(tools: Tool[]): string {
   const bySource = new Map<string, string[]>()
   for (const tool of tools) {
@@ -80,9 +83,9 @@ export function toolReportLines(tools: Tool[], skipped: SkippedTool[]): string[]
 }
 
 /**
- * The keys-and-tokens pass: tests every credential the config relies on and, in a
- * terminal, asks for anything missing or failing (tested before it's saved). Runs
- * before the rest of the report so the model and tool checks see the fixes.
+ * The keys-and-tokens pass: tests every credential the config relies on and, in a terminal, asks for anything missing
+ * or failing (tested before it's saved). Runs before the rest of the report so the model and tool checks see the
+ * fixes.
  */
 async function checkCredentials() {
   const { runCredentialPass } = await import("../lib/doctor/credentials")
@@ -92,9 +95,8 @@ async function checkCredentials() {
 }
 
 /**
- * `kaja doctor` — checks keys and tokens (asking for missing ones in a terminal),
- * then prints the configuration/connectivity info the old startup panel used to
- * show, and ends with what's still left to fix.
+ * `kaja doctor` — checks keys and tokens (asking for missing ones in a terminal), then prints the
+ * configuration/connectivity info the old startup panel used to show, and ends with what's still left to fix.
  */
 /** One line on the host's git, which the marketplace fetch needs. */
 async function gitLine() {

@@ -45,7 +45,10 @@ export const marketplaceSyncResultSchema = z.object({
   commit: z.string(),
   /** False when the branch hadn't moved since the last sync, so nothing was downloaded. */
   changed: z.boolean(),
-  /** Skill names; other abilities as their marketplace path (`personas/<name>`, `abilities/<name>/tool.toml`, `abilities/<name>/mcp.toml`). */
+  /**
+   * Skill names; other abilities as their marketplace path (`personas/<name>`, `abilities/<name>/tool.toml`,
+   * `abilities/<name>/mcp.toml`).
+   */
   added: z.array(z.string()),
   updated: z.array(z.string()),
   removed: z.array(z.string())

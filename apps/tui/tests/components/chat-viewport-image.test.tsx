@@ -17,7 +17,10 @@ const REF = "kaja-image:31839a12bfc0426e"
 const ARRIVAL_MS = 300
 const PICTURE = "▄"
 
-/** Every picture takes {@link ARRIVAL_MS} to arrive, the slow ones that leave the chat scrolling under a row that isn't drawn yet. */
+/**
+ * Every picture takes {@link ARRIVAL_MS} to arrive, the slow ones that leave the chat scrolling under a row that isn't
+ * drawn yet.
+ */
 function slowArrivals() {
   const real = renderImage.renderTerminalImage
   return spyOn(renderImage, "renderTerminalImage").mockImplementation(

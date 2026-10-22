@@ -4,7 +4,10 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { auth } from "../../src/features/auth/auth"
 
-/** Inserts a provider + an enabled/free model (chat unless `tasks` says otherwise) under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
+/**
+ * Inserts a provider + an enabled/free model (chat unless `tasks` says otherwise) under it, returning both ids. Caller
+ * must `cleanupModel` in `afterAll`.
+ */
 export async function seedModel(namePrefix: string, tasks: string[] = ["chat"]) {
   const provider = await pool.query<{ id: string }>(
     "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
@@ -31,7 +34,10 @@ const otpApi = auth.api as unknown as {
 
 type CodeType = "sign-in" | "email-verification" | "change-email"
 
-/** A fresh code of `type` for `email`, standing in for the one the email would carry; an email change's new-address code is keyed `<current>-<new>`. */
+/**
+ * A fresh code of `type` for `email`, standing in for the one the email would carry; an email change's new-address code
+ * is keyed `<current>-<new>`.
+ */
 export async function emailCode(email: string, type: CodeType): Promise<string> {
   return otpApi.createVerificationOTP({ body: { email, type } })
 }
@@ -41,7 +47,10 @@ export async function signInCode(email: string): Promise<string> {
   return emailCode(email, "sign-in")
 }
 
-/** Signs in with a fresh emailed code; `body` adds fields such as `consent`, which a new address needs to become an account. */
+/**
+ * Signs in with a fresh emailed code; `body` adds fields such as `consent`, which a new address needs to become an
+ * account.
+ */
 export async function signInWithCode(
   email: string,
   body: Record<string, unknown> = {},

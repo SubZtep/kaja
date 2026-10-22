@@ -12,7 +12,10 @@ import { Loader } from "../ui/Loader"
 
 const SESSIONS_QUERY_KEY = ["auth", "sessions"]
 
-/** Every place the account is signed in (browsers and the terminal's device login), latest first; any but this one can be signed out. */
+/**
+ * Every place the account is signed in (browsers and the terminal's device login), latest first; any but this one can
+ * be signed out.
+ */
 export function SignedInDevices() {
   const authClient = useAuthClient()
   const queryClient = useQueryClient()

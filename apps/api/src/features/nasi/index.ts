@@ -64,7 +64,10 @@ const errorSchema = z.object({ error: z.string() })
 /** An `{ error }` JSON response for a route's `responses`. */
 const jsonError = (description: string) => ({ description, content: { "application/json": { schema: errorSchema } } })
 
-/** Everything a route that runs the model can answer besides success (see `knownTurnError`); `conflict` says when it answers 409. */
+/**
+ * Everything a route that runs the model can answer besides success (see `knownTurnError`); `conflict` says when it
+ * answers 409.
+ */
 const turnErrorResponses = (conflict: string) => ({
   400: jsonError("Bad request"),
   401: jsonError("Unauthorized"),
@@ -105,7 +108,10 @@ nasiRoutes.openapi(turnRoute, async c => {
   }
 })
 
-/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a public URL (see {@link sseEvent}). */
+/**
+ * SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not
+ * forwarded, and tool_image goes as a public URL (see {@link sseEvent}).
+ */
 const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   delta: "delta",
   reasoning: "reasoning",

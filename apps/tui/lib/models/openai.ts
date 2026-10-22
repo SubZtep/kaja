@@ -27,18 +27,24 @@ export function clientForModel(model: CliResolvedModel) {
   })
 }
 
-/** The first model listing summarize in models.toml, which writes the summaries a long conversation is compacted into; unset means the chat model does. */
+/**
+ * The first model listing summarize in models.toml, which writes the summaries a long conversation is compacted into;
+ * unset means the chat model does.
+ */
 export const summarizer = summarizeEntry && {
   client: clientForModel(summarizeEntry),
   model: summarizeEntry.model,
   contextWindow: summarizeEntry.contextWindow
 }
 
-/** The first model listing vision in models.toml, which describes the images a conversation gets; unset, images keep their alt text. */
+/**
+ * The first model listing vision in models.toml, which describes the images a conversation gets; unset, images keep
+ * their alt text.
+ */
 export const describer = visionEntry && { client: clientForModel(visionEntry), model: visionEntry.model }
 
 // Read leniently: config() exits when settings.toml is missing, and this module loads before any config guard (e.g. in cloud mode).
 const compactSetting = (await readConfigLoose()).context?.compact_at
 
-/** settings.toml `[context] compact_at`: how full the context may get before compacting. */
+/** Settings.toml `[context] compact_at`: how full the context may get before compacting. */
 export const compactAt = typeof compactSetting === "number" ? compactSetting : undefined

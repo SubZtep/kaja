@@ -138,8 +138,15 @@ ignorePatterns  = [
 ]
 semi            = false
 singleQuote     = false
+sortPackageJson = {
+  sortScripts = true
+}
 sortTailwindcss = true
 trailingComma   = "none"
+
+
+  [fmt.jsdoc]
+  lineWrappingStyle = "balance"
 
 
   [fmt.sortImports]

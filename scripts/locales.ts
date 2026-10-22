@@ -132,7 +132,10 @@ type Locales = { json: boolean; sourcePath: string; targets: { locale: string; p
 
 const byName = (a: string, b: string) => a.localeCompare(b)
 
-/** A locale dir's en-GB file and a path for every other supported locale (`@kaja/shared/locale`), whether that file exists yet or not. */
+/**
+ * A locale dir's en-GB file and a path for every other supported locale (`@kaja/shared/locale`), whether that file
+ * exists yet or not.
+ */
 async function localesOf(dir: string): Promise<Locales> {
   const files = (await readdir(dir)).filter(f => /\.(toml|json)$/.test(f)).sort(byName)
   const source = files.find(f => f.startsWith(`${SOURCE}.`))

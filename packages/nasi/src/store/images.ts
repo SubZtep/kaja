@@ -26,7 +26,10 @@ export function imageRefId(url: string): string | undefined {
 
 const IMAGE_LINK = /\]\(kaja-image:([0-9a-f]{16})\)/g
 
-/** `text` with each Markdown image's `kaja-image:` link swapped for where `url` says it is; one it can't place stays as it is. */
+/**
+ * `text` with each Markdown image's `kaja-image:` link swapped for where `url` says it is; one it can't place stays as
+ * it is.
+ */
 export function resolveImageLinks(text: string, url: (id: string) => string | undefined): string {
   return text.includes("kaja-image:")
     ? text.replace(IMAGE_LINK, (link, id: string) => {

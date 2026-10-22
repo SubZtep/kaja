@@ -1,4 +1,7 @@
-/** A cheap language guess for a code block that names none, or undefined to leave it plain (cli-highlight's own guessing costs ~17ms a block and is often wrong). */
+/**
+ * A cheap language guess for a code block that names none, or undefined to leave it plain (cli-highlight's own guessing
+ * costs ~17ms a block and is often wrong).
+ */
 export function guessLanguage(code: string): string | undefined {
   const text = code.trim()
   if (!text) return undefined

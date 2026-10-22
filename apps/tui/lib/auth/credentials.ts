@@ -2,7 +2,10 @@
 const SECRETS_SERVICE = Bun.env.KAJA_PROFILE ? `kaja-tui-${Bun.env.KAJA_PROFILE}` : "kaja-tui"
 const SECRETS_NAME = "token"
 
-/** Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from "no token stored". */
+/**
+ * Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from
+ * "no token stored".
+ */
 export class SecretsAccessError extends Error {
   constructor(cause: unknown) {
     super("Could not access the system credential store", { cause })

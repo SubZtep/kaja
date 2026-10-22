@@ -30,7 +30,10 @@ export function setGeoLookupOverride(lookup: typeof lookupOverride) {
   lookupOverride = lookup
 }
 
-/** Looks a public IP up in GEO_API_URL (github.com/SubZtep/geo-service); undefined for a private or malformed one, without GEO_API_KEY, or when the lookup fails. */
+/**
+ * Looks a public IP up in GEO_API_URL (github.com/SubZtep/geo-service); undefined for a private or malformed one,
+ * without GEO_API_KEY, or when the lookup fails.
+ */
 export async function lookupGeo(ip: string | undefined): Promise<GeoLocation | undefined> {
   if (!ip || !isIP(ip) || isPrivateAddress(ip)) return undefined
   if (lookupOverride) return lookupOverride(ip)

@@ -2,7 +2,10 @@ import type { AnyFieldApi } from "@tanstack/react-form"
 import { CircleAlert } from "lucide-react"
 import { validationMessage } from "../../lib/error-messages"
 
-/** A field's error messages, under it in red: the site's own text instead of the browser's validation bubble (forms are noValidate). */
+/**
+ * A field's error messages, under it in red: the site's own text instead of the browser's validation bubble (forms are
+ * noValidate).
+ */
 export function FieldErrors({ field }: Readonly<{ field: AnyFieldApi }>) {
   if (field.state.meta.isValid) {
     return null

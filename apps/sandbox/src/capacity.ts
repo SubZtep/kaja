@@ -21,14 +21,20 @@ async function readMemory(): Promise<Memory> {
   }
 }
 
-/** How many servers fit: the container's memory limit, else the machine's RAM, less the sandbox's own share, one per {@link SERVER_MEMORY}. */
+/**
+ * How many servers fit: the container's memory limit, else the machine's RAM, less the sandbox's own share, one per
+ * {@link SERVER_MEMORY}.
+ */
 export async function defaultMaxProcesses(memory?: Memory): Promise<number> {
   const { container, total } = memory ?? (await readMemory())
   const budget = (container?.max ?? total) - SERVER_MEMORY
   return Math.max(1, Math.floor(budget / SERVER_MEMORY))
 }
 
-/** Whether another server fits right now: at least {@link SERVER_MEMORY} left under the container's limit, else free on the machine. */
+/**
+ * Whether another server fits right now: at least {@link SERVER_MEMORY} left under the container's limit, else free on
+ * the machine.
+ */
 export async function hasRoom(memory?: Memory): Promise<boolean> {
   const { container, free } = memory ?? (await readMemory())
   const left = container?.max != null ? container.max - container.current : free

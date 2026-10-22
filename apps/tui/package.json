@@ -1,13 +1,13 @@
 {
   "name": "@kaja/tui",
   "version": "0.30.16",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "bun run cli.ts",
-    "test": "bun test",
+    "clean:temp": "bun run scripts/clean-temp.ts",
     "gen-schema": "bun run scripts/gen-schema.ts",
-    "clean:temp": "bun run scripts/clean-temp.ts"
+    "start": "bun run cli.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
