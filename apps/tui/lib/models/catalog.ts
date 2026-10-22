@@ -38,18 +38,30 @@ export const TASK_ORDER: ModelTask[] = [
 
 const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
 
-/** The providers the wizard offers, from `config/catalog.toml`, the one source of model defaults. */
-export const CATALOG: CatalogProvider[] = catalogFile.providers.map(({ base_url, ...provider }) => ({
-  ...provider,
-  baseUrl: base_url
-}))
+function providersOf(file: CatalogFile): CatalogProvider[] {
+  return file.providers.map(({ base_url, ...provider }) => ({ ...provider, baseUrl: base_url }))
+}
+
+// What this build ships; the generated examples and the drift check always use it, never the API's.
+const BUNDLED = providersOf(catalogFile)
+
+/**
+ * The providers the wizard offers: `config/catalog.toml`'s, the one source of model defaults, until `setCatalog` swaps in the API's.
+ * Swapped in place, so every importer keeps the one array.
+ */
+export const CATALOG: CatalogProvider[] = [...BUNDLED]
+
+/** Makes `catalog` the one the wizard offers, or the bundled one again when it's undefined. */
+export function setCatalog(catalog?: CatalogFile): void {
+  CATALOG.splice(0, CATALOG.length, ...(catalog ? providersOf(catalog) : BUNDLED))
+}
 
 /** The generated example files in `config` (`bun generate:models`), each a mix of catalog providers. */
 export const EXAMPLES = catalogFile.examples
 
 /** An example's models.toml: its providers in catalog order, one model per task. */
 export function exampleToml(example: CatalogFile["examples"][number]): string {
-  const providers = CATALOG.filter(provider => example.providers.includes(provider.id))
+  const providers = BUNDLED.filter(provider => example.providers.includes(provider.id))
   return buildModelsToml({ providers, pick: example.pick, alternatives: false })
 }
 
