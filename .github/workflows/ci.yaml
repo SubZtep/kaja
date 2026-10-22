@@ -36,14 +36,8 @@ jobs:
       - name: Install dependencies
         run: bun i --frozen-lockfile --ignore-scripts
 
-      - name: Read Tombi version
-        id: tombi
-        run: echo "version=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
-
       - name: Setup Tombi
         uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
-        with:
-          version: ${{ steps.tombi.outputs.version }}
 
       - name: Lint
         run: bun lint
@@ -52,7 +46,10 @@ jobs:
         run: bun fmt --check
 
       - name: Lint TOML
-        run: bun lint:toml
+        run: tombi lint --error-on-warnings
+
+      - name: Check TOML formatting
+        run: tombi format --check
 
       - name: Check Tailwind classes are canonical
         run: |
@@ -179,14 +176,8 @@ jobs:
       - name: Check .env.example files are up to date
         run: bun check:env
 
-      - name: Read Tombi version
-        id: tombi
-        run: echo "version=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
-
       - name: Setup Tombi
         uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
-        with:
-          version: ${{ steps.tombi.outputs.version }}
 
       - name: Check model example files are up to date
         run: bun check:models

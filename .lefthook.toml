@@ -1,7 +1,6 @@
 [commit-msg]
-  [commit-msg.commands]
-    [commit-msg.commands.commitlint]
-    run = "bun commitlint --edit {1}"
+  [[commit-msg.jobs]]
+  run = "bun commitlint --edit {1}"
 
 
 # Generators run first and stage their own outputs (stage_fixed only re-adds staged files matching the glob), then lint and typecheck see the regenerated tree
@@ -76,19 +75,25 @@ piped = true
 
       [[pre-commit.jobs.group.jobs]]
       # One chain, since parallel writers would race on the same files
-      run         = "bun lint --fix --staged && bun fmt --staged && bun scripts/tool.ts tombi format && bun scripts/tool.ts tombi lint --error-on-warnings"
+      run         = "bun lint --fix --staged && bun fmt --staged"
+      stage_fixed = true
+
+
+      # bun fmt ignores TOML, so this never shares files with the chain above
+      [[pre-commit.jobs.group.jobs]]
+      run         = "tombi format {staged_files} && tombi lint --error-on-warnings {staged_files}"
+      glob        = "*.toml"
       stage_fixed = true
 
 
       [[pre-commit.jobs.group.jobs]]
       run  = "bun typecheck"
-      glob = "*.{ts,tsx}"
+      glob = "{*.{ts,tsx},**/tsconfig.json}"
 
 
 [post-merge]
-  [post-merge.commands]
-    [post-merge.commands.lefthook-install]
-    run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || lefthook install"
+  [[post-merge.jobs]]
+  run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || lefthook install"
 
 
 # Checks run first; the locales job last, since it may commit translations and push them itself
@@ -113,12 +118,16 @@ piped = true
 
 
       [[pre-push.jobs.group.jobs]]
-      run = "bun lint:toml"
+      run = "tombi format --check && tombi lint --error-on-warnings"
 
 
       [[pre-push.jobs.group.jobs]]
       run  = "bun typecheck"
-      glob = "*.{ts,tsx}"
+      glob = "{*.{ts,tsx},**/tsconfig.json}"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun check:env && bun check:models && bun check:locales"
 
 
       [[pre-push.jobs.group.jobs]]

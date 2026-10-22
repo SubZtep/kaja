@@ -57,7 +57,7 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 # Lint / types / tests
 bun lint
 bun fmt
-bun lint:fix           # bun lint --fix, bun fmt, then Tombi
+tombi format && tombi lint   # TOML (Tombi, run directly)
 bun tailwind:fix       # rewrite apps/web classes to their canonical form (@tailwindcss/upgrade; needs a clean tree, also bumps Tailwind); CI fails if src/ would change
 bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
 bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
@@ -154,8 +154,8 @@ Each file only creates; there are no patch migrations, so a schema change until 
 ## Code Style
 
 - `bun lint` and `bun fmt`, both configured in the root `bunfig.toml` (`[lint]`, `[fmt]`): double quotes, no semicolons, no trailing commas; type-aware lint rules; suppress a rule with `// oxlint-disable-next-line <rule> -- why`
-- Tombi isn't a dependency: the TOML lint scripts run the machine's `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install it and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins it, and CI installs that version with `tombi-toml/setup-tombi`
-- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint:toml`/`lint:fix` run `tombi format`/`tombi lint` on TOML files
+- Tombi isn't a dependency: the TOML scripts, hooks and `scripts/models.ts` run the machine's `tombi` directly (CI installs it with `tombi-toml/setup-tombi`)
+- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; TOML files are checked with `tombi format` and `tombi lint`
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
 - Prefer surgical diffs; do not drive-by refactor
 - Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values — VSCode surfaces these on hover; `// ...` for internal notes (locals, implementation asides)

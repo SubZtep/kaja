@@ -53,7 +53,7 @@ flowchart LR
 
 ## Run from the source
 
-Make sure [Bun](https://bun.com/docs/installation), [Docker Compose](https://docs.docker.com/compose/install/), and [Git](https://git-scm.com/install/) are installed. Run the commands below in sequence.
+Make sure [Bun](https://bun.com/docs/installation) (canary), [Docker Compose](https://docs.docker.com/compose/install/), and [Git](https://git-scm.com/install/) are installed. Run the commands below in sequence.
 
 ```bash
 # Get the source
@@ -81,8 +81,6 @@ Besides Bun, Docker Compose and Git from above, install these on your machine; n
 
 - [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
 - [Lefthook](https://lefthook.dev/installation/): runs the Git hooks, so run `lefthook install` once after cloning
-
-`bun lint:toml` warns when the installed Tombi differs from the version pinned in [`scripts/lib/tools.ts`](./scripts/lib/tools.ts).
 
 Optional, for parts of the repo:
 

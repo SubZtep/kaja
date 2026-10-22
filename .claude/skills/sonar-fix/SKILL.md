@@ -3,7 +3,7 @@ name: sonar-fix
 description: Fix the open SonarCloud issues of the current branch's pull request in code. Only when the user runs /sonar-fix.
 argument-hint: "[branch]"
 disable-model-invocation: true
-allowed-tools: Bash(git branch --show-current), Bash(bun scripts/sonar.ts *), Bash(bun lint:fix), Bash(bun typecheck), Read, Edit, Write, Grep, Glob
+allowed-tools: Bash(git branch --show-current), Bash(bun scripts/sonar.ts *), Bash(tombi format), Bash(tombi lint *), Bash(bun typecheck), Read, Edit, Write, Grep, Glob
 ---
 
 Fix the issues SonarCloud found on this branch's pull request, so its quality gate passes. The gate fails on any reliability or security issue, even a LOW one, and on unreviewed security hotspots.
@@ -17,5 +17,5 @@ Fix the issues SonarCloud found on this branch's pull request, so its quality ga
    - Regexes that strip trailing characters, like `/\/+$/`, trip a ReDoS alert: use `trimTrailingSlashes` from `@kaja/shared` or a loop.
    - `docker:S6471` (`USER root`) in `apps/sandbox/Dockerfile` is deliberate: the sandbox needs root to start each user's servers as their own uid. The user accepted it in the SonarCloud UI; leave it.
    - In test files, fix only rules that make sense for tests.
-4. Run `bun lint:fix` and, if you touched TypeScript, `bun typecheck`; fix what they report in the lines you changed.
+4. Run `tombi format && tombi lint` and, if you touched TypeScript, `bun typecheck`; fix what they report in the lines you changed.
 5. Don't commit; the user reviews and commits. Finish with one line per issue: fixed, already gone, or left (and why).
