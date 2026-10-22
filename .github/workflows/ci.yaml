@@ -23,6 +23,8 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: canary
 
       - name: Cache Bun packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -34,24 +36,23 @@ jobs:
       - name: Install dependencies
         run: bun i --frozen-lockfile --ignore-scripts
 
-      - name: Read Biome and Tombi versions
-        id: tools
-        run: |
-          echo "biome=$(bun scripts/tool.ts biome --pinned)" >> "$GITHUB_OUTPUT"
-          echo "tombi=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
-
-      - name: Setup Biome
-        uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51
-        with:
-          version: ${{ steps.tools.outputs.biome }}
+      - name: Read Tombi version
+        id: tombi
+        run: echo "version=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Tombi
         uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
         with:
-          version: ${{ steps.tools.outputs.tombi }}
+          version: ${{ steps.tombi.outputs.version }}
 
-      - name: Run linters and format checks
+      - name: Lint
         run: bun lint
+
+      - name: Check formatting
+        run: bun fmt --check
+
+      - name: Lint TOML
+        run: bun lint:toml
 
       - name: Check Tailwind classes are canonical
         run: |

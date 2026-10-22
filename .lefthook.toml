@@ -75,8 +75,8 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      # Safe fixes only: an unsafe fix can change behaviour, so it waits for a manual `bun lint:fix` and a look at the diff
-      run         = "bun lint:fix:safe"
+      # One chain, since parallel writers would race on the same files
+      run         = "bun lint --fix --staged && bun fmt --staged && bun scripts/tool.ts tombi format && bun scripts/tool.ts tombi lint --error-on-warnings"
       stage_fixed = true
 
 
@@ -106,6 +106,14 @@ piped = true
 
       [[pre-push.jobs.group.jobs]]
       run = "bun lint"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun fmt --check"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun lint:toml"
 
 
       [[pre-push.jobs.group.jobs]]

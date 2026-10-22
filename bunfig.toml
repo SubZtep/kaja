@@ -19,3 +19,75 @@ preload = [
   "./apps/tui/tests/isolate-temp-dir.ts",
   "./apps/api/tests/load-test-env.ts"
 ]
+
+
+[lint]
+typeAware = true
+
+
+  [lint.rules]
+  "no-unreachable"                            = "warn"
+  "typescript/no-unused-vars"                 = "warn"
+  "typescript/no-explicit-any"                = "warn"
+  "typescript/no-non-null-assertion"          = "off"
+  "no-undef-init"                             = "off"
+  "unicorn/no-useless-switch-case"            = "off"
+  "unicorn/prefer-array-find"                 = "warn"
+  "import/no-extraneous-dependencies"         = "error"
+  "import/no-cycle"                           = "error"
+  "import/no-self-import"                     = "error"
+  "import/no-deprecated"                      = "warn"
+  "typescript/no-deprecated"                  = "warn"
+  "typescript/no-mixed-enums"                 = "error"
+  "typescript/await-thenable"                 = "error"
+  "typescript/prefer-string-starts-ends-with" = "error"
+  "typescript/prefer-includes"                = "warn"
+  "typescript/prefer-regexp-exec"             = "error"
+  "typescript/restrict-plus-operands"         = "error"
+  "typescript/no-unnecessary-type-conversion" = "warn"
+  "typescript/no-meaningless-void-operator"   = "error"
+  "bun:test/max-nested-describe"              = "error"
+  "bun:test/no-duplicate-hooks"               = "error"
+  "bun:test/no-export"                        = "error"
+  "bun:test/no-focused-tests"                 = "error"
+  "bun:test/no-disabled-tests"                = "error"
+  "bun:test/no-identical-title"               = "error"
+  "bun:test/prefer-hooks-in-order"            = "error"
+  "typescript/no-floating-promises"           = "off"
+  "typescript/unbound-method"                 = "off"
+  "typescript/no-misused-promises"            = "off"
+  "typescript/only-throw-error"               = "off"
+  "typescript/restrict-template-expressions"  = "off"
+  "react-hooks/rules-of-hooks"                = "off"
+  "typescript/no-unsafe-assignment"           = "off"
+  "typescript/no-unsafe-argument"             = "off"
+  "typescript/no-unsafe-member-access"        = "off"
+  "typescript/no-unsafe-call"                 = "off"
+  "typescript/no-unsafe-return"               = "off"
+  "typescript/require-await"                  = "off"
+  "typescript/no-base-to-string"              = "off"
+  "typescript/no-unnecessary-type-assertion"  = "off"
+  "typescript/no-redundant-type-constituents" = "off"
+
+
+[fmt]
+printWidth      = 120
+semi            = false
+singleQuote     = false
+arrowParens     = "avoid"
+trailingComma   = "none"
+useTabs         = false
+sortImports     = false
+sortTailwindcss = false
+ignorePatterns  = [
+  "**/*.toml",
+  "**/*.md",
+  "**/*.mdx",
+  "**/*.yaml",
+  "**/*.yml",
+  "**/*.html",
+  "routeTree.gen.ts",
+  "**/*.css",
+  "**/*.scss",
+  "config/schemas/"
+]
