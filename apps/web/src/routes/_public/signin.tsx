@@ -90,7 +90,7 @@ function SignIn() {
         footer={
           <>
             {m.signin_no_account()}{" "}
-            <Link to="/signup" className="font-medium text-neon hover:text-neon-hi">
+            <Link to="/signup" className="text-neon hover:text-neon-hi font-medium">
               {m.signin_create_one()}
             </Link>
           </>
@@ -99,7 +99,7 @@ function SignIn() {
         {error === "signup_disabled" || noAccount ? (
           <p className="mb-5 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
             {noAccount ? m.signin_email_no_account() : m.signin_google_no_account()}{" "}
-            <Link to="/signup" className="font-medium text-neon hover:text-neon-hi">
+            <Link to="/signup" className="text-neon hover:text-neon-hi font-medium">
               {m.signin_create_one()}
             </Link>
           </p>
@@ -117,7 +117,7 @@ function SignIn() {
         ) : (
           <>
             <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
-            <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+            <p className="font-stamp text-muted mb-4 text-center text-[10px] tracking-widest uppercase">
               {m.auth_or_email()}
             </p>
             <form

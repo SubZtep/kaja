@@ -1,80 +1,155 @@
 import { expect, test } from "bun:test"
-import { Jimp } from "jimp"
+import { inflateSync } from "node:zlib"
 import type { ToolContext } from "../../src/agent/agent"
-import { editImageTool, parseColor } from "../../src/tools/builtin/edit-image"
+import { editImageTool } from "../../src/tools/builtin/edit-image"
+import { bitmap } from "../fixtures/images"
 
 const ID = "0123456789abcdef"
 const LINK = `kaja-image:${ID}`
+const BLACK: [number, number, number] = [0, 0, 0]
+const WHITE: [number, number, number] = [255, 255, 255]
 
-/** A 200×100 JPEG: left half black, right half white. */
-async function halves(): Promise<Uint8Array> {
-  const image = new Jimp({ width: 200, height: 100, color: 0x000000ff })
-  for (let x = 100; x < 200; x++) for (let y = 0; y < 100; y++) image.setPixelColor(0xffffffff, x, y)
-  return new Uint8Array(await image.getBuffer("image/png"))
+/** 2×1: black left, white right. */
+const sideBySide = () => bitmap(2, 1, x => (x === 0 ? BLACK : WHITE))
+/** 1×2: black top, white bottom. */
+const stacked = () => bitmap(1, 2, (_, y) => (y === 0 ? BLACK : WHITE))
+/** 200×100, all black. */
+const wide = () => bitmap(200, 100, () => BLACK)
+
+/** An image's pixels as RGB rows, read back from a PNG re-encode (Bun.Image can't hand out raw pixels). */
+async function pixels(data: Uint8Array): Promise<number[][][]> {
+  const file = Buffer.from(await new Bun.Image(data).png().bytes())
+  const width = file.readUInt32BE(16)
+  const height = file.readUInt32BE(20)
+  const bpp = file[25] === 6 ? 4 : 3
+  const idat: Buffer[] = []
+  for (let at = 8; at < file.length; ) {
+    const length = file.readUInt32BE(at)
+    if (file.toString("latin1", at + 4, at + 8) === "IDAT") idat.push(file.subarray(at + 8, at + 8 + length))
+    at += 12 + length
+  }
+  const raw = inflateSync(Buffer.concat(idat))
+  const stride = width * bpp
+  const out = Buffer.alloc(stride * height)
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)]
+    for (let i = 0; i < stride; i++) {
+      const left = i >= bpp ? out[y * stride + i - bpp]! : 0
+      const up = y > 0 ? out[(y - 1) * stride + i]! : 0
+      const upLeft = y > 0 && i >= bpp ? out[(y - 1) * stride + i - bpp]! : 0
+      const p = left + up - upLeft
+      const paeth = [left, up, upLeft].sort((a, b) => Math.abs(p - a) - Math.abs(p - b))[0]!
+      const predictor = [0, left, up, (left + up) >> 1, paeth][filter!]!
+      out[y * stride + i] = (raw[y * (stride + 1) + 1 + i]! + predictor) & 0xff
+    }
+  }
+  return Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => [...out.subarray(y * stride + x * bpp, y * stride + x * bpp + 3)])
+  )
 }
 
-async function edit(steps: unknown[], source?: Uint8Array) {
-  const data = source ?? (await halves())
+async function edit(steps: unknown[], source = sideBySide(), mimeType = "image/png") {
   const ctx = {
-    images: { get: async (id: string) => (id === ID ? { data, mimeType: "image/jpeg" } : undefined) }
+    images: { get: async (id: string) => (id === ID ? { data: source, mimeType } : undefined) }
   } as unknown as ToolContext
   const result = await editImageTool.execute({ image: LINK, steps } as never, ctx)
   if (typeof result === "string") throw new Error(result)
   const out = result.images![0]!
-  return { text: result.text, mimeType: out.mimeType, image: await Jimp.read(Buffer.from(out.data)) }
+  return { text: result.text, mimeType: out.mimeType, data: out.data, size: await new Bun.Image(out.data).metadata() }
 }
 
-const brightness = (color: number) => (color >>> 24) & 0xff
-
-test("crop keeps the region, given as fractions", async () => {
-  const { image, text } = await edit([{ op: "crop", x: 0.5, y: 0, width: 0.5, height: 1 }])
-  expect([image.bitmap.width, image.bitmap.height]).toEqual([100, 100])
-  expect(brightness(image.getPixelColor(50, 50))).toBeGreaterThan(200)
-  expect(text).toBe(`Edited ${LINK} (crop)`)
-})
-
-test("zoom enlarges the region so its longer side is 1024", async () => {
-  const { image } = await edit([{ op: "zoom", x: 0, y: 0, width: 0.25, height: 0.5 }])
-  expect([image.bitmap.width, image.bitmap.height]).toEqual([1024, 1024])
-})
-
 test("resize with one side keeps the aspect ratio", async () => {
-  const { image } = await edit([{ op: "resize", width: 100 }])
-  expect([image.bitmap.width, image.bitmap.height]).toEqual([100, 50])
+  const { size, text } = await edit([{ op: "resize", width: 100 }], wide())
+  expect([size.width, size.height]).toEqual([100, 50])
+  expect(text).toBe(`Edited ${LINK} (resize)`)
 })
 
-test("steps apply in order: a quarter turn then an invert", async () => {
-  const { image, mimeType } = await edit([{ op: "rotate", degrees: 90 }, { op: "invert" }])
-  expect([image.bitmap.width, image.bitmap.height]).toEqual([100, 200])
-  // Clockwise: the white right half is now the bottom, inverted to black
-  expect(brightness(image.getPixelColor(50, 150))).toBeLessThan(50)
-  expect(mimeType).toBe("image/jpeg")
+test("resize with both sides sets them", async () => {
+  const { size } = await edit([{ op: "resize", width: 30, height: 70 }], wide())
+  expect([size.width, size.height]).toEqual([30, 70])
 })
 
-test("an odd angle leaves transparent corners, so the result is a PNG", async () => {
-  expect((await edit([{ op: "rotate", degrees: 30 }])).mimeType).toBe("image/png")
+test("steps apply in the order given", async () => {
+  const turnThenResize = await edit(
+    [
+      { op: "rotate", degrees: 90 },
+      { op: "resize", width: 100 }
+    ],
+    wide()
+  )
+  expect([turnThenResize.size.width, turnThenResize.size.height]).toEqual([100, 200])
+  const resizeThenTurn = await edit(
+    [
+      { op: "resize", width: 100 },
+      { op: "rotate", degrees: 90 }
+    ],
+    wide()
+  )
+  expect([resizeThenTurn.size.width, resizeThenTurn.size.height]).toEqual([50, 100])
 })
 
-test("a box outlines the region in its colour, leaving the inside alone", async () => {
-  const { image } = await edit([{ op: "box", x: 0.1, y: 0.1, width: 0.3, height: 0.5, color: "green" }])
-  const edge = image.getPixelColor(20, 30)
-  expect((edge >>> 24) & 0xff).toBeLessThan(80)
-  expect((edge >>> 16) & 0xff).toBeGreaterThan(150)
-  expect(brightness(image.getPixelColor(40, 30))).toBeLessThan(30)
+/** The edit's pixel at (x, y) as RGB. */
+async function pixelAfter(steps: unknown[], source: Uint8Array, x = 0, y = 0): Promise<number[]> {
+  return (await pixels((await edit(steps, source)).data))[y]![x]!
+}
+
+test("rotate turns clockwise", async () => {
+  // Clockwise, the left side ends up on top
+  const turned = [{ op: "rotate", degrees: 90 }]
+  expect(await pixelAfter(turned, sideBySide(), 0, 0)).toEqual(BLACK)
+  expect(await pixelAfter(turned, sideBySide(), 0, 1)).toEqual(WHITE)
+})
+
+test("rotate takes only multiples of 90", async () => {
+  await expect(edit([{ op: "rotate", degrees: 30 }])).rejects.toThrow("multiple of 90")
+})
+
+test("flip mirrors across either axis", async () => {
+  const horizontal = [{ op: "flip", direction: "horizontal" }]
+  expect(await pixelAfter(horizontal, sideBySide(), 0, 0)).toEqual(WHITE)
+  expect(await pixelAfter(horizontal, sideBySide(), 1, 0)).toEqual(BLACK)
+  const vertical = [{ op: "flip", direction: "vertical" }]
+  expect(await pixelAfter(vertical, stacked(), 0, 0)).toEqual(WHITE)
+  expect(await pixelAfter(vertical, stacked(), 0, 1)).toEqual(BLACK)
+})
+
+test("brightness -1 goes black, and +1 doubles", async () => {
+  expect(
+    await pixelAfter(
+      [{ op: "brightness", amount: -1 }],
+      bitmap(1, 1, () => [200, 100, 50])
+    )
+  ).toEqual(BLACK)
+  const [r] = await pixelAfter(
+    [{ op: "brightness", amount: 1 }],
+    bitmap(1, 1, () => [100, 50, 20])
+  )
+  expect(r).toBeGreaterThan(150)
+})
+
+test("greyscale equalises the channels", async () => {
+  const [r, g, b] = await pixelAfter(
+    [{ op: "greyscale" }],
+    bitmap(1, 1, () => [200, 60, 30])
+  )
+  expect(Math.abs(r! - g!)).toBeLessThan(4)
+  expect(Math.abs(g! - b!)).toBeLessThan(4)
+})
+
+test("a PNG stays a PNG and anything else comes back as a JPEG", async () => {
+  const fromPng = await edit([{ op: "greyscale" }])
+  expect([fromPng.mimeType, fromPng.size.format]).toEqual(["image/png", "png"])
+  const jpeg = await new Bun.Image(wide()).jpeg().bytes()
+  const fromJpeg = await edit([{ op: "greyscale" }], jpeg, "image/jpeg")
+  expect([fromJpeg.mimeType, fromJpeg.size.format]).toEqual(["image/jpeg", "jpeg"])
 })
 
 test("an image that isn't in the conversation, or a path, is refused", async () => {
   const ctx = { images: { get: async () => undefined } } as unknown as ToolContext
-  await expect(editImageTool.execute({ image: LINK, steps: [{ op: "invert" }] }, ctx)).rejects.toThrow("No image")
-  await expect(editImageTool.execute({ image: "/tmp/a.jpg", steps: [{ op: "invert" }] }, ctx)).rejects.toThrow(
+  await expect(editImageTool.execute({ image: LINK, steps: [{ op: "greyscale" }] }, ctx)).rejects.toThrow("No image")
+  await expect(editImageTool.execute({ image: "/tmp/a.jpg", steps: [{ op: "greyscale" }] }, ctx)).rejects.toThrow(
     "kaja-image:"
   )
-})
-
-test("colours by name or hex", () => {
-  expect(parseColor(undefined)).toBe(0xff2d2dff)
-  expect(parseColor("#00ff00")).toBe(0x00ff00ff)
-  expect(() => parseColor("teal-ish")).toThrow("Unknown colour")
 })
 
 test("its JSON schema has no boolean `items`, which llama.cpp refuses", () => {

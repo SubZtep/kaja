@@ -20,7 +20,7 @@ export function CopyButton({ text, className }: Readonly<{ text: string; classNa
       onClick={copy}
       aria-label={copied ? m.hero_copy_copied() : m.hero_copy_copy()}
       title={copied ? m.hero_copy_copied() : m.hero_copy_copy()}
-      className={cn("shrink-0 cursor-pointer rounded-sm p-1 text-muted hover:text-fg", className)}
+      className={cn("text-muted hover:text-fg shrink-0 cursor-pointer rounded-sm p-1", className)}
     >
       {copied ? <Check size={16} className="text-neon" /> : <Copy size={16} />}
     </button>

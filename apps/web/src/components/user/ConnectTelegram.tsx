@@ -29,9 +29,9 @@ export function ConnectTelegram() {
         {m.telegram_connect_button()}
       </Button>
       {link && (
-        <div className="mt-2 rounded-lg border border-border bg-surface p-4">
-          <p className="mb-2 text-fg text-sm">{m.telegram_connect_notice()}</p>
-          <a href={link} target="_blank" rel="noreferrer" className="break-all font-mono text-neon text-sm">
+        <div className="border-border bg-surface mt-2 rounded-lg border p-4">
+          <p className="text-fg mb-2 text-sm">{m.telegram_connect_notice()}</p>
+          <a href={link} target="_blank" rel="noreferrer" className="text-neon font-mono text-sm break-all">
             {link}
           </a>
         </div>

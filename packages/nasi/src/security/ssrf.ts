@@ -205,9 +205,7 @@ export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Respo
  * followed here and only within the same origin (headers may carry the user's key), and the body is
  * streamed rather than buffered, so an SSE stream stays open. Sends every hop through `send` when set, never direct.
  */
-export function createGuardedFetch(
-  opts: { send?: FetchLike; maxRedirects?: number; allowPrivate?: boolean } = {}
-): FetchLike {
+export function createGuardedFetch(opts: { send?: FetchLike; maxRedirects?: number } = {}): FetchLike {
   const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS
   return async (input, init) => {
     let current = String(input)

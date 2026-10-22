@@ -15,7 +15,7 @@ export const PRIVACY_URL = "https://docs.kaja.io/privacy/"
 export function Footer() {
   return (
     <footer>
-      <ContentWidth className="pt-4 pb-10 font-crt text-[13px] text-muted sm:pt-6 sm:pb-16">
+      <ContentWidth className="font-crt text-muted pt-4 pb-10 text-[13px] sm:pt-6 sm:pb-16">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
           <FooterColumn heading={m.footer_heading_project()}>
             <FooterLink href="https://docs.kaja.io" external>
@@ -40,13 +40,13 @@ export function Footer() {
           <FooterColumn heading={m.language_select_label()} className="col-span-2 sm:col-span-1">
             <li>
               <Suspense>
-                <LanguageSelect className="whitespace-nowrap border-border/60 bg-transparent" />
+                <LanguageSelect className="border-border/60 bg-transparent whitespace-nowrap" />
               </Suspense>
             </li>
           </FooterColumn>
         </div>
 
-        <div className="mt-8 grid items-center gap-4 border-border/60 border-t pt-6 sm:grid-cols-3 sm:gap-8">
+        <div className="border-border/60 mt-8 grid items-center gap-4 border-t pt-6 sm:grid-cols-3 sm:gap-8">
           <span className="sm:col-span-2">
             © {new Date().getFullYear()} {m.footer_license_by()}{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-neon">
@@ -58,7 +58,7 @@ export function Footer() {
             target="_blank"
             rel="noopener"
             aria-label={m.footer_star()}
-            className="tape-btn inline-flex items-center gap-1.5 justify-self-start whitespace-nowrap px-4 py-2 text-[11px]"
+            className="tape-btn inline-flex items-center gap-1.5 justify-self-start px-4 py-2 text-[11px] whitespace-nowrap"
           >
             <Star fill="currentColor" size={11} />
             {m.footer_star()}
@@ -76,7 +76,7 @@ function FooterColumn({
 }: Readonly<{ heading: string; className?: string; children: ReactNode }>) {
   return (
     <div className={className}>
-      <p className="m-0 mb-3 font-stamp text-[11px] text-ice uppercase">{heading}</p>
+      <p className="font-stamp text-ice m-0 mb-3 text-[11px] uppercase">{heading}</p>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">{children}</ul>
     </div>
   )

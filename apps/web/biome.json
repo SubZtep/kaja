@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "extends": "//",
   "files": {
     "includes": ["**", "!src/routeTree.gen.ts"]
@@ -24,14 +24,14 @@
         "noArrayIndexKey": "on",
         "noDuplicatedSpreadProps": "on",
         "noReactForwardRef": "on",
-        "noUnknownAttribute": "on"
+        "noUnknownAttribute": "on",
+        "noJsxLeakedDollar": "on",
+        "noReactStringRefs": "on"
       },
       "style": {
         "useReactFunctionComponents": "on"
       },
       "nursery": {
-        "noJsxLeakedDollar": "on",
-        "noReactStringRefs": "on",
         "noReactObjectTypeAsDefaultProp": "on",
         "useTailwindShorthandClasses": "on"
       },

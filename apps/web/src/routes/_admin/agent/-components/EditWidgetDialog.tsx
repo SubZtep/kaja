@@ -74,7 +74,7 @@ export function EditWidgetDialog({
       <Dialog.Portal>
         <DialogShell className="w-xl">
           <Dialog.Title className={DIALOG_TITLE}>{m.widget_edit_title()}</Dialog.Title>
-          <Dialog.Description className="mb-6 font-mono text-muted text-sm">{widgetKey.keyPrefix}…</Dialog.Description>
+          <Dialog.Description className="text-muted mb-6 font-mono text-sm">{widgetKey.keyPrefix}…</Dialog.Description>
 
           <form
             noValidate

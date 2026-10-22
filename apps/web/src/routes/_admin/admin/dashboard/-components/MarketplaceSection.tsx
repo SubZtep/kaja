@@ -49,7 +49,7 @@ export function MarketplaceSection() {
   return (
     <Section className="mb-6" title={m.skills_sync_title()}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="font-mono text-muted text-xs">
+        <div className="text-muted font-mono text-xs">
           <p className="m-0">
             {data?.commit && data.syncedAt
               ? m.skills_sync_status({ time: getTimeAgo(data.syncedAt), commit: data.commit.slice(0, 7) })
@@ -70,7 +70,7 @@ export function MarketplaceSection() {
 export function ServiceKeysSection() {
   return (
     <Section className="mb-6" title={m.service_keys_title()}>
-      <p className="mt-0 mb-4 text-muted text-sm">{m.service_keys_description()}</p>
+      <p className="text-muted mt-0 mb-4 text-sm">{m.service_keys_description()}</p>
       <ApiKeys />
     </Section>
   )

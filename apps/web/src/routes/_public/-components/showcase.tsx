@@ -98,8 +98,8 @@ function ToyCard({
         <article className={card}>{face}</article>
       )}
       <div className="px-1">
-        <h3 className="m-0 font-display font-extrabold text-fg text-xl">{title}</h3>
-        <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{meta}</p>
+        <h3 className="font-display text-fg m-0 text-xl font-extrabold">{title}</h3>
+        <p className="font-crt text-muted mt-0.5 mb-0 text-sm">{meta}</p>
       </div>
     </div>
   )
@@ -111,8 +111,8 @@ function SoonItem({ src, title, meta }: Readonly<{ src: string; title: string; m
     <div className="flex min-w-0 items-center gap-3">
       <img src={src} alt="" width={704} height={704} loading="lazy" decoding="async" className="size-12 object-cover" />
       <div className="min-w-0">
-        <h3 className="m-0 font-display font-extrabold text-base text-fg leading-tight">{title}</h3>
-        <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{meta}</p>
+        <h3 className="font-display text-fg m-0 text-base leading-tight font-extrabold">{title}</h3>
+        <p className="font-crt text-muted mt-0.5 mb-0 text-sm">{meta}</p>
       </div>
     </div>
   )
@@ -141,8 +141,8 @@ export function Showcase() {
                   <BarkochbaGame className="h-full rounded-none border-0 shadow-none" />
                 </div>
                 <div className="px-1">
-                  <h3 className="m-0 font-display font-extrabold text-fg text-xl">{m.carousel_barkochba_title()}</h3>
-                  <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{m.carousel_barkochba_meta()}</p>
+                  <h3 className="font-display text-fg m-0 text-xl font-extrabold">{m.carousel_barkochba_title()}</h3>
+                  <p className="font-crt text-muted mt-0.5 mb-0 text-sm">{m.carousel_barkochba_meta()}</p>
                 </div>
               </div>
             ) : (
@@ -166,7 +166,7 @@ export function Showcase() {
           />
         </div>
 
-        <div className="toy-card mt-8 bg-surface p-4">
+        <div className="toy-card bg-surface mt-8 p-4">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-8">
             <Sticker rotate={-6} className="text-[10px]">
               {m.stamp_soon()}

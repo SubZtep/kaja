@@ -38,7 +38,7 @@ export const TOOLS = {
   tombi: {
     install: "https://tombi-toml.github.io/tombi/docs/installation",
     npm: "tombi",
-    pinned: () => Promise.resolve("1.7.3")
+    pinned: () => Promise.resolve("1.8.10")
   }
 } satisfies Record<string, Tool>
 

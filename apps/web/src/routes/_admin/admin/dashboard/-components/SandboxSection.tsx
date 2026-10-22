@@ -71,13 +71,13 @@ function ServersTable({
               <td className={cell}>
                 <ServerState server={server} />
               </td>
-              <td className={cn(cell, "font-mono text-muted")}>
+              <td className={cn(cell, "text-muted font-mono")}>
                 {server.rss === null ? "—" : formatBytes(server.rss)}
               </td>
-              <td className={cn(cell, "font-mono text-muted")}>{server.pending}</td>
-              <td className={cn(cell, "font-mono text-muted")}>{server.sessions}</td>
-              <td className={cn(cell, "font-mono text-muted text-xs")}>{getTimeAgo(server.startedAt)}</td>
-              <td className={cn(cell, "font-mono text-muted text-xs")}>{getTimeAgo(server.lastUsed)}</td>
+              <td className={cn(cell, "text-muted font-mono")}>{server.pending}</td>
+              <td className={cn(cell, "text-muted font-mono")}>{server.sessions}</td>
+              <td className={cn(cell, "text-muted font-mono text-xs")}>{getTimeAgo(server.startedAt)}</td>
+              <td className={cn(cell, "text-muted font-mono text-xs")}>{getTimeAgo(server.lastUsed)}</td>
             </tr>
           ))}
         </tbody>
@@ -94,7 +94,7 @@ function SandboxUp({ stats, emails }: Readonly<{ stats: SandboxStats; emails: Re
     : { label: m.sandbox_memory(), used: host.totalMemory - host.freeMemory, total: host.totalMemory }
   return (
     <>
-      <p className="mb-4 text-muted text-sm">
+      <p className="text-muted mb-4 text-sm">
         {m.sandbox_started({ time: getTimeAgo(stats.startedAt) })} ·{" "}
         {m.sandbox_runs({
           abilities: stats.abilities.join(", ") || "—",
@@ -121,7 +121,7 @@ function SandboxUp({ stats, emails }: Readonly<{ stats: SandboxStats; emails: Re
       </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <h3 className="m-0 mb-1 font-semibold text-fg text-sm">{m.sandbox_pool_title()}</h3>
+          <h3 className="text-fg m-0 mb-1 text-sm font-semibold">{m.sandbox_pool_title()}</h3>
           <StatLine label={m.sandbox_count_started()} value={pool.started} />
           <StatLine label={m.sandbox_count_stopped_idle()} value={pool.stoppedIdle} />
           <StatLine label={m.sandbox_count_made_room()} value={pool.madeRoom} />
@@ -133,14 +133,14 @@ function SandboxUp({ stats, emails }: Readonly<{ stats: SandboxStats; emails: Re
           <StatLine label={m.sandbox_count_stopped_memory()} value={pool.stoppedMemory} warn />
         </div>
         <div className="flex flex-col gap-1.5">
-          <h3 className="m-0 mb-1 font-semibold text-fg text-sm">{m.sandbox_egress_title()}</h3>
+          <h3 className="text-fg m-0 mb-1 text-sm font-semibold">{m.sandbox_egress_title()}</h3>
           <StatLine label={m.sandbox_egress_open()} value={egress.open} />
           <StatLine label={m.sandbox_egress_allowed()} value={egress.allowed} />
           <StatLine label={m.sandbox_egress_refused()} value={egress.refused} />
           <StatLine label={m.sandbox_egress_failed()} value={egress.failed} />
         </div>
       </div>
-      <p className="mt-6 mb-0 text-muted text-xs">
+      <p className="text-muted mt-6 mb-0 text-xs">
         {m.sandbox_own_process({ rss: formatBytes(stats.process.rss), heap: formatBytes(stats.process.heapUsed) })}
       </p>
     </>
@@ -173,7 +173,7 @@ function HistoryBars({
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div className="flex justify-between gap-2 text-xs">
         <span className="text-muted">{title}</span>
-        <span className="font-mono text-muted">{m.sandbox_history_peak({ value: format(max) })}</span>
+        <span className="text-muted font-mono">{m.sandbox_history_peak({ value: format(max) })}</span>
       </div>
       <div className="flex h-16 items-end gap-px" role="img" aria-label={title}>
         {samples.map(sample => (
@@ -225,21 +225,21 @@ function SandboxEntry({ entry, emails }: Readonly<{ entry: AdminSandboxEntry; em
     <div className="border-border border-b pb-6 last:border-b-0 last:pb-0">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-semibold text-fg">{sandbox.name ?? m.sandbox_unnamed()}</span>
+          <span className="text-fg font-semibold">{sandbox.name ?? m.sandbox_unnamed()}</span>
           <span className="text-muted text-sm">{owner(sandbox, emails)}</span>
           <span className="text-muted text-sm">{place(sandbox)}</span>
-          {hardware(sandbox) && <span className="font-mono text-muted text-xs">{hardware(sandbox)}</span>}
+          {hardware(sandbox) && <span className="text-muted font-mono text-xs">{hardware(sandbox)}</span>}
         </div>
         <div className="flex items-center gap-3">
           {!sandbox.online && sandbox.lastSeenAt && (
-            <span className="font-mono text-muted text-xs">
+            <span className="text-muted font-mono text-xs">
               {m.sandbox_last_seen({ time: getTimeAgo(sandbox.lastSeenAt) })}
             </span>
           )}
           <StatusDot active={sandbox.online} label={sandbox.online ? m.sandbox_online() : m.sandbox_offline()} />
         </div>
       </div>
-      {error && <p className="text-red-400 text-sm">{m.sandbox_down_hint({ error })}</p>}
+      {error && <p className="text-sm text-red-400">{m.sandbox_down_hint({ error })}</p>}
       {stats && <SandboxUp stats={stats} emails={emails} />}
       <SandboxHistory id={sandbox.id} />
     </div>
@@ -266,7 +266,7 @@ export function SandboxSection() {
             {data && (
               <StatusDot active={online > 0} label={m.sandbox_online_count({ online, total: data.sandboxes.length })} />
             )}
-            <span className="font-mono text-muted text-xs">{m.sandbox_live({ seconds: REFRESH_MS / 1000 })}</span>
+            <span className="text-muted font-mono text-xs">{m.sandbox_live({ seconds: REFRESH_MS / 1000 })}</span>
           </div>
         </div>
       }

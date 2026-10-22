@@ -10,10 +10,10 @@ const LOOKS = {
 export function CommandBox({ command, look = "plain" }: Readonly<{ command: string; look?: keyof typeof LOOKS }>) {
   return (
     <div className={cn("flex items-start gap-3", LOOKS[look].frame)}>
-      <code className={cn("wrap-break-word min-w-0 flex-1", LOOKS[look].code)}>
+      <code className={cn("min-w-0 flex-1 wrap-break-word", LOOKS[look].code)}>
         {command}
         {LOOKS[look].caret ? (
-          <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-[caret-blink_1.1s_steps(1)_infinite] bg-neon align-[-1px]" />
+          <span className="bg-neon ml-0.5 inline-block h-3.5 w-1.5 animate-[caret-blink_1.1s_steps(1)_infinite] align-[-1px]" />
         ) : null}
       </code>
       <CopyButton text={command} />

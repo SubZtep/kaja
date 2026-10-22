@@ -1,5 +1,4 @@
 export * from "./api"
-export * from "./e2e"
 export * from "./helpers"
 export * from "./sandbox"
 export * from "./tui"

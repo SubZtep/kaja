@@ -69,7 +69,7 @@ export function Table<TData extends RowData>({
           {table.getHeaderGroups().map(headerGroup =>
             headerGroup.headers.map(header =>
               header.column.getCanFilter() ? (
-                <div key={header.id} className="flex flex-row items-center gap-4 rounded-md bg-surface/90 px-4 py-2">
+                <div key={header.id} className="bg-surface/90 flex flex-row items-center gap-4 rounded-md px-4 py-2">
                   {flexRender(header.column.columnDef.header, header.getContext())}:
                   <Filter column={header.column} />
                 </div>
@@ -151,7 +151,7 @@ function TableHeaderCell<TData extends RowData>({
   return (
     <th
       aria-sort={ariaSort}
-      className="border-border border-b p-3 text-left align-top font-mono text-muted text-xs uppercase tracking-wider"
+      className="border-border text-muted border-b p-3 text-left align-top font-mono text-xs tracking-wider uppercase"
     >
       {cellContent}
     </th>
@@ -199,13 +199,13 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
 
   return (
     <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
-      <div className="flex items-center gap-2 text-muted text-sm">
+      <div className="text-muted flex items-center gap-2 text-sm">
         <span>{m.table_showing_entries({ startRow, endRow, totalRows })}</span>
         <select
           value={pageSize}
           onChange={e => table.setPageSize(Number(e.target.value))}
           aria-label={m.table_select_page_size()}
-          className="ml-2 rounded-lg bg-surface-2 px-3 py-1 text-fg outline-none transition-all focus:ring-1 focus:ring-neon"
+          className="bg-surface-2 text-fg focus:ring-neon ml-2 rounded-lg px-3 py-1 transition-all outline-none focus:ring-1"
         >
           {PAGE_SIZES.map(size => (
             <option key={size} value={size}>
@@ -225,7 +225,7 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
             "rounded-lg p-2 transition-all",
             table.getCanPreviousPage()
               ? "text-fg hover:bg-surface-2 hover:text-neon"
-              : "cursor-not-allowed text-muted/50"
+              : "text-muted/50 cursor-not-allowed"
           )}
         >
           <ChevronsLeft size={18} />
@@ -239,7 +239,7 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
             "rounded-lg p-2 transition-all",
             table.getCanPreviousPage()
               ? "text-fg hover:bg-surface-2 hover:text-neon"
-              : "cursor-not-allowed text-muted/50"
+              : "text-muted/50 cursor-not-allowed"
           )}
         >
           <ChevronLeft size={18} />
@@ -252,14 +252,14 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
               type="button"
               onClick={() => table.setPageIndex(item.value as number)}
               className={cn(
-                "min-w-10 rounded-lg px-3 py-2 font-medium text-sm transition-all",
+                "min-w-10 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 pageIndex === item.value ? "bg-neon text-bg" : "text-fg hover:bg-surface-2 hover:text-neon"
               )}
             >
               {(item.value as number) + 1}
             </button>
           ) : (
-            <span key={item.key} className="px-2 text-muted">
+            <span key={item.key} className="text-muted px-2">
               {item.value}
             </span>
           )
@@ -272,7 +272,7 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
           aria-label={m.table_next_page()}
           className={cn(
             "rounded-lg p-2 transition-all",
-            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "cursor-not-allowed text-muted/50"
+            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
           )}
         >
           <ChevronRight size={18} />
@@ -284,7 +284,7 @@ function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTab
           aria-label={m.table_last_page()}
           className={cn(
             "rounded-lg p-2 transition-all",
-            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "cursor-not-allowed text-muted/50"
+            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
           )}
         >
           <ChevronsRight size={18} />

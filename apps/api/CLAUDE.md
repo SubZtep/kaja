@@ -93,7 +93,7 @@ See `.env.example`.
 
 **Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (at least 32 characters; generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`. With `NODE_ENV=production` the API also needs `USER_SECRET_KEY` and a `CONFIG_API_TOKEN` other than the `.env.example` placeholder.
 
-**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`, the widget limits, Google sign-in, Turnstile, `STORAGE_*`, `TELEGRAM_BOT_TOKEN` (`TELEGRAM_API_ROOT` points the bot at a fake Bot API: the E2E's), `SANDBOX_SYSTEM_KEY`, `GEO_API_*`, `MARKETPLACE_*`. The full list is `packages/schema/env/api.ts`.
+**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`, the widget limits, Google sign-in, Turnstile, `STORAGE_*`, `TELEGRAM_BOT_TOKEN`, `SANDBOX_SYSTEM_KEY`, `GEO_API_*`, `MARKETPLACE_*`. The full list is `packages/schema/env/api.ts`.
 
 **Production:** `NODE_ENV=production` (turns Sentry on), strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
 

@@ -42,7 +42,7 @@ function UserPageComponent() {
             <Link
               to="/admin/users"
               aria-label={m.users_back_to_list()}
-              className="inline-flex rounded-md border border-border bg-surface p-1.5 text-muted transition-colors hover:border-neon/40 hover:text-fg"
+              className="border-border bg-surface text-muted hover:border-neon/40 hover:text-fg inline-flex rounded-md border p-1.5 transition-colors"
             >
               <ArrowLeft size={18} />
             </Link>
@@ -63,12 +63,12 @@ function UserPageComponent() {
               initials={getDisplayName(user).charAt(0).toUpperCase()}
             />
             <div>
-              <h2 className="m-0 font-semibold text-[15px] text-fg">{getDisplayName(user)}</h2>
+              <h2 className="text-fg m-0 text-[15px] font-semibold">{getDisplayName(user)}</h2>
               <span className="text-muted text-sm">{user.email}</span>
             </div>
           </div>
 
-          <div className="space-y-3 border-border border-t pt-4">
+          <div className="border-border space-y-3 border-t pt-4">
             <DetailRow icon={Mail} label={m.user_detail_field_email()} value={user.email} />
             <DetailRow icon={Shield} label={m.user_detail_field_role()} value={user.role ?? "user"} />
             <DetailRow
@@ -98,8 +98,8 @@ function DetailRow({
 }>) {
   return (
     <div className="flex items-center gap-3">
-      <Icon size={16} className="shrink-0 text-muted" />
-      <span className="w-24 font-mono text-[11px] text-muted uppercase tracking-wider">{label}</span>
+      <Icon size={16} className="text-muted shrink-0" />
+      <span className="text-muted w-24 font-mono text-[11px] tracking-wider uppercase">{label}</span>
       <span className="text-fg text-sm">{value}</span>
     </div>
   )

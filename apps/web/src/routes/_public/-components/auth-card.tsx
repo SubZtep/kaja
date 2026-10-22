@@ -21,14 +21,14 @@ export function AuthCard({
       <div className="paper-card">
         <div className="px-4 py-7 sm:p-8">
           <div className="mb-6">
-            <h1 className="m-0 mb-2 font-display font-extrabold text-[28px] text-fg tracking-[-0.03em]">{title}</h1>
-            {description ? <p className="m-0 text-[14.5px] text-muted">{description}</p> : null}
+            <h1 className="font-display text-fg m-0 mb-2 text-[28px] font-extrabold tracking-[-0.03em]">{title}</h1>
+            {description ? <p className="text-muted m-0 text-[14.5px]">{description}</p> : null}
           </div>
 
           {children}
 
           {footer ? (
-            <div className="mt-6 border-border border-t border-dashed pt-5 text-center font-crt text-[13.5px] text-muted">
+            <div className="border-border font-crt text-muted mt-6 border-t border-dashed pt-5 text-center text-[13.5px]">
               {footer}
             </div>
           ) : null}

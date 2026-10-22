@@ -9,14 +9,12 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 ## Project Overview
 
 Kaja is a TypeScript monorepo built with Bun:
-
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Images**: never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)`, nasi's `ObjectStore` under a per-session prefix: API Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, TUI plain files in `files/` beside the SQLite file; only the normalised copy is kept, with its description as `<id>.json`, and opening an image opens that copy). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`subztep/kaja-sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/CLAUDE.md`
-- **E2E** (`apps/e2e`): local-only browser scenarios with videos against an isolated API + web stack (`bun e2e`); never in CI. Details: `apps/e2e/CLAUDE.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -25,21 +23,21 @@ Device authorization still applies where relevant: Better Auth device flow for A
 
 ## Key File Locations
 
-| What | Path |
-|------|------|
-| Docker Compose | `compose.yaml` |
-| Biome config | `.biome.json` at the root, plus `apps/{web,tui,api}/biome.json` that extend it (`"extends": "//"`; Biome only finds the dotted name at the root, so these keep the plain one) |
-| Root TS config | `tsconfig.json` |
-| Lockfile | `bun.lock` |
-| API env examples | `apps/api/.env.example` |
-| Web env examples | `apps/web/.env.example` |
-| DB migrations | `apps/api/migrations/*.sql` |
-| Migration runner | `apps/api/scripts/migrations.ts` (`applyMigrations`: files not yet in `schema_migrations`, each in a transaction; edited files re-applied only while the API is 0.x), used by `apps/api/migrate.ts` (deploy, CI, and `scripts/db_migration.sh` locally; then the config seed) and the test database build |
-| `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
-| `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
-| Model defaults | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml` |
-| Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database) |
-| Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
+| What                     | Path                                                                                                                                                                                                                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker Compose           | `compose.yaml`                                                                                                                                                                                                                                                                                            |
+| Biome config             | `.biome.json` at the root, plus `apps/{web,tui,api}/biome.json` that extend it (`"extends": "//"`; Biome only finds the dotted name at the root, so these keep the plain one)                                                                                                                             |
+| Root TS config           | `tsconfig.json`                                                                                                                                                                                                                                                                                           |
+| Lockfile                 | `bun.lock`                                                                                                                                                                                                                                                                                                |
+| API env examples         | `apps/api/.env.example`                                                                                                                                                                                                                                                                                   |
+| Web env examples         | `apps/web/.env.example`                                                                                                                                                                                                                                                                                   |
+| DB migrations            | `apps/api/migrations/*.sql`                                                                                                                                                                                                                                                                               |
+| Migration runner         | `apps/api/scripts/migrations.ts` (`applyMigrations`: files not yet in `schema_migrations`, each in a transaction; edited files re-applied only while the API is 0.x), used by `apps/api/migrate.ts` (deploy, CI, and `scripts/db_migration.sh` locally; then the config seed) and the test database build |
+| `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`)                                                                                                                                                                                                                                                   |
+| `env.d.ts` generator     | `scripts/env-types.ts` (`bun generate:env-types`)                                                                                                                                                                                                                                                         |
+| Model defaults           | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml`                                                                           |
+| Test env preload         | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database)                                                                                                                                                                                          |
+| Docs / GitHub Pages      | `docs/` (includes CLI config templates under `docs/config/`)                                                                                                                                                                                                                                              |
 
 ## Development Commands
 
@@ -116,11 +114,11 @@ bun run --filter @kaja/sandbox build
 
 ### Packages
 
-| Package | Role |
-|---------|------|
-| `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types) |
+| Package        | Role                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types)        |
 | `@kaja/shared` | Pure utils by subpath (`/date`, `/text`, `/ui`, `/net`, `/id`, `/locale`, `/telegram`) |
-| `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
+| `@kaja/nasi`   | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres.                |
 
 ### Type architecture
 

@@ -7,11 +7,11 @@ Most of these run for you from git hooks (`.lefthook.toml`).
 ## Generators
 
 Never hand-edit their output. Change the input, then regenerate.
-
 - **`env.ts`** writes each app's `.env.example` from `packages/schema/env/`. `bun generate:env` writes, `bun check:env` fails on drift (and on a `compose.yaml` key no schema knows). The TUI's is hand-written.
 - **`env-types.ts`** writes each workspace's ambient `Bun.Env` typing from the same schemas: `bun generate:env-types`.
 - **`models.ts`** writes `docs/config/models.*.toml` from `docs/config/catalog.toml`: `bun generate:models`, and `bun check:models` fails on drift (CI and the catalog test).
 - **`locales.ts`** keeps every non-en-GB locale file in step with en-GB: same keys, same order. New or changed English gets a `[<locale>] lorem ipsum…` placeholder, and removed keys go away.
+
   ```sh
   bun sync:locales           # rewrite the other languages
   bun sync:locales --stage   # also git-add what it rewrote (pre-commit)

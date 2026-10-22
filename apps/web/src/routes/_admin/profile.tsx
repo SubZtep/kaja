@@ -210,7 +210,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
   if (pending)
     return (
       <div className="flex flex-col gap-3">
-        <span className="font-medium text-[13px] text-muted">
+        <span className="text-muted text-[13px] font-medium">
           {pending.confirming ? m.profile_email_step_new() : m.profile_email_step_current()}
         </span>
         {/* Keyed by step, so the second code starts from an empty field */}
@@ -236,7 +236,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col gap-1.5">
-        <span className="font-medium text-[13px] text-muted">{m.profile_current_email()}</span>
+        <span className="text-muted text-[13px] font-medium">{m.profile_current_email()}</span>
         <span className="text-fg">{email}</span>
       </div>
       <form.AppField name="newEmail">
@@ -282,7 +282,7 @@ function DeleteAccount({ email }: Readonly<{ email: string }>) {
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="m-0 text-[14.5px] text-muted">{m.profile_delete_description()}</p>
+      <p className="text-muted m-0 text-[14.5px]">{m.profile_delete_description()}</p>
       <ConfirmDialog
         title={m.profile_delete_confirm_title()}
         description={m.profile_delete_confirm_description()}

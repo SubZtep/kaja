@@ -27,15 +27,15 @@ export function SiteHeader({
   const close = useCallback(() => setOpen(false), [])
 
   return (
-    <header className="sticky top-0 z-50 border-border border-b bg-bg/95 backdrop-blur-sm">
+    <header className="border-border bg-bg/95 sticky top-0 z-50 border-b backdrop-blur-sm">
       <ContentWidth className="flex items-center justify-between py-3 sm:py-4.5">
         <BrandMark to={brandTo} monster className="text-lg" />
 
-        <nav className="hidden items-center gap-3 text-muted text-sm lg:flex">{desktopNav}</nav>
+        <nav className="text-muted hidden items-center gap-3 text-sm lg:flex">{desktopNav}</nav>
 
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger
-            className="flex cursor-pointer items-center justify-center border border-fg bg-ice p-2 text-bg lg:hidden"
+            className="border-fg bg-ice text-bg flex cursor-pointer items-center justify-center border p-2 lg:hidden"
             style={{ clipPath: "polygon(6% 0%, 100% 8%, 94% 100%, 0% 88%)" }}
             aria-label={open ? m.menu_close() : m.menu_open()}
           >
@@ -44,7 +44,7 @@ export function SiteHeader({
           <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 z-40 min-h-dvh bg-black/70 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute" />
             <Dialog.Popup
-              className="fixed inset-x-4 top-20 z-50 max-h-[min(70dvh,28rem)] overflow-y-auto bg-surface p-5 text-fg shadow-[6px_8px_0_var(--color-border)] outline-none transition-all duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 sm:inset-x-6"
+              className="bg-surface text-fg fixed inset-x-4 top-20 z-50 max-h-[min(70dvh,28rem)] overflow-y-auto p-5 shadow-[6px_8px_0_var(--color-border)] transition-all duration-150 outline-none data-ending-style:opacity-0 data-starting-style:opacity-0 sm:inset-x-6"
               style={{
                 clipPath: "polygon(1.2% 1%, 98.5% 0.4%, 100% 4%, 99% 97%, 96% 100%, 2% 98.5%, 0% 94%, 0.5% 3%)"
               }}

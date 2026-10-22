@@ -81,19 +81,19 @@ function BarList({
   return (
     <Section title={title}>
       {rows.length === 0 ? (
-        <p className="m-0 text-muted text-sm">{empty}</p>
+        <p className="text-muted m-0 text-sm">{empty}</p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
           {rows.map(row => (
             <li key={row.key}>
               <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate font-mono text-fg">{row.label}</span>
-                <span className="shrink-0 font-mono text-muted">{row.value}</span>
+                <span className="text-fg min-w-0 truncate font-mono">{row.label}</span>
+                <span className="text-muted shrink-0 font-mono">{row.value}</span>
               </div>
-              <div className="mt-1 h-1.5 rounded-full bg-border/60">
-                <div className="h-full rounded-full bg-neon/80" style={{ width: `${(row.value / max) * 100}%` }} />
+              <div className="bg-border/60 mt-1 h-1.5 rounded-full">
+                <div className="bg-neon/80 h-full rounded-full" style={{ width: `${(row.value / max) * 100}%` }} />
               </div>
-              {row.note && <p className="m-0 mt-0.5 text-[12px] text-muted">{row.note}</p>}
+              {row.note && <p className="text-muted m-0 mt-0.5 text-[12px]">{row.note}</p>}
             </li>
           ))}
         </ul>
@@ -126,11 +126,11 @@ export function UsageStats() {
         </div>
       </div>
 
-      {stats.isError && <p className="m-0 text-red-400 text-sm">{m.stats_error()}</p>}
+      {stats.isError && <p className="m-0 text-sm text-red-400">{m.stats_error()}</p>}
       {!data && !stats.isError && <Loader slim />}
       {data &&
         (data.totals.sessions === 0 ? (
-          <p className="m-0 text-muted text-sm">{m.stats_empty()}</p>
+          <p className="text-muted m-0 text-sm">{m.stats_empty()}</p>
         ) : (
           <div className={cn("flex flex-col gap-4", stats.isPlaceholderData && "opacity-60")}>
             <div className="flex flex-wrap gap-3">
@@ -158,7 +158,7 @@ export function UsageStats() {
 
             <Section title={m.stats_per_day_title()}>
               <PerDayChart perDay={data.perDay} />
-              <div className="mt-1.5 flex justify-between font-mono text-[11px] text-muted">
+              <div className="text-muted mt-1.5 flex justify-between font-mono text-[11px]">
                 <span>{data.perDay[0]?.date}</span>
                 <span>{data.perDay.at(-1)?.date}</span>
               </div>

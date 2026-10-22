@@ -64,7 +64,7 @@ export function KeyDialog({
       <Dialog.Portal>
         <DialogShell className="w-120">
           <Dialog.Title className={DIALOG_TITLE}>{m.tools_key_dialog_title({ name })}</Dialog.Title>
-          <Dialog.Description className="mb-6 text-muted text-sm">
+          <Dialog.Description className="text-muted mb-6 text-sm">
             {m.service_key_dialog_description({ domain })}
           </Dialog.Description>
           <form
@@ -77,7 +77,7 @@ export function KeyDialog({
           >
             <Field.Root>
               <div className="flex flex-col gap-1.5">
-                <Field.Label className="font-medium text-[13px] text-muted">{m.tools_key_field()}</Field.Label>
+                <Field.Label className="text-muted text-[13px] font-medium">{m.tools_key_field()}</Field.Label>
                 <Text
                   variant="3d"
                   type="password"
@@ -91,7 +91,7 @@ export function KeyDialog({
                 />
               </div>
             </Field.Root>
-            {failure && <p className="m-0 text-red-400 text-sm">{failure}</p>}
+            {failure && <p className="m-0 text-sm text-red-400">{failure}</p>}
             <div className="flex justify-end gap-4">
               <Dialog.Close render={<Button type="button" />}>{m.confirm_dialog_cancel()}</Dialog.Close>
               <Button type="submit" variant="primary" loading={save.isPending} disabled={!apiKey.trim()}>

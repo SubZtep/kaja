@@ -52,15 +52,15 @@ function KeySection({ settings }: Readonly<{ settings: SandboxSettings }>) {
 
   return (
     <Section title={m.sandbox_key_title()}>
-      <p className="mb-3 text-muted text-sm">{m.sandbox_key_description()}</p>
+      <p className="text-muted mb-3 text-sm">{m.sandbox_key_description()}</p>
       {key ? (
         <div className="mb-4">
-          <p className="mb-2 text-fg text-sm">{m.sandbox_key_shown_once()}</p>
+          <p className="text-fg mb-2 text-sm">{m.sandbox_key_shown_once()}</p>
           <RunCommand sandboxKey={key} />
         </div>
       ) : (
         settings.keyCreatedAt && (
-          <p className="mb-4 font-mono text-muted text-xs">
+          <p className="text-muted mb-4 font-mono text-xs">
             {m.sandbox_key_created({ time: getTimeAgo(settings.keyCreatedAt) })}
           </p>
         )
@@ -104,8 +104,8 @@ function SettingsSection({ settings }: Readonly<{ settings: SandboxSettings }>) 
               onCheckedChange={share => update.mutate({ share })}
             />
             <span>
-              <span className="block text-fg text-sm">{m.sandbox_setting_share()}</span>
-              <span className="block text-muted text-xs">{m.sandbox_setting_share_hint()}</span>
+              <span className="text-fg block text-sm">{m.sandbox_setting_share()}</span>
+              <span className="text-muted block text-xs">{m.sandbox_setting_share_hint()}</span>
             </span>
           </Field.Label>
         </Field.Root>
@@ -118,8 +118,8 @@ function SettingsSection({ settings }: Readonly<{ settings: SandboxSettings }>) 
               onCheckedChange={useShared => update.mutate({ useShared })}
             />
             <span>
-              <span className="block text-fg text-sm">{m.sandbox_setting_use_shared()}</span>
-              <span className="block text-muted text-xs">{m.sandbox_setting_use_shared_hint()}</span>
+              <span className="text-fg block text-sm">{m.sandbox_setting_use_shared()}</span>
+              <span className="text-muted block text-xs">{m.sandbox_setting_use_shared_hint()}</span>
             </span>
           </Field.Label>
         </Field.Root>
@@ -140,20 +140,20 @@ function SandboxRow({ sandbox }: Readonly<{ sandbox: Sandbox }>) {
   const load = sandbox.load
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-border border-b py-3 last:border-b-0">
+    <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-b-0">
       <div className="flex flex-col gap-1">
-        <span className="font-semibold text-fg">{sandbox.name ?? m.sandbox_unnamed()}</span>
+        <span className="text-fg font-semibold">{sandbox.name ?? m.sandbox_unnamed()}</span>
         <span className="text-muted text-sm">{place(sandbox)}</span>
-        {hardware(sandbox) && <span className="font-mono text-muted text-xs">{hardware(sandbox)}</span>}
+        {hardware(sandbox) && <span className="text-muted font-mono text-xs">{hardware(sandbox)}</span>}
       </div>
       <div className="flex items-center gap-4">
         {sandbox.online && info && (
-          <span className="font-mono text-muted text-xs">
+          <span className="text-muted font-mono text-xs">
             {m.sandbox_running({ running: load?.running ?? 0, max: info.maxProcesses })}
           </span>
         )}
         {!sandbox.online && sandbox.lastSeenAt && (
-          <span className="font-mono text-muted text-xs">
+          <span className="text-muted font-mono text-xs">
             {m.sandbox_last_seen({ time: getTimeAgo(sandbox.lastSeenAt) })}
           </span>
         )}

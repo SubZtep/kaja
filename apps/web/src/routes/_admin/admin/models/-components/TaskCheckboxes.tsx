@@ -23,7 +23,7 @@ export function TaskCheckboxes({
   return (
     <CheckboxGroup value={value} onValueChange={onChange} className="flex flex-wrap gap-x-4 gap-y-2">
       {MODEL_TASKS.map(task => (
-        <Field.Root key={task} name={task} className="flex items-center gap-2 text-fg text-sm">
+        <Field.Root key={task} name={task} className="text-fg flex items-center gap-2 text-sm">
           <Field.Label className="flex items-center gap-2">
             <Checkbox name={task} />
             {task}

@@ -49,7 +49,7 @@ function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
     <div className="flex items-center gap-4">
       <Avatar src={user.image} alt={user.name ?? ""} initials={initials} />
       <div>
-        {user.name?.trim() && <div className="font-medium text-fg text-sm">{info.getValue()}</div>}
+        {user.name?.trim() && <div className="text-fg text-sm font-medium">{info.getValue()}</div>}
         <div className="text-muted text-xs">{user.email}</div>
       </div>
     </div>
@@ -62,7 +62,7 @@ function AccessLevelCell(info: CellContext<typeof tableFeaturesConfig, UsersColu
 }
 
 function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, Date>) {
-  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
+  return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function ActionsCell(info: { readonly row: { readonly original: { readonly id: string } } }) {
@@ -155,24 +155,24 @@ function UserList() {
       </PageHeader>
 
       <Section padded={false}>
-        <div className="flex flex-wrap items-center gap-4 border-border border-b px-5.5 py-5 sm:px-6">
+        <div className="border-border flex flex-wrap items-center gap-4 border-b px-5.5 py-5 sm:px-6">
           <div className="relative min-w-70 flex-1">
-            <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
+            <Search size={16} className="text-muted absolute top-1/2 left-3.5 -translate-y-1/2" />
             <input
               type="text"
               placeholder={m.users_search_placeholder()}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full rounded-md border border-border bg-surface-2 py-2.5 pr-3 pl-10 text-fg text-sm outline-none transition-colors placeholder:text-muted/70 focus:border-neon/50"
+              className="border-border bg-surface-2 text-fg placeholder:text-muted/70 focus:border-neon/50 w-full rounded-md border py-2.5 pr-3 pl-10 text-sm transition-colors outline-none"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-1 font-mono text-[11px] text-muted uppercase tracking-wider">{m.users_filters()}</span>
+            <span className="text-muted mr-1 font-mono text-[11px] tracking-wider uppercase">{m.users_filters()}</span>
             {roleFilter ? (
               <Button
                 variant="chip"
                 onClick={() => setRoleFilter("")}
-                className="flex items-center gap-2 text-fg hover:border-neon/40"
+                className="text-fg hover:border-neon/40 flex items-center gap-2"
               >
                 {m.users_filter_role({ role: capitalized(roleFilter) })} <X size={12} />
               </Button>
@@ -193,7 +193,7 @@ function UserList() {
                   setSearchQuery("")
                   setRoleFilter("")
                 }}
-                className="ml-1 font-mono text-[11px] text-neon uppercase tracking-wider hover:text-neon-hi"
+                className="text-neon hover:text-neon-hi ml-1 font-mono text-[11px] tracking-wider uppercase"
               >
                 {m.users_clear()}
               </button>

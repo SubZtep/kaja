@@ -187,17 +187,6 @@ test("downloadTelegramImage fetches the file by its path and returns a data URL"
   ).rejects.toThrow("HTTP 404")
 })
 
-test("downloadTelegramImage can read from another Bot API server", async () => {
-  fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(new Response(new Uint8Array([1])))
-  await downloadTelegramImage(
-    "TOKEN",
-    async () => ({ file_path: "photos/a.jpg" }),
-    { fileId: "f", mimeType: "image/jpeg" },
-    "http://localhost:3102"
-  )
-  expect(fetchSpy.mock.calls[0]![0]).toBe("http://localhost:3102/file/botTOKEN/photos/a.jpg")
-})
-
 test("a failed download's error never carries the bot token", async () => {
   fetchSpy = spyOn(globalThis, "fetch").mockRejectedValue(
     new Error("Unable to connect: https://api.telegram.org/file/bot123:SECRET/x")

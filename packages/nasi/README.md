@@ -21,9 +21,9 @@ src/
 
 ## Entry points
 
-| Import | What it is |
-|--------|------------|
-| `@kaja/nasi` | `Nasi`, `Agent`, `run()`, store interface, tools. Pulls in the loop. |
+| Import              | What it is                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `@kaja/nasi`        | `Nasi`, `Agent`, `run()`, store interface, tools. Pulls in the loop.                                                                      |
 | `@kaja/nasi/client` | `createNasiClient` for `POST /nasi/turn` (buffered) and `/nasi/turn/stream` (SSE). Used by the cloud CLI. Must not import the agent loop. |
 
 Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (sessions and notes) and `@kaja/schema/abilities` (personas, datasets, skill/HTTP tool/MCP manifests).
@@ -37,7 +37,9 @@ const response = await nasi.turnBuffered({ message: "Hello" })
 
 // In-process (local CLI): you own persistence
 const agent = new Agent({ model, client, tools })
-for await (const event of run(agent, prompt, createSession(), owner)) { /* … */ }
+for await (const event of run(agent, prompt, createSession(), owner)) {
+  /* … */
+}
 ```
 
 `Nasi.open` also takes `personas`, `promptContext`, `owner` and `deps` (see `NasiOpenOptions` in `src/nasi.ts`).
@@ -45,7 +47,6 @@ for await (const event of run(agent, prompt, createSession(), owner)) { /* … *
 ## Stores and model client
 
 `Nasi.open({ store })` takes a `NasiStore`. Nasi never opens a database itself.
-
 - CLI: sqlite via `createSqliteStore(path)` (`apps/tui/lib/store/sqlite.ts`)
 - API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
 - Tests: `createMemoryStore()`

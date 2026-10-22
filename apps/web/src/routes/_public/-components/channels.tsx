@@ -32,16 +32,16 @@ function ChannelCard({
   children: ReactNode
 }>) {
   return (
-    <article className={cn("toy-card gap-2 bg-surface p-4 md:min-h-56", className)} inert={away} aria-hidden={away}>
+    <article className={cn("toy-card bg-surface gap-2 p-4 md:min-h-56", className)} inert={away} aria-hidden={away}>
       <div className="flex items-center justify-between gap-3">
-        <p className="m-0 font-stamp text-[11px] text-neon uppercase">{label}</p>
+        <p className="font-stamp text-neon m-0 text-[11px] uppercase">{label}</p>
         {sticker ? (
           <Sticker rotate={7} className="text-[10px]">
             {sticker}
           </Sticker>
         ) : null}
       </div>
-      <h3 className="m-0 font-bold font-display text-fg text-lg leading-tight">{title}</h3>
+      <h3 className="font-display text-fg m-0 text-lg leading-tight font-bold">{title}</h3>
       {children}
     </article>
   )
@@ -66,10 +66,10 @@ function GuestBrowserCard() {
   )
 
   return (
-    <div className="perspective-distant h-full">
+    <div className="h-full perspective-distant">
       <div
         className={cn(
-          "transform-3d grid h-full transition-transform duration-700 motion-reduce:duration-0",
+          "grid h-full transition-transform duration-700 transform-3d motion-reduce:duration-0",
           flipped && "rotate-y-180"
         )}
       >
@@ -79,7 +79,7 @@ function GuestBrowserCard() {
           className={FACE}
           away={flipped}
         >
-          <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_guest_body()}</p>
+          <p className="font-crt text-muted m-0 text-sm">{m.channel_browser_guest_body()}</p>
           {flip(m.channel_browser_why())}
         </ChannelCard>
         <ChannelCard
@@ -88,7 +88,7 @@ function GuestBrowserCard() {
           className={cn(FACE, "rotate-y-180")}
           away={!flipped}
         >
-          <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_perks_body()}</p>
+          <p className="font-crt text-muted m-0 text-sm">{m.channel_browser_perks_body()}</p>
           {flip(m.channel_browser_why_not())}
         </ChannelCard>
       </div>
@@ -113,8 +113,8 @@ function InstallCommand() {
             aria-pressed={os === key}
             onClick={() => setOs(key)}
             className={cn(
-              "cursor-pointer border px-2 py-1 font-stamp text-[11px] uppercase",
-              os === key ? "border-ice bg-ice text-bg" : "border-transparent text-muted hover:text-ice"
+              "font-stamp cursor-pointer border px-2 py-1 text-[11px] uppercase",
+              os === key ? "border-ice bg-ice text-bg" : "text-muted hover:text-ice border-transparent"
             )}
           >
             {key === "unix" ? m.install_mac_linux_label() : m.install_windows_label()}
@@ -122,13 +122,13 @@ function InstallCommand() {
         ))}
       </fieldset>
       <CommandBox command={INSTALL_CMD[os]} look="crt" />
-      <p className="mt-3 mb-0 font-crt text-muted text-sm">
+      <p className="font-crt text-muted mt-3 mb-0 text-sm">
         {m.install_binary_prefix()}{" "}
         <a
           href="https://github.com/SubZtep/kaja/releases"
           target="_blank"
           rel="noopener"
-          className="inline-block whitespace-nowrap text-neon underline underline-offset-2"
+          className="text-neon inline-block whitespace-nowrap underline underline-offset-2"
         >
           {m.install_binary_link()}
         </a>
@@ -152,7 +152,7 @@ export function Channels() {
         <div className="grid gap-5 md:grid-cols-3">
           {user ? (
             <ChannelCard label={m.channel_browser_label()} title={m.channel_browser_title()} sticker={m.stamp_wip()}>
-              <p className="m-0 font-crt text-muted text-sm">{m.channel_browser_body()}</p>
+              <p className="font-crt text-muted m-0 text-sm">{m.channel_browser_body()}</p>
               <button
                 type="button"
                 className={cn(ACTION, "cursor-pointer")}
@@ -173,7 +173,7 @@ export function Channels() {
             {user ? (
               <TelegramConnectCta actionClassName={ACTION} />
             ) : (
-              <p className="m-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
+              <p className="font-crt text-muted m-0 text-sm">{m.hero_telegram_body()}</p>
             )}
           </ChannelCard>
         </div>
