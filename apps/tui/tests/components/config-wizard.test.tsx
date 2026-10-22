@@ -35,9 +35,9 @@ type Wizard = ReturnType<typeof renderWizard>
 
 /** Ticks the providers at these checklist positions (in ascending order) and continues. */
 async function tick(w: Wizard, ...positions: number[]) {
-  let at = 0
+  let row = 0
   for (const position of positions) {
-    for (; at < position; at++) await w.t.press(DOWN)
+    for (; row < position; row++) await w.t.press(DOWN)
     await w.t.press(SPACE)
   }
   await w.t.press(ENTER)

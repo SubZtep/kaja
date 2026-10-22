@@ -16,9 +16,9 @@ import {
   type CallStat,
   type ClientCall,
   RUN_COMMAND_TOOL,
+  seesImages,
   type Session,
-  SWITCH_PERSONA_TOOL,
-  seesImages
+  SWITCH_PERSONA_TOOL
 } from "./agent"
 import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
@@ -712,7 +712,7 @@ async function* streamRoundFitting(
   async function* sendable(): AsyncGenerator<AgentEvent, ChatCompletionMessageParam[], void> {
     yield* described(await applyDescriptions(session, !sees))
     const messages = contextMessages(session)
-    return sees ? await resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
+    return sees ? resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
   }
   try {
     return yield* streamRound(agent, yield* sendable(), definitions)
@@ -857,7 +857,7 @@ async function* runTurn(
       {
         session,
         record: (callId, stat) => recordCall(session, callId, stat),
-        onModelCall: usage => recordModelCall(session, { kind: "summarize", ...usage })
+        onModelCall: stats => recordModelCall(session, { kind: "summarize", ...stats })
       }
     )
 

@@ -64,7 +64,7 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
     } catch (error) {
       const wait = error instanceof TelegramRateLimitError ? error.retryAfterSec : undefined
       if (wait === undefined || wait > MAX_FINAL_RETRY_SEC) return channel.warn("Telegram edit failed", error)
-      await new Promise<void>(resolve => setTimeout(resolve, wait * 1000))
+      await Bun.sleep(wait * 1000)
       await show(text).catch(retryError => channel.warn("Telegram edit failed", retryError))
     }
   }

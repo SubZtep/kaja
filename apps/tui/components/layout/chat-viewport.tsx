@@ -1,5 +1,5 @@
 import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
@@ -284,11 +284,10 @@ export function ChatViewport({
       })
       .catch(error => log.warn("Copy to clipboard failed", { error }))
   }
-  // The key bar's Copy button asks through uiEvents; a ref keeps the listener on the latest events
-  const copyRef = useRef(copyLatest)
-  copyRef.current = copyLatest
+  // The key bar's Copy button asks through uiEvents; an effect event keeps the listener on the latest events
+  const copy = useEffectEvent(copyLatest)
   useEffect(() => {
-    const onCopy = () => copyRef.current()
+    const onCopy = () => copy()
     uiEvents.on("copy", onCopy)
     return () => {
       uiEvents.off("copy", onCopy)

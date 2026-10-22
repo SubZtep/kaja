@@ -1,10 +1,10 @@
-import { createFolderAbilityStore, McpRunnerMissingError, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
+import { createFolderAbilityStore, mcpAbilityTarget, McpRunnerMissingError, personaAbilities } from "@kaja/nasi"
 import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
 import { getMarketplaceDir } from "../abilities/abilities-file"
-import { type SecretPlaceholder, saveSecrets, secrets, updateSecretPlaceholders } from "../config/secrets"
+import { saveSecrets, type SecretPlaceholder, secrets, updateSecretPlaceholders } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
-import { type CheckResult, checkAbilityKey, checkMcpServer, checkProvider, checkTelegramToken } from "./checks"
+import { checkAbilityKey, checkMcpServer, checkProvider, type CheckResult, checkTelegramToken } from "./checks"
 import { statusLine } from "./status"
 
 /** One key or token the current config depends on, with how to test and store it. */

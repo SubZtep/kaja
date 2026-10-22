@@ -1,7 +1,7 @@
 import { userImagePrefix } from "@kaja/nasi"
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { locales } from "@kaja/shared/locale"
-import { type BetterAuthPlugin, betterAuth } from "better-auth"
+import { betterAuth, type BetterAuthPlugin } from "better-auth"
 import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
 import { admin, bearer, captcha, deviceAuthorization, emailOTP, openAPI } from "better-auth/plugins"
 import { z } from "zod"

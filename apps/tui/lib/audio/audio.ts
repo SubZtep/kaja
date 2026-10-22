@@ -108,7 +108,8 @@ export function createLocalSource({ inputFile }: LocalSourceOptions = {}): Audio
   const ffmpeg = trackProcess(
     Bun.spawn(["ffmpeg", ...ffmpegArgs], {
       stdout: "pipe",
-      stderr: "pipe"
+      stderr: "pipe",
+      windowsHide: true
     })
   )
 
@@ -161,7 +162,8 @@ export function createLocalSink(): AudioSink {
           {
             stdin: "pipe",
             stdout: "ignore",
-            stderr: "ignore"
+            stderr: "ignore",
+            windowsHide: true
           }
         )
       )

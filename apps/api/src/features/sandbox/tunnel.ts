@@ -169,6 +169,8 @@ export class SandboxTunnel {
         if (pending.body) pending.body.close()
         else if (!pending.headed) pending.reject(new Error("the sandbox sent no answer"))
         return
+      case "stats":
+        return
       case "error": {
         this.#pending.delete(frame.id)
         const error = new Error(frame.message)

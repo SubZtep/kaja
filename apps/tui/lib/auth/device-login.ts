@@ -38,7 +38,7 @@ export function localizeWebUrl(url: string, locale: Locale): string {
  */
 export async function deviceLogin(
   apiUrl: string,
-  onPrompt: (prompt: DeviceLoginPrompt) => void
+  onPrompt: (prompt: DeviceLoginPrompt) => void | Promise<void>
 ): Promise<DeviceLoginResult> {
   const authClient = createAuthClient({
     baseURL: apiUrl,
@@ -57,7 +57,7 @@ export async function deviceLogin(
   }
 
   const locale = getLanguage()
-  onPrompt({
+  void onPrompt({
     userCode: data.user_code,
     verificationUri: localizeWebUrl(data.verification_uri, locale),
     verificationUriComplete: data.verification_uri_complete && localizeWebUrl(data.verification_uri_complete, locale)
@@ -67,7 +67,7 @@ export async function deviceLogin(
   const deadline = Date.now() + 15 * 60 * 1000
 
   while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, interval * 1000))
+    await Bun.sleep(interval * 1000)
     const poll = await authClient.device.token({
       grant_type: "urn:ietf:params:oauth:grant-type:device_code",
       device_code: data.device_code,

@@ -26,7 +26,7 @@ const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
  * streaming flushes (which re-render the whole ScrollView subtree) bail
  * out here instead of re-rendering every history item.
  */
-export const TimelineItem = memo(function TimelineItem({
+export const TimelineItem = memo(function TimelineItemView({
   item,
   thinking,
   spaced
@@ -136,6 +136,8 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
     }
     case "final":
       return <Said dot={theme.accent()}>{item.content ?? "N/A"}</Said>
+    case "client_tool_calls":
+      return null
   }
 }
 

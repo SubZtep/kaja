@@ -28,5 +28,5 @@ export function CodeEmail({
 }
 
 export async function getCodeHtml(payload: Readonly<CodeEmailPayload>, language: EmailLanguage) {
-  return await render(<CodeEmail {...payload} language={language} />)
+  return render(<CodeEmail {...payload} language={language} />)
 }

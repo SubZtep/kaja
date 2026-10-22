@@ -127,7 +127,7 @@ function InstallCommand() {
         <a
           href="https://github.com/SubZtep/kaja/releases"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           className="text-neon inline-block whitespace-nowrap underline underline-offset-2"
         >
           {m.install_binary_link()}

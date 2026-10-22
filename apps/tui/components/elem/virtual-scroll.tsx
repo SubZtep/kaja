@@ -50,7 +50,7 @@ export const useViewportHeight = () => useContext(ViewportHeightContext)
  * children (fresh elements, e.g. the streaming partial) or an epoch bump
  * (width change invalidating all heights) re-run the measurement.
  */
-const MeasuredItem = memo(function MeasuredItem({
+const MeasuredItem = memo(function MeasuredItemView({
   id,
   epoch,
   onMeasure,

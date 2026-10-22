@@ -1,6 +1,6 @@
 import { createHmac, hkdfSync } from "node:crypto"
 import type { FetchLike, McpSandbox } from "@kaja/nasi"
-import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
+import { type Sandbox, SANDBOX_FULL_HEADER } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
 import { reportError } from "../../core/report"

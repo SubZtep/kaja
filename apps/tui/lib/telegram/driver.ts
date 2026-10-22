@@ -12,9 +12,9 @@ import {
   imageRefId,
   isImageRejection,
   notApprovedPrompt,
-  type PromptImage,
   personaAbilities,
   photoLabel,
+  type PromptImage,
   recordPausedCall,
   runApprovedTool,
   samplingOf,
@@ -30,8 +30,8 @@ import {
   escapeHtml,
   isCommand,
   openReply,
-  type Reply,
-  renderTelegramHtml
+  renderTelegramHtml,
+  type Reply
 } from "@kaja/shared/telegram"
 import { sessionTitle } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"

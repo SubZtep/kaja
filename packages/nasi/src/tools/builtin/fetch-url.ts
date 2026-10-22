@@ -2,7 +2,7 @@ import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
 import TurndownService from "turndown"
 import { z } from "zod"
-import { ToolError, type ToolResult, tool } from "../../agent/agent"
+import { tool, ToolError, type ToolResult } from "../../agent/agent"
 import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 

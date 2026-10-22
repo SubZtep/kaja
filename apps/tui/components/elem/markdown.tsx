@@ -5,7 +5,7 @@ import { t } from "../../lib/i18n"
 import { splitBlocks } from "../../lib/markdown/blocks"
 import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
-import { type Palette, paint, usePalette } from "../theme"
+import { paint, type Palette, usePalette } from "../theme"
 import { type CodeView, CodeViewContext, useReportOverflow } from "./code-expand"
 import { TerminalImage } from "./terminal-image"
 

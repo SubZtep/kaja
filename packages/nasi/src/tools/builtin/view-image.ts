@@ -1,7 +1,7 @@
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { z } from "zod"
-import { type Tool, type ToolContext, ToolError, type ToolResult, tool } from "../../agent/agent"
+import { type Tool, tool, type ToolContext, ToolError, type ToolResult } from "../../agent/agent"
 import { ImageError, normalizeImage } from "../../images/normalize"
 import { imageRefId } from "../../store/images"
 import { PathDeniedError, resolveWorkspacePath } from "../path-guard"

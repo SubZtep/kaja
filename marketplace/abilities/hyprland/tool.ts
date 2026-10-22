@@ -16,7 +16,12 @@ async function hyprctl(...args: string[]): Promise<{ ok: boolean; out: string }>
   if (!Bun.which("hyprctl")) throw new Error("hyprctl isn't installed here, so Hyprland can't be reached.")
   if (!Bun.env.HYPRLAND_INSTANCE_SIGNATURE)
     throw new Error("Hyprland isn't running in this session (no HYPRLAND_INSTANCE_SIGNATURE).")
-  const child = Bun.spawn(["hyprctl", ...args], { stdout: "pipe", stderr: "pipe", timeout: TIMEOUT_MS })
+  const child = Bun.spawn(["hyprctl", ...args], {
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: TIMEOUT_MS,
+    windowsHide: true
+  })
   const [out, err, code] = await Promise.all([
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
@@ -31,7 +36,7 @@ function luaString(value: string): string {
     const code = char.codePointAt(0) ?? 0
     return code < 32 || code === 127
   }
-  if ([...value].some(control)) throw new Error(`Control characters aren't allowed in ${JSON.stringify(value)}.`)
+  if (Array.from(value).some(control)) throw new Error(`Control characters aren't allowed in ${JSON.stringify(value)}.`)
   const escaped = value.replaceAll("\\", String.raw`\\`).replaceAll('"', String.raw`\"`)
   return `"${escaped}"`
 }
@@ -60,7 +65,7 @@ function luaAnimation(animation: Animation): string {
   if (typeof animation?.leaf !== "string" || !LEAF.test(animation.leaf))
     throw new Error("Each animation needs a leaf such as windows, workspaces, fade or border.")
   const fields = [`leaf = ${luaString(animation.leaf)}`]
-  if (animation.enabled !== undefined) fields.push(`enabled = ${animation.enabled === true}`)
+  if (animation.enabled !== undefined) fields.push(`enabled = ${animation.enabled}`)
   if (animation.speed !== undefined) fields.push(`speed = ${luaNumber(animation.speed, "speed")}`)
   // A curve by the name the config gives it with hl.curve: a bezier or a spring, as its type says.
   for (const kind of ["bezier", "spring"] as const) {

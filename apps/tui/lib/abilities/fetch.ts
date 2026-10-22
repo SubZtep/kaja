@@ -30,6 +30,7 @@ async function git(args: string[], cwd?: string): Promise<string> {
       cwd,
       stdout: "pipe",
       stderr: "pipe",
+      windowsHide: true,
       // Never hang on a credential prompt: a private or mistyped URL should fail, not wait for input.
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
     })

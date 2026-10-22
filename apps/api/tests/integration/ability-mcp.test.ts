@@ -137,7 +137,11 @@ describe("MCP servers in the cloud", () => {
       headers: auth(adminToken),
       body: JSON.stringify({ apiKey })
     })
-  const keyList = async () => (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()
+  const keyList = async () =>
+    (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json() as Promise<{
+      keysEnabled: boolean
+      abilities: { name: string; saved: boolean }[]
+    }>
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
 
@@ -263,7 +267,7 @@ describe("MCP servers in the cloud", () => {
     })
     expect(removed.status).toBe(200)
     const { abilities } = await keyList()
-    expect(abilities.find((ability: { name: string }) => ability.name === things).saved).toBe(false)
+    expect(abilities.find((ability: { name: string }) => ability.name === things)!.saved).toBe(false)
     const sent: Parameters<typeof scriptedChat>[1] = []
     setNasiChatResolver(async () => ({
       client: scriptedChat([{ content: "Hi." }], sent) as never,

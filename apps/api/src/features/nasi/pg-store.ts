@@ -6,9 +6,9 @@ import {
   type NasiStore,
   objectSessionImages,
   type PendingKind,
-  type SessionWrite,
   sessionIdOf,
   sessionImagePrefix,
+  type SessionWrite,
   splitConversation,
   storeInlineImages
 } from "@kaja/nasi"
@@ -370,7 +370,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
     },
 
     async latestDatasetVersion(topic, owner) {
-      const result = await db.query(
+      const result = await db.query<{ version: number | null }>(
         `SELECT MAX(version) AS version FROM (
            SELECT version FROM nasi_dataset_answer WHERE user_id = $1 AND topic = $2 AND owner = $3
            UNION ALL

@@ -65,7 +65,7 @@ export function startHttpMcpFixture(opts: { apiKey?: string } = {}): HttpMcpFixt
   return {
     url: `http://localhost:${httpServer.port}/mcp`,
     initializations: () => initializations,
-    stop: () => httpServer.stop(true)
+    stop: () => void httpServer.stop(true)
   }
 }
 

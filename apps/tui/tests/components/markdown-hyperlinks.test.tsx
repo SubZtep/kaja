@@ -34,7 +34,8 @@ async function renderLinkInSubprocess(env: Record<string, string>) {
     cwd: repoRoot,
     env,
     stdout: "pipe",
-    stderr: "pipe"
+    stderr: "pipe",
+    windowsHide: true
   })
   const out = await new Response(proc.stdout).text()
   await proc.exited

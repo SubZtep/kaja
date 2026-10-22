@@ -226,7 +226,7 @@ function fakeIssueTracker() {
   requests = []
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     requests.push({
-      url: String(input),
+      url: input instanceof Request ? input.url : String(input),
       method: init?.method,
       headers: new Headers(init?.headers),
       body: init?.body as string
@@ -446,7 +446,7 @@ test("only images still in the window are fetched for a request; older ones aren
 test("a new session whose first turn fails leaves no images behind", async () => {
   const objects = memoryObjects()
   const kept = new Set<string>()
-  const put = objects.put
+  const put = objects.put.bind(objects)
   objects.put = async (key, data, type) => {
     kept.add(key)
     await put(key, data, type)

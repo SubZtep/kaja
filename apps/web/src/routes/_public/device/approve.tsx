@@ -31,16 +31,21 @@ function DeviceApprovePage() {
   // Associate this device code with the current session before allowing approve/deny
   useEffect(() => {
     let cancelled = false
-    authClient.device({ query: { user_code: userCode } }).then(({ data, error }) => {
-      if (cancelled) {
-        return
-      }
-      if (error || data?.status !== "pending") {
-        setClaimError(error?.statusText ?? m.device_invalid_or_expired_code())
-        return
-      }
-      setClaimed(true)
-    })
+    authClient
+      .device({ query: { user_code: userCode } })
+      .then(({ data, error }) => {
+        if (cancelled) {
+          return
+        }
+        if (error || data?.status !== "pending") {
+          setClaimError(error?.statusText ?? m.device_invalid_or_expired_code())
+          return
+        }
+        setClaimed(true)
+      })
+      .catch(() => {
+        if (!cancelled) setClaimError(m.device_invalid_or_expired_code())
+      })
     return () => {
       cancelled = true
     }

@@ -1,6 +1,6 @@
 import { useStdout } from "ink"
 import { useEffect, useState } from "react"
-import { setConsoleTheme, type ThemeName, themeFollowsTerminal } from "../lib/terminal-background"
+import { setConsoleTheme, themeFollowsTerminal, type ThemeName } from "../lib/terminal-background"
 import { COLOR_SCHEME_REPORTING_DISABLE, COLOR_SCHEME_REPORTING_ENABLE, colorSchemeReport } from "../lib/terminal-input"
 import { useTerminalReports } from "./use-terminal-reports"
 

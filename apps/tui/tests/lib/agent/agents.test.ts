@@ -433,10 +433,9 @@ test("dataset instructions block appears only when agent.dataset is set and the 
     })
   )
 
-  const withDataset = {
-    ...fakeAgent([{ content: "Hi." }], [datasetInfoTool]),
+  const withDataset = Object.assign(fakeAgent([{ content: "Hi." }], [datasetInfoTool]), {
     dataset: "onboarding"
-  } as Agent
+  }) as Agent
   const session1 = createSession()
   for await (const _ of run(withDataset, "hello", session1)) {
     // drain
@@ -445,10 +444,7 @@ test("dataset instructions block appears only when agent.dataset is set and the 
   expect(content1).toContain("Onboarding")
   expect(content1).toContain("onboarding")
 
-  const withoutDatasetTool = {
-    ...fakeAgent([{ content: "Hi." }]),
-    dataset: "onboarding"
-  } as Agent
+  const withoutDatasetTool = Object.assign(fakeAgent([{ content: "Hi." }]), { dataset: "onboarding" }) as Agent
   const session2 = createSession()
   for await (const _ of run(withoutDatasetTool, "hello", session2)) {
     // drain
@@ -473,13 +469,12 @@ const personaB: Persona = {
 
 /** A fakeAgent carrying a persona roster, as the switch_persona path needs. */
 function fakePersonaAgent(script: FakeMessage[]): Agent {
-  return {
-    ...fakeAgent(script, [switchPersonaTool]),
+  return Object.assign(fakeAgent(script, [switchPersonaTool]), {
     instructions: personaA.instructions,
     personas: [personaA, personaB],
     models: [],
     personaId: personaA.id
-  } as unknown as Agent
+  }) as unknown as Agent
 }
 
 test("switch_persona rewrites the system message in place and continues the turn", async () => {
@@ -597,17 +592,12 @@ test("## Personas roster appears only with the switch_persona tool and more than
   expect(prompt).toContain('Current persona: "a"')
   expect(prompt).toContain("- b (Persona B): use when topic B comes up")
 
-  const withoutTool = {
-    ...fakeAgent([]),
-    personas: [personaA, personaB],
-    personaId: personaA.id
-  } as Agent
+  const withoutTool = Object.assign(fakeAgent([]), { personas: [personaA, personaB], personaId: personaA.id }) as Agent
   expect((await buildSystemPrompt(withoutTool)) ?? "").not.toContain("## Personas")
 
-  const singlePersona = {
-    ...fakeAgent([], [switchPersonaTool]),
+  const singlePersona = Object.assign(fakeAgent([], [switchPersonaTool]), {
     personas: [personaA],
     personaId: personaA.id
-  } as Agent
+  }) as Agent
   expect((await buildSystemPrompt(singlePersona)) ?? "").not.toContain("## Personas")
 })

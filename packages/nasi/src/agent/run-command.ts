@@ -23,7 +23,8 @@ export async function runShellCommand(command: string, opts: RunShellCommandOpti
   const proc = Bun.spawn(["sh", "-c", command], {
     stdout: "pipe",
     stderr: "pipe",
-    detached: true
+    detached: true,
+    windowsHide: true
   })
   const stop = () => {
     try {

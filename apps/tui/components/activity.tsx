@@ -39,7 +39,7 @@ export function Activity({
   useEffect(() => {
     if (!pending) return
     setTick(0)
-    const timer = setInterval(() => setTick(t => t + 1), TICK_MS)
+    const timer = setInterval(() => setTick(n => n + 1), TICK_MS)
     return () => clearInterval(timer)
   }, [pending])
 

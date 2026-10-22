@@ -3,7 +3,7 @@ import type { Context } from "hono"
 import { createMiddleware } from "hono/factory"
 import { HTTPException } from "hono/http-exception"
 import type { AuthSessionUser, RouteVariables } from "../../types"
-import { AUTH_COOKIE_PREFIX, auth } from "./auth"
+import { auth, AUTH_COOKIE_PREFIX } from "./auth"
 
 /** Better Auth may store multi-roles as a comma-separated string. */
 function userHasRole(user: Pick<AuthSessionUser, "role">, role: string): boolean {

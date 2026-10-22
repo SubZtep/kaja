@@ -173,5 +173,5 @@ export async function hasConfiguredChatModel(): Promise<boolean> {
   const chatEntry = resolveActiveModel(modelsFile, "chat")
   if (!chatEntry) return false
   const provider = modelsFile.providers[chatEntry.provider]
-  return provider !== undefined && provider.api_key !== undefined
+  return provider?.api_key !== undefined
 }

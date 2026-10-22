@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
 /**
@@ -24,6 +24,6 @@ export const readFileTool = tool({
       }
       throw error
     }
-    return await Bun.file(safePath).text()
+    return Bun.file(safePath).text()
   }
 })

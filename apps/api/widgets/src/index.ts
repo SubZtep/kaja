@@ -9,7 +9,7 @@ type StoredState = { visitorId: string; session?: string }
 function loadState(): StoredState {
   try {
     const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) return JSON.parse(raw) as StoredState
   } catch {
     // sessionStorage can be blocked or hold bad JSON; start fresh
   }
@@ -188,7 +188,7 @@ function init() {
       button.type = "button"
       button.className = "kaja-barkochba-answer"
       button.textContent = t[answer.label]
-      button.addEventListener("click", () => sendMessage(answer.value))
+      button.addEventListener("click", () => void sendMessage(answer.value))
       buttons.append(button)
     }
     setControlsDisabled = disabled => {

@@ -7,7 +7,7 @@ import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
-import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
+import { candidatesByTask, CATALOG, catalogProvider } from "../models/catalog"
 import { getModelsPath, writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
 import { refreshCatalog } from "../models/remote-catalog"
@@ -180,7 +180,7 @@ async function offerModelDownloads(print: (line: string) => void) {
   print(statusLine("info", t("wizard.pullStarted")))
   for (const target of missing) {
     const progress = progressLine(target.model)
-    const result = await pullModel(target, progress.update)
+    const result = await pullModel(target, status => progress.update(status))
     progress.clear()
     print(
       result.ok

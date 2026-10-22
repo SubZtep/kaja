@@ -9,7 +9,7 @@ import { commit, createPromptHistory, markEdited, type PromptHistory, recall } f
  */
 export function usePromptHistory(initial: string[]) {
   const historyRef = useRef<PromptHistory>(undefined)
-  if (!historyRef.current) historyRef.current = createPromptHistory(initial)
+  historyRef.current ??= createPromptHistory(initial)
 
   return useMemo(
     () => ({

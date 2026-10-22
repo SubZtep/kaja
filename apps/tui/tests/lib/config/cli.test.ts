@@ -92,7 +92,7 @@ function backup(path: string, n?: number) {
 function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = input instanceof URL ? input : new URL(String(input))
+    const url = input instanceof URL ? input : new URL(input instanceof Request ? input.url : input)
     expect(url.pathname).toBe("/config/export")
     const ifNoneMatch = new Headers(init?.headers).get("if-none-match")
     if (ifNoneMatch === etag) return new Response(null, { status: 304 })

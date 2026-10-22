@@ -61,15 +61,15 @@ export function installShutdownHandlers(closeTools: () => Promise<void>, options
     // Quitting stops everything still running: a command, the voice player, the mic
     const { killTrackedProcesses } = await import("@kaja/nasi")
     killTrackedProcesses()
-    await Promise.race([closeTools(), new Promise(resolve => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS))])
+    await Promise.race([closeTools(), Bun.sleep(SHUTDOWN_TIMEOUT_MS)])
   }
   const onSignal = async () => {
     options?.onSignal?.()
     await shutdown()
     process.exit(0)
   }
-  process.on("SIGINT", onSignal)
-  process.on("SIGTERM", onSignal)
+  process.on("SIGINT", () => void onSignal())
+  process.on("SIGTERM", () => void onSignal())
 
   return shutdown
 }

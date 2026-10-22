@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import type { ToolContext } from "../../agent/tools"
 import { fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"

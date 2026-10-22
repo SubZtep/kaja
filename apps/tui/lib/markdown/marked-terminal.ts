@@ -10,6 +10,7 @@
 // below (see Renderer.prototype.text) instead of patching it externally afterwards.
 //
 // A code block with no language is not highlighted (upstream guesses one; see highlight()).
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-shadow -- vendored and untyped upstream */
 //
 // Trimmed from upstream: no :shortcode: emoji replacement (node-emoji), and Bun's
 // stripANSI and a local OSC 8 link helper stand in for ansi-regex and ansi-escapes.
@@ -622,7 +623,6 @@ function sanitizeTab(tab: string | number, fallbackTab: number) {
     return new Array(tab + 1).join(" ")
   } else if (typeof tab === "string" && isAllowedTabString(tab)) {
     return tab
-  } else {
-    return new Array(fallbackTab + 1).join(" ")
   }
+  return new Array(fallbackTab + 1).join(" ")
 }

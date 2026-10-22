@@ -10,7 +10,11 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   const token = await signUpAndSignIn(email, "Link")
   const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
   const headers = { Authorization: `Bearer ${token}` }
-  const status = async () => (await app.request("/telegram/admin/link", { headers })).json()
+  const status = async () =>
+    (await app.request("/telegram/admin/link", { headers })).json() as Promise<{
+      linked: boolean
+      linkedAt: string | null
+    }>
 
   expect(await status()).toEqual({ linked: false, linkedAt: null })
   expect((await app.request("/telegram/admin/link", { method: "DELETE", headers })).status).toBe(404)
@@ -19,7 +23,7 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   expect(await telegramLinkService.link(telegramUserId, userId)).toBe(true)
   const linked = await status()
   expect(linked.linked).toBe(true)
-  expect(Number.isNaN(Date.parse(linked.linkedAt))).toBe(false)
+  expect(Number.isNaN(Date.parse(linked.linkedAt!))).toBe(false)
 
   expect((await app.request("/telegram/admin/link", { method: "DELETE", headers })).status).toBe(200)
   expect(await status()).toEqual({ linked: false, linkedAt: null })

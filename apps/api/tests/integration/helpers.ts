@@ -33,12 +33,12 @@ type CodeType = "sign-in" | "email-verification" | "change-email"
 
 /** A fresh code of `type` for `email`, standing in for the one the email would carry; an email change's new-address code is keyed `<current>-<new>`. */
 export async function emailCode(email: string, type: CodeType): Promise<string> {
-  return await otpApi.createVerificationOTP({ body: { email, type } })
+  return otpApi.createVerificationOTP({ body: { email, type } })
 }
 
 /** A fresh sign-in code for `email`, standing in for the one the email would carry. */
 export async function signInCode(email: string): Promise<string> {
-  return await emailCode(email, "sign-in")
+  return emailCode(email, "sign-in")
 }
 
 /** Signs in with a fresh emailed code; `body` adds fields such as `consent`, which a new address needs to become an account. */
@@ -47,7 +47,7 @@ export async function signInWithCode(
   body: Record<string, unknown> = {},
   headers: Record<string, string> = {}
 ): Promise<Response> {
-  return await app.request("/auth/sign-in/email-otp", {
+  return app.request("/auth/sign-in/email-otp", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify({ email, otp: await signInCode(email), ...body })
@@ -58,7 +58,7 @@ export async function signInWithCode(
 export async function signUpAndSignIn(email: string, name: string): Promise<string> {
   const res = await signInWithCode(email, { name, consent: true })
   expect(res.ok).toBeTrue()
-  return (await res.json()).token
+  return ((await res.json()) as { token: string }).token
 }
 
 /** Asserts a request without an Authorization header is rejected with 401. */

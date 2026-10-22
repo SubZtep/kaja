@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
+import { upgradeWebSocket } from "@hono/bun"
 import { SANDBOX_INSTANCE_HEADER, SANDBOX_KEY_HEADER, type SandboxFrame, sandboxFrameSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import { upgradeWebSocket } from "@hono/bun"
 import { createMiddleware } from "hono/factory"
 import type { WSContext } from "hono/ws"
 import { env } from "../../core/env"

@@ -15,7 +15,7 @@ const ability = (input: { command?: string; package?: Record<string, string>; ar
 })
 
 /** The programs the error says would do, or the launch when it didn't throw. */
-function needs(run: () => unknown): string[] | unknown {
+function needs(run: () => unknown): unknown {
   try {
     return run()
   } catch (error) {

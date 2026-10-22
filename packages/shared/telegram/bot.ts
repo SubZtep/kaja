@@ -158,7 +158,7 @@ export async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> 
   } catch (error) {
     const rateLimit = asRateLimitError(error)
     if (!rateLimit?.retryAfterSec) throw error
-    await new Promise<void>(resolve => setTimeout(resolve, rateLimit.retryAfterSec! * 1000))
+    await Bun.sleep(rateLimit.retryAfterSec! * 1000)
     return send()
   }
 }
@@ -194,7 +194,7 @@ export async function downloadTelegramImage(
   const { file_path } = await getFile(image.fileId)
   if (!file_path) throw new Error("Telegram returned no file path")
   // A failed fetch's error carries the URL, bot token and all, and these errors end up in logs and Sentry
-  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`).catch((error: unknown) => {
+  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`).catch(error => {
     const reason = error instanceof Error ? error.message : String(error)
     throw new Error(`Telegram file download failed: ${reason.replaceAll(botToken, "***")}`)
   })

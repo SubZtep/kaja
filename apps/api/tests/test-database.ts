@@ -25,7 +25,7 @@ async function builtHash(url: string): Promise<string | undefined> {
   const client = new Client({ connectionString: url })
   await client.connect()
   try {
-    const result = await client.query("SELECT hash FROM test_schema LIMIT 1").catch(() => undefined)
+    const result = await client.query<{ hash: string }>("SELECT hash FROM test_schema LIMIT 1").catch(() => undefined)
     return result?.rows[0]?.hash
   } finally {
     await client.end()
@@ -38,7 +38,7 @@ async function builtHash(url: string): Promise<string | undefined> {
  * relies on. The database is (re)built from the migrations whenever they differ from what it was built from.
  * Postgres being down only warns: the API tests then fail on their own, and the CLI tests don't need it.
  */
-export async function useTestDatabase(): Promise<void> {
+export async function switchToTestDatabase(): Promise<void> {
   const devUrl = Bun.env.DATABASE_URL
   if (!devUrl) return
   const testUrl = Bun.env.TEST_DATABASE_URL || withDatabase(devUrl, `${new URL(devUrl).pathname.slice(1)}_test`)

@@ -38,7 +38,9 @@ test("a small image is never enlarged, and an already normalised one comes back 
 })
 
 test("bytes that aren't an image are refused with a reason", async () => {
-  const refused = await normalizeImage(new TextEncoder().encode("just some text")).catch(error => error)
+  const refused = (await normalizeImage(new TextEncoder().encode("just some text")).catch(
+    error => error as unknown
+  )) as ImageError
   expect(refused).toBeInstanceOf(ImageError)
   expect(refused.code).toBe("not-an-image")
   expect(refused.message).toBe("not an image")
@@ -49,7 +51,7 @@ test("a decoder failure it has no words for is still an ImageError, so the turn 
     throw Object.assign(new Error("Image: something new"), { code: "ERR_IMAGE_SOMETHING_NEW" })
   }) as never)
   try {
-    const refused = await normalizeImage(png(4, 4)).catch(error => error)
+    const refused = (await normalizeImage(png(4, 4)).catch(error => error as unknown)) as ImageError
     expect(refused).toBeInstanceOf(ImageError)
     expect(refused.code).toBe("undecodable")
   } finally {

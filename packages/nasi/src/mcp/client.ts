@@ -7,7 +7,7 @@ import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { ListRootsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js"
-import { type Tool, type ToolResult, tool } from "../agent/tools"
+import { type Tool, tool, type ToolResult } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
 import type { McpRoot } from "./roots"
 

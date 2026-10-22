@@ -49,14 +49,14 @@ export function Footer() {
         <div className="border-border/60 mt-8 grid items-center gap-4 border-t pt-6 sm:grid-cols-3 sm:gap-8">
           <span className="sm:col-span-2">
             © {new Date().getFullYear()} {m.footer_license_by()}{" "}
-            <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-neon">
+            <a href="https://x.com/SubZtep" target="_blank" rel="noopener noreferrer" className="text-neon">
               SubZtep
             </a>
           </span>
           <a
             href="https://github.com/SubZtep/kaja/stargazers"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             aria-label={m.footer_star()}
             className="tape-btn inline-flex items-center gap-1.5 justify-self-start px-4 py-2 text-[11px] whitespace-nowrap"
           >

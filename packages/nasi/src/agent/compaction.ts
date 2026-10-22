@@ -29,7 +29,7 @@ const KEEP_IMAGE_TURNS = 2
 
 // Serializes a message for counting, with each image (inline, or a stored ref) as a flat cost instead of its URL.
 function sizeOf(value: unknown): number {
-  return JSON.stringify(value, (key, v) =>
+  return JSON.stringify(value, (key, v: unknown) =>
     key === "url" && typeof v === "string" && (v.startsWith("data:") || v.startsWith(IMAGE_REF_PREFIX))
       ? "x".repeat(1000 * CHARS_PER_TOKEN)
       : v
@@ -65,9 +65,9 @@ function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletio
     if (at >= keepFrom || message.role !== "user" || !Array.isArray(message.content) || !hasImage(message))
       return message
     // A labelled image keeps its label (what it shows, its link) and loses only its pixels; one without gets a note.
-    const content = message.content.flatMap((part, at, parts) => {
+    const content = message.content.flatMap((part, index, parts) => {
       if (part.type !== "image_url") return [part]
-      const label = parts[at - 1]
+      const label = parts[index - 1]
       if (label?.type === "text" && label.text.startsWith("[Image")) return []
       return [{ type: "text" as const, text: "[an image shown earlier in the conversation]" }]
     })
@@ -125,7 +125,9 @@ function lastTurnStart(session: Session): number | undefined {
 function partText(content: unknown): string {
   if (typeof content === "string") return content
   if (!Array.isArray(content)) return ""
-  return content.map(part => (part?.type === "text" ? part.text : "[image]")).join(" ")
+  return content
+    .map((part: { type?: string; text?: string } | null) => (part?.type === "text" ? part.text : "[image]"))
+    .join(" ")
 }
 
 /** The messages as a plain transcript for the summarizer, one entry per message. */

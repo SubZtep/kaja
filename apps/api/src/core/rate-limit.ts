@@ -1,5 +1,5 @@
-import type { Context, MiddlewareHandler, Next } from "hono"
 import { getConnInfo } from "@hono/bun"
+import type { Context, MiddlewareHandler, Next } from "hono"
 import { rateLimiter } from "hono-rate-limiter"
 import type { RouteVariables } from "../types"
 import { env } from "./env"

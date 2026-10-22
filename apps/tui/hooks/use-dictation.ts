@@ -1,7 +1,8 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { createLocalSource } from "../lib/audio/audio"
 import { createStt, type Stt, type SttState } from "../lib/audio/stt"
+import { log } from "../lib/logger"
 
 /**
  * Dictation for the text input: while `listening`, spoken phrases are
@@ -20,8 +21,7 @@ export function useDictation(
 ): SttState {
   const [state, setState] = useState<SttState>("listening")
   const stt = useRef<Stt>(undefined)
-  const deliver = useRef(onUtterance)
-  deliver.current = onUtterance
+  const deliver = useEffectEvent(onUtterance)
 
   useEffect(() => {
     if (!listening) {
@@ -38,17 +38,21 @@ export function useDictation(
       source: createLocalSource(),
       onState: setState,
       personaModels
-    }).then(async instance => {
-      if (cancelled) {
-        instance.stop()
-        return
-      }
-      stt.current = instance
-      for await (const text of instance.utterances) deliver.current(text)
-      // The stream only ends when the stt stopped (server dropped the connection, or an error) — forget it so the next toggle starts fresh instead of resuming a dead instance.
-      if (stt.current === instance) stt.current = undefined
-      setState("listening")
     })
+      .then(async instance => {
+        if (cancelled) {
+          instance.stop()
+          return
+        }
+        stt.current = instance
+        for await (const text of instance.utterances) deliver(text)
+        // The stream only ends when the stt stopped (server dropped the connection, or an error) — forget it so the next toggle starts fresh instead of resuming a dead instance.
+        if (stt.current === instance) stt.current = undefined
+        setState("listening")
+      })
+      .catch(error => {
+        log.warn("dictation: couldn't start", { error })
+      })
     return () => {
       cancelled = true
     }

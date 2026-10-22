@@ -82,7 +82,7 @@ function loadState(): GameState {
   try {
     const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
     if (!raw) return IDLE_STATE
-    return { ...IDLE_STATE, ...JSON.parse(raw) }
+    return { ...IDLE_STATE, ...(JSON.parse(raw) as Partial<GameState>) }
   } catch {
     return IDLE_STATE
   }
@@ -109,7 +109,7 @@ async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTu
   if (res.status === 429) throw new GameError(m.barkochba_error_rate_limited())
   // The server's own reason is English and technical; the visitor gets the status in their language.
   if (!res.ok) throw new GameError(m.barkochba_error_request_failed({ status: res.status }))
-  return res.json()
+  return res.json() as Promise<NasiTurnResponse>
 }
 
 /**

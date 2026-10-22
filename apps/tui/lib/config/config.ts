@@ -28,7 +28,7 @@ export function getConfigPath() {
 
 export async function isConfigExists() {
   const f = file(getConfigPath())
-  return await f.exists()
+  return f.exists()
 }
 
 export async function validate() {

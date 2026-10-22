@@ -28,7 +28,7 @@ test("saves the language on the signed-in account", async () => {
   expect(calls).toHaveLength(1)
   expect(calls[0]?.url).toEndWith("/auth/update-user")
   expect(new Headers(calls[0]?.init?.headers).get("Authorization")).toBe("Bearer tok_abc")
-  expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ locale: "hu-HU" })
+  expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({ locale: "hu-HU" })
 })
 
 test("signed out, it makes no request", async () => {

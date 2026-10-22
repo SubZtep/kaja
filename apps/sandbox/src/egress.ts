@@ -98,8 +98,12 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
   const end = () => {
     if (state === "open") client.destroy()
     else if (state === "connecting") {
-      const target = `${hostname}:${port}`
-      console.warn("Egress couldn't connect", { target, via: via ? "WEB_PROXY" : "direct", reason: failure })
+      const destination = `${hostname}:${port}`
+      console.warn("Egress couldn't connect", {
+        target: destination,
+        via: via ? "WEB_PROXY" : "direct",
+        reason: failure
+      })
       // Printable ASCII only, so a strange answer from WEB_PROXY can't break the head
       refuse(client, deps, 502, `${FAILED_REASON}${failure.replace(/[^\x20-\x7e]/g, "").slice(0, 200)}`)
     }

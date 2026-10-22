@@ -50,9 +50,9 @@ export type ToolResult = {
 export class ToolError extends Error {
   readonly toolName: string
 
-  constructor(toolName: string, message: string) {
+  constructor(name: string, message: string) {
     super(message)
-    this.toolName = toolName
+    this.toolName = name
   }
 }
 

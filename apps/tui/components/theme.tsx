@@ -5,10 +5,10 @@ import type { ReactNode } from "react"
 import {
   type Brightness,
   consoleTheme,
-  type TerminalColours,
-  type ThemeName,
   terminalBrightness,
-  terminalColours
+  type TerminalColours,
+  terminalColours,
+  type ThemeName
 } from "../lib/terminal-background"
 
 export type { ThemeName }

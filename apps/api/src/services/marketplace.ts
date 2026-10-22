@@ -186,7 +186,7 @@ export class MarketplaceService {
 
     const archive = join(dir, "repo.tar.gz")
     await Bun.write(archive, tarball)
-    const tar = Bun.spawn(["tar", "-xzf", archive, "-C", dir], { stdout: "ignore", stderr: "pipe" })
+    const tar = Bun.spawn(["tar", "-xzf", archive, "-C", dir], { stdout: "ignore", stderr: "pipe", windowsHide: true })
     if ((await tar.exited) !== 0) {
       throw new Error(`Extracting ${repo}@${commit} failed: ${(await new Response(tar.stderr).text()).trim()}`)
     }

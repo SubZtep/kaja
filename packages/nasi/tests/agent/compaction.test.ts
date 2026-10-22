@@ -340,7 +340,7 @@ test("an overflow that survives the retry still reaches the host as a model prov
     new OpenAI.APIError(400, undefined, "This model's maximum context length is 1000 tokens", new Headers())
   const { client, rounds } = fakeClient({ streamErrors: [overflow(), overflow()] })
   const agent = new Agent({ model: "m", client, tools: [], contextWindow: 100_000 })
-  const error = await collect(run(agent, "next", history(10, 60))).catch(e => e)
+  const error = await collect(run(agent, "next", history(10, 60))).catch(e => e as Error)
   expect(error).toBeInstanceOf(ModelUnavailableError)
   expect(rounds).toHaveLength(2)
 })

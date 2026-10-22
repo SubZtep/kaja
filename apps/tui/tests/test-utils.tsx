@@ -33,7 +33,7 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
       chunks.push(chunk)
       writeCount++
       const done = typeof encodingOrCallback === "function" ? encodingOrCallback : callback
-      if (done) queueMicrotask(() => done())
+      if (done) queueMicrotask(() => (done as () => void)())
       return true
     }
   })

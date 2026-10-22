@@ -104,7 +104,7 @@
 @layer base {
   html,
   body {
-    @apply min-h-full bg-bg;
+    @apply bg-bg min-h-full;
   }
 
   html {
@@ -124,7 +124,7 @@
     );
     background-attachment: fixed;
     background-repeat: no-repeat;
-    @apply relative m-0 font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40 overflow-y-scroll;
+    @apply font-body text-fg selection:bg-neon/40 relative m-0 overflow-y-scroll text-base wrap-anywhere antialiased;
   }
 
   body.bg-drift::before {
@@ -172,11 +172,11 @@
   }
 
   h1 {
-    @apply text-2xl font-extrabold mb-3 font-display;
+    @apply font-display mb-3 text-2xl font-extrabold;
   }
 
   h2 {
-    @apply text-xl font-extrabold my-1 font-display first:mt-0;
+    @apply font-display my-1 text-xl font-extrabold first:mt-0;
   }
   a {
     @apply text-fg;
@@ -220,7 +220,7 @@
     @apply bg-bg;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-lg bg-neon/40;
+    @apply bg-neon/40 rounded-lg;
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-neon/70;

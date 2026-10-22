@@ -130,7 +130,7 @@ export function useAgent(
     return created
   })
   const sessionRef = useRef<Session>(undefined)
-  if (!sessionRef.current) sessionRef.current = resume ? resume.session.session : createSession()
+  sessionRef.current ??= resume ? resume.session.session : createSession()
   // The database row this conversation saves into; undefined until the first save (empty sessions are never recorded).
   const sessionRowIdRef = useRef<string | undefined>(resume?.session.id)
 
@@ -183,15 +183,15 @@ export function useAgent(
   const persistChainRef = useRef(Promise.resolve())
   const persistSession = useCallback(() => {
     const session = sessionRef.current!
-    const events = eventsRef.current
-    const first = events.find((e): e is Extract<TimelineEvent, { type: "user" }> => e.type === "user")
+    const timeline = eventsRef.current
+    const first = timeline.find((e): e is Extract<TimelineEvent, { type: "user" }> => e.type === "user")
     if (!first) return
     const data = {
       persona: personaRef.current.id,
       model: agent.model,
       owner: LOCAL_OWNER,
       session,
-      events
+      events: timeline
     }
     persistChainRef.current = persistChainRef.current
       .then(async () => {

@@ -19,7 +19,7 @@ function hasComboFlag(command: string, letters: string): boolean {
   const match = /\brm\s+(-[a-z]+)\b/i.exec(command)
   if (!match) return false
   const flags = match[1]!.toLowerCase()
-  return [...letters].every(letter => flags.includes(letter))
+  return Array.from(letters).every(letter => flags.includes(letter))
 }
 
 function isDangerousRm(command: string): boolean {

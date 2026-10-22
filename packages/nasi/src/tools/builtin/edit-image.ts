@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { type ToolContext, ToolError, type ToolResult, tool } from "../../agent/agent"
+import { tool, type ToolContext, ToolError, type ToolResult } from "../../agent/agent"
 import { MAX_IMAGE_EDGE } from "../../images/normalize"
 import { imageRefId } from "../../store/images"
 
@@ -57,7 +57,10 @@ export const editImageTool = tool({
       }
     } catch (error) {
       if (error instanceof ToolError) throw error
-      throw new ToolError(NAME, `Couldn't edit ${args.image}: ${error instanceof Error ? error.message : error}`)
+      throw new ToolError(
+        NAME,
+        `Couldn't edit ${args.image}: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
     const done = args.steps.map(s => s.op).join(", ")
     return { text: `Edited ${args.image} (${done})`, images: [{ data, mimeType }] }

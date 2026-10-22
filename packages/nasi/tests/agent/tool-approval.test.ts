@@ -207,7 +207,7 @@ test("yolo runs a tool that would ask, and a command that isn't safe, without pa
   expect(events.map(event => event.type)).not.toContain("confirm_tool")
   expect(events.map(event => event.type)).not.toContain("confirm_command")
   expect(executed).toEqual([{ title: "Bug" }])
-  const results = session.messages.filter(message => message.role === "tool").map(message => String(message.content))
+  const results = session.messages.filter(message => message.role === "tool").map(message => message.content as string)
   expect(results.some(result => result.includes("yolo-ran"))).toBe(true)
   expect(session.pendingToolApprovalId).toBeUndefined()
   expect(session.pendingRunCommandId).toBeUndefined()

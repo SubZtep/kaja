@@ -133,7 +133,7 @@ test("EditThrottle.cancel drops a pending edit", async () => {
 test("EditThrottle keeps going after a rate limit and reports other errors to onError", async () => {
   const sent: string[] = []
   const errors: unknown[] = []
-  const failures: unknown[] = [new TelegramRateLimitError(undefined), new Error("bad request")]
+  const failures: Error[] = [new TelegramRateLimitError(undefined), new Error("bad request")]
   let attempts = 0
   const throttle = new EditThrottle(
     async text => {
@@ -169,8 +169,10 @@ test("incomingImage takes a photo's largest size, or a file that is an image", (
   expect(incomingImage({})).toBeUndefined()
 })
 
-let fetchSpy: ReturnType<typeof spyOn> | undefined
-afterEach(() => fetchSpy?.mockRestore())
+let fetchSpy: ReturnType<typeof spyOn>
+afterEach(() => {
+  fetchSpy?.mockRestore()
+})
 
 test("downloadTelegramImage fetches the file by its path and returns a data URL", async () => {
   fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(new Response(new Uint8Array([1, 2, 3])))
@@ -196,7 +198,7 @@ test("a failed download's error never carries the bot token", async () => {
     mimeType: "image/png"
   }).then(
     () => new Error("expected the download to fail"),
-    (error: Error) => error
+    error => error as Error
   )
   expect(error.message).toBe("Telegram file download failed: Unable to connect: https://api.telegram.org/file/bot***/x")
   expect(error.cause).toBeUndefined()

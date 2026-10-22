@@ -1,15 +1,15 @@
 import { cp, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { z } from "zod"
-import { type Tool, ToolError, tool } from "../../agent/agent"
+import { type Tool, tool, ToolError } from "../../agent/agent"
 import {
   backupFiles,
   backupFolder,
   listBackups,
   nearestRoot,
-  type RootFolder,
   readOnlyRefusal,
-  realPath
+  realPath,
+  type RootFolder
 } from "../../mcp/roots"
 
 /** The backup tools' names, left out for a persona whose folders aren't backed up. */

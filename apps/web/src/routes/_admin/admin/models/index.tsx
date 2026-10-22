@@ -431,8 +431,8 @@ function ModelsPage() {
   if (providersQuery.isLoading || modelsQuery.isLoading) return <Loader />
 
   const models = modelsQuery.data ?? []
-  const enabledCount = models.filter(m => m.enabled).length
-  const freeCount = models.filter(m => m.free).length
+  const enabledCount = models.filter(item => item.enabled).length
+  const freeCount = models.filter(item => item.free).length
 
   return (
     <>

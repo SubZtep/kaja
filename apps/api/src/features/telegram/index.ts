@@ -24,6 +24,6 @@ export function createTelegramBotService() {
     async start() {
       await instance.start()
     },
-    stop: instance.stop
+    stop: () => instance.stop()
   }
 }

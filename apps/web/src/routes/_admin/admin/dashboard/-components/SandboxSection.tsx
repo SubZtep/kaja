@@ -4,9 +4,9 @@ import {
   adminSandboxResponseSchema,
   type Sandbox,
   type SandboxSample,
+  sandboxSamplesResponseSchema,
   type SandboxServerStats,
-  type SandboxStats,
-  sandboxSamplesResponseSchema
+  type SandboxStats
 } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
 import { cn } from "@kaja/shared/ui"

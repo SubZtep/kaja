@@ -6,7 +6,7 @@ import { botLanguage, localeFromTelegram } from "../../src/features/telegram/lan
 
 const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
 
-for (const locale of locales.filter(locale => locale !== baseLocale)) {
+for (const locale of locales.filter(candidate => candidate !== baseLocale)) {
   test(`en-GB and ${locale} dictionaries have the same keys`, () => {
     expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
   })

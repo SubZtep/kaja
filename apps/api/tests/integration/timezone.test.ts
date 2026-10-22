@@ -42,7 +42,7 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
     await insert(la, "tokyo-offset", "2026-09-20T09:30:00+09:00")
     await insert(tokyo, "ny-offset", "2026-09-19T20:30:00-04:00")
     // A JS Date is an instant too, from any session.
-    for (const [zone, client] of ZONES.map((zone, i) => [zone, clients[i]!] as const)) {
+    for (const [zone, client] of ZONES.map((name, i) => [name, clients[i]!] as const)) {
       await insert(client, `date-from-${zone}`, INSTANT)
     }
     // Something clearly earlier and later, to give the range queries an edge to fall on.
@@ -68,10 +68,10 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
     const to = new Date("2026-09-20T00:30:01Z")
     const results: string[][] = []
     for (const client of clients) {
-      const { rows } = await client.query(`SELECT label FROM ${table} WHERE at >= $1 AND at < $2 ORDER BY label`, [
-        from,
-        to
-      ])
+      const { rows } = await client.query<{ label: string }>(
+        `SELECT label FROM ${table} WHERE at >= $1 AND at < $2 ORDER BY label`,
+        [from, to]
+      )
       results.push(rows.map(row => row.label))
     }
     expect(results[0]).toHaveLength(8)
@@ -81,7 +81,10 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
 
   test("ordering and comparing across writers follows the instant, not the wall clock", async () => {
     // Tokyo's wall clock reads 09:30 and LA's 17:30 for the same instant, so text order would disagree with time order.
-    const { rows } = await pool.query(`SELECT label FROM ${table} WHERE at > $1 OR at < $1 ORDER BY at`, [INSTANT])
+    const { rows } = await pool.query<{ label: string }>(
+      `SELECT label FROM ${table} WHERE at > $1 OR at < $1 ORDER BY at`,
+      [INSTANT]
+    )
     expect(rows.map(row => row.label)).toEqual(["before", "after"])
   })
 

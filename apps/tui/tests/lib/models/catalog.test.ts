@@ -3,9 +3,9 @@ import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schem
 import { TOML } from "bun"
 import {
   buildModelsToml,
+  candidatesByTask,
   CATALOG,
   type CatalogProvider,
-  candidatesByTask,
   catalogProvider,
   EXAMPLES,
   exampleToml,

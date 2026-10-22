@@ -38,13 +38,13 @@ export async function runEgressCheck(target: string | undefined): Promise<void> 
 
   // The egress proxy asks WEB_PROXY for the address it checked; when WEB_PROXY refuses that, see whether the name would get through.
   if (failure.includes("WEB_PROXY answered") && env.WEB_PROXY) {
-    const port = Number(url.port || (url.protocol === "https:" ? 443 : 80))
+    const targetPort = Number(url.port || (url.protocol === "https:" ? 443 : 80))
     const [byAddress, byName] = await Promise.all([
-      askUpstream(env.WEB_PROXY, `${bracketed(addresses[0] ?? "")}:${port}`),
-      askUpstream(env.WEB_PROXY, `${hostname}:${port}`)
+      askUpstream(env.WEB_PROXY, `${bracketed(addresses[0] ?? "")}:${targetPort}`),
+      askUpstream(env.WEB_PROXY, `${hostname}:${targetPort}`)
     ])
-    console.log(`CONNECT    ${bracketed(addresses[0] ?? "")}:${port} → ${byAddress}`)
-    console.log(`CONNECT    ${hostname}:${port} → ${byName}`)
+    console.log(`CONNECT    ${bracketed(addresses[0] ?? "")}:${targetPort} → ${byAddress}`)
+    console.log(`CONNECT    ${hostname}:${targetPort} → ${byName}`)
   }
   process.exit(ok ? 0 : 1)
 }
@@ -61,8 +61,8 @@ function describeProxy(proxy: string | undefined): string {
 async function resolve(hostname: string): Promise<string[]> {
   const addresses = await lookup(hostname, { all: true }).then(
     found => found.map(entry => entry.address),
-    (error: Error) => {
-      console.log(`Resolve    ${hostname}: ${error.message}`)
+    error => {
+      console.log(`Resolve    ${hostname}: ${error instanceof Error ? error.message : String(error)}`)
       return []
     }
   )

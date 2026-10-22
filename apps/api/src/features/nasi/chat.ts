@@ -49,7 +49,7 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
   return pinnedModel
     ? ((await modelService.getModelWithProviderByName(pinnedModel)) ??
         (await modelService.getRandomModelWithProvider()))
-    : await modelService.getRandomModelWithProvider()
+    : modelService.getRandomModelWithProvider()
 }
 
 /** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this host. */

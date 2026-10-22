@@ -50,10 +50,10 @@ const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
 /** Names grouped by source, e.g. "click, fill [ability:chrome-devtools]"; official tools have no source so they stay one plain list. */
 function namesBySource(tools: Tool[]): string {
   const bySource = new Map<string, string[]>()
-  for (const t of tools) {
-    const names = bySource.get(t.source ?? "") ?? []
-    names.push(toolName(t))
-    bySource.set(t.source ?? "", names)
+  for (const tool of tools) {
+    const names = bySource.get(tool.source ?? "") ?? []
+    names.push(toolName(tool))
+    bySource.set(tool.source ?? "", names)
   }
   return [...bySource.entries()].map(([source, names]) => `${names.join(", ")}${sourceTag(source)}`).join("; ")
 }

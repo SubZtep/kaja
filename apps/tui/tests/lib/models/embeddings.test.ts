@@ -62,7 +62,7 @@ function cannedResponse(vectors: number[][]) {
 beforeEach(() => {
   lastRequest = undefined
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    lastRequest = { url: url.toString(), init: init ?? {} }
+    lastRequest = { url: url instanceof Request ? url.url : url.toString(), init: init ?? {} }
     return cannedResponse([[0.1, 0.2, 0.3]])
   }) as typeof fetch
 })
@@ -83,7 +83,7 @@ test("embed posts to the configured baseUrl's /embeddings endpoint", async () =>
 
 test("embed batches multiple inputs into one request", async () => {
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    lastRequest = { url: url.toString(), init: init ?? {} }
+    lastRequest = { url: url instanceof Request ? url.url : url.toString(), init: init ?? {} }
     return cannedResponse([
       [1, 0, 0],
       [0, 1, 0]

@@ -37,7 +37,11 @@ async function installedModels(baseUrl: string): Promise<Set<string> | undefined
     if (!res.ok) return undefined
     const body = (await res.json()) as { models?: unknown }
     if (!Array.isArray(body.models)) return undefined
-    return new Set(body.models.map(entry => entry?.name).filter((name): name is string => typeof name === "string"))
+    return new Set(
+      (body.models as ({ name?: unknown } | null)[])
+        .map(entry => entry?.name)
+        .filter((name): name is string => typeof name === "string")
+    )
   } catch {
     return undefined
   }

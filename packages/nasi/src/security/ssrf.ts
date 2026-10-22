@@ -61,16 +61,15 @@ async function fetchHop(
   request: HopRequest,
   pin: Pin | undefined
 ): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  const init = { method: request.method, body: request.body, redirect: "manual", signal: controller.signal } as const
-  try {
-    if (send) return await send(url, { ...init, headers: request.headers })
-    const hop = pinned(url, pin, request.headers)
-    return await fetch(hop.url, { ...hop.init, ...init })
-  } finally {
-    clearTimeout(timer)
-  }
+  const init = {
+    method: request.method,
+    body: request.body,
+    redirect: "manual",
+    signal: AbortSignal.timeout(timeoutMs)
+  } as const
+  if (send) return send(url, { ...init, headers: request.headers })
+  const hop = pinned(url, pin, request.headers)
+  return fetch(hop.url, { ...hop.init, ...init })
 }
 
 /** Reads the body, aborting as soon as it exceeds maxBytes so an oversized response is never buffered whole. */

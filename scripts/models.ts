@@ -11,7 +11,8 @@ async function tombiFormat(text: string): Promise<string> {
     cwd: rootDir,
     stdin: new Response(text),
     stdout: "pipe",
-    stderr: "pipe"
+    stderr: "pipe",
+    windowsHide: true
   })
   const [out, err, code] = await Promise.all([
     new Response(proc.stdout).text(),

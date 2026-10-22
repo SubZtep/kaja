@@ -84,9 +84,10 @@ export class TelegramLinkService {
   }
 
   async resolveUserId(telegramUserId: number): Promise<string | undefined> {
-    const result = await this.#db.query(`SELECT user_id FROM telegram_link WHERE telegram_user_id = $1`, [
-      telegramUserId
-    ])
+    const result = await this.#db.query<{ user_id: string }>(
+      `SELECT user_id FROM telegram_link WHERE telegram_user_id = $1`,
+      [telegramUserId]
+    )
     return result.rows[0]?.user_id
   }
 }
