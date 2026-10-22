@@ -10,6 +10,7 @@ import { t } from "../i18n"
 import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
 import { getModelsPath, writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
+import { refreshCatalog } from "../models/remote-catalog"
 
 /**
  * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API
@@ -310,6 +311,8 @@ export async function runConfigWizard({
   }
 
   const { ConfigWizard } = await import("../../components/config-wizard")
+  // Before the prefill, which matches models.toml's providers against the catalog
+  await refreshCatalog()
   const [prefill, saved] = await Promise.all([readPrefill(), readSavedSecrets()])
 
   const result = await new Promise<WizardResult | undefined>(resolve => {

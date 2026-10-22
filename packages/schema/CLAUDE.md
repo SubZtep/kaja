@@ -9,13 +9,13 @@ api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_TUI_CLIENT_ID
   auth.ts      # auth-related payloads
   ability.ts     # ability catalog + server-wide ability keys
-  config-export.ts # /config/export bundle
+  config-export.ts # /config/export bundle and the /config/catalog response
   model.ts       # provider/model admin CRUD schemas
   sandbox.ts     # sandbox tunnel frames, sandbox keys and settings
   stats.ts       # a user's activity numbers
   telegram-link.ts # Telegram account linking
   widget-key.ts  # widget key admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml, commands.toml, hooks.toml); `mcp.ts` is only the MCP connection entry built from an ability's mcp.toml, plus docs/config/catalog.toml (the model catalog)
+config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml, commands.toml, hooks.toml); `mcp.ts` is only the MCP connection entry built from an ability's mcp.toml, plus config/catalog.toml (the model catalog)
 store/       # stored runtime state (sessions, memory notes) used by @kaja/nasi; `StoredConversationSchema` validates a loaded conversation and its type fits nasi's `Session`, so stores hand it over without a cast
 cli/         # re-exports abilities/dataset.ts and abilities/persona.ts
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)

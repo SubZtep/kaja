@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
 import { stringifyToml } from "@kaja/shared/toml"
 import { file, TOML, write } from "bun"
-import rawTemplate from "../../../../docs/config/settings.toml" with { type: "text" }
+import rawTemplate from "../../../../config/settings.toml" with { type: "text" }
 import { detectLanguage, t } from "../i18n"
 import { getPaths } from "../paths"
 

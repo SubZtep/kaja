@@ -42,7 +42,7 @@ export function isDangerousCommand(command: string): boolean {
   return isDangerousRm(command) || isForcePush(command) || isRecursiveChownOnRoot(command)
 }
 
-/** Regex sources for commands that run without asking; each must match the whole command. The built-in list, also `docs/config/commands.toml`'s `safe`. */
+/** Regex sources for commands that run without asking; each must match the whole command. The built-in list, also `config/commands.toml`'s `safe`. */
 export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
   String.raw`ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*`,
   String.raw`(cat|head|tail)(\s+-[a-zA-Z0-9]+)*(\s+[\w./~-]+)+`,

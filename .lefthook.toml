@@ -18,7 +18,7 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:schemas && git add docs/config/schemas"
+      run  = "bun generate:schemas && git add config/schemas"
       glob = [
         "packages/schema/config/*.ts",
         "packages/schema/cli/personas.ts",
@@ -38,11 +38,11 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:models && git add docs/config/models.*.toml"
+      run  = "bun generate:models && git add config/models.*.toml"
       glob = [
-        "docs/config/catalog.toml",
+        "config/catalog.toml",
         "apps/tui/lib/models/catalog.ts",
-        "docs/config/models.*.toml"
+        "config/models.*.toml"
       ]
 
 

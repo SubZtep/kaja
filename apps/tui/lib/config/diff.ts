@@ -1,8 +1,8 @@
 import { CommandsFileSchema } from "@kaja/schema/config"
 import { deepEquals, file, TOML } from "bun"
-import COMMANDS_TEMPLATE from "../../../../docs/config/commands.toml" with { type: "text" }
-import MODELS_TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
-import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
+import COMMANDS_TEMPLATE from "../../../../config/commands.toml" with { type: "text" }
+import MODELS_TEMPLATE from "../../../../config/models.default.toml" with { type: "text" }
+import SECRETS_TEMPLATE from "../../../../config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
 import { pathForBundleKey, pickBundleFiles } from "./bundle"
 import { fetchRemoteConfigBundle } from "./remote-fetch"

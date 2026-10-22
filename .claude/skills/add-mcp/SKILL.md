@@ -33,10 +33,10 @@ It may also be a `claude mcp add ...` command line, or prose with a URL; read th
 
 Read these before writing anything:
 - `marketplace/README.md`, the MCP bullets
-- `packages/schema/abilities/mcp.ts`: `McpAbilitySchema` is the source of truth. It generates `docs/config/schemas/mcp-ability.json`, which tombi applies to `marketplace/abilities/*/mcp.toml`.
+- `packages/schema/abilities/mcp.ts`: `McpAbilitySchema` is the source of truth. It generates `config/schemas/mcp-ability.json`, which tombi applies to `marketplace/abilities/*/mcp.toml`.
 - every existing `marketplace/abilities/*/mcp.toml`, as style examples
 
-Don't use `docs/config/schemas/mcp.json`: that describes the user's own `mcp.toml`, a different format.
+Don't use `config/schemas/mcp.json`: that describes the user's own `mcp.toml`, a different format.
 
 ## 2. Map the fields
 

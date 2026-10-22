@@ -170,6 +170,9 @@ export async function runCloudSubcommand() {
       await (await computer)?.close()
     })
 
+    // Each mounted row using Ink's useWindowSize adds a resize listener, so a long chat would trip Node's leak warning on the terminal
+    process.stdout.setMaxListeners(100)
+
     const { waitUntilExit } = render(
       <App
         mode="cloud"

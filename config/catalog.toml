@@ -1,6 +1,6 @@
 # Kaja's model catalog: the one source of model defaults.
 # - The setup wizard (`kaja config wizard`) writes models.toml from the providers the user ticks here.
-# - `bun generate:models` writes the docs/config/models.*.toml examples from [[examples]]; never edit those by hand.
+# - `bun generate:models` writes the config/models.*.toml examples from [[examples]]; never edit those by hand.
 # - models.default.toml is what `kaja config fetch --offline` writes; the cloud seed loads its hosted providers.
 # The order of [[providers]] matters: when more than one ticked provider serves a task, the one listed first here
 # is the default, both as the wizard's preselected answer and in the examples (unless an example sets `pick`).
@@ -121,7 +121,7 @@ kind     = "self-hosted"
 base_url = "http://localhost:8000"
 note     = "local server, no key needed"
 
-# The example files in docs/config, each showing one model per task for a mix of providers.
+# The example files in config, each showing one model per task for a mix of providers.
 
 
   [[providers.models]]
