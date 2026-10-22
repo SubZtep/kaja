@@ -46,8 +46,7 @@ export function imageBox(opts: {
 }
 
 /**
- * Renders an image inline via terminal-image (Kitty/iTerm2/ANSI-block
- * protocols, auto-detected). Shows the dim alt text while resolving, and
+ * Renders an image inline as ANSI half-blocks. Shows the dim alt text while resolving, and
  * keeps showing it if rendering fails, followed by the reason (e.g. HTTP 404)
  * so a broken link doesn't look like a missing feature.
  */

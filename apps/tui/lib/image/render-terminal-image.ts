@@ -1,6 +1,6 @@
-import terminalImage from "terminal-image"
 import { t } from "../i18n"
 import { log } from "../logger"
+import { halfBlocks } from "./half-blocks"
 
 /** A rendered image, or why it couldn't be shown (for the line under it). */
 export type TerminalImageResult = { image: string } | { error: string }
@@ -52,7 +52,7 @@ function fetchRemote(src: string): Promise<ArrayBuffer> {
 }
 
 /**
- * Draws `src` (an http(s) or data URL, or a local file path) as ANSI half-block text via terminal-image, at
+ * Draws `src` (an http(s) or data URL, or a local file path) as ANSI half-block text (`halfBlocks`), at
  * `width`/`height` (a percentage of the terminal by default, the picture keeping its aspect ratio). Shares the work
  * and the result with every other row drawing the same picture at the same size (see {@link drawnTerminalImage}).
  */
@@ -91,12 +91,9 @@ async function drawTerminalImage(
     return { error: t(remote(src) ? "timeline.imageUnreachable" : "timeline.imageMissing") }
   }
   try {
-    const image = await terminalImage.buffer(new Uint8Array(buffer), {
+    const image = await halfBlocks(new Uint8Array(buffer), {
       width: options?.width ?? "60%",
-      height: options?.height ?? "80%",
-      preserveAspectRatio: true,
-      // Always half-blocks: Kitty's protocol draws straight to stdout behind Ink's back, and Ink drops iTerm2's
-      preferNativeRender: false
+      height: options?.height ?? "80%"
     })
     return { image }
   } catch (error) {
