@@ -41,7 +41,7 @@ Only `secrets.toml` holds credentials, so the other files are safe to share or p
 
 JSON Schemas for every file ship in
 [`config/schemas`](https://github.com/SubZtep/kaja/tree/main/config/schemas), and
-[`config`](https://github.com/SubZtep/kaja/tree/main/config) has example files. With the
+the [model examples](/configuration/models#examples) are served by the Kaja API. With the
 recommended VS Code TOML extension you get completion and validation as you edit.
 
 ---
