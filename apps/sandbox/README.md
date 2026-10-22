@@ -39,7 +39,7 @@ It starts with the Kaja monster and a summary (API, owner, servers, capacity), t
 2. A cloud turn picks a sandbox per ability: the one the user's last turn used while it still fits, else their own, else (only if they allow it) one another user shares or an anonymous one, nearest first, else the official one. See `apps/api/src/features/sandbox/registry.ts`.
 3. The API sends the MCP request as a `request` frame; the sandbox runs it and streams the answer back as `head`, `chunk`… and `end` frames (`cancel` stops it). Frames are JSON and checked against `sandboxFrameSchema`/`apiSandboxFrameSchema` in `@kaja/schema/api` on both sides.
 4. A tool's request (`fetch_url`, an HTTP tool's call, a remote MCP server's traffic) comes as a `fetch` frame instead: one hop, which the sandbox sends out through its egress proxy (`sendThroughEgress` in `src/egress.ts`) and streams back the same way. Redirects come back to the API, which checks each one. A sandbox that takes them says `fetch: true` in its `hello`; older images get none. `fetch_url` may use any sandbox the user may; an ability's requests go wherever the key they carry may (see [Trust](#trust)).
-5. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
+5. The request only ever _names_ an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
 
 ## Trust
 
@@ -79,7 +79,6 @@ So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrom
 ```
 
 What happens when Chrome opens `https://example.com`:
-
 1. **Chrome asks the proxy.** It doesn't connect itself; it sends `CONNECT example.com:443` ("open a tunnel for me"). A plain `http://` page comes as `GET http://example.com/path` instead.
 2. **The proxy resolves the name itself**, say to `93.184.215.14`.
 3. **Every address must be public.** Loopback, private ranges (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`, the metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses, and their IPv6 equivalents, are refused with `403`. Chrome shows an error page. The rule is `isPrivateAddress` from `@kaja/shared/net`, the same one the API's SSRF guard uses.
@@ -87,7 +86,6 @@ What happens when Chrome opens `https://example.com`:
 5. **Bytes are piped both ways.** HTTPS stays encrypted end to end; the proxy never sees inside it. Plain HTTP is rewritten to `GET /path`, and the connection closes after the answer, so the next request (maybe to another host) is checked again.
 
 Two more Chrome flags keep it from going around the proxy:
-
 - `--proxy-bypass-list=<-loopback>`: Chrome normally skips the proxy for `localhost`. That exception is exactly the hole we're closing, so this turns it off.
 - `--force-webrtc-ip-handling-policy=disable_non_proxied_udp`: WebRTC could otherwise open direct UDP connections.
 
@@ -99,10 +97,10 @@ The MCP server processes go through it too, for their own requests (a server tha
 
 The two ends of the proxy are configured in two places:
 
-| Side | Port comes from |
-| --- | --- |
-| The proxy listens on | `SANDBOX_EGRESS_PORT` (default `3128`) |
-| Chrome connects to | `--proxyServer=http://127.0.0.1:3128` in `overrides.json` |
+| Side                 | Port comes from                                           |
+| -------------------- | --------------------------------------------------------- |
+| The proxy listens on | `SANDBOX_EGRESS_PORT` (default `3128`)                    |
+| Chrome connects to   | `--proxyServer=http://127.0.0.1:3128` in `overrides.json` |
 
 **They must match.** Change only the env var and the proxy moves while Chrome keeps looking at `3128`: every page then fails to load. That fails safe (nothing leaks), but the browser is broken. A test checks that `overrides.json` matches the env default. The port is internal to the container, so there's normally no reason to change it; if you do, change both.
 
@@ -125,12 +123,12 @@ bun apps/sandbox/src/cli.ts egress-check <url>                                 #
 
 Quote a URL with a query string (`'https://…?q=test'`), or the shell takes the `?`. Each line is one step:
 
-| Line | What it says |
-| --- | --- |
-| `WEB_PROXY` | the upstream proxy without its password (`(with credentials)` when it has some), or `unset, connecting directly` |
-| `Resolve` | what the name resolved to here, and whether every address is public; a private one is refused, as for real traffic |
-| `Request` | the status, content type and size of the answer, or `failed:` and the reason a tool request would show |
-| `CONNECT` | only when `WEB_PROXY` refused the tunnel: its answer for the checked IP and for the name |
+| Line        | What it says                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `WEB_PROXY` | the upstream proxy without its password (`(with credentials)` when it has some), or `unset, connecting directly`   |
+| `Resolve`   | what the name resolved to here, and whether every address is public; a private one is refused, as for real traffic |
+| `Request`   | the status, content type and size of the answer, or `failed:` and the reason a tool request would show             |
+| `CONNECT`   | only when `WEB_PROXY` refused the tunnel: its answer for the checked IP and for the name                           |
 
 Any HTTP answer means the path works, whatever the status: it came from the site. A healthy run against Brave's API, which answers `422` to a request with no key:
 
@@ -141,7 +139,6 @@ Request    422  (application/json, 233 bytes)
 ```
 
 It doesn't follow redirects (tool requests don't either; the API checks each hop), so a site's bare root often shows a `301`; check the endpoint the tool calls instead. When `Request` fails:
-
 - `Blocked non-public URL`: the name resolves to a private address, or doesn't resolve at all (the `Resolve` line says which); the sandbox never connects to either.
 - `Couldn't connect to <host>: WEB_PROXY answered HTTP/1.1 407 …`: wrong or missing proxy credentials.
 - `Couldn't connect to <host>: WEB_PROXY answered …`, with the `CONNECT` lines showing the IP refused and the name `200`: the upstream won't `CONNECT` to IP addresses, which the egress proxy needs (see above).
@@ -153,7 +150,7 @@ It exits `0` when an answer came back, `1` when the request failed, and `2` on a
 
 - For the server processes it's cooperative: the proxy variables are a request, not a wall. A program that ignores them (or opens raw sockets) still connects directly, and so can anything on loopback. Every server here comes from the repo's own manifests, so the risk this covers is a careless server, not a hostile one; walling it in for real needs per-uid firewall rules, which take `--cap-add NET_ADMIN`.
 - With `WEB_PROXY` set, the servers' package downloads (a new manifest's first start) go through it too, so they count towards its traffic.
-- It limits *where* Chrome connects, not *what* it does there: any public site is fair game, like in a normal browser.
+- It limits _where_ Chrome connects, not _what_ it does there: any public site is fair game, like in a normal browser.
 
 That's why production also runs the sandbox on a **separate server** with nothing else on it, and why in `compose.yaml` it has its own network with only the API on it.
 
@@ -171,7 +168,12 @@ bun dev:sandbox
 {
   "chrome-devtools": {
     "command": "bunx",
-    "args": ["chrome-devtools-mcp@latest", "--headless", "--isolated", "--executablePath=/usr/bin/chromium"]
+    "args": [
+      "chrome-devtools-mcp@latest",
+      "--headless",
+      "--isolated",
+      "--executablePath=/usr/bin/chromium"
+    ]
   }
 }
 ```
@@ -186,22 +188,22 @@ docker compose up -d sandbox
 
 ## Configuration
 
-| Variable | Default | What it does |
-| --- | --- | --- |
-| `KAJA_API_URL` | `https://api.kaja.io` in the image, else `http://localhost:3001` | the API it dials |
-| `KAJA_SANDBOX_KEY` | — | your key from the web's Sandbox page (or the API's `SANDBOX_SYSTEM_KEY`); unset: anonymous |
-| `SANDBOX_NAME` | — | a name shown for it |
-| `SANDBOX_STATE_DIR` | `./.sandbox` (`/data` in the image) | where it keeps the id and secret it was welcomed with |
-| `MARKETPLACE_DIR` | `../../marketplace` | whose `mcp/*.toml` stdio manifests are the only servers it runs |
-| `SANDBOX_OVERRIDES` | — | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`) |
-| `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
-| `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |
-| `SANDBOX_MAX_PROCESSES` | from memory | most servers at once; unset, one per 512 MB of the memory limit, less 512 MB |
-| `SANDBOX_SERVER_MEMORY` | `1073741824` | bytes one server (a browser with all its processes) may use before it's stopped |
-| `SANDBOX_ISOLATE_USERS` | `true` | each user's servers as their own Linux user (only when running as root) |
-| `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
-| `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic (the browsers' and the tool requests') through; unset connects directly |
-| `NODE_ENV` | — | `production` turns on Sentry (the image sets it) |
+| Variable                | Default                                                          | What it does                                                                                                                     |
+| ----------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `KAJA_API_URL`          | `https://api.kaja.io` in the image, else `http://localhost:3001` | the API it dials                                                                                                                 |
+| `KAJA_SANDBOX_KEY`      | —                                                                | your key from the web's Sandbox page (or the API's `SANDBOX_SYSTEM_KEY`); unset: anonymous                                       |
+| `SANDBOX_NAME`          | —                                                                | a name shown for it                                                                                                              |
+| `SANDBOX_STATE_DIR`     | `./.sandbox` (`/data` in the image)                              | where it keeps the id and secret it was welcomed with                                                                            |
+| `MARKETPLACE_DIR`       | `../../marketplace`                                              | whose `mcp/*.toml` stdio manifests are the only servers it runs                                                                  |
+| `SANDBOX_OVERRIDES`     | —                                                                | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`)                                          |
+| `SANDBOX_CACHE_DIR`     | —                                                                | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`)                      |
+| `SANDBOX_IDLE_MS`       | `600000`                                                         | how long an unused server stays warm                                                                                             |
+| `SANDBOX_MAX_PROCESSES` | from memory                                                      | most servers at once; unset, one per 512 MB of the memory limit, less 512 MB                                                     |
+| `SANDBOX_SERVER_MEMORY` | `1073741824`                                                     | bytes one server (a browser with all its processes) may use before it's stopped                                                  |
+| `SANDBOX_ISOLATE_USERS` | `true`                                                           | each user's servers as their own Linux user (only when running as root)                                                          |
+| `SANDBOX_EGRESS_PORT`   | `3128`                                                           | the egress proxy's port; must match `overrides.json`                                                                             |
+| `WEB_PROXY`             | —                                                                | `http://` proxy the egress proxy tunnels checked traffic (the browsers' and the tool requests') through; unset connects directly |
+| `NODE_ENV`              | —                                                                | `production` turns on Sentry (the image sets it)                                                                                 |
 
 `.env.example` is generated from `packages/schema/env/sandbox.ts` (`bun generate:env`).
 
@@ -219,21 +221,21 @@ docker compose up -d sandbox
 
 ## Code
 
-| File | Role |
-| --- | --- |
-| `src/server.ts` | entry: starts the egress proxy, loads manifests, connects the tunnel, stops everything on SIGTERM/SIGINT |
-| `src/tunnel.ts` | the dial-out WebSocket: hello, heartbeats, reconnects, and running the API's request frames |
-| `src/hardware.ts` | the hello's hardware facts and the heartbeat's load |
-| `src/pool.ts` | one server per (user, ability): idle stop, cap, making room, memory watchdog, release |
-| `src/capacity.ts` | the default cap from memory, and the live free-memory check |
-| `src/isolation.ts` | a Linux uid per user, and the `prlimit` + `setpriv` wrapper that starts a server as it |
-| `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
-| `src/egress.ts` | the egress proxy |
-| `src/egress-check.ts` | `egress-check <url>`: one request through the egress proxy and `WEB_PROXY`, step by step |
-| `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |
-| `src/manifests.ts` | the stdio manifests it may run, plus the overrides, and the proxy env each server starts with |
-| `src/report.ts` | Sentry in production |
-| `overrides.json` | the image's command and Chrome flags for chrome-devtools |
-| `Dockerfile` | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |
+| File                  | Role                                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `src/server.ts`       | entry: starts the egress proxy, loads manifests, connects the tunnel, stops everything on SIGTERM/SIGINT                     |
+| `src/tunnel.ts`       | the dial-out WebSocket: hello, heartbeats, reconnects, and running the API's request frames                                  |
+| `src/hardware.ts`     | the hello's hardware facts and the heartbeat's load                                                                          |
+| `src/pool.ts`         | one server per (user, ability): idle stop, cap, making room, memory watchdog, release                                        |
+| `src/capacity.ts`     | the default cap from memory, and the live free-memory check                                                                  |
+| `src/isolation.ts`    | a Linux uid per user, and the `prlimit` + `setpriv` wrapper that starts a server as it                                       |
+| `src/relay.ts`        | shares one stdio child between many HTTP sessions, renumbering request ids                                                   |
+| `src/egress.ts`       | the egress proxy                                                                                                             |
+| `src/egress-check.ts` | `egress-check <url>`: one request through the egress proxy and `WEB_PROXY`, step by step                                     |
+| `src/stats.ts`        | the stats: the pool's servers and counts, memory per process tree, host and container memory                                 |
+| `src/manifests.ts`    | the stdio manifests it may run, plus the overrides, and the proxy env each server starts with                                |
+| `src/report.ts`       | Sentry in production                                                                                                         |
+| `overrides.json`      | the image's command and Chrome flags for chrome-devtools                                                                     |
+| `Dockerfile`          | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |
 
 Tests: `bun test apps/sandbox/tests`. More notes for coding agents are in [CLAUDE.md](./CLAUDE.md).

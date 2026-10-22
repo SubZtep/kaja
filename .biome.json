@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -48,25 +48,25 @@
         "noFocusedTests": "error",
         "noSkippedTests": "on",
         "noDeprecatedImports": "on",
-        "noImportCycles": "on"
+        "noImportCycles": "on",
+        "noIdenticalTestTitle": "on"
       },
       "style": {
         "noNonNullAssertion": "off",
-        "useConsistentEnumValueType": "on"
+        "useConsistentEnumValueType": "on",
+        "useTestHooksInOrder": "on"
       },
       "nursery": {
-        "noIdenticalTestTitle": "on",
-        "useTestHooksInOrder": "on",
         "noSelfImport": "on",
         "useAwaitThenable": "on",
         "useStringStartsEndsWith": "on",
         "useIncludes": "on",
         "useRegexpExec": "on",
-        "useSortedClasses": "warn",
         "noUnsafePlusOperands": "on",
         "noUselessTypeConversion": "on",
         "noMeaninglessVoidOperator": "on",
-        "useDisposables": "on"
+        "useDisposables": "on",
+        "useTailwindSortedClasses": "warn"
       }
     }
   },

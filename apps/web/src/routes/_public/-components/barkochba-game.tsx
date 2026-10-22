@@ -124,9 +124,9 @@ function withoutQuestion(content: string, question: string): string {
 }
 
 function StatusIcon({ won, aside }: Readonly<{ won: boolean; aside: string }>) {
-  if (won) return <Sparkles className="size-5 text-ice" />
+  if (won) return <Sparkles className="text-ice size-5" />
   if (aside) return <span className="text-muted text-xs italic">{aside}</span>
-  return <Wand className="size-5 text-neon" />
+  return <Wand className="text-neon size-5" />
 }
 
 const DOT_POSITIONS = ["first", "second", "third"] as const
@@ -234,13 +234,13 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]",
+        "border-border bg-surface-2 overflow-hidden rounded-xl border shadow-[0_24px_60px_-20px_#000a]",
         className
       )}
     >
-      <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
+      <div className="border-border bg-surface flex items-center gap-2 border-b px-3.5 py-2.5">
         <TitleBarDots variant={dotVariantFor(won, pending, phase)} />
-        <span className="ml-1.5 font-mono text-muted text-xs">{m.barkochba_title_bar()}</span>
+        <span className="text-muted ml-1.5 font-mono text-xs">{m.barkochba_title_bar()}</span>
       </div>
 
       <div className="flex min-h-65 flex-col justify-between p-5 font-mono text-[13.5px] leading-[1.9]">
@@ -251,7 +251,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
               {getExampleThings().map(({ label, icon: Icon }) => (
                 <span
                   key={label}
-                  className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-muted text-xs"
+                  className="border-border bg-surface text-muted flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs"
                 >
                   <Icon className="size-3.5" />
                   {label}
@@ -262,7 +262,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             <button
               type="button"
               onClick={start}
-              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
+              className="border-neon bg-neon/10 text-neon cursor-pointer rounded-md border px-5 py-2 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
             >
               {m.barkochba_start()}
             </button>
@@ -280,7 +280,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             </div>
             <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
               {pending ? (
-                <span className="flex items-center gap-1 text-muted">
+                <span className="text-muted flex items-center gap-1">
                   <BrainCircuit size={18} /> {m.barkochba_thinking()}
                 </span>
               ) : (
@@ -294,7 +294,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
               <button
                 type="button"
                 onClick={playAgain}
-                className="mt-4 cursor-pointer self-center rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm"
+                className="border-neon bg-neon/10 text-neon mt-4 cursor-pointer self-center rounded-md border px-5 py-2 text-sm font-semibold"
               >
                 {m.barkochba_play_again()}
               </button>
@@ -307,7 +307,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
                       type="button"
                       disabled={pending}
                       onClick={() => sendMessage(value)}
-                      className="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-fg text-sm transition-colors hover:border-neon/60 hover:bg-neon/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="border-border bg-surface text-fg hover:border-neon/60 hover:bg-neon/10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Icon className="size-3.5" />
                       {label}
@@ -317,7 +317,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
                 <button
                   type="button"
                   onClick={playAgain}
-                  className="mt-3 cursor-pointer self-center text-muted text-xs underline underline-offset-2 transition-colors duration-200 hover:text-fg hover:underline-offset-0"
+                  className="text-muted hover:text-fg mt-3 cursor-pointer self-center text-xs underline underline-offset-2 transition-colors duration-200 hover:underline-offset-0"
                 >
                   {m.barkochba_give_up()}
                 </button>

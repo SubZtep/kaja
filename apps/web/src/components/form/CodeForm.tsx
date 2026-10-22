@@ -67,7 +67,7 @@ export function CodeForm({
       }}
       className="flex flex-col gap-4"
     >
-      <p className="m-0 text-[13.5px] text-muted">{m.auth_code_sent({ email })}</p>
+      <p className="text-muted m-0 text-[13.5px]">{m.auth_code_sent({ email })}</p>
       <form.AppField name="otp">
         {field => (
           <field.TextField
@@ -89,7 +89,7 @@ export function CodeForm({
           variant="link"
           disabled={loading}
           onClick={back}
-          className="mx-0 text-[13px] text-muted hover:text-neon"
+          className="text-muted hover:text-neon mx-0 text-[13px]"
         >
           {backLabel}
         </Button>
@@ -100,7 +100,7 @@ export function CodeForm({
             loading={resending}
             disabled={loading || disabled}
             onClick={onResend}
-            className="mx-0 text-[13px] text-muted hover:text-neon"
+            className="text-muted hover:text-neon mx-0 text-[13px]"
           >
             {m.auth_resend_code()}
           </Button>

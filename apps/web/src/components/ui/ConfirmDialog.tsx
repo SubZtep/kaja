@@ -38,10 +38,10 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <DialogShell kind="alert" className="-mt-8 w-96">
           <AlertDialog.Title className={DIALOG_TITLE}>{title}</AlertDialog.Title>
-          <AlertDialog.Description className="mb-6 text-base text-muted">{description}</AlertDialog.Description>
+          <AlertDialog.Description className="text-muted mb-6 text-base">{description}</AlertDialog.Description>
           {typeToConfirm === undefined ? null : (
             <div className="-mt-2 mb-6 flex flex-col gap-1.5">
-              <label htmlFor={inputId} className="break-all text-muted text-sm">
+              <label htmlFor={inputId} className="text-muted text-sm break-all">
                 {m.confirm_dialog_type_to_confirm({ text: typeToConfirm })}
               </label>
               <Text
@@ -61,7 +61,7 @@ export function ConfirmDialog({
               onClick={onConfirm}
               render={
                 <Button
-                  className={cn("whitespace-nowrap font-semibold text-red-400", confirmClassName)}
+                  className={cn("font-semibold whitespace-nowrap text-red-400", confirmClassName)}
                   autoFocus={typeToConfirm === undefined}
                   disabled={locked}
                 />

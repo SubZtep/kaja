@@ -51,15 +51,15 @@ const WIDGET_TYPE_OPTIONS = widgetTypeSchema.options.map(value => ({ value, labe
 const columnHelper = tableColumnHelper<WidgetKey>()
 
 function LabelCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string>) {
-  return <span className="font-bold text-fg">{info.getValue()}</span>
+  return <span className="text-fg font-bold">{info.getValue()}</span>
 }
 
 function KeyPrefixCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string>) {
-  return <span className="font-mono text-muted text-xs">{info.getValue()}…</span>
+  return <span className="text-muted font-mono text-xs">{info.getValue()}…</span>
 }
 
 function OriginsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string[]>) {
-  return <span className="font-mono text-muted text-xs">{info.getValue().join(", ")}</span>
+  return <span className="text-muted font-mono text-xs">{info.getValue().join(", ")}</span>
 }
 
 function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, boolean>) {
@@ -71,42 +71,44 @@ function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, bo
 }
 
 function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date>) {
-  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
+  return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date | null>) {
   const value = info.getValue()
-  return <span className="font-mono text-muted text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+  return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function makeActionsCell(renderEdit: (key: WidgetKey) => React.ReactNode, onRevoke: (id: string) => void) {
-  return function ActionsCell(info: { row: { original: WidgetKey } }) {
-    if (!info.row.original.enabled) return null
-    return (
-      <div className="flex justify-end gap-1">
-        {renderEdit(info.row.original)}
-        <ConfirmDialog
-          title={m.widget_revoke_confirm_title()}
-          description={m.widget_revoke_confirm_description({ label: info.row.original.label })}
-          confirm={m.widget_revoke_confirm_button()}
-          onConfirm={() => onRevoke(info.row.original.id)}
-        >
-          <IconButton variant="danger" aria-label={m.widget_revoke_confirm_button()}>
-            <Trash2 size={18} />
-          </IconButton>
-        </ConfirmDialog>
-      </div>
-    )
-  }
+function ActionsCell({
+  widgetKey,
+  edit,
+  onRevoke
+}: Readonly<{ widgetKey: WidgetKey; edit: React.ReactNode; onRevoke: (id: string) => void }>) {
+  if (!widgetKey.enabled) return null
+  return (
+    <div className="flex justify-end gap-1">
+      {edit}
+      <ConfirmDialog
+        title={m.widget_revoke_confirm_title()}
+        description={m.widget_revoke_confirm_description({ label: widgetKey.label })}
+        confirm={m.widget_revoke_confirm_button()}
+        onConfirm={() => onRevoke(widgetKey.id)}
+      >
+        <IconButton variant="danger" aria-label={m.widget_revoke_confirm_button()}>
+          <Trash2 size={18} />
+        </IconButton>
+      </ConfirmDialog>
+    </div>
+  )
 }
 
 function EmbedSnippet({ apiUrl, rawKey }: Readonly<{ apiUrl: string; rawKey: string }>) {
   const snippet = `<script async src="${apiUrl}/widget/${rawKey}.js"></script>`
   return (
-    <div className="mt-4 rounded-lg border border-border bg-surface p-4">
-      <p className="mb-2 text-fg text-sm">{m.widget_embed_notice()}</p>
-      <p className="mb-3 break-all font-mono text-neon text-sm">{rawKey}</p>
-      <pre className="overflow-x-auto rounded-md bg-black/40 p-3 font-mono text-muted text-xs">{snippet}</pre>
+    <div className="border-border bg-surface mt-4 rounded-lg border p-4">
+      <p className="text-fg mb-2 text-sm">{m.widget_embed_notice()}</p>
+      <p className="text-neon mb-3 font-mono text-sm break-all">{rawKey}</p>
+      <pre className="text-muted overflow-x-auto rounded-md bg-black/40 p-3 font-mono text-xs">{snippet}</pre>
     </div>
   )
 }
@@ -207,20 +209,23 @@ function WidgetPage() {
     columnHelper.display({
       id: "actions",
       header: "",
-      cell: makeActionsCell(
-        key => (
-          <EditWidgetDialog
-            widgetKey={key}
-            personas={personas ?? []}
-            isPending={updateKey.isPending}
-            onSave={payload => updateKey.mutateAsync({ id: key.id, payload })}
-          >
-            <IconButton aria-label={m.widget_edit_title()}>
-              <Pencil size={18} />
-            </IconButton>
-          </EditWidgetDialog>
-        ),
-        id => revokeKey.mutate(id)
+      cell: info => (
+        <ActionsCell
+          widgetKey={info.row.original}
+          edit={
+            <EditWidgetDialog
+              widgetKey={info.row.original}
+              personas={personas ?? []}
+              isPending={updateKey.isPending}
+              onSave={payload => updateKey.mutateAsync({ id: info.row.original.id, payload })}
+            >
+              <IconButton aria-label={m.widget_edit_title()}>
+                <Pencil size={18} />
+              </IconButton>
+            </EditWidgetDialog>
+          }
+          onRevoke={id => revokeKey.mutate(id)}
+        />
       )
     })
   ])

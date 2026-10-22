@@ -102,7 +102,7 @@ function DeviceApprovePage() {
       <p>{m.device_approve_description()}</p>
       <p>
         {m.device_approve_code_label()}{" "}
-        <span className="font-semibold text-2xl text-fg tracking-widest">{formatDeviceUserCode(userCode)}</span>
+        <span className="text-fg text-2xl font-semibold tracking-widest">{formatDeviceUserCode(userCode)}</span>
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" loading={loading} onClick={approve} autoFocus>

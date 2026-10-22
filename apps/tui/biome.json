@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "extends": "//",
   "linter": {
     "domains": {
@@ -20,14 +20,14 @@
       "suspicious": {
         "noArrayIndexKey": "on",
         "noDuplicatedSpreadProps": "on",
-        "noReactForwardRef": "on"
+        "noReactForwardRef": "on",
+        "noJsxLeakedDollar": "on",
+        "noReactStringRefs": "on"
       },
       "style": {
         "useReactFunctionComponents": "on"
       },
       "nursery": {
-        "noJsxLeakedDollar": "on",
-        "noReactStringRefs": "on",
         "noReactObjectTypeAsDefaultProp": "on"
       }
     }

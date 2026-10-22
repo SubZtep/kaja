@@ -312,7 +312,7 @@ export function MonsterFace({ className, onReady }: Readonly<{ className?: strin
   return (
     <div
       ref={rootRef}
-      className={cn("pointer-events-none text-fg opacity-0 transition-opacity duration-500", className)}
+      className={cn("text-fg pointer-events-none opacity-0 transition-opacity duration-500", className)}
       style={{ perspective: 600 }}
       aria-hidden
     >

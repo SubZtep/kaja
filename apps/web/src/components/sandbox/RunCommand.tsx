@@ -17,8 +17,8 @@ export function RunCommand({ sandboxKey, look = "plain" }: Readonly<{ sandboxKey
         <Field.Label className="flex cursor-pointer items-start gap-3">
           <Checkbox className="mt-0.5 shrink-0" checked={limited} onCheckedChange={setLimited} />
           <span>
-            <span className="block text-fg text-sm">{m.sandbox_limit_label()}</span>
-            <span className="block text-muted text-xs">{limited ? m.sandbox_limit_on() : m.sandbox_limit_off()}</span>
+            <span className="text-fg block text-sm">{m.sandbox_limit_label()}</span>
+            <span className="text-muted block text-xs">{limited ? m.sandbox_limit_on() : m.sandbox_limit_off()}</span>
           </span>
         </Field.Label>
       </Field.Root>

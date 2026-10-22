@@ -31,7 +31,7 @@ export function RunSandbox() {
           }
         />
         <div className="grid gap-6 md:grid-cols-2 md:gap-10">
-          <div className="flex flex-col gap-3 font-crt text-muted text-sm">
+          <div className="font-crt text-muted flex flex-col gap-3 text-sm">
             <p className="m-0">{m.landing_sandbox_why()}</p>
             <p className="m-0">{m.landing_sandbox_how()}</p>
           </div>

@@ -59,11 +59,11 @@ const providerColumnHelper = tableColumnHelper<Provider>()
 const modelColumnHelper = tableColumnHelper<Model>()
 
 function ProviderNameCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
-  return <span className="font-bold font-mono text-fg text-sm">{info.getValue()}</span>
+  return <span className="text-fg font-mono text-sm font-bold">{info.getValue()}</span>
 }
 
 function ProviderBaseUrlCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
-  return <span className="font-mono text-muted text-xs">{info.getValue()}</span>
+  return <span className="text-muted font-mono text-xs">{info.getValue()}</span>
 }
 
 function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, boolean>) {
@@ -71,46 +71,49 @@ function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provid
 }
 
 function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Provider, Date>) {
-  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
+  return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
-function makeProviderActionsCell(
-  onDelete: (id: string) => void,
-  onSave: (id: string, payload: UpdateProviderRequest) => Promise<unknown>,
+function ProviderActionsCell({
+  provider,
+  onDelete,
+  onSave,
+  isSaving
+}: Readonly<{
+  provider: Provider
+  onDelete: (id: string) => void
+  onSave: (id: string, payload: UpdateProviderRequest) => Promise<unknown>
   isSaving: boolean
-) {
-  return function ProviderActionsCell(info: { row: { original: Provider } }) {
-    const provider = info.row.original
-    return (
-      <div className="flex justify-end gap-1">
-        <EditProviderDialog provider={provider} isPending={isSaving} onSave={payload => onSave(provider.id, payload)}>
-          <IconButton aria-label={m.models_edit_provider_title()}>
-            <Pencil size={18} />
-          </IconButton>
-        </EditProviderDialog>
-        <ConfirmDialog
-          title={m.models_delete_provider_confirm_title()}
-          description={m.models_delete_provider_confirm_description({ name: provider.name })}
-          confirm={m.models_delete_confirm_button()}
-          onConfirm={() => onDelete(provider.id)}
-        >
-          <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
-            <Trash2 size={18} />
-          </IconButton>
-        </ConfirmDialog>
-      </div>
-    )
-  }
+}>) {
+  return (
+    <div className="flex justify-end gap-1">
+      <EditProviderDialog provider={provider} isPending={isSaving} onSave={payload => onSave(provider.id, payload)}>
+        <IconButton aria-label={m.models_edit_provider_title()}>
+          <Pencil size={18} />
+        </IconButton>
+      </EditProviderDialog>
+      <ConfirmDialog
+        title={m.models_delete_provider_confirm_title()}
+        description={m.models_delete_provider_confirm_description({ name: provider.name })}
+        confirm={m.models_delete_confirm_button()}
+        onConfirm={() => onDelete(provider.id)}
+      >
+        <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
+          <Trash2 size={18} />
+        </IconButton>
+      </ConfirmDialog>
+    </div>
+  )
 }
 
 function ModelNameCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
-  return <span className="font-bold font-mono text-fg text-sm">{info.getValue()}</span>
+  return <span className="text-fg font-mono text-sm font-bold">{info.getValue()}</span>
 }
 
 function ModelContextWindowCell(info: CellContext<typeof tableFeaturesConfig, Model, number | null>) {
   const value = info.getValue()
   return (
-    <span className="font-mono text-muted text-xs">
+    <span className="text-muted font-mono text-xs">
       {value ? value.toLocaleString() : m.models_context_window_auto()}
     </span>
   )
@@ -120,81 +123,83 @@ function ModelTasksCell(info: CellContext<typeof tableFeaturesConfig, Model, Mod
   return <span className="text-muted text-xs">{info.getValue().join(", ")}</span>
 }
 
-function makeModelProviderCell(providers: Provider[]) {
-  return function ModelProviderCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
-    const provider = providers.find(p => p.id === info.getValue())
-    return <span className="font-mono text-muted text-xs">{provider?.name ?? "—"}</span>
-  }
+function ModelProviderCell({ providerId, providers }: Readonly<{ providerId: string; providers: Provider[] }>) {
+  const provider = providers.find(p => p.id === providerId)
+  return <span className="text-muted font-mono text-xs">{provider?.name ?? "—"}</span>
 }
 
-function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
-  return function ModelEnabledCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
-    const model = info.row.original
-    return (
-      <Checkbox
-        checked={info.getValue()}
-        aria-label={m.models_toggle_enabled({ model: model.model })}
-        onCheckedChange={enabled => onToggle({ id: model.id, enabled })}
-      />
-    )
-  }
+function ModelEnabledCell({
+  model,
+  onToggle
+}: Readonly<{ model: Model; onToggle: (args: { id: string; enabled: boolean }) => void }>) {
+  return (
+    <Checkbox
+      checked={model.enabled}
+      aria-label={m.models_toggle_enabled({ model: model.model })}
+      onCheckedChange={enabled => onToggle({ id: model.id, enabled })}
+    />
+  )
 }
 
-function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => void) {
-  return function ModelFreeCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
-    const model = info.row.original
-    return (
-      <Checkbox
-        checked={info.getValue()}
-        aria-label={m.models_toggle_free({ model: model.model })}
-        onCheckedChange={free => onToggle({ id: model.id, free })}
-      />
-    )
-  }
+function ModelFreeCell({
+  model,
+  onToggle
+}: Readonly<{ model: Model; onToggle: (args: { id: string; free: boolean }) => void }>) {
+  return (
+    <Checkbox
+      checked={model.free}
+      aria-label={m.models_toggle_free({ model: model.model })}
+      onCheckedChange={free => onToggle({ id: model.id, free })}
+    />
+  )
 }
 
 function ModelCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date>) {
-  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
+  return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date | null>) {
   const value = info.getValue()
-  return <span className="font-mono text-muted text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+  return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function makeModelActionsCell(
-  providers: Provider[],
-  onDelete: (id: string) => void,
-  onSave: (id: string, payload: UpdateModelRequest) => Promise<unknown>,
+function ModelActionsCell({
+  model,
+  providers,
+  onDelete,
+  onSave,
+  isSaving
+}: Readonly<{
+  model: Model
+  providers: Provider[]
+  onDelete: (id: string) => void
+  onSave: (id: string, payload: UpdateModelRequest) => Promise<unknown>
   isSaving: boolean
-) {
-  return function ModelActionsCell(info: { row: { original: Model } }) {
-    const model = info.row.original
-    return (
-      <div className="flex justify-end gap-1">
-        <EditModelDialog
-          model={model}
-          providers={providers}
-          isPending={isSaving}
-          onSave={payload => onSave(model.id, payload)}
-        >
-          <IconButton aria-label={m.models_edit_model_title()}>
-            <Pencil size={18} />
-          </IconButton>
-        </EditModelDialog>
-        <ConfirmDialog
-          title={m.models_delete_model_confirm_title()}
-          description={m.models_delete_model_confirm_description({ model: info.row.original.model })}
-          confirm={m.models_delete_confirm_button()}
-          onConfirm={() => onDelete(info.row.original.id)}
-        >
-          <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
-            <Trash2 size={18} />
-          </IconButton>
-        </ConfirmDialog>
-      </div>
-    )
-  }
+}>) {
+  return (
+    <div className="flex justify-end gap-1">
+      <EditModelDialog
+        model={model}
+        providers={providers}
+        isPending={isSaving}
+        onSave={payload => onSave(model.id, payload)}
+      >
+        <IconButton aria-label={m.models_edit_model_title()}>
+          <Pencil size={18} />
+        </IconButton>
+      </EditModelDialog>
+      <ConfirmDialog
+        title={m.models_delete_model_confirm_title()}
+        description={m.models_delete_model_confirm_description({ model: model.model })}
+        confirm={m.models_delete_confirm_button()}
+        onConfirm={() => onDelete(model.id)}
+      >
+        <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
+          <Trash2 size={18} />
+        </IconButton>
+      </ConfirmDialog>
+    </div>
+  )
 }
 
 function ModelsPage() {
@@ -354,10 +359,13 @@ function ModelsPage() {
     providerColumnHelper.display({
       id: "actions",
       header: "",
-      cell: makeProviderActionsCell(
-        id => deleteProvider.mutate(id),
-        (id, payload) => updateProvider.mutateAsync({ id, payload }),
-        updateProvider.isPending
+      cell: info => (
+        <ProviderActionsCell
+          provider={info.row.original}
+          onDelete={id => deleteProvider.mutate(id)}
+          onSave={(id, payload) => updateProvider.mutateAsync({ id, payload })}
+          isSaving={updateProvider.isPending}
+        />
       )
     })
   ])
@@ -374,17 +382,17 @@ function ModelsPage() {
     }),
     modelColumnHelper.accessor("providerId", {
       header: m.models_column_provider(),
-      cell: makeModelProviderCell(providers),
+      cell: info => <ModelProviderCell providerId={info.getValue()} providers={providers} />,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("enabled", {
       header: m.models_enabled(),
-      cell: makeModelEnabledCell(args => toggleModelEnabled.mutate(args)),
+      cell: info => <ModelEnabledCell model={info.row.original} onToggle={args => toggleModelEnabled.mutate(args)} />,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("free", {
       header: m.models_column_free(),
-      cell: makeModelFreeCell(args => toggleModelFree.mutate(args)),
+      cell: info => <ModelFreeCell model={info.row.original} onToggle={args => toggleModelFree.mutate(args)} />,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("contextWindow", {
@@ -405,11 +413,14 @@ function ModelsPage() {
     modelColumnHelper.display({
       id: "actions",
       header: "",
-      cell: makeModelActionsCell(
-        providers,
-        id => deleteModel.mutate(id),
-        (id, payload) => updateModel.mutateAsync({ id, payload }),
-        updateModel.isPending
+      cell: info => (
+        <ModelActionsCell
+          model={info.row.original}
+          providers={providers}
+          onDelete={id => deleteModel.mutate(id)}
+          onSave={(id, payload) => updateModel.mutateAsync({ id, payload })}
+          isSaving={updateModel.isPending}
+        />
       )
     })
   ])

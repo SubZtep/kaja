@@ -1,4 +1,5 @@
 ---
+
 name: hyprland
 description: Change the user's Hyprland desktop (0.56+, Lua config) from a plain request, such as rounder corners, more blur, other border colours, faster animations or bigger gaps. Previews the change live first, then saves it into the right config file. Use when the user wants Hyprland to look or behave differently, or wants a change undone.
 sticky: true

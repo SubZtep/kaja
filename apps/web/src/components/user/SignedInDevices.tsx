@@ -66,9 +66,9 @@ export function SignedInDevices() {
           return (
             <li
               key={session.id}
-              className="flex items-start gap-3 border-border border-t border-dashed pt-3 first:border-t-0 first:pt-0"
+              className="border-border flex items-start gap-3 border-t border-dashed pt-3 first:border-t-0 first:pt-0"
             >
-              <device.icon className="mt-0.5 size-5 shrink-0 text-muted" aria-hidden />
+              <device.icon className="text-muted mt-0.5 size-5 shrink-0" aria-hidden />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-fg text-sm">{device.label}</span>
@@ -81,7 +81,7 @@ export function SignedInDevices() {
                     </span>
                   )}
                 </div>
-                <p className="m-0 font-mono text-muted text-xs">
+                <p className="text-muted m-0 font-mono text-xs">
                   {m.devices_active({ ago: getTimeAgo(new Date(session.updatedAt), new Date(), locale) })}
                   {" · "}
                   {m.devices_since({ ago: getTimeAgo(new Date(session.createdAt), new Date(), locale) })}
@@ -91,7 +91,7 @@ export function SignedInDevices() {
               {!current && (
                 <button
                   type="button"
-                  className="shrink-0 cursor-pointer text-muted text-xs underline-offset-2 hover:text-fg hover:underline"
+                  className="text-muted hover:text-fg shrink-0 cursor-pointer text-xs underline-offset-2 hover:underline"
                   disabled={revoke.isPending}
                   onClick={() => revoke.mutate(session.token)}
                 >
@@ -112,7 +112,7 @@ export function SignedInDevices() {
           <button
             type="button"
             disabled={revokeOthers.isPending}
-            className="mt-4 cursor-pointer text-muted text-xs underline-offset-2 hover:text-fg hover:underline"
+            className="text-muted hover:text-fg mt-4 cursor-pointer text-xs underline-offset-2 hover:underline"
           >
             {m.devices_revoke_others()}
           </button>

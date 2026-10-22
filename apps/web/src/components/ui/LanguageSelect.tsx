@@ -97,7 +97,7 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
         ref={triggerRef}
         aria-label={`${m.language_select_label()}: ${LOCALE_LABELS[getLocale()]}`}
         className={cn(
-          "inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg",
+          "border-border bg-surface text-muted hover:text-fg inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-xs",
           className
         )}
       >
@@ -108,13 +108,13 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
         </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Positioner className="z-20 select-none outline-none" sideOffset={4}>
-          <Select.Popup className="min-w-(--anchor-width) rounded-md border border-border bg-surface py-1 text-fg text-sm shadow-lg outline-none transition-all duration-150 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+        <Select.Positioner className="z-20 outline-none select-none" sideOffset={4}>
+          <Select.Popup className="border-border bg-surface text-fg min-w-(--anchor-width) rounded-md border py-1 text-sm shadow-lg transition-all duration-150 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
             {locales.map(locale => (
               <Select.Item
                 key={locale}
                 value={locale}
-                className="cursor-pointer px-3 py-1.5 outline-none data-highlighted:bg-surface-2"
+                className="data-highlighted:bg-surface-2 cursor-pointer px-3 py-1.5 outline-none"
               >
                 <Select.ItemText>
                   {LOCALE_LABELS[locale]} — {locale}

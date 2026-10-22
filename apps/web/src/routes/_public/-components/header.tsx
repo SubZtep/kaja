@@ -58,10 +58,10 @@ function MobileNav({ menuItems, user }: Readonly<{ menuItems: NavItem[]; user: R
       ))}
       {user ? (
         // Who is signed in, then signing out on its own line, under the same dashed rule as the auth card's footer
-        <div className="mt-2 flex w-full flex-col items-start gap-3 border-border border-t border-dashed pt-4">
+        <div className="border-border mt-2 flex w-full flex-col items-start gap-3 border-t border-dashed pt-4">
           <div className="w-full min-w-0 px-2">
-            <div className="truncate font-display font-extrabold text-fg text-sm">{getDisplayName(user)}</div>
-            <div className="truncate font-crt text-muted text-xs capitalize">{user.role ?? "user"}</div>
+            <div className="font-display text-fg truncate text-sm font-extrabold">{getDisplayName(user)}</div>
+            <div className="font-crt text-muted truncate text-xs capitalize">{user.role ?? "user"}</div>
           </div>
           <SignOutButton />
         </div>

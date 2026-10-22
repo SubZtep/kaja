@@ -17,11 +17,11 @@ export function TelegramConnectCta({ actionClassName }: Readonly<{ actionClassNa
 
   return (
     <>
-      <p className="m-0 font-crt text-muted text-sm">{m.telegram_cta_hint()}</p>
+      <p className="font-crt text-muted m-0 text-sm">{m.telegram_cta_hint()}</p>
       {link ? (
         <div className="mt-auto pt-4">
-          <p className="mt-0 mb-1.5 font-crt text-muted text-xs">{m.telegram_cta_notice()}</p>
-          <a href={link} target="_blank" rel="noreferrer" className="break-all font-crt text-neon text-sm">
+          <p className="font-crt text-muted mt-0 mb-1.5 text-xs">{m.telegram_cta_notice()}</p>
+          <a href={link} target="_blank" rel="noreferrer" className="font-crt text-neon text-sm break-all">
             {link}
           </a>
         </div>

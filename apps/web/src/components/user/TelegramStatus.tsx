@@ -48,7 +48,7 @@ export function TelegramStatus() {
         <button
           type="button"
           disabled={unlink.isPending}
-          className="cursor-pointer text-muted text-xs underline-offset-2 hover:text-fg hover:underline"
+          className="text-muted hover:text-fg cursor-pointer text-xs underline-offset-2 hover:underline"
         >
           {m.telegram_unlink()}
         </button>

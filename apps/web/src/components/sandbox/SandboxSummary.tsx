@@ -25,7 +25,7 @@ export function SandboxSummary() {
           {sandboxes.length === 0 ? m.sandbox_summary_none() : m.sandbox_summary({ online, count: sandboxes.length })}
         </span>
       </p>
-      <Link to="/agent/sandbox" className="text-muted text-xs underline-offset-2 hover:text-fg hover:underline">
+      <Link to="/agent/sandbox" className="text-muted hover:text-fg text-xs underline-offset-2 hover:underline">
         {m.sandbox_summary_manage()}
       </Link>
     </div>

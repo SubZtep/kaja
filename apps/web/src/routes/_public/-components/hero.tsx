@@ -50,7 +50,7 @@ function GoogleSignIn() {
       <GoogleButton label={m.google_start()} captcha={captcha} />
       <a
         href={`#${WAYS_IN_ID}`}
-        className="mt-3 inline-block font-stamp text-[11px] text-muted uppercase hover:text-neon"
+        className="font-stamp text-muted hover:text-neon mt-3 inline-block text-[11px] uppercase"
       >
         {m.hero_run_locally()} ↓
       </a>
@@ -112,10 +112,10 @@ export function Hero() {
             {m.hero_badge()}
           </Sticker>
 
-          <h1 className="wrap-normal m-0 max-w-xl font-display font-extrabold text-[34px] text-fg leading-[0.92] tracking-[-0.04em] [word-break:normal] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
+          <h1 className="font-display text-fg m-0 max-w-xl text-[34px] leading-[0.92] font-extrabold tracking-[-0.04em] wrap-normal [word-break:normal] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
             {greeting(part, firstName)}
           </h1>
-          <svg className="mt-1 ml-1 w-48 text-neon md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>
+          <svg className="text-neon mt-1 ml-1 w-48 md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>
             <path
               d="M1 8 C 40 2, 70 11, 110 6 S 180 2, 219 9"
               stroke="currentColor"
@@ -124,7 +124,7 @@ export function Hero() {
             />
           </svg>
 
-          <p className="wrap-normal mt-4 mb-0 max-w-md font-display text-lg text-muted [word-break:normal] md:text-xl">
+          <p className="font-display text-muted mt-4 mb-0 max-w-md text-lg wrap-normal [word-break:normal] md:text-xl">
             {m.hero_tagline()}
           </p>
         </div>

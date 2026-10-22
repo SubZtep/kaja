@@ -16,14 +16,14 @@ export function PageHeader({
     <header className="mb-8 flex flex-col justify-between gap-6 lg:mb-10 lg:flex-row lg:items-end">
       <div className="max-w-2xl">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="m-0 mb-0 font-display font-extrabold text-[28px] text-fg tracking-[-0.01em]">{title}</h1>
+          <h1 className="font-display text-fg m-0 mb-0 text-[28px] font-extrabold tracking-[-0.01em]">{title}</h1>
           {meta ? (
             <span className="sticker sticker-ghost text-[10px]" style={{ "--sticker-rot": "-4deg" } as CSSProperties}>
               {meta}
             </span>
           ) : null}
         </div>
-        {description ? <p className="m-0 max-w-lg text-[14.5px] text-muted">{description}</p> : null}
+        {description ? <p className="text-muted m-0 max-w-lg text-[14.5px]">{description}</p> : null}
       </div>
       {children ? <div className="flex flex-wrap gap-3">{children}</div> : null}
     </header>

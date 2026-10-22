@@ -27,41 +27,41 @@ hl.config({
 
 ## general
 
-| Option | Type | What it does |
-|---|---|---|
-| `gaps_in` | int | Space between windows |
-| `gaps_out` | int | Space between windows and the screen edge |
-| `border_size` | int | Border width; 0 hides borders |
-| `col.active_border` | gradient | Focused window's border |
-| `col.inactive_border` | gradient | Other windows' borders |
-| `resize_on_border` | bool | Drag a border to resize |
-| `layout` | string | `dwindle` or `master` |
+| Option                | Type     | What it does                              |
+| --------------------- | -------- | ----------------------------------------- |
+| `gaps_in`             | int      | Space between windows                     |
+| `gaps_out`            | int      | Space between windows and the screen edge |
+| `border_size`         | int      | Border width; 0 hides borders             |
+| `col.active_border`   | gradient | Focused window's border                   |
+| `col.inactive_border` | gradient | Other windows' borders                    |
+| `resize_on_border`    | bool     | Drag a border to resize                   |
+| `layout`              | string   | `dwindle` or `master`                     |
 
 ## decoration
 
-| Option | Type | What it does |
-|---|---|---|
-| `rounding` | int | Corner radius in pixels, 0 to 100 |
-| `rounding_power` | float | Corner curve, 1.0 to 10.0: 2.0 is a circle, 4.0 a squircle |
-| `active_opacity` | float | Focused window's opacity, 0.0 to 1.0 |
-| `inactive_opacity` | float | Other windows' opacity |
-| `fullscreen_opacity` | float | Fullscreen window's opacity |
-| `dim_inactive` | bool | Darken windows that aren't focused |
-| `dim_strength` | float | How much, 0.0 to 1.0 |
-| `dim_special` | float | Dimming behind the special workspace |
-| `blur.enabled` | bool | Blur behind see-through windows |
-| `blur.size` | int | Blur radius |
-| `blur.passes` | int | More passes is smoother and costs more GPU |
-| `blur.vibrancy` | float | Colour saturation of the blur, 0.0 to 1.0 |
-| `blur.noise` | float | Grain, 0.0 to 1.0 |
-| `blur.contrast` / `blur.brightness` | float | 0.0 to 2.0 |
-| `blur.xray` | bool | Floating windows blur only the wallpaper |
-| `blur.popups` / `blur.special` | bool | Blur popups / the special workspace |
-| `shadow.enabled` | bool | Window shadows |
-| `shadow.range` | int | Shadow size |
-| `shadow.render_power` | int | Falloff, 1 to 4 |
-| `shadow.color` | colour | Shadow colour |
-| `shadow.offset` | vec2 | Shadow shift, `"x y"` |
+| Option                              | Type   | What it does                                               |
+| ----------------------------------- | ------ | ---------------------------------------------------------- |
+| `rounding`                          | int    | Corner radius in pixels, 0 to 100                          |
+| `rounding_power`                    | float  | Corner curve, 1.0 to 10.0: 2.0 is a circle, 4.0 a squircle |
+| `active_opacity`                    | float  | Focused window's opacity, 0.0 to 1.0                       |
+| `inactive_opacity`                  | float  | Other windows' opacity                                     |
+| `fullscreen_opacity`                | float  | Fullscreen window's opacity                                |
+| `dim_inactive`                      | bool   | Darken windows that aren't focused                         |
+| `dim_strength`                      | float  | How much, 0.0 to 1.0                                       |
+| `dim_special`                       | float  | Dimming behind the special workspace                       |
+| `blur.enabled`                      | bool   | Blur behind see-through windows                            |
+| `blur.size`                         | int    | Blur radius                                                |
+| `blur.passes`                       | int    | More passes is smoother and costs more GPU                 |
+| `blur.vibrancy`                     | float  | Colour saturation of the blur, 0.0 to 1.0                  |
+| `blur.noise`                        | float  | Grain, 0.0 to 1.0                                          |
+| `blur.contrast` / `blur.brightness` | float  | 0.0 to 2.0                                                 |
+| `blur.xray`                         | bool   | Floating windows blur only the wallpaper                   |
+| `blur.popups` / `blur.special`      | bool   | Blur popups / the special workspace                        |
+| `shadow.enabled`                    | bool   | Window shadows                                             |
+| `shadow.range`                      | int    | Shadow size                                                |
+| `shadow.render_power`               | int    | Falloff, 1 to 4                                            |
+| `shadow.color`                      | colour | Shadow colour                                              |
+| `shadow.offset`                     | vec2   | Shadow shift, `"x y"`                                      |
 
 ## animations
 
@@ -88,9 +88,9 @@ to be written into the file first.
 
 ## misc
 
-| Option | Type | What it does |
-|---|---|---|
-| `disable_hyprland_logo` | bool | Hide the logo on the empty background |
-| `disable_splash_rendering` | bool | Hide the splash text |
-| `background_color` | colour | Background behind the wallpaper |
-| `disable_autoreload` | bool | Leave it false: saving a file reloads the config |
+| Option                     | Type   | What it does                                     |
+| -------------------------- | ------ | ------------------------------------------------ |
+| `disable_hyprland_logo`    | bool   | Hide the logo on the empty background            |
+| `disable_splash_rendering` | bool   | Hide the splash text                             |
+| `background_color`         | colour | Background behind the wallpaper                  |
+| `disable_autoreload`       | bool   | Leave it false: saving a file reloads the config |

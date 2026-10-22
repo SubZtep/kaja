@@ -19,14 +19,14 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface-2",
+        "border-border bg-surface-2 flex shrink-0 items-center justify-center overflow-hidden rounded-md border",
         SIZES[size].box
       )}
     >
       {src ? (
         <img alt={alt} className="size-full object-cover" src={src} />
       ) : (
-        <span className={cn("font-mono font-semibold text-neon", SIZES[size].text)}>{initials}</span>
+        <span className={cn("text-neon font-mono font-semibold", SIZES[size].text)}>{initials}</span>
       )}
     </div>
   )

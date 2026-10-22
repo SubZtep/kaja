@@ -41,15 +41,15 @@ flowchart LR
 
 `nasi` runs inside both the terminal (local mode) and the API (cloud), and `schema` and `shared` are used everywhere.
 
-| Workspace | What it is |
-| --- | --- |
-| [`apps/api`](./apps/api/) | Hono REST API: Better Auth, the cloud agent, emails, and serves the [widget](./apps/api/widgets/) bundle |
-| [`apps/web`](./apps/web/) | TanStack Start: the public homepage and the signed-in web app |
-| [`apps/tui`](./apps/tui/) | Ink terminal UI and Telegram bot, with local config and storage |
-| [`apps/sandbox`](./apps/sandbox/) | Runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |
-| [`packages/nasi`](./packages/nasi/) | The agent brain: the loop, tools, personas, memory |
-| [`packages/schema`](./packages/schema/) | Every Zod schema and type, in role-based subpaths |
-| [`packages/shared`](./packages/shared/) | Small pure utilities, including the Telegram plumbing both bots share |
+| Workspace                               | What it is                                                                                                        |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`apps/api`](./apps/api/)               | Hono REST API: Better Auth, the cloud agent, emails, and serves the [widget](./apps/api/widgets/) bundle          |
+| [`apps/web`](./apps/web/)               | TanStack Start: the public homepage and the signed-in web app                                                     |
+| [`apps/tui`](./apps/tui/)               | Ink terminal UI and Telegram bot, with local config and storage                                                   |
+| [`apps/sandbox`](./apps/sandbox/)       | Runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |
+| [`packages/nasi`](./packages/nasi/)     | The agent brain: the loop, tools, personas, memory                                                                |
+| [`packages/schema`](./packages/schema/) | Every Zod schema and type, in role-based subpaths                                                                 |
+| [`packages/shared`](./packages/shared/) | Small pure utilities, including the Telegram plumbing both bots share                                             |
 
 ## Run from the source
 

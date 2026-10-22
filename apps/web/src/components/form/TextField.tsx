@@ -30,7 +30,7 @@ export function TextField({
       <div className={cn(isStack ? "flex flex-col gap-1.5" : "md:flex")}>
         <Field.Label
           className={cn(
-            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 items-center justify-between align-middle"
+            isStack ? "text-muted text-[13px] font-medium" : "flex w-48 items-center justify-between align-middle"
           )}
         >
           {isStack ? label : `${label}:`}
@@ -52,14 +52,14 @@ export function TextField({
               onClick={() => setShown(s => !s)}
               aria-label={shown ? m.password_hide() : m.password_show()}
               title={shown ? m.password_hide() : m.password_show()}
-              className="absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center text-muted hover:text-fg"
+              className="text-muted hover:text-fg absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center"
             >
               {shown ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           ) : null}
         </div>
       </div>
-      {hint ? <p className="m-0 mt-1 text-[13px] text-muted/80">{hint}</p> : null}
+      {hint ? <p className="text-muted/80 m-0 mt-1 text-[13px]">{hint}</p> : null}
       <Field.Error match={!field.state.meta.isValid}>
         <FieldErrors field={field} />
       </Field.Error>

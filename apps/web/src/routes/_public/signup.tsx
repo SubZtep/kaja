@@ -94,7 +94,7 @@ function SignUp() {
         footer={
           <>
             {m.signup_have_account()}{" "}
-            <Link to="/signin" className="font-medium text-neon hover:text-neon-hi">
+            <Link to="/signin" className="text-neon hover:text-neon-hi font-medium">
               {m.signin_title()}
             </Link>
           </>
@@ -122,7 +122,7 @@ function SignUp() {
             </div>
 
             <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
-            <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+            <p className="font-stamp text-muted mb-4 text-center text-[10px] tracking-widest uppercase">
               {m.auth_or_email()}
             </p>
             <form
@@ -196,7 +196,7 @@ function LegalAgreement() {
           href={link.href}
           target="_blank"
           rel="noopener"
-          className="text-neon underline underline-offset-2 hover:text-neon-hi"
+          className="text-neon hover:text-neon-hi underline underline-offset-2"
         >
           {link.label}
         </a>

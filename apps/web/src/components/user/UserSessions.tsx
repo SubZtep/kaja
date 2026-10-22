@@ -78,7 +78,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
   return (
     <div className={className}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="m-0 font-semibold text-[15px] text-fg">{m.user_sessions_title()}</h2>
+        <h2 className="text-fg m-0 text-[15px] font-semibold">{m.user_sessions_title()}</h2>
         <ConfirmDialog title={m.confirm_dialog_are_you_sure()} onConfirm={() => mutate()}>
           <Button size="sm" variant="oval" disabled={sessions.length === 0}>
             <MonitorX size={14} className="mr-2" /> {m.user_sessions_revoke_all()}
@@ -93,7 +93,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id} className="border-border border-b">
                   {headerGroup.headers.map(header => (
-                    <th key={header.id} className="px-3 py-2 font-mono text-[11px] text-muted uppercase tracking-wider">
+                    <th key={header.id} className="text-muted px-3 py-2 font-mono text-[11px] tracking-wider uppercase">
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
@@ -104,10 +104,10 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
               {table.getRowModel().rows.map(row => (
                 <tr
                   key={row.id}
-                  className="border-border border-b transition-colors last:border-0 hover:bg-surface-2/60"
+                  className="border-border hover:bg-surface-2/60 border-b transition-colors last:border-0"
                 >
                   {row.getAllCells().map(cell => (
-                    <td key={cell.id} className="px-3 py-2 text-muted">
+                    <td key={cell.id} className="text-muted px-3 py-2">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -117,7 +117,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
           </table>
         </div>
       ) : (
-        <p className="m-0 text-muted text-sm">{m.user_sessions_none()}</p>
+        <p className="text-muted m-0 text-sm">{m.user_sessions_none()}</p>
       )}
     </div>
   )

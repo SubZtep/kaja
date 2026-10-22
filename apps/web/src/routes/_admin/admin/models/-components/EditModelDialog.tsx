@@ -69,7 +69,7 @@ export function EditModelDialog({
       <Dialog.Portal>
         <DialogShell className="w-xl">
           <Dialog.Title className={DIALOG_TITLE}>{m.models_edit_model_title()}</Dialog.Title>
-          <Dialog.Description className="mb-6 break-all font-mono text-muted text-sm">{model.model}</Dialog.Description>
+          <Dialog.Description className="text-muted mb-6 font-mono text-sm break-all">{model.model}</Dialog.Description>
 
           <form
             noValidate
