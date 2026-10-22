@@ -121,7 +121,7 @@ export function VirtualScroll({
   const epochRef = useRef(0)
 
   const items = Children.toArray(children)
-  const keys = items.map((item, i) => (isValidElement(item) && item.key != null ? String(item.key) : `i-${i}`))
+  const keys = items.map((item, i) => (isValidElement(item) && item.key != null ? item.key : `i-${i}`))
   const heights = keys.map(key => heightsRef.current.get(key))
   const allMeasured = heights.every(h => h !== undefined)
 

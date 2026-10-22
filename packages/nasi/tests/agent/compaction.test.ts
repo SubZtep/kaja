@@ -40,6 +40,7 @@ function fakeClient(
           const error = streamErrors.shift()
           rounds.push(structuredClone(body.messages))
           return {
+            // oxlint-disable-next-line require-yield -- a stream that only throws or waits
             async *[Symbol.asyncIterator]() {
               if (error) throw error
             },

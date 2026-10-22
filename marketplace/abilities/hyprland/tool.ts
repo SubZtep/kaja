@@ -48,7 +48,7 @@ function luaValue(name: string, value: unknown): string {
   if (typeof value === "object" && value !== null && Array.isArray((value as Gradient).colors)) {
     const { colors, angle } = value as Gradient
     if (colors.length === 0 || colors.length > 10) throw new Error(`${name}: a gradient takes 1 to 10 colors.`)
-    const list = colors.map(color => luaString(String(color))).join(", ")
+    const list = colors.map(color => luaString(color)).join(", ")
     const what = `${name}'s angle`
     const angleField = angle === undefined ? "" : `, angle = ${luaNumber(angle, what)}`
     return `{ colors = { ${list} }${angleField} }`

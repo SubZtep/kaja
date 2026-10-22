@@ -50,7 +50,9 @@ export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   try {
     const data = TOML.parse(await file(getConfigPath()).text())
     if (data && typeof data === "object") return data as Partial<KajaConfig>
-  } catch {}
+  } catch {
+    // unreadable config: the caller falls back to defaults
+  }
   return {}
 }
 

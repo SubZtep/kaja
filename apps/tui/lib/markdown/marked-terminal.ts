@@ -16,6 +16,7 @@
 //
 // Tables are drawn by ./table instead of cli-table3: rounded, one rule under the header, aligned, fit to a width.
 
+/* oxlint-disable @typescript-eslint/no-explicit-any -- vendored untyped upstream code */
 import chalk from "chalk"
 import { highlight as highlightCli } from "cli-highlight"
 import supportsHyperlinks from "supports-hyperlinks"
@@ -273,6 +274,7 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   if (this.options.sanitize) {
     let prot: string
     try {
+      // oxlint-disable-next-line @typescript-eslint/no-deprecated -- vendored upstream behaviour
       prot = decodeURIComponent(unescape(href))
         .replace(/[^\w:]/g, "")
         .toLowerCase()
@@ -289,12 +291,7 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   let out = ""
 
   if (supportsHyperlinks.stdout) {
-    let link = ""
-    if (text) {
-      link = this.o.href(text)
-    } else {
-      link = this.o.href(href)
-    }
+    const link = text ? this.o.href(text) : this.o.href(href)
     out = terminalLink(
       link,
       // textLength breaks on '+' in URLs

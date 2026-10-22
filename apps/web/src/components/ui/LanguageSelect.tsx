@@ -19,7 +19,9 @@ type Picked = "saved" | "switched"
 function rememberPick(picked: Picked) {
   try {
     sessionStorage.setItem(PICKED_KEY, picked)
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked
+  }
 }
 
 function takePick(): Picked | null {

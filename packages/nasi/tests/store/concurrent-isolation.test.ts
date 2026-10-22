@@ -10,6 +10,7 @@ function toolCallClient(reply: string, delayBeforeMs: number, toolCall?: { name:
         stream: () => {
           const thisRound = round++
           return {
+            // oxlint-disable-next-line require-yield -- a stream that only throws or waits
             async *[Symbol.asyncIterator]() {
               if (thisRound === 0 && toolCall) await new Promise(r => setTimeout(r, delayBeforeMs))
             },

@@ -141,7 +141,9 @@ async function readInstance(stateDir: string, api: string): Promise<Instance | u
   try {
     const saved = JSON.parse(await readFile(join(stateDir, "instance.json"), "utf8")) as Partial<Instance>
     if (saved.api === api && typeof saved.id === "string" && typeof saved.secret === "string") return saved as Instance
-  } catch {}
+  } catch {
+    // missing or corrupt state file: register as a new instance
+  }
   return undefined
 }
 

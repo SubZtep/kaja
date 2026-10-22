@@ -125,7 +125,7 @@ export function listTerminalSessions(db: Database): SessionListRow[] {
        ORDER BY s.updatedAt DESC, s.id DESC`
     )
     .all() as SessionListRow[]
-  return rows.map(row => ({ ...row, messages: Number(row.messages) }))
+  return rows
 }
 
 /** Text for `list`. `dbPath` is included so the file in use is visible. */

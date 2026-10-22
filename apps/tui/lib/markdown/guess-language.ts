@@ -15,12 +15,14 @@ export function guessLanguage(code: string): string | undefined {
     /^print\(/m.test(text)
   )
     return "python"
-  if (/^(const|let|import|export|function|interface|type) /m.test(text) || /=>/.test(text)) return "typescript"
+  if (/^(const|let|import|export|function|interface|type) /m.test(text) || text.includes("=>")) return "typescript"
   if (/^[{[]/.test(text)) {
     try {
       JSON.parse(text)
       return "json"
-    } catch {}
+    } catch {
+      // not JSON
+    }
   }
   return undefined
 }

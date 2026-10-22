@@ -13,6 +13,7 @@
     "@aws-sdk/client-s3": "^3.1155.0",
     "@aws-sdk/s3-presigned-post": "^3.1155.0",
     "@aws-sdk/s3-request-presigner": "^3.1155.0",
+    "@hono/bun": "^1.0.1",
     "@hono/zod-openapi": "^1.6.3",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",

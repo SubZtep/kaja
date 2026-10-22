@@ -64,6 +64,7 @@ export function useVoice(events: TimelineEvent[], enabled = false, personaModels
         })
         .finally(() => setInFlight(n => n - 1))
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- speaks each event once (spoken ref), so persona models changes must not re-run it
   }, [events, enabled])
 
   // Kill the ffplay child on unmount instead of leaving it to linger.

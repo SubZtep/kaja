@@ -205,6 +205,7 @@ export function ChatViewport({
   useEffect(() => {
     const timer = setTimeout(remeasure, 0)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- remeasure is a fresh closure every render
   }, [columns, rows])
 
   useEffect(() => {
@@ -216,6 +217,7 @@ export function ChatViewport({
     return () => {
       stdout.off("resize", onResize)
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- onResize reads the latest remeasure through the closure of the mounted stdout
   }, [stdout])
 
   const followIfPinned = () => {
@@ -231,6 +233,7 @@ export function ChatViewport({
     // Let ScrollView measure new children, then pad + follow.
     const timer = setTimeout(followIfPinned, 0)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- followIfPinned is a fresh closure every render
   }, [events, partial, pending, thinking, topPad, bottomChromeKey])
 
   // Un-stick, run a scroll action, then resync stick/affordance state. No-op when there's nothing to scroll, so it never creates empty overscroll.

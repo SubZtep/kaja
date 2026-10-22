@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { websocket } from "hono/bun"
+import { websocket } from "@hono/bun"
 import { sandboxInfo, sandboxLoad } from "../../../sandbox/src/hardware"
 import { ProcessPool } from "../../../sandbox/src/pool"
 import { collectStats } from "../../../sandbox/src/stats"

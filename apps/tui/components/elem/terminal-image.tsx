@@ -65,6 +65,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   const renderedHref = useRef<string | null>(href)
 
   // The width this item really has (indentation, nesting), known once laid out.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- re-measures after every layout; the width guard stops the loop
   useLayoutEffect(() => {
     if (!boxRef.current) return
     const { width } = measureElement(boxRef.current)
@@ -74,6 +75,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   useEffect(() => {
     const timer = setTimeout(() => setSettled(target), RESIZE_SETTLE_MS)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- target is rebuilt every render; its fields are the real inputs
   }, [target.columns, target.rows])
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
     return () => {
       cancelled = true
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- size is derived from settled
   }, [href, settled.columns, settled.rows])
 
   // The image arrives after the scroll view measured this item with only the alt text; its new height must reach it

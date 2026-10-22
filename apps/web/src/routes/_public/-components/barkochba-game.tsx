@@ -91,7 +91,9 @@ function loadState(): GameState {
 function saveState(state: GameState) {
   try {
     sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked
+  }
 }
 
 /** A failed turn whose message is already in the visitor's language. */
@@ -164,7 +166,9 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
     if (!barkochbaWidgetKey) {
       try {
         sessionStorage.removeItem(STATE_STORAGE_KEY)
-      } catch {}
+      } catch {
+        // sessionStorage can be blocked
+      }
       setHydrated(true)
       return
     }

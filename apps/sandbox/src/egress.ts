@@ -209,7 +209,7 @@ export function sendThroughEgress(port: number): (request: Request) => Promise<R
       response = await fetch(request, { proxy, redirect: "manual" })
     } catch (error) {
       // An https request's CONNECT the proxy refused (a private address) or couldn't open
-      if (error instanceof Error && /tunnel: 403/.test(error.message)) throw blocked()
+      if (error instanceof Error && error.message.includes("tunnel: 403")) throw blocked()
       const failed = error instanceof Error ? /tunnel: 502 (Bad Gateway: .*)/.exec(error.message) : null
       if (failed?.[1]) throw unreachable(failed[1])
       throw error

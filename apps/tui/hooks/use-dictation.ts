@@ -52,6 +52,7 @@ export function useDictation(
     return () => {
       cancelled = true
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- one stt instance per toggle, not per persona models change
   }, [listening])
 
   useEffect(() => () => stt.current?.stop(), [])

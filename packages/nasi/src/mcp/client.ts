@@ -2,6 +2,7 @@ import type { McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { capText } from "@kaja/shared/text"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+// oxlint-disable-next-line import/no-deprecated -- some servers only speak SSE
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
@@ -92,7 +93,8 @@ function createTransport(server: McpServerEntry, opts: McpConnectOptions) {
   }
   const init = { requestInit: { headers: server.headers }, ...(opts.fetch ? { fetch: opts.fetch } : {}) }
   return opts.transport === "sse"
-    ? new SSEClientTransport(new URL(server.url), init)
+    ? // oxlint-disable-next-line @typescript-eslint/no-deprecated, import/no-deprecated -- some servers only speak SSE
+      new SSEClientTransport(new URL(server.url), init)
     : new StreamableHTTPClientTransport(new URL(server.url), init)
 }
 

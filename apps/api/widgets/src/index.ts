@@ -10,14 +10,18 @@ function loadState(): StoredState {
   try {
     const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
     if (raw) return JSON.parse(raw)
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked or hold bad JSON; start fresh
+  }
   return { visitorId: createVisitorId() }
 }
 
 function saveState(state: StoredState) {
   try {
     sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked; the chat still works without it
+  }
 }
 
 function injectStyles() {

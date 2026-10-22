@@ -21,6 +21,7 @@
         "@aws-sdk/client-s3": "^3.1155.0",
         "@aws-sdk/s3-presigned-post": "^3.1155.0",
         "@aws-sdk/s3-request-presigner": "^3.1155.0",
+        "@hono/bun": "^1.0.1",
         "@hono/zod-openapi": "^1.6.3",
         "@kaja/nasi": "workspace:*",
         "@kaja/schema": "workspace:*",
@@ -55,7 +56,6 @@
         "@kaja/shared": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.32.1",
         "@sentry/bun": "^11.8.0",
-        "hono": "^4.13.13",
         "zod": "^4.6.7",
       },
     },
@@ -356,6 +356,8 @@
     "@fontsource/syne": ["@fontsource/syne@5.3.0", "", {}, "sha512-kRWNVsrdYw+08I4EM1SYPe2JovdTzUI0kMVALVRsKmjRdkrVoun1qddSlDAglz5J9LbgUpJSkWmw6BYnmKdGuw=="],
 
     "@grammyjs/types": ["@grammyjs/types@5.0.0", "", {}, "sha512-iq1Qrq1iPKkB8yAa0qSuIURMZOCuqTY5pWy5gHpCeL1oQ+GPadGhw/cDTVE8waJwuCzacUzuIjRv1sESvk7u7A=="],
+
+    "@hono/bun": ["@hono/bun@1.0.1", "", { "peerDependencies": { "hono": ">=4.13.9 || ^5.0.0-0" } }, "sha512-74m9j/JY6sPhjOnZZSSPFDRWWRVqO8jI7cDTrcjXP+qnlCMOu0BCLnjq31LrKsWGWW7SsRWDzqrf9vDfnwtStA=="],
 
     "@hono/node-server": ["@hono/node-server@2.1.5", "", { "peerDependencies": { "hono": "^4 || ^5.0.0-0" } }, "sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q=="],
 

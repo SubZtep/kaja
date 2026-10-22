@@ -96,7 +96,7 @@ function tomlValues(text: string): Values {
 }
 
 const jsonValues = (text: string): Values =>
-  new Map(Object.entries(JSON.parse(text) as Record<string, string>).map(([k, v]) => [k, String(v)]))
+  new Map(Object.entries(JSON.parse(text) as Record<string, string>).map(([k, v]) => [k, v]))
 
 const valuesOf = (text: string, json: boolean) => (json ? jsonValues(text) : tomlValues(text))
 

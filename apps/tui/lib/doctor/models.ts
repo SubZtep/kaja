@@ -63,7 +63,7 @@ type Deps = {
 /** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
 export async function defaultModelIo(): Promise<ModelIo> {
   const { askPick } = await import("./prompt")
-  return { interactive: Boolean(process.stdin.isTTY), askPick }
+  return { interactive: process.stdin.isTTY, askPick }
 }
 
 type ProbeResult = { model: CliResolvedModel; result: Awaited<ReturnType<typeof probeModel>> }

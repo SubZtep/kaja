@@ -123,7 +123,7 @@ function parseToml<T>(text: string, schema: z.ZodType<T>): T {
   try {
     data = Bun.TOML.parse(text)
   } catch (error) {
-    throw new Error(`invalid TOML (${error instanceof Error ? error.message : String(error)})`)
+    throw new Error(`invalid TOML (${error instanceof Error ? error.message : String(error)})`, { cause: error })
   }
   // No manifest names itself: an ability's name is its folder's, a persona's id its file's.
   if (data && typeof data === "object" && "name" in data)
@@ -374,7 +374,7 @@ export function parseDatasetManifest(text: string): Dataset {
   try {
     data = JSON.parse(text)
   } catch (error) {
-    throw new Error(`invalid JSON (${error instanceof Error ? error.message : String(error)})`)
+    throw new Error(`invalid JSON (${error instanceof Error ? error.message : String(error)})`, { cause: error })
   }
   const parsed = DatasetSchema.safeParse(data)
   if (!parsed.success) {

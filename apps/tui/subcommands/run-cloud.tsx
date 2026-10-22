@@ -136,7 +136,7 @@ export async function resolveToken(apiUrl: string): Promise<string> {
   } catch (error) {
     if (error instanceof SecretsAccessError) {
       const reason = error.cause instanceof Error ? error.cause.message : String(error.cause)
-      throw new Error(`${t("cli.secretsUnavailable")} (${reason})`)
+      throw new Error(`${t("cli.secretsUnavailable")} (${reason})`, { cause: error })
     }
     throw error
   }

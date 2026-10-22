@@ -476,7 +476,7 @@ describe("HTTP tools in the cloud", () => {
     await driver.handleMessage(1001, 55, "/new")
     await driver.handleMessage(1001, 55, "weather?")
     const placeholder = messages.find(message => message.text === "…")!
-    expect(edits.filter(edit => edit.id === placeholder.id).at(-1)!.text).toBe("Let me check.")
+    expect(edits.findLast(edit => edit.id === placeholder.id)!.text).toBe("Let me check.")
     expect(messages.at(-1)!.text).toBe("Sunny.")
     expect(edits.some(edit => edit.text.includes("Let me check.Sunny."))).toBe(false)
   })

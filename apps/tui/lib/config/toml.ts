@@ -12,7 +12,7 @@ export async function appendTomlSection(path: string, table: string, lines: stri
   const f = file(path)
   const text = (await f.exists()) ? await f.text() : ""
 
-  let parsed: Record<string, unknown> = {}
+  let parsed: Record<string, unknown>
   try {
     parsed = (TOML.parse(text) ?? {}) as Record<string, unknown>
   } catch {

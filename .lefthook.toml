@@ -3,7 +3,6 @@
   run = "bun commitlint --edit {1}"
 
 
-# Generators run first and stage their own outputs (stage_fixed only re-adds staged files matching the glob), then lint and typecheck see the regenerated tree
 [pre-commit]
 piped = true
 
@@ -25,7 +24,6 @@ piped = true
       ]
 
 
-      # One job for both env generators: run in parallel, their two `git add`s raced for .git/index.lock
       [[pre-commit.jobs.group.jobs]]
       run  = "bun generate:env && bun generate:env-types && git add apps/api/.env.example apps/web/.env.example apps/sandbox/.env.example apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts apps/sandbox/src/env.d.ts"
       glob = [
@@ -45,7 +43,6 @@ piped = true
       ]
 
 
-      # Other languages follow en-GB: new or changed English becomes a lorem placeholder until someone translates it
       [[pre-commit.jobs.group.jobs]]
       run  = "bun sync:locales --stage"
       glob = [
@@ -74,12 +71,10 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      # One chain, since parallel writers would race on the same files
       run         = "bun lint --fix --staged && bun fmt --staged"
       stage_fixed = true
 
 
-      # bun fmt ignores TOML, so this never shares files with the chain above
       [[pre-commit.jobs.group.jobs]]
       run         = "tombi format {staged_files} && tombi lint --error-on-warnings {staged_files}"
       glob        = "*.toml"
@@ -96,7 +91,6 @@ piped = true
   run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || lefthook install"
 
 
-# Checks run first; the locales job last, since it may commit translations and push them itself
 [pre-push]
 piped = true
 

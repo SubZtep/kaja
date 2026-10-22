@@ -44,7 +44,9 @@ export async function readSecretsLoose(): Promise<Partial<SecretsFile>> {
     if (!(await f.exists())) return {}
     const data = TOML.parse(await f.text())
     if (data && typeof data === "object") return data as Partial<SecretsFile>
-  } catch {}
+  } catch {
+    // unreadable secrets file: treated as empty
+  }
   return {}
 }
 

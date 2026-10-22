@@ -66,6 +66,7 @@ export type ToolOrigin = "official" | "community"
  * A tool an {@link Agent} can call, pairing the OpenAI function definition
  * with the local implementation that runs when the model calls it. A bare `Tool` is any tool, for the mixed lists hosts pass around.
  */
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any -- the default has to accept every tool's args
 export type Tool<Args = any> = {
   definition: ChatCompletionTool
   /**

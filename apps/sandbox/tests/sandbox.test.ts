@@ -72,7 +72,6 @@ function sandbox(
     stats: () => collectStats({ pool, egress }),
     running: () => pool.size
   }
-  let server: TunnelServer | undefined
   const tunnel = new SandboxTunnel({
     id: "test",
     info: {
@@ -88,7 +87,7 @@ function sandbox(
     },
     send: text => queueMicrotask(() => server?.receive(apiSandboxFrameSchema.parse(JSON.parse(text))))
   })
-  server = new TunnelServer(handler, frame =>
+  const server = new TunnelServer(handler, frame =>
     queueMicrotask(() => tunnel.receive(sandboxFrameSchema.parse(JSON.parse(JSON.stringify(frame)))))
   )
   return { pool, tunnel, server }

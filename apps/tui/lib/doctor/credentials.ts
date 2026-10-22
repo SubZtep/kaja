@@ -304,7 +304,7 @@ export async function runCredentialPass(
 
   const outcomes = await resolveCredentials(
     found,
-    { interactive: Boolean(process.stdin.isTTY), ask: askSecret },
+    { interactive: process.stdin.isTTY, ask: askSecret },
     outcome => print(outcomeLine(outcome)),
     offered
   )
