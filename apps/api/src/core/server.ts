@@ -26,9 +26,6 @@ await sandboxService.markAllOffline().catch(err => reportError("Couldn't reset t
 // Sync the ability catalog once at startup without holding up the server; failures are logged and recorded in its status.
 marketplaceService.sync().catch(() => {})
 
-if (env.MODEL_ALLOW_PRIVATE_URLS)
-  console.warn("MODEL_ALLOW_PRIVATE_URLS is on: cloud turns may call private model addresses")
-
 if (!env.USER_SECRET_KEY) {
   console.warn("USER_SECRET_KEY isn't set: admins can't save ability keys, and tools that need one are hidden")
 }

@@ -29,8 +29,6 @@ function linkCallbackData(action: "confirm" | "cancel", token: string): string {
 
 export type CreateCloudTelegramBotConfig = {
   botToken: string
-  /** Another Bot API server (a fake one in the E2E); unset, Telegram's. */
-  apiRoot?: string
 }
 
 /** Rows of inline buttons, or undefined for none. */
@@ -74,7 +72,7 @@ function commandsIn(locale: Locale) {
  * driver's tool approvals (`tool:*` callbacks); the driver never imports grammy.
  */
 export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
-  const bot = new Bot(config.botToken, config.apiRoot ? { client: { apiRoot: config.apiRoot } } : undefined)
+  const bot = new Bot(config.botToken)
 
   const driver = createCloudTelegramDriver({
     resolveLinkedUser: telegramUserId => telegramLinkService.resolveUser(telegramUserId),
@@ -142,9 +140,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     let dataUrls: string[]
     try {
       dataUrls = await Promise.all(
-        photos.map(photo =>
-          downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image, config.apiRoot)
-        )
+        photos.map(photo => downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image))
       )
     } catch (error) {
       reportError("Telegram photo download failed", error)

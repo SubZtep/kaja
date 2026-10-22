@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import type { z } from "zod"
-import { ApiEnvSchema, E2eEnvSchema, SandboxEnvSchema, TuiEnvSchema, WebEnvSchema } from "../packages/schema/env"
+import { ApiEnvSchema, SandboxEnvSchema, TuiEnvSchema, WebEnvSchema } from "../packages/schema/env"
 import { inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
@@ -9,8 +9,7 @@ const targets = [
   { schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/src/env.d.ts") },
   { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/src/env.d.ts") },
   { schema: TuiEnvSchema, outPath: join(rootDir, "apps/tui/env.d.ts") },
-  { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/src/env.d.ts") },
-  { schema: E2eEnvSchema, outPath: join(rootDir, "apps/e2e/src/env.d.ts") }
+  { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/src/env.d.ts") }
 ]
 
 function renderEnvDts(schema: z.ZodObject<z.ZodRawShape>): string {

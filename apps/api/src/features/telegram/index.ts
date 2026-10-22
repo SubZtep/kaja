@@ -17,7 +17,7 @@ export function getBotUsername(): string | undefined {
  */
 export function createTelegramBotService() {
   if (!env.TELEGRAM_BOT_TOKEN) return undefined
-  const instance = createCloudTelegramBot({ botToken: env.TELEGRAM_BOT_TOKEN, apiRoot: env.TELEGRAM_API_ROOT })
+  const instance = createCloudTelegramBot({ botToken: env.TELEGRAM_BOT_TOKEN })
   bot = instance
 
   return {
