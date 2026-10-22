@@ -46,7 +46,7 @@ jobs:
           version: ${{ steps.tools.outputs.biome }}
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@d8f3250344c4e9107b91c02bc11efcf72baf5793
+        uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
         with:
           version: ${{ steps.tools.outputs.tombi }}
 
@@ -144,7 +144,7 @@ jobs:
           --health-cmd pg_isready --health-start-period 3s
           --health-retries 5
       storage:
-        image: rustfs/rustfs:1.0.1
+        image: rustfs/rustfs:1.0.3
         env:
           RUSTFS_VOLUMES: /data
           RUSTFS_ADDRESS: 0.0.0.0:9000
@@ -183,7 +183,7 @@ jobs:
         run: echo "version=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@d8f3250344c4e9107b91c02bc11efcf72baf5793
+        uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
         with:
           version: ${{ steps.tombi.outputs.version }}
 

@@ -42,7 +42,7 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   ```toml
   # abilities/time/mcp.toml
   transport = "stdio"
-  package = { pypi = "mcp-server-time@2026.8.18", docker = "mcp/time@sha256:9c46a9…" }
+  package = { pypi = "mcp-server-time@2026.10.19", docker = "mcp/time@sha256:9c46a9…" }
   args = []                           # the server's own arguments, after the package
   ```
 

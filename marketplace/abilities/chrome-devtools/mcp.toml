@@ -9,7 +9,7 @@ description    = "Browse web pages in a headless Chrome: read, screenshot, and c
 transport      = "stdio"
 # Keep the version in step with CHROME_DEVTOOLS_MCP_VERSION in apps/sandbox/Dockerfile.
 package        = {
-  npm = "chrome-devtools-mcp@1.10.1"
+  npm = "chrome-devtools-mcp@1.12.0"
 }
 # Google Chrome, or a Chromium it points the server at: without either, Kaja offers to run this ability on a sandbox instead.
 requires       = [

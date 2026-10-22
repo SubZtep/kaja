@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.3 AS builder
+FROM oven/bun:1.4.4 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY patches ./patches
@@ -17,9 +17,9 @@ COPY apps/sandbox ./apps/sandbox
 RUN bun run --filter @kaja/sandbox build
 
 # The Chrome for Testing headless shell chrome-devtools-mcp's Puppeteer is tested with (amd64 only: no Linux arm64 builds; 149+ for overrides.json's URL allowlist).
-FROM node:26.12.0-trixie-slim AS chrome
-ARG CHROME_HEADLESS_SHELL_VERSION=155.0.8059.84
-ARG PUPPETEER_BROWSERS_VERSION=3.2.5
+FROM node:26.12.1-trixie-slim AS chrome
+ARG CHROME_HEADLESS_SHELL_VERSION=156.0.8078.47
+ARG PUPPETEER_BROWSERS_VERSION=3.2.6
 RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
 # No install scripts; the browsers CLI stays in /tmp, only the shell is kept.
 RUN npm install --prefix /tmp/browsers --ignore-scripts --no-audit --no-fund \
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
   && mkdir -p /opt/lib && cp -a gbm/usr/lib/x86_64-linux-gnu/libgbm.so.1* /opt/lib/
 
 # One runtime for every stdio MCP server: node/npx for npm packages, uv/uvx with python3 for PyPI ones, bun/bunx for commands.
-FROM node:26.12.0-trixie-slim AS runner
+FROM node:26.12.1-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -43,7 +43,7 @@ RUN apt-get update \
     python3 \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
-COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /uvx /usr/local/bin/
 COPY --from=chrome /opt/chrome /opt/chrome
 COPY --from=chrome /opt/lib/ /usr/local/lib/
 RUN ln -s bun /usr/local/bin/bunx && ldconfig
@@ -60,13 +60,13 @@ VOLUME /data
 # chrome-devtools-mcp is installed once, for every user's uid to run as it is (overrides.json points at its bin); the
 # version must match the Chrome headless shell above (bump with CHROME_HEADLESS_SHELL_VERSION). Not through bunx: bun's
 # cache can't be shared between uids. The time server is fetched into the shared uv cache, so its first start is offline.
-ARG CHROME_DEVTOOLS_MCP_VERSION=1.11.0
+ARG CHROME_DEVTOOLS_MCP_VERSION=1.12.0
 RUN npm install --prefix /opt/mcp --ignore-scripts --no-audit --no-fund --omit=dev \
     "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" \
   && npm cache clean --force \
   && /opt/mcp/node_modules/.bin/chrome-devtools-mcp --version
 # The time manifest's pinned PyPI version, so its uvx finds this copy.
-ARG MCP_SERVER_TIME_VERSION=2026.10.10
+ARG MCP_SERVER_TIME_VERSION=2026.10.19
 USER node
 RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
   uvx "mcp-server-time@${MCP_SERVER_TIME_VERSION}" --help >/dev/null
