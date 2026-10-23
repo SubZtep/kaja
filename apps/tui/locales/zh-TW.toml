@@ -305,6 +305,7 @@ quitAgain = "仍在執行：再按一次 Esc 離開"
 cancel    = "取消"
 decline   = "拒絕"
 close     = "關閉"
+command   = "[zh-TW] lorem"
 
 
 [viewport]
@@ -312,13 +313,14 @@ scrolledBack = "↑ 歷史紀錄的 {percent}%"
 
 
 [confirmCommand]
-yes         = "是，執行"
-yesSession  = "是，本次對話不再詢問"
-no          = "否，取消"
-running     = "執行中…"
-truncated   = "… 還有 {count} 行"
-inputLocked = "正在等待你在上方的回答"
-toolRequest = "{name} 想要送出這個請求："
+yes          = "是，執行"
+no           = "否，取消"
+running      = "執行中…"
+truncated    = "… 還有 {count} 行"
+placeholder  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+commandTitle = "[zh-TW] lorem ipsum dolor sit"
+requestTitle = "[zh-TW] lorem ipsum dolor sit"
+toolRequest  = "{name} 想要送出這個請求："
 
 
 [secretPrompt]
@@ -337,6 +339,7 @@ intro    = "輸入訊息後按 Enter 送出。按 Esc 離開。"
 persona  = "切換角色"
 copy     = "複製最新回覆（或點選任一則回覆來複製）"
 expand   = "展開或收合長程式碼"
+command  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
 help     = "顯示這份說明"
 scroll   = "捲動聊天"
 newline  = "在訊息中換行"

@@ -24,10 +24,18 @@ import { loadPersonas } from "../personas/personas"
 const FILE_BUILTINS = ["read_file", "list_files", "view_image"]
 const SHELL = "run_command"
 
+/** The user's answer to an approval: yes or no, or what they wrote instead (a no that tells the agent why). */
+export type ApprovalAnswer = boolean | { feedback: string }
+
 /** What a run asks the user before it goes ahead: a shell command or a tool's request summary; resolves to their answer. */
 export type Approve = (
   request: { kind: "command"; command: string } | { kind: "tool"; name: string; summary: string }
-) => Promise<boolean>
+) => Promise<ApprovalAnswer>
+
+async function declined(answer: ApprovalAnswer, text: string): Promise<Omit<NasiToolResult, "id">> {
+  const { notApprovedPrompt } = await import("@kaja/nasi")
+  return { text: typeof answer === "object" ? notApprovedPrompt(answer.feedback) : text, status: "declined" }
+}
 
 /** This computer as a cloud turn's client: what it declares with every turn, and how it runs a paused call. */
 export type Computer = {
@@ -179,8 +187,10 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
   const checked = checkToolArgs(target, args)
   if (!checked.ok) return { text: `Error: ${checked.error}`, status: "error" }
   const summary = target.approval?.(checked.args)
-  if (summary !== undefined && !(await approve({ kind: "tool", name: call.name, summary })))
-    return { text: "User declined this request.", status: "declined" }
+  if (summary !== undefined) {
+    const answer = await approve({ kind: "tool", name: call.name, summary })
+    if (answer !== true) return declined(answer, "User declined this request.")
+  }
   try {
     const result = await target.execute(checked.args)
     if (typeof result === "string") return { text: result }
@@ -243,7 +253,9 @@ async function runCommandHere(args: Record<string, unknown>, approve: Approve): 
   if (!command) return { text: "Invalid run_command arguments.", status: "error" }
   const { loadSafeCommands } = await import("../config/commands")
   const safe = isSafeCommand(command, await loadSafeCommands())
-  if (!safe && !(await approve({ kind: "command", command })))
-    return { text: "User declined to run this command.", status: "declined" }
+  if (!safe) {
+    const answer = await approve({ kind: "command", command })
+    if (answer !== true) return declined(answer, "User declined to run this command.")
+  }
   return { text: await runShellCommand(command) }
 }

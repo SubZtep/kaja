@@ -305,6 +305,7 @@ quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
 close     = "關掉"
+command   = "[nan-TW] lorem"
 
 
 [viewport]
@@ -312,13 +313,14 @@ scrolledBack = "↑ 歷史的 {percent}%"
 
 
 [confirmCommand]
-yes         = "好，執行"
-yesSession  = "好，這擺工作階段毋免閣問"
-no          = "毋通，取消"
-running     = "執行中…"
-truncated   = "… 猶有 {count} 逝"
-inputLocked = "咧等你頂面个回答"
-toolRequest = "{name} 想欲送這个請求："
+yes          = "好，執行"
+no           = "毋通，取消"
+running      = "執行中…"
+truncated    = "… 猶有 {count} 逝"
+placeholder  = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+commandTitle = "[nan-TW] lorem ipsum dolor sit"
+requestTitle = "[nan-TW] lorem ipsum dolor sit"
+toolRequest  = "{name} 想欲送這个請求："
 
 
 [secretPrompt]
@@ -337,6 +339,7 @@ intro    = "拍一則訊息，按 Enter 就送出。按 Esc 就退出。"
 persona  = "切換角色"
 copy     = "拷貝上新的回覆（抑是點任何一則回覆來拷貝）"
 expand   = "展開抑是收起長的程式碼"
+command  = "[nan-TW] lorem ipsum dolor sit amet consectetur"
 help     = "顯示這个說明"
 scroll   = "捲動聊天"
 newline  = "訊息內底換行"

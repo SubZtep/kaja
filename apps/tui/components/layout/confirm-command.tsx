@@ -1,61 +1,57 @@
-import { Box, Text } from "ink"
+import type { PersonaModels } from "@kaja/schema/cli"
 import { isDangerousCommand } from "../../lib/agent/command-risk"
 import { t } from "../../lib/i18n"
-import { SelectMenu } from "../elem/select-menu"
 import { useKajaTheme } from "../theme"
-
-/** How long an approval lasts: the rest of this session. Unset means this one call. */
-export type ApprovalScope = "session"
+import { Prompt, type PromptSpec } from "./prompt"
 
 /**
- * Yes/No gate shown in place of the input field while a run_command call, or an HTTP tool call that changes something
- * (`kind: "tool"`), is awaiting approval. Mounted only while unresolved — selecting either option hands off to the
- * caller, which feeds the outcome back to the agent. While `running` (approved and the command is executing) the menu
- * is replaced by a status line: the command can take a while and Menu would otherwise sit there fully interactive with
- * no sign anything happened.
+ * Approval gate shown in place of the input field while a run_command call, or an HTTP tool call that changes something
+ * (`kind: "tool"`), is awaiting approval: yes or no, or write something instead, which declines the call and tells the
+ * agent why (`feedback`). Mounted only while unresolved: the outcome goes to the caller, which feeds it back to the
+ * agent. While `running` (approved and the command is executing) the menu is replaced by a status line: the command can
+ * take a while and the menu would otherwise sit there fully interactive with no sign anything happened.
  *
- * It doesn't repeat the command: that is the last row of the chat (a capped, highlighted preview, see CodePreview), so
- * a long generated script can't push the menu below the terminal's visible rows.
+ * It doesn't show the command, which can be long: the app's key bar offers it in a modal (see CommandModal).
  */
 export function ConfirmCommand({
   command,
   description,
   kind = "command",
   running,
-  scopes = false,
+  speaking,
+  personaModels,
   onResolve
 }: Readonly<{
-  /** The shell command, or for `kind: "tool"` the request summary; only used to judge the risk, the chat shows it. */
+  /** The shell command, or for `kind: "tool"` the request summary; only used to judge the risk. */
   command: string
   description: string
   kind?: "command" | "tool"
   running: boolean
-  /** Also offers to approve the tool for the rest of the session (cloud tool calls). */
-  scopes?: boolean
-  onResolve: (approved: boolean, scope?: ApprovalScope) => void
+  speaking?: boolean
+  personaModels?: PersonaModels
+  /** `feedback` is what the user wrote instead of answering, with `approved` false. */
+  onResolve: (approved: boolean, feedback?: string) => void
 }>) {
   const dangerous = kind === "command" && isDangerousCommand(command)
   const { danger, warning } = useKajaTheme()
-  const tone = dangerous ? danger() : warning()
-  const items: { label: string; approved: boolean; scope?: ApprovalScope }[] = [
-    { label: t("confirmCommand.yes"), approved: true },
-    ...(scopes ? [{ label: t("confirmCommand.yesSession"), approved: true, scope: "session" as const }] : []),
-    { label: t("confirmCommand.no"), approved: false }
-  ]
+  const spec: PromptSpec = {
+    title: dangerous ? `⚠ ${description}` : description,
+    tone: dangerous ? danger() : warning(),
+    options: [
+      { kind: "choice", id: "yes", label: t("confirmCommand.yes") },
+      { kind: "choice", id: "no", label: t("confirmCommand.no") }
+    ],
+    placeholder: t("confirmCommand.placeholder")
+  }
 
   return (
-    <Box flexDirection="column" flexShrink={0} width="100%">
-      <Text {...tone}>{dangerous ? `⚠ ${description}` : description}</Text>
-      {running ? (
-        <Text dimColor>{t("confirmCommand.running")}</Text>
-      ) : (
-        <SelectMenu
-          items={items.map(item => item.label)}
-          onSelect={index => onResolve(items[index]!.approved, items[index]!.scope)}
-          onClose={() => onResolve(false)}
-        />
-      )}
-      <Text dimColor>{`> ${t("confirmCommand.inputLocked")}`}</Text>
-    </Box>
+    <Prompt
+      spec={spec}
+      busy={running ? t("confirmCommand.running") : undefined}
+      speaking={speaking}
+      personaModels={personaModels}
+      onResolve={result => (result.kind === "text" ? onResolve(false, result.text) : onResolve(result.id === "yes"))}
+      onDismiss={() => onResolve(false)}
+    />
   )
 }

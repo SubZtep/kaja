@@ -305,6 +305,7 @@ quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
 close     = "Close"
+command   = "[en-US] lorem"
 
 
 [viewport]
@@ -312,13 +313,14 @@ scrolledBack = "↑ {percent}% of the history"
 
 
 [confirmCommand]
-yes         = "Yes, run it"
-yesSession  = "Yes, and don't ask again this session"
-no          = "No, cancel"
-running     = "Running…"
-truncated   = "… {count} more lines"
-inputLocked = "Waiting for your answer above"
-toolRequest = "{name} wants to send this request:"
+yes          = "Yes, run it"
+no           = "No, cancel"
+running      = "Running…"
+truncated    = "… {count} more lines"
+placeholder  = "[en-US] lorem ipsum dolor sit amet consectetur"
+commandTitle = "[en-US] lorem ipsum dolor sit"
+requestTitle = "[en-US] lorem ipsum dolor sit"
+toolRequest  = "{name} wants to send this request:"
 
 
 [secretPrompt]
@@ -337,6 +339,7 @@ intro    = "Type a message and press Enter to send it. Esc quits."
 persona  = "Switch persona"
 copy     = "Copy the latest reply (or click any reply to copy it)"
 expand   = "Expand or collapse long code"
+command  = "[en-US] lorem ipsum dolor sit amet consectetur"
 help     = "Show this help"
 scroll   = "Scroll the chat"
 newline  = "New line in your message"

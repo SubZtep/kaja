@@ -26,7 +26,8 @@ import { CodeViewContext } from "../elem/code-expand"
 import { Backdrop, ModalHost } from "../elem/modal"
 import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
-import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
+import { CommandModal } from "./command-modal"
+import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
 import { HelpModal } from "./help-modal"
 import { KeyBar, type KeyBarEntry } from "./key-bar"
@@ -46,7 +47,7 @@ type Capabilities = { persona: boolean; voice: boolean }
 type BottomChromeKey = "input" | "running" | "confirm" | "modal"
 
 /** The window over the chat, if any; more are added here. */
-type ModalName = "help" | "persona"
+type ModalName = "help" | "persona" | "command"
 
 function getBottomChromeKey(modalOpen: boolean, pendingCommand: unknown, runningCommand: boolean): BottomChromeKey {
   if (modalOpen) return "modal"
@@ -146,8 +147,7 @@ function Chrome({
   switchPersona,
   pendingCommand,
   runningCommand = false,
-  resolvePending,
-  approvalScopes = false
+  resolvePending
 }: Readonly<{
   /** Where the agent runs, shown as a badge in the header. */
   mode: "local" | "cloud"
@@ -176,9 +176,8 @@ function Chrome({
   /** A run_command or an HTTP tool call waiting on approval; `command` is the shell command or the request summary. */
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
-  resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
-  /** Offer "for this session" on a tool approval (cloud). */
-  approvalScopes?: boolean
+  /** `feedback` is what the user wrote instead of answering: a decline that tells the agent why. */
+  resolvePending?: (approved: boolean, feedback?: string) => Promise<void>
 }>) {
   const {
     thinking,
@@ -221,6 +220,12 @@ function Chrome({
       label: t("keybar.expand"),
       when: codeView.canExpand,
       run: codeView.toggle
+    },
+    {
+      letter: "o",
+      label: t("keybar.command"),
+      when: showConfirm && !runningCommand,
+      run: () => setModal("command")
     }
   ]
   useModifierKeys(
@@ -271,8 +276,9 @@ function Chrome({
                 description={pendingCommand.description}
                 kind={pendingCommand.kind}
                 running={runningCommand}
-                scopes={approvalScopes && pendingCommand.kind === "tool"}
-                onResolve={(approved, scope) => resolvePending(approved, scope)}
+                speaking={speaking}
+                personaModels={personaModels}
+                onResolve={(approved, feedback) => resolvePending(approved, feedback)}
               />
             )}
             {!showConfirm && (
@@ -296,6 +302,9 @@ function Chrome({
               onOpenDocs={openDocs}
               onClose={() => setModal(null)}
             />
+          )}
+          {modal === "command" && pendingCommand && (
+            <CommandModal command={pendingCommand.command} kind={pendingCommand.kind} onClose={() => setModal(null)} />
           )}
           {modal === "persona" && (
             <PersonaPicker
@@ -392,10 +401,10 @@ function LocalApp({
     !pending && (lastEvent?.type === "confirm_command" || lastEvent?.type === "confirm_tool") ? lastEvent : undefined
   const pendingCommand = pendingEvent && confirmPrompt(pendingEvent)
   const resolvePending = pendingEvent
-    ? (approved: boolean) =>
+    ? (approved: boolean, feedback?: string) =>
         pendingEvent.type === "confirm_command"
-          ? resolveCommand(pendingEvent.command, approved)
-          : resolveToolApproval(pendingEvent.name, pendingEvent.arguments, approved)
+          ? resolveCommand(pendingEvent.command, approved, feedback)
+          : resolveToolApproval(pendingEvent.name, pendingEvent.arguments, approved, feedback)
     : undefined
   const provider = models.find(m => m.model === displayModel)?.provider
 
@@ -463,8 +472,9 @@ function CloudApp({
   // A call on this computer asks while its turn is still running; a cloud approval only once the turn ended.
   const cloudEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
   const pendingEvent = localApproval?.event ?? cloudEvent
-  let resolvePending: ((approved: boolean) => Promise<void>) | undefined
-  if (localApproval) resolvePending = approved => Promise.resolve(localApproval.resolve(approved))
+  let resolvePending: ((approved: boolean, feedback?: string) => Promise<void>) | undefined
+  if (localApproval)
+    resolvePending = (approved, feedback) => Promise.resolve(localApproval.resolve(feedback ? { feedback } : approved))
   else if (cloudEvent) resolvePending = resolveToolApproval
 
   return (
@@ -487,7 +497,6 @@ function CloudApp({
       pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
       resolvePending={resolvePending}
-      approvalScopes={!localApproval}
     />
   )
 }

@@ -5,7 +5,6 @@ import type { ErrorCategory } from "../lib/agent/error-category"
 import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
 import type { DisplayEvent } from "../lib/tool-summary"
-import { CodePreview } from "./elem/code-preview"
 import { CopyableBlock } from "./elem/copyable-block"
 import { ImageRow } from "./elem/image-row"
 import Markdown from "./elem/markdown"
@@ -111,10 +110,10 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
           <Said dot={theme.userText()}>{item.question}</Said>
         </CopyableBlock>
       )
+    // Can be long: the approval prompt offers it in a modal instead
     case "confirm_command":
-      return <CodePreview command={item.command} tone={theme.warning()} />
     case "confirm_tool":
-      return <CodePreview command={item.summary} kind="tool" tone={theme.warning()} />
+      return null
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "compacted":

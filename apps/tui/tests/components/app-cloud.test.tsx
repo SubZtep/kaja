@@ -292,7 +292,8 @@ test("yolo approves a cloud tool approval itself and carries on, without showing
   await t.waitUntilExit()
 })
 
-test("a turn waiting on this computer runs the call here, asking first, and resumes with its result", async () => {
+/** A cloud turn that pauses for `read_file` on this computer, with the computer's `approve` recorded in `ran`. */
+function mountPausedComputer() {
   const bodies: Record<string, unknown>[] = []
   const pausedTurn = () => {
     const body =
@@ -319,35 +320,63 @@ test("a turn waiting on this computer runs the call here, asking first, and resu
     return fetchWithBodies(url, init)
   }) as typeof fetch
 
-  const ran: { name: string; approved: boolean }[] = []
+  const ran: { name: string; answer: boolean | { feedback: string } }[] = []
   const computer = {
     tools: [{ name: "read_file", description: "Reads a file", parameters: { type: "object" } }],
     skills: [],
     personas: [],
     run: async (
       call: { id: string; name: string },
-      approve: (request: { kind: "tool"; name: string; summary: string }) => Promise<boolean>
+      approve: (request: { kind: "tool"; name: string; summary: string }) => Promise<boolean | { feedback: string }>
     ) => {
-      const approved = await approve({ kind: "tool", name: call.name, summary: "read /etc/hostname" })
-      ran.push({ name: call.name, approved })
-      return { id: call.id, text: approved ? "kaja" : "User declined this request." }
+      const answer = await approve({ kind: "tool", name: call.name, summary: "read /etc/hostname" })
+      ran.push({ name: call.name, answer })
+      return { id: call.id, text: answer === true ? "kaja" : "User declined this request." }
     },
     close: async () => {}
   }
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" computer={computer} />)
+  return { t, bodies, ran, computer }
+}
+
+test("a turn waiting on this computer runs the call here, asking first, and resumes with its result", async () => {
+  const { t, bodies, ran, computer } = mountPausedComputer()
   await t.tick()
   await t.press("what's my hostname?")
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
+  expect(t.lastFrame()).toContain("read_file wants to send this request")
+  expect(t.lastFrame()).not.toContain("read /etc/hostname")
+
+  await t.press("\x1bo") // Alt+O: the request, in a modal
   expect(t.lastFrame()).toContain("read /etc/hostname")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("read /etc/hostname")
 
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
-  expect(ran).toEqual([{ name: "read_file", approved: true }])
+  expect(ran).toEqual([{ name: "read_file", answer: true }])
   expect(bodies[0]?.clientTools).toEqual(computer.tools)
   expect(bodies[1]?.toolResults).toEqual([{ id: "c1", text: "kaja" }])
   expect(bodies[1]?.message).toBeUndefined()
   expect(t.lastFrame()).toContain("your host is kaja")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("writing instead of answering declines the call here and shows what was written", async () => {
+  const { t, ran } = mountPausedComputer()
+  await t.tick()
+  await t.press("what's my hostname?")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+
+  await t.press("use hostnamectl")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(ran).toEqual([{ name: "read_file", answer: { feedback: "use hostnamectl" } }])
+  expect(t.output()).toContain("use hostnamectl")
 
   t.unmount()
   await t.waitUntilExit()

@@ -21,6 +21,7 @@ export function SelectMenu({
   visibleCount,
   preview,
   closeOnBackspace = true,
+  active = true,
   onFocus,
   onSelect,
   onClose
@@ -42,6 +43,8 @@ export function SelectMenu({
   preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean
+  /** Takes keys; off while something else (a text field beside it) has them, and the rows dim to show it. */
+  active?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
   onFocus?: (index: number) => void
   onSelect: (index: number) => void
@@ -74,15 +77,18 @@ export function SelectMenu({
     else if (next >= from + visible) setFrom(next - visible + 1)
   }
 
-  useKey((_input, key) => {
-    if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
-      onClose?.()
-      return
-    }
-    if (key.downArrow) move(1)
-    if (key.upArrow) move(-1)
-    if (key.return) onSelect(focused)
-  })
+  useKey(
+    (_input, key) => {
+      if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
+        onClose?.()
+        return
+      }
+      if (key.downArrow) move(1)
+      if (key.upArrow) move(-1)
+      if (key.return) onSelect(focused)
+    },
+    { isActive: active }
+  )
 
   const { accent, previewRow, previewText } = useKajaTheme()
 
@@ -116,12 +122,17 @@ export function SelectMenu({
           >
             <Box gap={1}>
               {isFocused && (
-                <Text bold {...(preview ? previewText() : {})}>
+                <Text bold dimColor={!active} {...(preview ? previewText() : {})}>
                   ❯
                 </Text>
               )}
               {scrolls && <Text dimColor>{arrow}</Text>}
-              <Text bold={isFocused} {...(accentRow ? accent() : {})} {...(isFocused && preview ? previewText() : {})}>
+              <Text
+                bold={isFocused}
+                dimColor={!active}
+                {...(accentRow ? accent() : {})}
+                {...(isFocused && preview ? previewText() : {})}
+              >
                 {item}
               </Text>
             </Box>

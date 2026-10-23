@@ -305,6 +305,7 @@ quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
 close     = "Bezárás"
+command   = "[hu-HU] lorem"
 
 
 [viewport]
@@ -312,13 +313,14 @@ scrolledBack = "↑ az előzmények {percent}%-a"
 
 
 [confirmCommand]
-yes         = "Igen, futtasd"
-yesSession  = "Igen, és ebben a munkamenetben ne kérdezz újra"
-no          = "Nem, mégse"
-running     = "Fut…"
-truncated   = "… még {count} sor"
-inputLocked = "Várom a válaszodat fent"
-toolRequest = "A(z) {name} ezt a kérést küldené:"
+yes          = "Igen, futtasd"
+no           = "Nem, mégse"
+running      = "Fut…"
+truncated    = "… még {count} sor"
+placeholder  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+commandTitle = "[hu-HU] lorem ipsum dolor sit"
+requestTitle = "[hu-HU] lorem ipsum dolor sit"
+toolRequest  = "A(z) {name} ezt a kérést küldené:"
 
 
 [secretPrompt]
@@ -337,6 +339,7 @@ intro    = "Írj üzenetet, és az Enterrel küldd el. Az Esc kilép."
 persona  = "Perszóna váltása"
 copy     = "Legutóbbi válasz másolása (vagy kattints bármelyik válaszra a másoláshoz)"
 expand   = "Hosszú kód kibontása vagy összecsukása"
+command  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
 help     = "Ennek a súgónak a megjelenítése"
 scroll   = "Chat görgetése"
 newline  = "Új sor az üzenetben"

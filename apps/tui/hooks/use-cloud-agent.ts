@@ -2,7 +2,7 @@ import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStr
 import type { NasiClientCall, NasiInfoResponse, NasiToolResult, NasiTurnRequest } from "@kaja/schema/nasi"
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { Approve, Computer } from "../lib/cloud/computer"
+import type { ApprovalAnswer, Approve, Computer } from "../lib/cloud/computer"
 import { fitTurnBody } from "../lib/cloud/turn-body"
 import { getLanguage, t } from "../lib/i18n"
 import { withDescription } from "../lib/image/rows"
@@ -52,16 +52,13 @@ export type CloudTimelineEvent =
 /** A call on this computer waiting for the user's answer: its prompt, and how to give it. */
 export type LocalApproval = {
   event: Extract<CloudTimelineEvent, { type: "confirm_command" | "confirm_tool" }>
-  resolve: (approved: boolean) => void
+  resolve: (answer: ApprovalAnswer) => void
 }
 
-/** How the user answered a `confirm_tool`: once, for the rest of the session, or no. */
-export type CloudApproval = "approve" | "approve_session" | "decline"
+/** How the user answered a `confirm_tool`. */
+export type CloudApproval = "approve" | "decline"
 
-function approvalAnswer(approved: boolean, scope?: "session"): CloudApproval {
-  if (!approved) return "decline"
-  return scope === "session" ? "approve_session" : "approve"
-}
+const approvalAnswer = (approved: boolean): CloudApproval => (approved ? "approve" : "decline")
 
 export type CloudPartialMessage = { reasoning: string; content: string }
 
@@ -184,12 +181,13 @@ export function useCloudAgent({
           ? { type: "confirm_command", command: request.command, description: "" }
           : { type: "confirm_tool", id: "", name: request.name, arguments: "", summary: request.summary }
       pushEvent(event)
-      return new Promise<boolean>(resolve =>
+      return new Promise<ApprovalAnswer>(resolve =>
         setLocalApproval({
           event,
-          resolve: approved => {
+          resolve: answer => {
             setLocalApproval(null)
-            resolve(approved)
+            if (typeof answer === "object") pushEvent({ type: "user", text: answer.feedback })
+            resolve(answer)
           }
         })
       )
@@ -393,11 +391,12 @@ export function useCloudAgent({
 
   /**
    * Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent
-   * back.
+   * back. What the user wrote instead goes as a plain message, which the server takes as a skipped call plus that text.
    */
   const resolveToolApproval = useCallback(
-    (approved: boolean, scope?: "session") => runTurns({ approval: approvalAnswer(approved, scope) }),
-    [runTurns]
+    (approved: boolean, feedback?: string) =>
+      feedback ? send(feedback) : runTurns({ approval: approvalAnswer(approved) }),
+    [runTurns, send]
   )
 
   // Mirrors useAgent's currentTool: derived from the last event rather than tracked separately, since a later event naturally supersedes it.

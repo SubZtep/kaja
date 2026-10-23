@@ -10,6 +10,7 @@ function helpRows(modifier: string, persona: boolean) {
     ...(persona ? [{ key: `${modifier}+P`, label: t("help.persona") }] : []),
     { key: `${modifier}+R`, label: t("help.copy") },
     { key: `${modifier}+E`, label: t("help.expand") },
+    { key: `${modifier}+O`, label: t("help.command") },
     { key: `${modifier}+L`, label: t("help.help") },
     { key: "PgUp/PgDn", label: t("help.scroll") },
     { key: "Shift+Enter", label: t("help.newline") }

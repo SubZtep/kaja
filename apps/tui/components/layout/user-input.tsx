@@ -1,6 +1,6 @@
 import type { PersonaModels } from "@kaja/schema/cli"
 import { Box, type BoxProps, useWindowSize } from "ink"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
 import { useKey } from "../../hooks/use-key"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
@@ -41,7 +41,9 @@ export function UserInput({
   asking = false,
   send,
   history: initialHistory,
-  personaModels
+  personaModels,
+  placeholder,
+  onDraft
 }: Readonly<{
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
@@ -53,11 +55,16 @@ export function UserInput({
   history?: string[]
   /** Active persona's per-task model overrides, if any — passed through to dictation's STT resolution. */
   personaModels?: PersonaModels
+  /** Hint shown while empty; defaults to the plain chat one. */
+  placeholder?: string
+  /** Called with the text whenever it changes (typed, dictated, recalled or cleared by sending). */
+  onDraft?: (draft: string) => void
 }>) {
   const [input, setInput] = useState("")
   const [mic, setMic] = useState(false)
   const { columns } = useWindowSize()
   const history = usePromptHistory(initialHistory ?? [])
+  useEffect(() => onDraft?.(input), [input, onDraft])
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
     history.markEdited()
@@ -110,7 +117,7 @@ export function UserInput({
           showCursor={!mic}
           blinkMs={CURSOR_BLINK_MS}
           blinkPaused={!windowFocused}
-          placeholder={t("input.placeholder")}
+          placeholder={placeholder ?? t("input.placeholder")}
           prefix={prefix}
           prefixCols={PREFIX_COLS}
           columns={fieldColumns}
