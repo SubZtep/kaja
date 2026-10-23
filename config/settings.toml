@@ -12,11 +12,13 @@ locale   = "en-GB"
 # your own provider in models.toml). Written by the setup wizard; `--cloud`/`--local`
 # override it for a single run. Without it, a usable chat model means local.
 # mode = "local"
-# Modifier key for the help/persona hotkeys: "alt" (default) or "ctrl". No choice is
-# universal in a terminal — alt can type special characters instead of acting as a
-# modifier on some macOS terminals, ctrl can collide with host-app shortcuts (e.g. VS
-# Code's integrated terminal reserves several ctrl+<letter> combos). Pick whichever
-# works cleanly in your terminal.
+# Modifier key for the help/persona hotkeys: "alt" (default), "ctrl", "meta" (the Super
+# key; needs a terminal with the kitty keyboard protocol) or two at once: "ctrl+alt",
+# "ctrl+meta", "alt+meta". No choice is universal in a terminal — alt can type special
+# characters instead of acting as a modifier on some macOS terminals, ctrl can collide
+# with host-app shortcuts (e.g. VS Code's integrated terminal reserves several
+# ctrl+<letter> combos), and a window manager may grab a combo before the terminal sees
+# it. Pick whichever works cleanly in your terminal.
 # hotkeyModifier = "alt"
 # Colour theme: "auto" (default) asks the terminal for its background colour and picks
 # "dark" or "light" to match, then follows the terminal when it switches (where it reports

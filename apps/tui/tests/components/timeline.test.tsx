@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CodeViewContext } from "../../components/elem/code-expand"
+import { CodePreview } from "../../components/elem/code-preview"
 import { TimelineItem } from "../../components/timeline"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { renderForTest } from "../test-utils"
@@ -108,26 +109,25 @@ test("tool calls render as a labelled row, and a summary as one line", async () 
   await t.waitUntilExit()
 })
 
-test("an approval command is cut to the preview lines, and all of it shows once expanded", async () => {
+test("an approval's command stays out of the chat: the prompt offers it in a modal", async () => {
   const command = Array.from({ length: 12 }, (_, i) => `echo line${i}`).join("\n")
-  const item = { type: "confirm_command", command, description: "run" } as const
-  const t = renderForTest(<TimelineItem item={item} thinking={false} />)
-  await t.tick()
-  expect(t.output()).toContain("line4")
-  expect(t.output()).not.toContain("line5")
-  expect(t.output()).toContain("7 more")
-  t.rerender(
-    <CodeViewContext.Provider value={{ expanded: true, lines: 5 }}>
-      <TimelineItem item={item} thinking={false} />
-    </CodeViewContext.Provider>
+  const t = renderForTest(
+    <>
+      <TimelineItem item={{ type: "confirm_command", command, description: "run" }} thinking={false} />
+      <TimelineItem
+        item={{ type: "confirm_tool", id: "c1", name: "post", summary: "POST https://x.test", arguments: "" }}
+        thinking={false}
+      />
+    </>
   )
   await t.tick()
-  expect(t.lastFrame()).toContain("line11")
+  expect(t.output()).not.toContain("line0")
+  expect(t.output()).not.toContain("x.test")
   t.unmount()
   await t.waitUntilExit()
 })
 
-test("code longer than the preview registers for the expand button, and withdraws on unmount", async () => {
+test("a command longer than the preview is cut to it, registers for the expand button, and withdraws on unmount", async () => {
   let active = 0
   const register = () => {
     active++
@@ -135,17 +135,20 @@ test("code longer than the preview registers for the expand button, and withdraw
       active--
     }
   }
-  const long = { type: "confirm_command", command: "a\nb\nc\nd\ne\nf\ng", description: "run" } as const
-  const short = { type: "confirm_command", command: "a\nb", description: "run" } as const
+  const tone = { color: "yellow" }
+  const long = Array.from({ length: 12 }, (_, i) => `echo line${i}`).join("\n")
   const view = { expanded: false, lines: 5, register }
   const t = renderForTest(
     <CodeViewContext.Provider value={view}>
-      <TimelineItem item={long} thinking={false} />
-      <TimelineItem item={short} thinking={false} />
+      <CodePreview command={long} tone={tone} />
+      <CodePreview command={"a\nb"} tone={tone} />
     </CodeViewContext.Provider>
   )
   await t.tick()
   expect(active).toBe(1)
+  expect(t.output()).toContain("line4")
+  expect(t.output()).not.toContain("line5")
+  expect(t.output()).toContain("7 more")
   t.unmount()
   await t.waitUntilExit()
   expect(active).toBe(0)

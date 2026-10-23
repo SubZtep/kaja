@@ -92,7 +92,7 @@ test("the key bar shows Esc, Help, Persona, and Copy", async () => {
   await t.waitUntilExit()
 })
 
-test("the key bar's Esc entry becomes Cancel while the persona picker is open", async () => {
+test("the key bar's Esc entry becomes Close while the persona picker is open", async () => {
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.tick()
@@ -100,8 +100,30 @@ test("the key bar's Esc entry becomes Cancel while the persona picker is open", 
 
   await t.press("\x1bp") // Alt+P opens the persona picker
   const frame = t.lastFrame()
-  expect(frame).toContain("Cancel")
+  expect(frame).toContain("Choose a persona")
+  expect(frame).toContain("Close")
   expect(frame).not.toContain("Quit")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("help opens a modal that blocks typing, and Esc closes it without quitting", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.tick()
+
+  await t.press("\x1bl") // Alt+L
+  expect(t.lastFrame()).toContain("Switch persona")
+
+  await t.press("zzz")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("Switch persona")
+  expect(t.lastFrame()).not.toContain("zzz")
+  expect(t.lastFrame()).toContain("Quit")
+
+  await t.press("abc")
+  expect(t.lastFrame()).toContain("abc")
 
   t.unmount()
   await t.waitUntilExit()
@@ -270,7 +292,8 @@ test("yolo approves a cloud tool approval itself and carries on, without showing
   await t.waitUntilExit()
 })
 
-test("a turn waiting on this computer runs the call here, asking first, and resumes with its result", async () => {
+/** A cloud turn that pauses for `read_file` on this computer, with the computer's `approve` recorded in `ran`. */
+function mountPausedComputer() {
   const bodies: Record<string, unknown>[] = []
   const pausedTurn = () => {
     const body =
@@ -297,35 +320,157 @@ test("a turn waiting on this computer runs the call here, asking first, and resu
     return fetchWithBodies(url, init)
   }) as typeof fetch
 
-  const ran: { name: string; approved: boolean }[] = []
+  const ran: { name: string; answer: boolean | { feedback: string } }[] = []
   const computer = {
     tools: [{ name: "read_file", description: "Reads a file", parameters: { type: "object" } }],
     skills: [],
     personas: [],
     run: async (
       call: { id: string; name: string },
-      approve: (request: { kind: "tool"; name: string; summary: string }) => Promise<boolean>
+      approve: (request: { kind: "tool"; name: string; summary: string }) => Promise<boolean | { feedback: string }>
     ) => {
-      const approved = await approve({ kind: "tool", name: call.name, summary: "read /etc/hostname" })
-      ran.push({ name: call.name, approved })
-      return { id: call.id, text: approved ? "kaja" : "User declined this request." }
+      const answer = await approve({ kind: "tool", name: call.name, summary: "read /etc/hostname" })
+      ran.push({ name: call.name, answer })
+      return { id: call.id, text: answer === true ? "kaja" : "User declined this request." }
     },
     close: async () => {}
   }
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" computer={computer} />)
+  return { t, bodies, ran, computer }
+}
+
+test("a turn waiting on this computer runs the call here, asking first, and resumes with its result", async () => {
+  const { t, bodies, ran, computer } = mountPausedComputer()
   await t.tick()
   await t.press("what's my hostname?")
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
+  expect(t.lastFrame()).toContain("read_file wants to send this request")
+  expect(t.lastFrame()).not.toContain("read /etc/hostname")
+
+  await t.press("\x1bo") // Alt+O: the request, in a modal
   expect(t.lastFrame()).toContain("read /etc/hostname")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("read /etc/hostname")
 
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
-  expect(ran).toEqual([{ name: "read_file", approved: true }])
+  expect(ran).toEqual([{ name: "read_file", answer: true }])
   expect(bodies[0]?.clientTools).toEqual(computer.tools)
   expect(bodies[1]?.toolResults).toEqual([{ id: "c1", text: "kaja" }])
   expect(bodies[1]?.message).toBeUndefined()
   expect(t.lastFrame()).toContain("your host is kaja")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("writing instead of answering declines the call here and shows what was written", async () => {
+  const { t, ran } = mountPausedComputer()
+  await t.tick()
+  await t.press("what's my hostname?")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+
+  expect(t.lastFrame()).toContain("Esc Decline")
+  await t.press("use hostnamectl")
+  expect(t.lastFrame()).toContain("Esc Clear")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(ran).toEqual([{ name: "read_file", answer: { feedback: "use hostnamectl" } }])
+  expect(t.output()).toContain("use hostnamectl")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a question from the agent's ask_user tool changes the input's hint to an answer's", async () => {
+  const body =
+    'event: ask_user\ndata: {"type":"ask_user","question":"Which one?","fromTool":true}\n\n' +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_input"}\n\n'
+  nextTurnResponse = () => new Response(body, { headers: { "content-type": "text/event-stream" } })
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  expect(t.lastFrame()).toContain("Type something")
+  await t.press("pick one")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(t.lastFrame()).toContain("Which one?")
+  expect(t.lastFrame()).toContain("Type your answer")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+/** A turn that asks "Proceed?" with options, then answers whatever comes back with "ok". */
+function mountQuestionWithOptions() {
+  const bodies: Record<string, unknown>[] = []
+  const asked =
+    'event: ask_user\ndata: {"type":"ask_user","question":"Proceed?","options":["Yes","No"],"fromTool":true}\n\n' +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_input"}\n\n'
+  nextTurnResponse = () =>
+    bodies.length === 1 ? new Response(asked, { headers: { "content-type": "text/event-stream" } }) : sseResponse("ok")
+  const fetchWithBodies = globalThis.fetch
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (
+      typeof init?.body === "string" &&
+      (url instanceof Request ? url.url : String(url)).endsWith("/nasi/turn/stream")
+    )
+      bodies.push(JSON.parse(init.body))
+    return fetchWithBodies(url, init)
+  }) as typeof fetch
+  return { t: renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />), bodies }
+}
+
+async function askWithOptions(t: ReturnType<typeof renderForTest>) {
+  await t.tick()
+  await t.press("deploy")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+}
+
+test("a question with options lists them beside the field, and picking one sends its text", async () => {
+  const { t, bodies } = mountQuestionWithOptions()
+  await askWithOptions(t)
+  expect(t.lastFrame()).toContain("Proceed?")
+  expect(t.lastFrame()).toContain("Yes")
+  expect(t.lastFrame()).toContain("Or type your own answer")
+  expect(t.lastFrame()).toContain("↓") // the power border marks it as an answer
+
+  await t.press("\x1b[B") // down to "No"
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(bodies[1]?.message).toBe("No")
+  expect(t.lastFrame()).toContain("ok")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("typing beside a question's options answers with the typed text", async () => {
+  const { t, bodies } = mountQuestionWithOptions()
+  await askWithOptions(t)
+
+  await t.press("only staging")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(bodies[1]?.message).toBe("only staging")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("Esc beside a question's options empties the typed text without quitting, and quits from the empty list", async () => {
+  const { t } = mountQuestionWithOptions()
+  await askWithOptions(t)
+
+  expect(t.lastFrame()).toContain("Esc Quit")
+  await t.press("only")
+  expect(t.lastFrame()).toContain("Esc Clear")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("only")
+  expect(t.lastFrame()).toContain("Yes") // still here: nothing quit
+  expect(t.lastFrame()).toContain("Esc Quit")
 
   t.unmount()
   await t.waitUntilExit()

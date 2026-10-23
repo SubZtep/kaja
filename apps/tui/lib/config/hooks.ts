@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { type HookCommand, type HookName, HooksFileSchema, type KajaHooksFile } from "@kaja/schema/config"
 import { TOML } from "bun"
+import { getLanguage } from "../i18n"
 import { log } from "../logger"
 import { getSoundsDir } from "../paths"
 import { getConfigDir } from "./config"
@@ -34,7 +35,10 @@ export function loadHooks(): KajaHooksFile {
   }
 }
 
-/** What a hook is about: `text` is in `$KAJA_TEXT` and on stdin, `title` in `$KAJA_TITLE`. */
+/**
+ * What a hook is about: `text` is in `$KAJA_TEXT` and on stdin, `title` in `$KAJA_TITLE`. `$KAJA_LOCALE` is always the
+ * active language.
+ */
 export type HookEvent = { text?: string; title?: string }
 
 let loaded: KajaHooksFile | undefined
@@ -73,7 +77,14 @@ export function runHook(name: HookName, command: HookCommand, { text = "", title
 
   try {
     const proc = Bun.spawn(shell, {
-      env: { ...process.env, KAJA_HOOK: name, KAJA_TEXT: text, KAJA_TITLE: title, KAJA_SOUNDS: getSoundsDir() },
+      env: {
+        ...process.env,
+        KAJA_HOOK: name,
+        KAJA_TEXT: text,
+        KAJA_TITLE: title,
+        KAJA_SOUNDS: getSoundsDir(),
+        KAJA_LOCALE: getLanguage()
+      },
       stdin: new TextEncoder().encode(text),
       stdout: "ignore",
       stderr: "ignore",

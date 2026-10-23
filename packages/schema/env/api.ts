@@ -159,7 +159,9 @@ const apiEnvFields = z.object({
     .meta({ secret: true, section: "MCP Sandbox" }),
 
   STORAGE_BUCKET: trimmed
-    .describe("Object storage bucket for session images (images/ is public-read; the API sets the policy)")
+    .describe(
+      "Object storage bucket for session images (images/ is public-read: set by hand on Hetzner, by scripts/storage_init.sh on the dev RustFS)"
+    )
     .meta({ example: "kaja", devDefault: true, section: "Storage" }),
   STORAGE_REGION: trimmed
     .default("fsn1")

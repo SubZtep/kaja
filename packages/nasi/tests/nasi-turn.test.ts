@@ -1,9 +1,9 @@
 import { afterEach, expect, spyOn, test } from "bun:test"
 import type { AbilityStore } from "../src/abilities/types"
-import { createSession } from "../src/agent/agent"
+import { createSession, type Session } from "../src/agent/agent"
 import { NothingToApproveError } from "../src/agent/errors"
 import { dropImages } from "../src/agent/run"
-import { Nasi, type NasiOpenOptions } from "../src/nasi"
+import { Nasi, type NasiOpenOptions, pendingQuestionOptions } from "../src/nasi"
 import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
 import { TINY_PNG, TINY_PNG_BASE64 } from "./fixtures/images"
@@ -69,6 +69,75 @@ test("ask_user tool yields needs_input and the next message binds as a tool resu
   const second = await nasi.turnBuffered({ session: first.session, message: "blue" })
   expect(second.status).toBe("completed")
   expect(second.message).toBe("Noted, blue.")
+})
+
+test("ask_user's options reach the client with the question", async () => {
+  const nasi = await open([
+    {
+      content: null,
+      tool_calls: [
+        {
+          id: "call_1",
+          type: "function",
+          function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+        }
+      ]
+    }
+  ])
+
+  const first = await nasi.turnBuffered({ message: "hi" })
+  expect(first.status).toBe("needs_input")
+  expect(first.steps).toContainEqual({ type: "ask_user", question: "Proceed?", options: ["Yes", "No"], fromTool: true })
+})
+
+test("pendingQuestionOptions reads the waiting question's options off the saved call", async () => {
+  const store = createMemoryStore()
+  const nasi = await open(
+    [
+      {
+        content: null,
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+          }
+        ]
+      }
+    ],
+    { store }
+  )
+  const first = await nasi.turnBuffered({ message: "hi" })
+  const saved = await store.loadSession(first.session!)
+  const session = saved!.session as Session
+  expect(pendingQuestionOptions(session)).toEqual(["Yes", "No"])
+  expect(pendingQuestionOptions({ ...session, pendingAskUserId: undefined })).toEqual([])
+})
+
+test("options that don't fit are sent back to the model to fix instead of pausing the turn", async () => {
+  const sent: SentMessage[][] = []
+  const nasi = await open(
+    [
+      {
+        content: null,
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes"] }) }
+          }
+        ]
+      },
+      { content: "Fixed." }
+    ],
+    undefined,
+    sent
+  )
+
+  const first = await nasi.turnBuffered({ message: "hi" })
+  expect(first.status).toBe("completed")
+  expect(sent[1]!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_1" })
+  expect(String(sent[1]!.at(-1)!.content)).toContain("Invalid arguments for ask_user")
 })
 
 test("personaId on the request re-resolves the active persona every turn, including on a resumed session", async () => {

@@ -16,6 +16,12 @@ import {
 import { activePersona, loadSkillToolOf, personaTools, syncPersonaTools } from "./persona-tools"
 import { toolName } from "./tools"
 
+/** The part of the ask_user contract about `options`, shared by every host's wording of the rest. */
+export const ASK_USER_OPTIONS_INSTRUCTION =
+  `When the answer is one of a few short choices, also pass them as the options ` +
+  `(2 to 6); the human can still type anything else. Write the question so it ` +
+  `reads fine without the options, since not every screen shows them.`
+
 const ASK_USER_INSTRUCTIONS =
   `You talk to a human through a terminal, and the human can only reply ` +
   `when you call the ${ASK_USER_TOOL} tool — plain text output is shown to ` +
@@ -27,7 +33,7 @@ const ASK_USER_INSTRUCTIONS =
   `means no courtesy closers like "Would you like...?" or "Let me know ` +
   `if..." — the conversation is over the moment you send plain text, so ` +
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
-  `just state the result and stop.`
+  `just state the result and stop. ${ASK_USER_OPTIONS_INSTRUCTION}`
 
 function osName() {
   if (process.platform === "win32") return "Windows"

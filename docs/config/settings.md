@@ -54,9 +54,9 @@ voice = false
 | `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/use/voice#language))                                                                                                                                                                                                                              |
 | `thinking`         | show the model's reasoning while it generates                                                                                                                                                                                                                                                                                                     |
 | `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/use/tui#tool-calls) show                                                                                                                                                                                                                                                            |
-| `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all                                                                                                                                                                                                                                           |
+| `codePreviewLines` | default `5`: lines of a code block shown before it is cut; `<modifier>+E` shows all                                                                                                                                                                                                                                                               |
 | `voice`            | speak replies aloud (needs a model listing `tts` in `models.toml`)                                                                                                                                                                                                                                                                                |
-| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/use/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                             |
+| `hotkeyModifier`   | `alt` (default), `ctrl`, `meta`, or two at once: `ctrl+alt`, `ctrl+meta`, `alt+meta`: the [key bar](/use/tui#key-bar)'s modifier                                                                                                                                                                                                                  |
 | `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/use/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                              |
 | `yolo`             | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
 
@@ -86,7 +86,7 @@ chat, in local and cloud mode. Several tables of the same event run side by side
 
 ```toml
 [[message]]                                              # the assistant wrote in the chat
-run = "espeak-ng --stdin"                                # read it aloud...
+run = 'espeak-ng -v "$KAJA_LOCALE" --stdin'               # read it aloud, in your language...
 cancel = "speech"                                        # ...cutting off the reply still being read
 
 [[message]]
@@ -111,7 +111,9 @@ run = 'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"'        # show a notification
 
 In the command, `$KAJA_TEXT` is what happened as plain text without Markdown (also on stdin), `$KAJA_TITLE` a short
 title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`bell.wav`, `magic.wav`, `wind.wav`, `hehe.wav`,
-`error.wav`, `keyboard.wav`; see `kaja config paths`) and `$KAJA_HOOK` the event's name.
+`error.wav`, `keyboard.wav`; see `kaja config paths`), `$KAJA_LOCALE` your language (the [`locale`](#preferences)
+preference, like `hu-HU`), which is why a speech command doesn't hard-code
+a voice and follows the setting when you change it, and `$KAJA_HOOK` the event's name.
 
 `cancel = true` stops a still-running earlier run of the same command before the new one starts; `cancel = "name"` does
 that for every command sharing the name, so two `espeak-ng` never talk over each other. A command that fails is only

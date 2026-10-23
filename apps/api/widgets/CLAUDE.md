@@ -26,4 +26,5 @@ src/
 - Talks only to `POST /widget/turn` on the script's own origin, authenticated by the widget key parsed from its own `src`
 - State (`visitorId`, `session`) lives in `sessionStorage`, not cookies
 - Framework-free and small, since it ships to third-party pages: no React, no build tooling beyond `bun build`
+- A chat-mode turn that ends on a question with `options` (`offeredOptions` in `client.ts`) shows them as chips under the question; a click sends the option text as the answer, and any answer, a click or typed text, removes the chips. Barkochba mode keeps its own fixed answer buttons
 - Request/response types come from `@kaja/schema/nasi` (`WidgetTurnRequest`, `NasiTurnResponse`); do not redefine them

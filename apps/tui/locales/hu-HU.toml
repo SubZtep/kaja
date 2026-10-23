@@ -285,7 +285,9 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 
 [input]
-placeholder = "PgUp előzmények · Alt+Enter új sor"
+placeholder           = "Írj valamit..."
+askPlaceholder        = "Írd be a válaszod…"
+askChoicesPlaceholder = "Vagy írd be a saját válaszod…"
 
 
 [header]
@@ -297,25 +299,31 @@ cloud = "Felhő"
 help      = "Súgó"
 persona   = "Perszóna"
 copy      = "Másolás"
+older     = "Régebbi"
+newer     = "Újabb"
 quit      = "Kilépés"
 expand    = "Kibontás"
 quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
+close     = "Bezárás"
+clear     = "Törlés"
+command   = "Parancs"
 
 
 [viewport]
-older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
+scrolledBack = "↑ az előzmények {percent}%-a"
 
 
 [confirmCommand]
-yes         = "Igen, futtasd"
-yesSession  = "Igen, és ebben a munkamenetben ne kérdezz újra"
-no          = "Nem, mégse"
-running     = "Fut…"
-truncated   = "… még {count} sor"
-inputLocked = "Várom a válaszodat fent"
-toolRequest = "A(z) {name} ezt a kérést küldené:"
+yes          = "Igen, futtasd"
+no           = "Nem, mégse"
+running      = "Fut…"
+truncated    = "… még {count} sor"
+placeholder  = "Vagy írd le, mit csináljon helyette (ezt kihagyja)"
+commandTitle = "Jóváhagyásra váró parancs"
+requestTitle = "Jóváhagyásra váró kérés"
+toolRequest  = "A(z) {name} ezt a kérést küldené:"
 
 
 [secretPrompt]
@@ -326,6 +334,19 @@ placeholder = "kulcs vagy token"
 [activity]
 thinking = "Gondolkodom… {seconds}s eltelt, még mindig gondolkodom"
 tokens   = " · ~{tokens} token eddig"
+
+
+[help]
+title    = "Súgó"
+intro    = "Írj üzenetet, és az Enterrel küldd el. Az Esc kilép."
+persona  = "Perszóna váltása"
+copy     = "Legutóbbi válasz másolása (vagy kattints bármelyik válaszra a másoláshoz)"
+expand   = "Hosszú kód kibontása vagy összecsukása"
+command  = "A jóváhagyásra váró parancs megjelenítése"
+help     = "Ennek a súgónak a megjelenítése"
+scroll   = "Chat görgetése"
+newline  = "Új sor az üzenetben"
+openDocs = "Dokumentáció megnyitása"
 
 
 [persona]
@@ -462,6 +483,7 @@ newSession           = "🆕 Új munkamenet elindítva."
 stillWorking         = "Még dolgozom az előző üzeneteden…"
 pendingCommand       = "Egy parancs vagy kérés a jóváhagyásodra vár fent — nyomd meg a Jóváhagyást vagy az Elutasítást előbb."
 commandExpired       = "Ez a parancs már nem vár jóváhagyásra."
+questionExpired      = "Erre a kérdésre már válaszoltak."
 approved             = "Jóváhagyva"
 approveSession       = "Jóváhagyás ehhez a beszélgetéshez"
 declined             = "Elutasítva"

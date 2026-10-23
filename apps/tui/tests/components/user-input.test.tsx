@@ -15,6 +15,26 @@ test('plain typing works, and "/" is just a literal character', async () => {
   await t.waitUntilExit()
 })
 
+test("kitty key reports type once: releases, bare modifiers and shifted text change nothing extra", async () => {
+  const t = renderForTest(<UserInput pending={false} speaking={false} send={async () => {}} />)
+  await t.tick()
+
+  await t.press("\x1b[104u") // h down
+  await t.press("\x1b[104;1:3u") // h up
+  await t.press("\x1b[57441;2u") // Shift down
+  await t.press("\x1b[105;2;73u") // Shift+I with its text
+  await t.press("\x1b[105;2:3;73u") // up
+  await t.press("\x1b[57441;1:3u") // Shift up
+  await t.press("\x1b[57442;5u") // Ctrl down, alone
+  await t.press("\x1b[57442;1:3u")
+  expect(t.lastFrame()).toContain("hI")
+  expect(t.lastFrame()).not.toContain("hII")
+  expect(t.lastFrame()).not.toContain("hh")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("mic stays deaf and shows x while the agent speaks", async () => {
   const t = renderForTest(<UserInput pending={false} speaking={true} send={async () => {}} />)
   await t.tick()
@@ -85,6 +105,60 @@ test("in a multiline draft, arrows move the cursor before recalling", async () =
   await t.press("\x1b[A")
   expect(t.lastFrame()).toContain("recalled")
   expect(t.lastFrame()).not.toContain("one")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("the border turns to arrows only while an ask_user answer is awaited", async () => {
+  const t = renderForTest(<UserInput pending={false} speaking={false} send={async () => {}} />)
+  await t.tick()
+  expect(t.lastFrame()).not.toContain("↓")
+  t.unmount()
+  await t.waitUntilExit()
+
+  const asking = renderForTest(<UserInput pending={false} speaking={false} asking send={async () => {}} />)
+  await asking.tick()
+  expect(asking.lastFrame()).toContain("↓")
+  asking.unmount()
+  await asking.waitUntilExit()
+})
+
+test("a given placeholder replaces the chat one, and the draft is reported as it changes", async () => {
+  const drafts: string[] = []
+  const t = renderForTest(
+    <UserInput
+      pending={false}
+      speaking={false}
+      send={async () => {}}
+      placeholder="Type your answer…"
+      onDraft={draft => drafts.push(draft)}
+    />
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("Type your answer")
+  expect(t.lastFrame()).not.toContain("Type something")
+
+  await t.press("hi")
+  expect(drafts.at(-1)).toBe("hi")
+  await t.press("\r")
+  await t.tick()
+  expect(drafts.at(-1)).toBe("")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a mic switch kept by the caller is what shows, and Ctrl+T asks to flip it instead of flipping its own", async () => {
+  const asked: boolean[] = []
+  const t = renderForTest(
+    <UserInput pending={false} speaking mic onMicChange={mic => asked.push(mic)} send={async () => {}} />
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("x ") // on, but muted while the agent speaks
+  await t.press("\x14")
+  expect(asked).toEqual([false])
+  expect(t.lastFrame()).toContain("x ")
 
   t.unmount()
   await t.waitUntilExit()

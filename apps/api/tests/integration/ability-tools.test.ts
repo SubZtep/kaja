@@ -452,7 +452,7 @@ describe("HTTP tools in the cloud", () => {
   /** A cloud Telegram driver for user 1001 over a recording sender; `onSend` sees each sent message first. */
   function telegramDriver(onSend?: (text: string) => void) {
     const messages: { id: number; text: string; buttons?: TelegramButton[][] }[] = []
-    const edits: { id: number; text: string }[] = []
+    const edits: { id: number; text: string; rows?: TelegramButton[][] }[] = []
     const deleted: number[] = []
     const driver = createCloudTelegramDriver({
       resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
@@ -462,8 +462,8 @@ describe("HTTP tools in the cloud", () => {
           messages.push({ id: messages.length + 1, text, buttons })
           return { messageId: messages.length }
         },
-        async editMessageText(_chatId, messageId, text) {
-          edits.push({ id: messageId, text })
+        async editMessageText(_chatId, messageId, text, rows) {
+          edits.push({ id: messageId, text, ...(rows ? { rows } : {}) })
         },
         async deleteMessage(_chatId, messageId) {
           deleted.push(messageId)
@@ -501,6 +501,32 @@ describe("HTTP tools in the cloud", () => {
     const prompt = messages.find(message => message.buttons)!
     await driver.handleCallback(1001, 55, prompt.id, prompt.buttons![0]![0]!.data, undefined, "🔐 create_issue <x>")
     expect(edits.find(edit => edit.id === prompt.id)!.text).toBe("🔐 create_issue &lt;x&gt;\n\n✅ Approved")
+  })
+
+  test("the Telegram bot shows a question's options as buttons, and a tap answers it once", async () => {
+    const ask = {
+      id: "call_q",
+      type: "function",
+      function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+    }
+    useScript([{ content: null, tool_calls: [ask] }, { content: "Standing down." }])
+    const { driver, edits } = telegramDriver()
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "deploy")
+    const asked = edits.findLast(edit => edit.rows)!
+    expect(asked.text).toBe("Proceed?")
+    expect(asked.rows!.map(row => row.map(button => button.text))).toEqual([["Yes"], ["No"]])
+    const no = asked.rows![1]![0]!.data
+    expect(no).toMatch(/^ask:[0-9a-f]{16}:1$/)
+
+    await driver.handleCallback(1001, 55, asked.id, no, undefined, "Proceed?")
+    expect(edits.find(edit => edit.id === asked.id && edit.text === "Proceed?\n\n→ No")).toBeDefined()
+    expect(edits.some(edit => edit.text === "Standing down.")).toBe(true)
+
+    // The same button again is stale, and the question stays on the message.
+    await driver.handleCallback(1001, 55, asked.id, no, undefined, "Proceed?")
+    expect(edits.at(-1)).toEqual({ id: asked.id, text: "Proceed?\n\nThis question was already answered." })
   })
 
   test("a message to the Telegram bot while a turn runs gets 'still working' instead of queueing", async () => {

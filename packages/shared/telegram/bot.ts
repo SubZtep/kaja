@@ -11,6 +11,28 @@ export function approvalToken(callId: string): string {
   return createHash("sha256").update(callId).digest("hex").slice(0, 16)
 }
 
+const ASK_CALLBACK = /^ask:([0-9a-f]{16}):(\d{1,3})$/
+
+/** Callback data of the button for a question's `index`th option, checked later against the pending question. */
+export function askCallbackData(callId: string, index: number): string {
+  return `ask:${approvalToken(callId)}:${index}`
+}
+
+/** A question's options as buttons, one per row, for the call with this id; none without options or the id. */
+export function askButtons(
+  callId: string | undefined,
+  options: string[] | undefined
+): { text: string; data: string }[][] | undefined {
+  if (!callId || !options) return undefined
+  return options.map((text, index) => [{ text, data: askCallbackData(callId, index) }])
+}
+
+/** What {@link askCallbackData} carries, or undefined for any other callback data. */
+export function parseAskCallback(data: string): { token: string; index: number } | undefined {
+  const match = ASK_CALLBACK.exec(data)
+  return match ? { token: match[1]!, index: Number(match[2]) } : undefined
+}
+
 /** How long to wait for the rest of an album: Telegram sends each of its photos as a message of its own. */
 const ALBUM_WAIT_MS = 1000
 

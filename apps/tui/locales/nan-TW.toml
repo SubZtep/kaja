@@ -285,7 +285,9 @@ invalidAt = "secrets 檔無效（{path}）：{message}"
 
 
 [input]
-placeholder = "PgUp 歷史紀錄 · Alt+Enter 換逝"
+placeholder           = "拍字⋯⋯"
+askPlaceholder        = "拍你的答覆…"
+askChoicesPlaceholder = "抑是拍你家己的答覆…"
 
 
 [header]
@@ -297,25 +299,31 @@ cloud = "雲端"
 help      = "說明"
 persona   = "角色"
 copy      = "拷貝"
+older     = "較舊"
+newer     = "較新"
 quit      = "退出"
 expand    = "展開"
 quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
+close     = "關掉"
+clear     = "清掉"
+command   = "指令"
 
 
 [viewport]
-older = "↑ 較早進前 · PageDown 抑是 Ctrl+End 轉去上新个"
+scrolledBack = "↑ 歷史的 {percent}%"
 
 
 [confirmCommand]
-yes         = "好，執行"
-yesSession  = "好，這擺工作階段毋免閣問"
-no          = "毋通，取消"
-running     = "執行中…"
-truncated   = "… 猶有 {count} 逝"
-inputLocked = "咧等你頂面个回答"
-toolRequest = "{name} 想欲送這个請求："
+yes          = "好，執行"
+no           = "毋通，取消"
+running      = "執行中…"
+truncated    = "… 猶有 {count} 逝"
+placeholder  = "抑是拍欲改做啥物（會略過這个）"
+commandTitle = "咧等核准的指令"
+requestTitle = "咧等核准的請求"
+toolRequest  = "{name} 想欲送這个請求："
 
 
 [secretPrompt]
@@ -326,6 +334,19 @@ placeholder = "鎖匙抑是權杖"
 [activity]
 thinking = "咧想… 已經過 {seconds} 秒矣，猶咧推理"
 tokens   = " · 這馬已經產生大約 {tokens} 个 token"
+
+
+[help]
+title    = "說明"
+intro    = "拍一則訊息，按 Enter 就送出。按 Esc 就退出。"
+persona  = "切換角色"
+copy     = "拷貝上新的回覆（抑是點任何一則回覆來拷貝）"
+expand   = "展開抑是收起長的程式碼"
+command  = "顯示咧等核准的指令"
+help     = "顯示這个說明"
+scroll   = "捲動聊天"
+newline  = "訊息內底換行"
+openDocs = "拍開文件"
 
 
 [persona]
@@ -462,6 +483,7 @@ newSession           = "🆕 已經開始一个新个工作階段。"
 stillWorking         = "猶咧處理你頂一句訊息…"
 pendingCommand       = "頂懸有一个指令抑是請求咧等你核准 — 請先揀核准抑是拒絕。"
 commandExpired       = "這个指令已經無咧等核准矣。"
+questionExpired      = "這个問題已經答覆過矣。"
 approved             = "已經核准"
 approveSession       = "為這段開講核准"
 declined             = "已經拒絕"

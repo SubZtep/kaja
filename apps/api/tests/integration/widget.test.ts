@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { fakeChatClient, signUpAndSignIn } from "./helpers"
+import { askUserChatClient, fakeChatClient, signUpAndSignIn } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()
@@ -104,6 +104,27 @@ describe("widget", () => {
     expect(offered).toContain("ask_user")
     expect(offered).not.toContain("read_file")
     expect(offered).not.toContain("list_files")
+  })
+
+  test("a question's options come back in the turn's steps for the widget to offer", async () => {
+    setNasiChatResolver(async () => ({ client: askUserChatClient() as never, model: "fake-model" }))
+    try {
+      const res = await app.request("/widget/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
+        body: JSON.stringify({ message: "deploy it", visitorId: "v-options" })
+      })
+      const body = await res.json()
+      expect(body.status).toBe("needs_input")
+      expect(body.steps).toContainEqual({
+        type: "ask_user",
+        question: "Proceed?",
+        options: ["Yes", "No"],
+        fromTool: true
+      })
+    } finally {
+      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from widget") as never, model: "fake-model" }))
+    }
   })
 
   test("two visitors on the same key cannot resume each other's session", async () => {

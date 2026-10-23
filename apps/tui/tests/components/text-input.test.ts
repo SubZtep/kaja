@@ -185,7 +185,7 @@ test("return submits; tab/Ctrl+arrows out are ignored", () => {
   expect(edit(state("hi", 2), { downArrow: true, meta: true })).toBeNull()
 })
 
-test("newline via Shift/Alt/Ctrl+Enter, Ctrl+J, or bare LF", () => {
+test("newline via Shift+Enter", () => {
   const nl = (partial: Parameters<typeof edit>[1]) =>
     expect(edit(state("ab", 1), partial)).toEqual({
       value: "a\nb",
@@ -194,10 +194,6 @@ test("newline via Shift/Alt/Ctrl+Enter, Ctrl+J, or bare LF", () => {
       preferredColumn: null
     })
   nl({ return: true, shift: true })
-  nl({ return: true, meta: true })
-  nl({ return: true, ctrl: true })
-  nl({ ctrl: true, input: "j" })
-  nl({ input: "\n" })
 })
 
 test("cursor is clamped after edits", () => {
@@ -275,7 +271,14 @@ test("cursorCellOffset: single line offsets by the prefix width", () => {
 
 test("cursorCellOffset: empty input sits at the prefix", () => {
   expect(
-    cursorCellOffset({ lines: null, display: "", cursorOffset: 0, windowStart: 0, firstLeadWidth: 2, contLeadWidth: 2 })
+    cursorCellOffset({
+      lines: null,
+      display: "",
+      cursorOffset: 0,
+      windowStart: 0,
+      firstLeadWidth: 2,
+      contLeadWidth: 2
+    })
   ).toEqual({ x: 2, y: 0 })
 })
 

@@ -1,5 +1,5 @@
 import type { WidgetType } from "@kaja/schema/api"
-import { createVisitorId, sendWidgetTurn, WidgetTurnRateLimitError } from "./client"
+import { createVisitorId, offeredOptions, sendWidgetTurn, WidgetTurnRateLimitError } from "./client"
 import { widgetLocale, widgetStrings } from "./i18n"
 
 const STATE_STORAGE_KEY = "kaja-widget-state"
@@ -56,6 +56,13 @@ function injectStyles() {
     .kaja-chat-input:focus { outline: none; }
     .kaja-chat-send { border: none; background: none; color: #8ec478; padding: 0 14px; cursor: pointer; font: inherit; font-weight: 600; }
     .kaja-chat-send:disabled { color: #9aa88f; cursor: default; }
+    .kaja-widget-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 8px; }
+    .kaja-widget-chip {
+      max-width: 100%; border: 1px solid #37402f; background: #1a2016; color: #eef2e6; border-radius: 999px;
+      padding: 5px 12px; cursor: pointer; font: inherit; text-align: left;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .kaja-widget-chip:hover { background: #202918; border-color: #6ba85a; }
     .kaja-barkochba-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border-top: 1px solid #37402f; }
     .kaja-barkochba-answer {
       border: 1px solid #37402f; background: #1a2016; color: #eef2e6; border-radius: 8px; padding: 8px; cursor: pointer; font: inherit;
@@ -145,10 +152,30 @@ function init() {
   const messages = document.createElement("div")
   messages.className = "kaja-widget-messages"
 
+  /** Offers the agent's shortcut answers under its question; a click answers with that text. */
+  function appendChips(options: string[]) {
+    const chips = document.createElement("div")
+    chips.className = "kaja-widget-chips"
+    chips.setAttribute("role", "group")
+    chips.setAttribute("aria-label", t.suggestedAnswers)
+    for (const option of options) {
+      const chip = document.createElement("button")
+      chip.type = "button"
+      chip.className = "kaja-widget-chip"
+      chip.textContent = option
+      chip.addEventListener("click", () => void sendMessage(option))
+      chips.append(chip)
+    }
+    messages.appendChild(chips)
+    messages.scrollTop = messages.scrollHeight
+  }
+
   async function sendMessage(message: string) {
     if (pending) return
     pending = true
     setControlsDisabled(true)
+    // Whatever answers the question, a click or typed text, the old shortcuts are done
+    for (const chips of messages.querySelectorAll(".kaja-widget-chips")) chips.remove()
     appendMessage(messages, message, "user")
     const thinking = document.createElement("div")
     thinking.className = "kaja-widget-msg kaja-widget-msg-bot"
@@ -168,6 +195,9 @@ function init() {
       const awaitingAnswer = data.status === "needs_input"
       if (awaitingAnswer) thinking.classList.add("kaja-widget-msg-question")
       onAwaitingAnswerChange(awaitingAnswer)
+      // The barkochba game has its own fixed answers
+      const options = mode === "chat" ? offeredOptions(data) : []
+      if (options.length > 0) appendChips(options)
     } catch (error) {
       thinking.textContent = error instanceof WidgetTurnRateLimitError ? t.rateLimited : t.error
     } finally {

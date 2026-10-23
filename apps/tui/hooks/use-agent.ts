@@ -1,5 +1,6 @@
 import {
   compact,
+  notApprovedPrompt,
   type PromptImage,
   recordPausedCall,
   replyLanguageInstructionFor,
@@ -311,24 +312,30 @@ export function useAgent(
 
   // Resolves a pending confirm_command event: runs the command on approval (or a decline notice otherwise) and feeds the result back to run() as the next prompt — session.pendingRunCommandId routes it as the matching tool response regardless of the prompt's content.
   const resolveCommand = useCallback(
-    async (command: string, approved: boolean) => {
+    async (command: string, approved: boolean, feedback?: string) => {
       if (runningCommand) return
       setRunningCommand(true)
       try {
         const startedAt = performance.now()
-        const result = approved ? await runShellCommand(command) : "User declined to run this command."
-        recordPausedCall(sessionRef.current!, "run_command", approved ? { status: "ok", startedAt } : "declined")
+        let result = "User declined to run this command."
+        if (approved) result = await runShellCommand(command)
+        else if (feedback) {
+          pushEvent({ type: "user", text: feedback })
+          result = notApprovedPrompt(feedback)
+        }
+        const unanswered = feedback ? "skipped" : "declined"
+        recordPausedCall(sessionRef.current!, "run_command", approved ? { status: "ok", startedAt } : unanswered)
         await send(result, false)
       } finally {
         setRunningCommand(false)
       }
     },
-    [send, runningCommand]
+    [send, runningCommand, pushEvent]
   )
 
   // Resolves a pending confirm_tool event the same way: on approval runs the tool from the agent's own list, otherwise a decline notice; session.pendingToolApprovalId routes the result.
   const resolveToolApproval = useCallback(
-    async (name: string, argumentsJson: string, approved: boolean) => {
+    async (name: string, argumentsJson: string, approved: boolean, feedback?: string) => {
       if (runningCommand) return
       setRunningCommand(true)
       try {
@@ -339,13 +346,18 @@ export function useAgent(
               status = s
             })
           : { text: "User declined this request.", images: [] }
-        recordPausedCall(sessionRef.current!, "tool_approval", approved ? { status, startedAt } : "declined")
+        if (!approved && feedback) {
+          pushEvent({ type: "user", text: feedback })
+          result.text = notApprovedPrompt(feedback)
+        }
+        const unanswered = feedback ? "skipped" : "declined"
+        recordPausedCall(sessionRef.current!, "tool_approval", approved ? { status, startedAt } : unanswered)
         await send(result.text, false, result.images)
       } finally {
         setRunningCommand(false)
       }
     },
-    [agent, send, runningCommand]
+    [agent, send, runningCommand, pushEvent]
   )
 
   return {

@@ -118,6 +118,8 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
     type: z.literal("ask_user"),
     question: z.string(),
     note: z.string().optional(),
+    /** Short answers the model offers as shortcuts (the human may still write anything); only with `fromTool`. */
+    options: z.array(z.string()).optional(),
     /** The model called the ask_user tool; absent for a plain reply that just ends in a question mark. */
     fromTool: z.literal(true).optional()
   }),
@@ -170,6 +172,8 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
     type: z.literal("ask_user"),
     question: z.string(),
     note: z.string().optional(),
+    /** Short answers the model offers as shortcuts (the human may still write anything); only with `fromTool`. */
+    options: z.array(z.string()).optional(),
     /** The model called the ask_user tool; absent for a plain reply that just ends in a question mark. */
     fromTool: z.literal(true).optional()
   }),

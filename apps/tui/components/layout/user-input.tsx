@@ -1,10 +1,12 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, type BoxProps, useInput, useWindowSize } from "ink"
+import { Box, type BoxProps, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
+import { useKey } from "../../hooks/use-key"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
+import { uiEvents } from "../../lib/ui-events"
 import { TextInput } from "../elem/text-input"
 import { useKajaTheme } from "../theme"
 
@@ -15,10 +17,6 @@ import { useKajaTheme } from "../theme"
 const INPUT_MAX_HEIGHT = 8
 const INPUT_CONTENT_LINES = 6
 const CURSOR_BLINK_MS = 500
-/** Idle time before the placeholder hint disappears. */
-const HINT_HIDE_MS = 20_000
-/** Idle time before the border switches to the "power" style. */
-const POWER_BORDER_MS = 30_000
 /** Always 2 ASCII cells — never emoji (terminals disagree on emoji width). */
 const PREFIX_COLS = 2
 
@@ -40,41 +38,59 @@ function statusPrefix(mic: boolean, speaking: boolean, sttState: string): string
 export function UserInput({
   pending,
   speaking,
+  asking = false,
   send,
   history: initialHistory,
-  personaModels
+  personaModels,
+  placeholder,
+  onDraft,
+  mic: controlledMic,
+  onMicChange
 }: Readonly<{
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
   speaking: boolean
+  /** The agent's ask_user call is waiting for this answer — the power border marks it as a reply, not a new prompt. */
+  asking?: boolean
   send: (prompt: string) => Promise<void>
   /** Past prompts for shell-style ↑/↓ recall, newest first. */
   history?: string[]
   /** Active persona's per-task model overrides, if any — passed through to dictation's STT resolution. */
   personaModels?: PersonaModels
+  /** Hint shown while empty; defaults to the plain chat one. */
+  placeholder?: string
+  /** Called with the text whenever it changes (typed, dictated, recalled or cleared by sending). */
+  onDraft?: (draft: string) => void
+  /** The mic switch kept by the caller, so it outlives this field being swapped for another (a question's options). */
+  mic?: boolean
+  onMicChange?: (mic: boolean) => void
 }>) {
   const [input, setInput] = useState("")
-  // Thresholds flip once each, so a quiet input never re-renders on a timer.
-  const [hintHidden, setHintHidden] = useState(false)
-  const [power, setPower] = useState(false)
-  const [mic, setMic] = useState(false)
+  const [ownMic, setOwnMic] = useState(false)
+  const mic = controlledMic ?? ownMic
+  const setMic = onMicChange ?? setOwnMic
   const { columns } = useWindowSize()
   const history = usePromptHistory(initialHistory ?? [])
+  useEffect(() => {
+    onDraft?.(input)
+  }, [input, onDraft])
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
     history.markEdited()
+    uiEvents.emit("follow")
     setInput(value)
   }
 
   // Ctrl+T toggles dictation (Esc quits, see useQuitGuard).
-  useInput((char, key) => {
-    if (key.ctrl && char === "t") setMic(prev => !prev)
+  useKey((char, key) => {
+    if (key.ctrl && char === "t") setMic(!mic)
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(
     mic && !speaking,
     text => {
       history.markEdited()
+      uiEvents.emit("follow")
       setInput(prev => (prev ? `${prev} ${text}` : text))
     },
     personaModels
@@ -82,18 +98,6 @@ export function UserInput({
 
   const prefix = statusPrefix(mic, speaking, sttState)
   const windowFocused = useWindowFocus()
-
-  useEffect(() => {
-    setHintHidden(false)
-    setPower(false)
-    const hint = setTimeout(() => setHintHidden(true), HINT_HIDE_MS)
-    const border = setTimeout(() => setPower(true), POWER_BORDER_MS)
-
-    return () => {
-      clearTimeout(hint)
-      clearTimeout(border)
-    }
-  }, [pending, input])
 
   const handleSubmit = (value: string) => {
     if (!value.trim() || pending) return
@@ -108,7 +112,7 @@ export function UserInput({
 
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Border variant={power ? "power" : "solid"}>
+      <Border variant={asking ? "power" : "solid"}>
         <TextInput
           value={input}
           focus={!pending}
@@ -122,7 +126,7 @@ export function UserInput({
           showCursor={!mic}
           blinkMs={CURSOR_BLINK_MS}
           blinkPaused={!windowFocused}
-          placeholder={hintHidden ? undefined : t("input.placeholder")}
+          placeholder={placeholder ?? t("input.placeholder")}
           prefix={prefix}
           prefixCols={PREFIX_COLS}
           columns={fieldColumns}
@@ -141,17 +145,15 @@ function Border({ children, variant = "solid" }: Readonly<{ children: React.Reac
     ...inputBox(),
     borderStyle: "classic",
     borderDimColor: true,
-    borderLeftDimColor: false,
-    borderRightDimColor: false,
+    borderLeft: false,
+    borderRight: false,
     width: "100%",
     flexShrink: 0,
     maxHeight: INPUT_MAX_HEIGHT,
     overflow: "hidden",
     ...(isPower && {
       borderStyle: "arrow",
-      borderColor: powerBox().borderColor,
-      borderLeftDimColor: true,
-      borderRightDimColor: true
+      borderColor: powerBox().borderColor
     })
   }
 

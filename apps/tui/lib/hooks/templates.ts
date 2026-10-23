@@ -24,7 +24,7 @@ const tomlString = (text: string) => (text.includes("'") ? JSON.stringify(text) 
 /**
  * The text of a hooks.toml for what was found on this machine: sounds, notifications and reading messages aloud, each
  * only when asked for and a command was detected. Speech commands share the "speech" cancel name, so a new reply
- * interrupts the one still being read.
+ * interrupts the one still being read. The speaker reads in `$KAJA_LOCALE`, set when the hook runs.
  */
 export function buildHooksToml(
   found: Detected,

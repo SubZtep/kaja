@@ -1,5 +1,6 @@
-import { Box, Text, useInput } from "ink"
+import { Box, Text } from "ink"
 import { useState } from "react"
+import { useKey } from "../../hooks/use-key"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
 
@@ -26,7 +27,7 @@ export function CheckMenu({
   const [focused, setFocused] = useState(0)
   const [ticked, setTicked] = useState(() => new Set(defaultValue))
 
-  useInput((input, key) => {
+  useKey((input, key) => {
     if (key.escape) onClose?.()
     else if (key.downArrow) setFocused(index => Math.min(index + 1, options.length - 1))
     else if (key.upArrow) setFocused(index => Math.max(index - 1, 0))

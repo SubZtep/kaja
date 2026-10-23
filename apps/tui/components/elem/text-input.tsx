@@ -10,9 +10,10 @@
  */
 
 import chalk from "chalk"
-import { Box, type Key, Text, useInput, useStdin } from "ink"
+import { Box, type Key, Text, useStdin } from "ink"
 import { useEffect, useMemo, useState } from "react"
 import { useBlink } from "../../hooks/use-blink"
+import { useKey } from "../../hooks/use-key"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
@@ -140,12 +141,8 @@ function isReservedKey(input: string, key: EditKey): boolean {
   )
 }
 
-function isInsertNewline(input: string, key: EditKey): boolean {
-  return (
-    (key.return && (key.shift || key.meta || key.ctrl)) ||
-    (key.ctrl && (input === "j" || input === "J")) ||
-    (!key.return && input === "\n")
-  )
+function isInsertNewline(key: EditKey): boolean {
+  return key.return && key.shift
 }
 
 /** Result of a cursor-moving or text-mutating key, before final clamping. */
@@ -238,7 +235,7 @@ export function applyTextEdit(
   const { value, cursorOffset, preferredColumn } = state
   const columns = options?.columns
 
-  if (isInsertNewline(input, key)) {
+  if (isInsertNewline(key)) {
     return {
       value: `${value.slice(0, cursorOffset)}\n${value.slice(cursorOffset)}`,
       cursorOffset: cursorOffset + 1,
@@ -472,7 +469,7 @@ export function TextInput({
     })
   }, [originalValue, canFocus, showCursor])
 
-  useInput(
+  useKey(
     (input, key) => {
       if (onHistory && showCursor) {
         const dir = historyDirection(originalValue, cursorOffset, key, wrapWidth)

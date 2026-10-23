@@ -178,17 +178,23 @@ function kajaStyles(p: Palette) {
     /** The chat box border while a power command is typed. */
     powerBox: (): BoxProps => ({ borderColor: p.success }),
     frame: (): BoxProps => ({ borderColor: p.frame }),
+    /** A modal window: opaque, so the pale screen under it doesn't show through. */
+    modal: (): BoxProps => ({ backgroundColor: p.background, borderColor: p.frame }),
     reasoningBox: (): BoxProps => ({ borderColor: p.info }),
     accent: (): TextProps => ({ color: p.accent }),
     userText: (): TextProps => ({ color: p.user }),
     /** A message the user sent: tinted band with a bar down its left edge. */
     userBox: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.15), borderColor: p.user }),
+    /** A copyable block while hovered: a faint accent band, without reserving any layout space when it isn't. */
+    hoverTint: (hovered: boolean): BoxProps => (hovered ? { backgroundColor: p.tint("accent", 0.15) } : {}),
     muted: (): TextProps => ({ color: p.muted }),
     success: (): TextProps => ({ color: p.success }),
     warning: (): TextProps => ({ color: p.warning }),
     danger: (): TextProps => ({ color: p.danger }),
     reasoningText: (): TextProps => ({ color: p.frame }),
     keyCap: (): TextProps => ({ backgroundColor: p.user, color: p.background }),
+    /** A key bar entry whose hotkey modifier is held down. */
+    keyCapHeld: (): TextProps => ({ backgroundColor: p.accent, color: p.background, bold: true }),
     thinkingLabel: (): TextProps => ({ color: p.frame, dimColor: true }),
     toolLabel: (): TextProps => ({ color: p.success, dimColor: true }),
     /** A label such as the header's LOCAL/CLOUD/YOLO: its tone's colour on a tint of it. */

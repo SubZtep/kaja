@@ -13,6 +13,7 @@ import {
   type Agent,
   type AgentEvent,
   ASK_USER_TOOL,
+  askUserTool,
   type CallStat,
   type ClientCall,
   RUN_COMMAND_TOOL,
@@ -389,13 +390,34 @@ export function dropImages(session: Session, from: number): void {
   }
 }
 
-function handleAskUserCall(call: FunctionToolCall): { id: string; question: string; note?: string } {
-  const args = parseToolArgs(call.function.arguments) as { question?: string; note?: string } | null
+type AskUser = { id: string; question: string; note?: string; options?: string[] }
+
+/** The question to pause on, or the error to send back when its options don't fit (a lenient read otherwise). */
+function handleAskUserCall(call: FunctionToolCall): AskUser | { error: string } {
+  const args = parseToolArgs(call.function.arguments) as {
+    question?: string
+    note?: string
+    options?: unknown
+  } | null
+  let options: string[] | undefined
+  if (args?.options !== undefined) {
+    const checked = checkToolArgs(askUserTool, args)
+    if (!checked.ok) return { error: checked.error }
+    options = checked.args.options
+  }
   return {
     id: call.id,
     question: typeof args?.question === "string" ? args.question : "",
-    note: typeof args?.note === "string" && args.note.trim() ? args.note : undefined
+    note: typeof args?.note === "string" && args.note.trim() ? args.note : undefined,
+    options
   }
+}
+
+/** The question to pause on, or undefined after its options that don't fit went back to the model to fix. */
+function askOrFail(messages: ChatCompletionMessageParam[], call: FunctionToolCall, record: RecordCall) {
+  const asked = handleAskUserCall(call)
+  if (!("error" in asked)) return asked
+  toolCallFailed(messages, call, record, asked.error)
 }
 
 async function* handleToolCalls(
@@ -411,7 +433,7 @@ async function* handleToolCalls(
     onModelCall
   }: { session: Session; record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<AgentEvent, RoundPauses, void> {
-  let ask: { id: string; question: string; note?: string } | undefined
+  let ask: AskUser | undefined
   let confirm: { id: string; command: string; description: string } | undefined
   let approval: ToolApproval | undefined
   const clientCalls: ClientCall[] = []
@@ -425,7 +447,7 @@ async function* handleToolCalls(
     }
 
     if (call.function.name === ASK_USER_TOOL) {
-      ask = handleAskUserCall(call)
+      ask = askOrFail(messages, call, record) ?? ask
       continue
     }
 
@@ -460,7 +482,7 @@ async function* handleToolCalls(
 
 /** What a round of tool calls left waiting: at most one pause hands off, see {@link settlePauses}. */
 type RoundPauses = {
-  ask?: { id: string; question: string; note?: string }
+  ask?: AskUser
   confirm?: { id: string; command: string; description: string }
   approval?: ToolApproval
   clientCalls: ClientCall[]
@@ -606,7 +628,7 @@ function* roundTelemetry(
 
 function* handlePendingHandoff(
   session: Session,
-  ask: { id: string; question: string; note?: string } | undefined,
+  ask: AskUser | undefined,
   confirm: { id: string; command: string; description: string } | undefined,
   approval: ToolApproval | undefined,
   clientCalls: ClientCall[]
@@ -619,7 +641,14 @@ function* handlePendingHandoff(
 
   if (ask) {
     session.pendingAskUserId = ask.id
-    yield { type: "ask_user", question: ask.question, note: ask.note, fromTool: true }
+    yield {
+      type: "ask_user",
+      question: ask.question,
+      note: ask.note,
+      ...(ask.options ? { options: ask.options } : {}),
+      id: ask.id,
+      fromTool: true
+    }
     return true
   }
 

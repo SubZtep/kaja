@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { Box } from "ink"
 import { PersonaPicker } from "../../components/layout/persona-picker"
 import { renderForTest } from "../test-utils"
 
@@ -10,12 +11,14 @@ const personas = [
 test("marks the current persona, selecting one calls onSelect with it", async () => {
   const selected: { id: string; label: string }[] = []
   const t = renderForTest(
-    <PersonaPicker
-      personas={personas}
-      currentPersonaId="default"
-      onSelect={p => selected.push(p)}
-      onCancel={() => {}}
-    />
+    <Box height={24}>
+      <PersonaPicker
+        personas={personas}
+        currentPersonaId="default"
+        onSelect={p => selected.push(p)}
+        onCancel={() => {}}
+      />
+    </Box>
   )
   await t.tick()
 
@@ -34,14 +37,16 @@ test("escape cancels without selecting", async () => {
   const selected: { id: string; label: string }[] = []
   let cancelled = false
   const t = renderForTest(
-    <PersonaPicker
-      personas={personas}
-      currentPersonaId="default"
-      onSelect={p => selected.push(p)}
-      onCancel={() => {
-        cancelled = true
-      }}
-    />
+    <Box height={24}>
+      <PersonaPicker
+        personas={personas}
+        currentPersonaId="default"
+        onSelect={p => selected.push(p)}
+        onCancel={() => {
+          cancelled = true
+        }}
+      />
+    </Box>
   )
   await t.tick()
 

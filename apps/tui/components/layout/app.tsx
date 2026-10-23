@@ -9,7 +9,7 @@ import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/u
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useCodeView } from "../../hooks/use-code-view"
 import { useHooks } from "../../hooks/use-hooks"
-import { useModifierKeys } from "../../hooks/use-modifier-keys"
+import { type HotkeyModifier, modifierLabel, useModifierHeld, useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useQuitGuard } from "../../hooks/use-quit-guard"
 import { useTheme } from "../../hooks/use-theme"
@@ -23,16 +23,20 @@ import { client, clientForModel, compactAt, describer, summarizer } from "../../
 import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
+import { Backdrop, ModalHost } from "../elem/modal"
 import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
-import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
+import { CommandModal } from "./command-modal"
+import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
+import { HelpModal } from "./help-modal"
 import { KeyBar, type KeyBarEntry } from "./key-bar"
 import { PersonaPicker } from "./persona-picker"
+import { Prompt } from "./prompt"
 import { UserInput } from "./user-input"
 
 /** Docs shown by the help keybar entry. */
-const HELP_URL = "https://docs.kaja.io/using/tui/"
+const HELP_URL = "https://docs.kaja.io/use/tui/"
 
 // Shared empty defaults: a fresh `[]` per render would change the prop each time
 const NO_PERSONAS: Persona[] = []
@@ -41,37 +45,46 @@ const NO_MODELS: CliResolvedModel[] = []
 /** Which optional chat capabilities the active backend supports — cloud Nasi has no local TTS to speak replies with. */
 type Capabilities = { persona: boolean; voice: boolean }
 
-type BottomChromeKey = "input" | "running" | "confirm" | "persona"
+type BottomChromeKey = "input" | "running" | "confirm" | "modal"
 
-function getBottomChromeKey(
-  pickingPersona: boolean,
-  pendingCommand: unknown,
-  runningCommand: boolean
-): BottomChromeKey {
-  if (pickingPersona) return "persona"
+/** The window over the chat, if any; more are added here. */
+type ModalName = "help" | "persona" | "command"
+
+function getBottomChromeKey(modalOpen: boolean, pendingCommand: unknown, runningCommand: boolean): BottomChromeKey {
+  if (modalOpen) return "modal"
   if (!pendingCommand) return "input"
   return runningCommand ? "running" : "confirm"
+}
+
+/** The ask_user tool call the turn ended on, so the next input is its answer (a plain "?" reply has no fromTool). */
+const pendingQuestion = (events: TimelineEvent[], pending: boolean) => {
+  const last = events.at(-1)
+  return !pending && last?.type === "ask_user" && last.fromTool === true ? last : undefined
 }
 
 /** Whether Esc quits here (typing, or a command running) rather than dismissing a prompt. */
 const isQuittable = (key: BottomChromeKey) => key === "input" || key === "running"
 
 // Esc means something different depending on what's showing — quit while typing or while a command runs, but just dismiss the
-// picker/confirm prompt over it.
+// modal/confirm prompt over it.
 function escKeyBarItem(
   bottomChromeKey: BottomChromeKey,
+  quittable: boolean,
+  clearing: boolean,
   quitArmed: boolean,
   pressQuit: () => void
 ): KeyBarEntry | undefined {
+  // Text typed in a prompt: Esc empties it first, whatever it would do otherwise
+  if (clearing) return { key: "Esc", label: t("keybar.clear") }
   const quit = quitArmed ? t("keybar.quitAgain") : t("keybar.quit")
   const labels: Partial<Record<BottomChromeKey, string>> = {
-    persona: t("keybar.cancel"),
+    modal: t("keybar.close"),
     confirm: t("keybar.decline"),
     input: quit,
     running: quit
   }
   const label = labels[bottomChromeKey]
-  return label ? { key: "Esc", label, onPress: isQuittable(bottomChromeKey) ? pressQuit : undefined } : undefined
+  return label ? { key: "Esc", label, onPress: quittable ? pressQuit : undefined } : undefined
 }
 
 /** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
@@ -88,16 +101,26 @@ function confirmPrompt(
 /** One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree. */
 type KeyBinding = { letter: string; label: string; run: () => void; when: boolean }
 
-function buildKeyBarItems(hotkeyModifier: string | undefined, bindings: KeyBinding[], escItem?: KeyBarEntry) {
-  const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
+function buildKeyBarItems(
+  hotkeyModifier: HotkeyModifier | undefined,
+  modifierHeld: boolean,
+  bindings: KeyBinding[],
+  escItem?: KeyBarEntry
+) {
+  const label = modifierLabel(hotkeyModifier)
   return [
     ...bindings
       .filter(binding => binding.when)
       .map(binding => ({
-        key: `${modifierLabel}+${binding.letter.toUpperCase()}`,
+        key: `${label}+${binding.letter.toUpperCase()}`,
+        // ‽ stands for whichever modifier it is; the help modal names it
+        short: `‽+${binding.letter.toUpperCase()}`,
         label: binding.label,
-        onPress: binding.run
+        onPress: binding.run,
+        lit: modifierHeld
       })),
+    { key: "PgUp", label: t("keybar.older"), onPress: () => uiEvents.emit("pageUp"), droppable: true },
+    { key: "PgDn", label: t("keybar.newer"), onPress: () => uiEvents.emit("pageDown"), droppable: true },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -129,8 +152,7 @@ function Chrome({
   switchPersona,
   pendingCommand,
   runningCommand = false,
-  resolvePending,
-  approvalScopes = false
+  resolvePending
 }: Readonly<{
   /** Where the agent runs, shown as a badge in the header. */
   mode: "local" | "cloud"
@@ -159,9 +181,8 @@ function Chrome({
   /** A run_command or an HTTP tool call waiting on approval; `command` is the shell command or the request summary. */
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
-  resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
-  /** Offer "for this session" on a tool approval (cloud). */
-  approvalScopes?: boolean
+  /** `feedback` is what the user wrote instead of answering: a decline that tells the agent why. */
+  resolvePending?: (approved: boolean, feedback?: string) => Promise<void>
 }>) {
   const {
     thinking,
@@ -176,12 +197,21 @@ function Chrome({
   useHooks(events)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
-  const [pickingPersona, setPickingPersona] = useState(false)
+  const [modal, setModal] = useState<ModalName | null>(null)
   const codeView = useCodeView(codePreviewLines)
 
-  const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
-  const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
-  const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
+  const question = pendingQuestion(events, pending)
+  const asking = Boolean(question)
+  const choices = question?.options
+  const bottomChromeKey = getBottomChromeKey(modal !== null, pendingCommand, runningCommand)
+  const showConfirm = Boolean(pendingCommand && resolvePending)
+  const showChoices = !showConfirm && Boolean(choices?.length)
+  const [mic, setMic] = useState(false)
+  const [promptDraft, setPromptDraft] = useState("")
+  // While text is typed in a prompt (an approval, a question's options) Esc only empties the field
+  const clearing = (showConfirm || showChoices) && promptDraft !== ""
+  const quittable = isQuittable(bottomChromeKey) && !clearing
+  const { armed: quitArmed, press: pressQuit } = useQuitGuard(quittable, pending || runningCommand)
   // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
   // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
   const bindings: KeyBinding[] = [
@@ -189,15 +219,13 @@ function Chrome({
       letter: "l",
       label: t("keybar.help"),
       when: true,
-      run: () => {
-        open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
-      }
+      run: () => setModal("help")
     },
     {
       letter: "p",
       label: t("keybar.persona"),
       when: capabilities.persona && !pending,
-      run: () => setPickingPersona(true)
+      run: () => setModal("persona")
     },
     // "R" for copy, not "C": Ctrl+C is reserved by Ink to quit the app, so under hotkeyModifier: "ctrl" it could never fire
     { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
@@ -206,73 +234,125 @@ function Chrome({
       label: t("keybar.expand"),
       when: codeView.canExpand,
       run: codeView.toggle
+    },
+    {
+      letter: "o",
+      label: t("keybar.command"),
+      when: showConfirm && !runningCommand,
+      run: () => setModal("command")
     }
   ]
   useModifierKeys(
     hotkeyModifier,
     Object.fromEntries(bindings.filter(binding => binding.when).map(binding => [binding.letter, binding.run]))
   )
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, bindings, escKeyBarItem(bottomChromeKey, quitArmed, pressQuit))
+  const modifierHeld = useModifierHeld(hotkeyModifier)
+  const openDocs = () => {
+    open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
+  }
+  const keyBarItems = buildKeyBarItems(
+    hotkeyModifier,
+    modifierHeld,
+    bindings,
+    escKeyBarItem(bottomChromeKey, quittable, clearing, quitArmed, pressQuit)
+  )
 
   return (
     <ThemeProvider theme={themeFor(theme)}>
       <CodeViewContext.Provider value={codeView.view}>
         <Box flexDirection="column" width={columns} height={rows}>
-          <Header
-            mode={mode}
-            persona={personaLabel}
-            model={model}
-            provider={provider}
-            promptTokens={promptTokens}
-            contextWindow={contextWindow}
-            currentTool={toolDisplay === "corner" ? currentTool : undefined}
-            width={columns}
-            profile={Bun.env.KAJA_PROFILE}
-            yolo={yolo}
-          />
-          <ChatViewport
-            events={events}
-            thinking={thinking}
-            partial={partial}
-            pending={pending}
-            bottomChromeKey={bottomChromeKey}
-            toolDisplay={toolDisplay}
-            currentTool={currentTool}
-          />
-          {bottomChromeKey === "persona" && (
+          <Backdrop>
+            <Header
+              mode={mode}
+              persona={personaLabel}
+              model={model}
+              provider={provider}
+              promptTokens={promptTokens}
+              contextWindow={contextWindow}
+              currentTool={toolDisplay === "corner" ? currentTool : undefined}
+              width={columns}
+              profile={Bun.env.KAJA_PROFILE}
+              yolo={yolo}
+            />
+            <ChatViewport
+              events={events}
+              thinking={thinking}
+              partial={partial}
+              pending={pending}
+              bottomChromeKey={bottomChromeKey}
+              toolDisplay={toolDisplay}
+              currentTool={currentTool}
+            />
+            {showConfirm && pendingCommand && resolvePending && (
+              <ConfirmCommand
+                key="confirm-command"
+                command={pendingCommand.command}
+                description={pendingCommand.description}
+                kind={pendingCommand.kind}
+                running={runningCommand}
+                speaking={speaking}
+                personaModels={personaModels}
+                onDraft={setPromptDraft}
+                onResolve={(approved, feedback) => resolvePending(approved, feedback)}
+              />
+            )}
+            {showChoices && choices && (
+              <Prompt
+                key="choices"
+                spec={{
+                  options: choices.map((label, index) => ({ kind: "choice", id: String(index), label })),
+                  placeholder: t("input.askChoicesPlaceholder")
+                }}
+                asking
+                speaking={speaking}
+                personaModels={personaModels}
+                history={history}
+                mic={mic}
+                onMicChange={setMic}
+                onDraft={setPromptDraft}
+                onResolve={result => void send(result.kind === "text" ? result.text : choices[Number(result.id)]!)}
+              />
+            )}
+            {!showConfirm && !showChoices && (
+              <UserInput
+                key="user-input"
+                pending={pending}
+                speaking={speaking}
+                asking={asking}
+                placeholder={asking ? t("input.askPlaceholder") : undefined}
+                send={send}
+                history={history}
+                personaModels={personaModels}
+                mic={mic}
+                onMicChange={setMic}
+              />
+            )}
+            <KeyBar items={keyBarItems} width={columns} />
+          </Backdrop>
+          {modal === "help" && (
+            <HelpModal
+              modifier={modifierLabel(hotkeyModifier)}
+              persona={capabilities.persona}
+              docsUrl={HELP_URL}
+              onOpenDocs={openDocs}
+              onClose={() => setModal(null)}
+            />
+          )}
+          {modal === "command" && pendingCommand && (
+            <CommandModal command={pendingCommand.command} kind={pendingCommand.kind} onClose={() => setModal(null)} />
+          )}
+          {modal === "persona" && (
             <PersonaPicker
               key="persona-picker"
               personas={personas}
               currentPersonaId={currentPersonaId}
               onSelect={next => {
                 switchPersona?.(next)
-                setPickingPersona(false)
+                setModal(null)
               }}
-              onCancel={() => setPickingPersona(false)}
+              onCancel={() => setModal(null)}
             />
           )}
-          {showConfirm && pendingCommand && resolvePending && (
-            <ConfirmCommand
-              key="confirm-command"
-              command={pendingCommand.command}
-              description={pendingCommand.description}
-              kind={pendingCommand.kind}
-              running={runningCommand}
-              scopes={approvalScopes && pendingCommand.kind === "tool"}
-              onResolve={(approved, scope) => resolvePending(approved, scope)}
-            />
-          )}
-          {bottomChromeKey !== "persona" && !showConfirm && (
-            <UserInput
-              key="user-input"
-              pending={pending}
-              speaking={speaking}
-              send={send}
-              history={history}
-              personaModels={personaModels}
-            />
-          )}
-          <KeyBar items={keyBarItems} />
         </Box>
       </CodeViewContext.Provider>
     </ThemeProvider>
@@ -356,10 +436,10 @@ function LocalApp({
     !pending && (lastEvent?.type === "confirm_command" || lastEvent?.type === "confirm_tool") ? lastEvent : undefined
   const pendingCommand = pendingEvent && confirmPrompt(pendingEvent)
   const resolvePending = pendingEvent
-    ? (approved: boolean) =>
+    ? (approved: boolean, feedback?: string) =>
         pendingEvent.type === "confirm_command"
-          ? resolveCommand(pendingEvent.command, approved)
-          : resolveToolApproval(pendingEvent.name, pendingEvent.arguments, approved)
+          ? resolveCommand(pendingEvent.command, approved, feedback)
+          : resolveToolApproval(pendingEvent.name, pendingEvent.arguments, approved, feedback)
     : undefined
   const provider = models.find(m => m.model === displayModel)?.provider
 
@@ -427,8 +507,9 @@ function CloudApp({
   // A call on this computer asks while its turn is still running; a cloud approval only once the turn ended.
   const cloudEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
   const pendingEvent = localApproval?.event ?? cloudEvent
-  let resolvePending: ((approved: boolean) => Promise<void>) | undefined
-  if (localApproval) resolvePending = approved => Promise.resolve(localApproval.resolve(approved))
+  let resolvePending: ((approved: boolean, feedback?: string) => Promise<void>) | undefined
+  if (localApproval)
+    resolvePending = (approved, feedback) => Promise.resolve(localApproval.resolve(feedback ? { feedback } : approved))
   else if (cloudEvent) resolvePending = resolveToolApproval
 
   return (
@@ -451,7 +532,6 @@ function CloudApp({
       pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
       resolvePending={resolvePending}
-      approvalScopes={!localApproval}
     />
   )
 }
@@ -491,5 +571,5 @@ type CloudAppProps = Readonly<{
  * configurable-modifier keybar (help / persona picker; see use-modifier-keys.ts).
  */
 export default function App(props: LocalAppProps | CloudAppProps) {
-  return props.mode === "local" ? <LocalApp {...props} /> : <CloudApp {...props} />
+  return <ModalHost>{props.mode === "local" ? <LocalApp {...props} /> : <CloudApp {...props} />}</ModalHost>
 }

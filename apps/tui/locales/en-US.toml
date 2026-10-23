@@ -285,7 +285,9 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "PgUp history · Alt+Enter newline"
+placeholder           = "Type something..."
+askPlaceholder        = "Type your answer…"
+askChoicesPlaceholder = "Or type your own answer…"
 
 
 [header]
@@ -297,25 +299,31 @@ cloud = "Cloud"
 help      = "Help"
 persona   = "Persona"
 copy      = "Copy"
+older     = "Older"
+newer     = "Newer"
 quit      = "Quit"
 expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
+close     = "Close"
+clear     = "Clear"
+command   = "Command"
 
 
 [viewport]
-older = "↑ older · PageDown or Ctrl+End to follow"
+scrolledBack = "↑ {percent}% of the history"
 
 
 [confirmCommand]
-yes         = "Yes, run it"
-yesSession  = "Yes, and don't ask again this session"
-no          = "No, cancel"
-running     = "Running…"
-truncated   = "… {count} more lines"
-inputLocked = "Waiting for your answer above"
-toolRequest = "{name} wants to send this request:"
+yes          = "Yes, run it"
+no           = "No, cancel"
+running      = "Running…"
+truncated    = "… {count} more lines"
+placeholder  = "Or type what to do instead (it skips this)"
+commandTitle = "Command waiting for approval"
+requestTitle = "Request waiting for approval"
+toolRequest  = "{name} wants to send this request:"
 
 
 [secretPrompt]
@@ -326,6 +334,19 @@ placeholder = "key or token"
 [activity]
 thinking = "Thinking… {seconds}s elapsed, still reasoning"
 tokens   = " · ~{tokens} tokens generated so far"
+
+
+[help]
+title    = "Help"
+intro    = "Type a message and press Enter to send it. Esc quits."
+persona  = "Switch persona"
+copy     = "Copy the latest reply (or click any reply to copy it)"
+expand   = "Expand or collapse long code"
+command  = "Show the command waiting for approval"
+help     = "Show this help"
+scroll   = "Scroll the chat"
+newline  = "New line in your message"
+openDocs = "Open the documentation"
 
 
 [persona]
@@ -462,6 +483,7 @@ newSession           = "🆕 Started a new session."
 stillWorking         = "Still working on your last message…"
 pendingCommand       = "There's a command or request waiting for your approval above — tap Approve or Decline first."
 commandExpired       = "This command is no longer pending."
+questionExpired      = "This question was already answered."
 approved             = "Approved"
 approveSession       = "Approve for this chat"
 declined             = "Declined"

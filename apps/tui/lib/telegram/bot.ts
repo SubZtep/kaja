@@ -179,8 +179,16 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     const chatId = ctx.callbackQuery.message?.chat.id
     const messageId = ctx.callbackQuery.message?.message_id
     if (chatId === undefined || messageId === undefined) return
+    const message = ctx.callbackQuery.message
     inBackground(
-      driver.handleCallbackQuery(ctx.from.id, chatId, messageId, ctx.callbackQuery.data, ctx.callbackQuery.id)
+      driver.handleCallbackQuery(
+        ctx.from.id,
+        chatId,
+        messageId,
+        ctx.callbackQuery.data,
+        ctx.callbackQuery.id,
+        message && "text" in message ? message.text : undefined
+      )
     )
   })
 

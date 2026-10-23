@@ -1,12 +1,12 @@
-import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
+import { Box, type Key, Text, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
-import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
+import { useInputBlocked } from "../../hooks/use-input-blocked"
+import { useKey } from "../../hooks/use-key"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
-import { fireHook } from "../../lib/config/hooks"
+import { copyableText, copyToClipboard } from "../../lib/copy"
 import { t } from "../../lib/i18n"
-import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { parseWheelDirection } from "../../lib/terminal-input"
 import { type DisplayEvent, foldToolCalls } from "../../lib/tool-summary"
@@ -58,20 +58,6 @@ function spacing(items: DisplayEvent[], thinking: boolean) {
   })
 }
 
-/** Timeline event types whose text is worth copying to the clipboard: the agent's words, never the user's own message. */
-function copyableText(event: TimelineEvent): string | null {
-  switch (event.type) {
-    case "message":
-      return event.content
-    case "final":
-      return event.content
-    case "ask_user":
-      return event.question
-    default:
-      return null
-  }
-}
-
 /** Most recent message with copyable text, searching from the end of the timeline. */
 function lastCopyableText(events: TimelineEvent[]): string | null {
   for (let i = events.length - 1; i >= 0; i--) {
@@ -92,6 +78,11 @@ function clampScrollTo(view: VirtualScrollRef, offset: number) {
   return next
 }
 
+/** One page of rows, less one so a line of context carries over. */
+function pageRows(view: VirtualScrollRef) {
+  return Math.max(1, (view.getViewportHeight() || 10) - 1)
+}
+
 function scrollByClamped(view: VirtualScrollRef, delta: number) {
   return clampScrollTo(view, view.getScrollOffset() + delta)
 }
@@ -102,7 +93,7 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
  * Content is bottom-anchored (chat grows upward from the input). A dynamic top spacer fills unused viewport rows when
  * history is short, so you never see a floating block at the top of an empty pane.
  *
- * Key ownership (chat vs text field): PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport ↑/↓, ←/→,
+ * Key ownership (chat vs text field): PageUp/Down, Ctrl+↑/↓, Ctrl+Home, mouse wheel → this viewport ↑/↓, ←/→,
  * Home/End (no ctrl), Ctrl+←/→ → TextInput cursor Ctrl+T → mic the copy button / <modifier>+R (app.tsx) → uiEvents
  * "copy" → this viewport copies the latest message
  *
@@ -139,6 +130,8 @@ export function ChatViewport({
   const topPadRef = useRef(0)
   const [stuckToBottom, setStuckToBottom] = useState(true)
   const [canScroll, setCanScroll] = useState(false)
+  /** How far down the history the view sits, 0 at the very top. */
+  const [scrollPercent, setScrollPercent] = useState(100)
   /** Extra rows above the messages so short history sits on the bottom edge. */
   const [topPad, setTopPad] = useState(0)
   const { columns, rows } = useWindowSize()
@@ -154,7 +147,9 @@ export function ChatViewport({
   const syncCanScroll = () => {
     const view = scrollRef.current
     if (!view) return
-    setCanScroll(view.getBottomOffset() > 0)
+    const bottom = view.getBottomOffset()
+    setCanScroll(bottom > 0)
+    setScrollPercent(bottom > 0 ? Math.floor((view.getScrollOffset() / bottom) * 100) : 100)
   }
 
   /**
@@ -246,18 +241,8 @@ export function ChatViewport({
     else if (wheel === "down") scrollIfPossible(maxScroll, () => scrollByClamped(view, WHEEL_LINES))
   }
 
-  const handleKeyInput = (
-    view: VirtualScrollRef,
-    key: Parameters<Parameters<typeof useInput>[0]>[1],
-    maxScroll: number
-  ) => {
-    if (key.ctrl && key.end) {
-      setStick(true)
-      view.scrollToBottom()
-      updateStickFromView()
-      return
-    }
-    const page = Math.max(1, (view.getViewportHeight() || 10) - 1)
+  const handleKeyInput = (view: VirtualScrollRef, key: Key, maxScroll: number) => {
+    const page = pageRows(view)
     if (key.pageUp) {
       scrollIfPossible(maxScroll, () => scrollByClamped(view, -page))
     } else if (key.pageDown) {
@@ -274,29 +259,52 @@ export function ChatViewport({
   const copyLatest = () => {
     const text = lastCopyableText(events)
     if (!text) return
-    writeText(text)
-      .then(() => fireHook("copy"))
-      .catch(error => log.warn("Copy to clipboard failed", { error }))
+    copyToClipboard(text)
   }
-  // The key bar's Copy button asks through uiEvents; an effect event keeps the listener on the latest events
+  // The key bar's buttons ask through uiEvents; effect events keep the listeners on the latest state
   const copy = useEffectEvent(copyLatest)
+  const pageUp = useEffectEvent(() => {
+    const view = scrollRef.current
+    if (view) scrollIfPossible(view.getBottomOffset(), () => scrollByClamped(view, -pageRows(view)))
+  })
+  const pageDown = useEffectEvent(() => {
+    const view = scrollRef.current
+    if (view) scrollIfPossible(view.getBottomOffset(), () => scrollByClamped(view, pageRows(view)))
+  })
+  const follow = useEffectEvent(() => {
+    const view = scrollRef.current
+    if (!view || stickRef.current) return
+    setStick(true)
+    view.scrollToBottom()
+    updateStickFromView()
+  })
   useEffect(() => {
     const onCopy = () => copy()
+    const onPageUp = () => pageUp()
+    const onPageDown = () => pageDown()
+    const onFollow = () => follow()
     uiEvents.on("copy", onCopy)
+    uiEvents.on("pageUp", onPageUp)
+    uiEvents.on("pageDown", onPageDown)
+    uiEvents.on("follow", onFollow)
     return () => {
       uiEvents.off("copy", onCopy)
+      uiEvents.off("pageUp", onPageUp)
+      uiEvents.off("pageDown", onPageDown)
+      uiEvents.off("follow", onFollow)
     }
   }, [])
 
   // Nothing to scroll (getBottomOffset 0): the handlers keep stick and don't create empty overscroll
-  useInput((_input, key) => {
+  useKey((_input, key) => {
     const view = scrollRef.current
     if (view) handleKeyInput(view, key, view.getBottomOffset())
   })
+  const blocked = useInputBlocked()
   useTerminalReports(input => {
     const view = scrollRef.current
     if (view) handleWheelInput(view, input, view.getBottomOffset())
-  })
+  }, !blocked)
 
   const showAffordance = canScroll && !stuckToBottom
 
@@ -335,7 +343,7 @@ export function ChatViewport({
     >
       {showAffordance && (
         <Box flexShrink={0} width="100%">
-          <Text dimColor>{t("viewport.older")}</Text>
+          <Text dimColor>{t("viewport.scrolledBack", { percent: scrollPercent })}</Text>
         </Box>
       )}
       <VirtualScroll

@@ -80,6 +80,10 @@ Calls that could change something wait for your **Approve** or **Decline** butto
 stops asking about that tool until you start a new conversation (on your own bot, until it restarts). If you write
 a message instead of tapping, the call is skipped and Kaja reads your message.
 
+When Kaja asks a question with a few likely answers, they come as buttons under it. Tap one to answer, or just
+write your own answer. A tapped question is marked with your pick, and tapping an old one again says it was
+already answered.
+
 {: .note }
 Never send an API key to your bot: Telegram keeps the message history. Put it in `secrets.toml` instead.
 

@@ -1,9 +1,8 @@
-import { Box, Text, useInput } from "ink"
+import { Box, Text } from "ink"
 import { useState } from "react"
+import { useKey } from "../../hooks/use-key"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
-
-const VISIBLE_COUNT = 5
 
 /**
  * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
@@ -19,8 +18,10 @@ export function SelectMenu({
   accented,
   width = 32,
   initialIndex,
+  visibleCount,
   preview,
   closeOnBackspace = true,
+  active = true,
   onFocus,
   onSelect,
   onClose
@@ -33,6 +34,8 @@ export function SelectMenu({
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
+  /** Rows shown at once, the list scrolling past that; defaults to all of them. */
+  visibleCount?: number
   /**
    * The highlighted row in the theme's preview colours, a band across the menu: the theme step's, which previews
    * itself.
@@ -40,14 +43,18 @@ export function SelectMenu({
   preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean
+  /** Takes keys; off while something else (a text field beside it) has them, and the rows dim to show it. */
+  active?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
   onFocus?: (index: number) => void
   onSelect: (index: number) => void
-  onClose: () => void
+  /** Left out inside a Modal, which closes on Escape itself. */
+  onClose?: () => void
 }>) {
+  const visible = visibleCount === undefined ? items.length : Math.max(visibleCount, 1)
   const start = Math.min(Math.max(initialIndex ?? 0, 0), Math.max(items.length - 1, 0))
   // Scrolls only far enough to keep the focused option on screen, so opening deep in a long list still shows it.
-  const windowStart = Math.max(0, Math.min(start - VISIBLE_COUNT + 1, items.length - VISIBLE_COUNT))
+  const windowStart = Math.max(0, Math.min(start - visible + 1, items.length - visible))
   const [focused, setFocused] = useState(start)
   const [from, setFrom] = useState(windowStart)
 
@@ -67,30 +74,41 @@ export function SelectMenu({
     setFocused(next)
     onFocus?.(next)
     if (next < from) setFrom(next)
-    else if (next >= from + VISIBLE_COUNT) setFrom(next - VISIBLE_COUNT + 1)
+    else if (next >= from + visible) setFrom(next - visible + 1)
   }
 
-  useInput((_input, key) => {
-    if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
-      onClose()
-      return
-    }
-    if (key.downArrow) move(1)
-    if (key.upArrow) move(-1)
-    if (key.return) onSelect(focused)
-  })
+  useKey(
+    (_input, key) => {
+      if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
+        onClose?.()
+        return
+      }
+      if (key.downArrow) move(1)
+      if (key.upArrow) move(-1)
+      if (key.return) onSelect(focused)
+    },
+    { isActive: active }
+  )
 
   const { accent, previewRow, previewText } = useKajaTheme()
+
+  // A scrolling list reserves an arrow slot between the cursor and the label, so the menu stays `visible` rows tall.
+  const scrolls = items.length > visible
+  const hiddenAbove = from
+  const hiddenBelow = Math.max(0, items.length - from - visible)
 
   return (
     // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only
     // `preview` paints it, in the theme's own colours).
     <InputFrame width={width} plain>
-      {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
+      {items.slice(from, from + visible).map((item, offset) => {
         const index = from + offset
         const isFocused = index === focused
         const hint = hints?.[index]
         const accentRow = !isFocused && accented?.[index]
+        let arrow = " "
+        if (offset === 0 && hiddenAbove > 0) arrow = "↑"
+        else if (offset === visible - 1 && hiddenBelow > 0) arrow = "↓"
         return (
           <Box
             key={index}
@@ -104,11 +122,17 @@ export function SelectMenu({
           >
             <Box gap={1}>
               {isFocused && (
-                <Text bold {...(preview ? previewText() : {})}>
+                <Text bold dimColor={!active} {...(preview ? previewText() : {})}>
                   ❯
                 </Text>
               )}
-              <Text bold={isFocused} {...(accentRow ? accent() : {})} {...(isFocused && preview ? previewText() : {})}>
+              {scrolls && <Text dimColor>{arrow}</Text>}
+              <Text
+                bold={isFocused}
+                dimColor={!active}
+                {...(accentRow ? accent() : {})}
+                {...(isFocused && preview ? previewText() : {})}
+              >
                 {item}
               </Text>
             </Box>

@@ -2,7 +2,14 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
+import {
+  askUserChatClient,
+  cleanupModel,
+  expectUnauthenticated,
+  fakeChatClient,
+  seedModel,
+  signUpAndSignIn
+} from "./helpers"
 
 const turnRequestInit = {
   method: "POST",
@@ -261,6 +268,20 @@ describe("nasi", () => {
       const events = parseSse(await res.text())
       expect(events.map(e => e.event)).toEqual(["error"])
       expect(JSON.parse(events[0]!.data).error).toBe("Session not found")
+    })
+
+    test("an ask_user question's options go out with the event", async () => {
+      await withStubbedResolver(askUserChatClient(), async () => {
+        const res = await app.request("/nasi/turn/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: "deploy it" })
+        })
+        const events = parseSse(await res.text())
+        const ask = events.find(e => e.event === "ask_user")!
+        expect(JSON.parse(ask.data)).toMatchObject({ question: "Proceed?", options: ["Yes", "No"], fromTool: true })
+        expect(JSON.parse(events.at(-1)!.data).status).toBe("needs_input")
+      })
     })
 
     test("a tool error on stream is not an error event: the model answers after it", async () => {

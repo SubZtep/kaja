@@ -64,6 +64,10 @@ sequenceDiagram
 The bundle works out the API address from its own `src` and sends the key as an `X-Kaja-Widget-Key` header
 on every turn, so there's nothing else to wire up.
 
+When the agent asks a question that has a few likely answers, a `chat` widget shows them as buttons under the
+question: a click sends that answer, and the visitor can still type their own. A `barkochba` widget keeps its
+fixed answer buttons.
+
 A visitor's state (`visitorId`, `session`) lives in `sessionStorage`, not cookies. Each visitor's
 sessions, memory notes and dataset answers are kept apart inside your account. Visitors never see each
 other's, and none of it mixes into yours.

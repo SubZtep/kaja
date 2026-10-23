@@ -1,4 +1,3 @@
-import { CreateBucketCommand, HeadBucketCommand, PutBucketPolicyCommand, S3Client } from "@aws-sdk/client-s3"
 import type { ObjectStore } from "@kaja/nasi"
 import { env } from "./env"
 
@@ -11,9 +10,6 @@ const region = env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION
  * CI).
  */
 const bucket = new Bun.S3Client({ bucket: env.STORAGE_BUCKET, endpoint, region, ...credentials })
-
-/** What anyone may read: the images, never a listing (see {@link prepareBucket}). */
-const PUBLIC_PREFIX = "images/"
 
 /**
  * The endpoint without its trailing slashes, so the key path below adds exactly one (a regex would backtrack on a run
@@ -64,36 +60,6 @@ export const objects: ObjectStore = {
     }
   },
   location: imageUrl
-}
-
-/**
- * Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in
- * its console), then lets anyone read `images/` (never list it), so clients and Telegram fetch images by plain URL.
- * Hetzner only takes bucket policies through the S3 API, so the API sets it itself.
- */
-export async function prepareBucket(): Promise<void> {
-  const client = s3Client()
-  const Bucket = env.STORAGE_BUCKET
-  try {
-    if (env.STORAGE_ENDPOINT) {
-      await client.send(new HeadBucketCommand({ Bucket })).catch(() => client.send(new CreateBucketCommand({ Bucket })))
-    }
-    const statement = {
-      Effect: "Allow",
-      Principal: "*",
-      Action: ["s3:GetObject"],
-      Resource: [`arn:aws:s3:::${Bucket}/${PUBLIC_PREFIX}*`]
-    }
-    const Policy = JSON.stringify({ Version: "2012-10-17", Statement: [statement] })
-    await client.send(new PutBucketPolicyCommand({ Bucket, Policy }))
-  } finally {
-    client.destroy()
-  }
-}
-
-// The AWS client for what Bun's S3 client doesn't do: creating the bucket and setting its policy.
-function s3Client() {
-  return new S3Client({ endpoint, region, forcePathStyle: !!env.STORAGE_ENDPOINT, credentials })
 }
 
 /** Whether the bucket answers within `timeoutMs`, for `/health/ready`. */
