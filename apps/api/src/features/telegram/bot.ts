@@ -190,7 +190,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   chat.on("callback_query:data", async ctx => {
     const message = ctx.callbackQuery.message
-    if (ctx.callbackQuery.data.startsWith("tool:") && message) {
+    if ((ctx.callbackQuery.data.startsWith("tool:") || ctx.callbackQuery.data.startsWith("ask:")) && message) {
       await ctx.answerCallbackQuery()
       inBackground(
         "Telegram button handling crashed",

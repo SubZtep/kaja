@@ -5,6 +5,7 @@ import {
   type FinalizedAgentEvent,
   isImageRejection,
   type NasiTurnInput,
+  pendingQuestionOptions,
   pendingToolCall,
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
@@ -12,11 +13,13 @@ import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
   approvalToken,
+  askButtons,
   commandArgument,
   compactedLine,
   escapeHtml,
   isCommand,
   openReply,
+  parseAskCallback,
   type Reply
 } from "@kaja/shared/telegram"
 import { pool } from "../../core/db"
@@ -171,7 +174,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   ): Promise<void> {
     if (event.type === "message") await reply.endRound(event.content)
     // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
-    else if (event.type === "ask_user") await reply.finish(event.question)
+    else if (event.type === "ask_user")
+      await reply.finish(event.question, event.id && event.options ? askButtons(event.id, event.options) : undefined)
     else if (event.type === "final") await reply.finish(event.content ?? "")
     else if (event.type === "confirm_tool") await sendApproval(reply, chatId, event, language)
     else if (event.type === "compacted")
@@ -271,8 +275,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     language: BotLanguage
   ) {
     const reply = await openReply({
-      send: text => sender.sendMessage(chatId, text),
-      edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+      send: (text, rows) => sender.sendMessage(chatId, text, rows),
+      edit: (messageId, text, rows) => sender.editMessageText(chatId, messageId, text, rows),
       remove: messageId => sender.deleteMessage(chatId, messageId),
       sendPhoto: async (url: string, caption) => {
         await sender.sendPhoto(chatId, url, caption)
@@ -359,6 +363,39 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /**
+   * A tap on one of a question's options: it must be the question their latest session is still waiting on, so an old
+   * button does nothing but say so. The message keeps the question and shows the pick, then the pick is the user's
+   * answer.
+   */
+  async function answerQuestion(
+    ownerUserId: string,
+    owner: string,
+    chatId: number,
+    messageId: number,
+    answer: { token: string; index: number },
+    language: BotLanguage,
+    messageText?: string
+  ) {
+    const { t } = language
+    const question = messageText ? `${escapeHtml(messageText)}\n\n` : ""
+    try {
+      await whileBusy(owner, async () => {
+        const row = await loadLatestSession(ownerUserId, owner)
+        const askId = row?.session.pendingAskUserId
+        const choice = row ? pendingQuestionOptions(row.session)[answer.index] : undefined
+        if (!askId || approvalToken(askId) !== answer.token || choice === undefined) {
+          await editSafely(chatId, messageId, `${question}${t("telegram.questionExpired")}`)
+          return
+        }
+        await editSafely(chatId, messageId, `${question}→ ${escapeHtml(choice)}`)
+        await runTurnLocked(ownerUserId, owner, chatId, { message: choice }, true, language)
+      })
+    } catch (error) {
+      reportError("Telegram answer crashed", error)
+    }
+  }
+
+  /**
    * A button press: Approve/Decline on a tool call. The pressing user comes from Telegram (never the payload). An
    * approval must match the call their latest session is still waiting on, so an old or foreign button does nothing;
    * the server then runs (or skips) the call it saved. `messageText` is the prompt's own text, kept above the answer.
@@ -372,8 +409,9 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     telegramLanguage?: string,
     messageText?: string
   ) {
+    const answer = parseAskCallback(data)
     const match = TOOL_CALLBACK.exec(data)
-    if (!match) return false
+    if (!match && !answer) return false
     const linked = await resolveLinkedUser(telegramUserId)
     const language = botLanguage(linked?.locale, telegramLanguage)
     const { t } = language
@@ -384,6 +422,11 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const ownerUserId = linked.userId
 
     const owner = telegramOwner(telegramUserId)
+    if (answer) {
+      await answerQuestion(ownerUserId, owner, chatId, messageId, answer, language, messageText)
+      return true
+    }
+    if (!match) return false
     const approval = match[1] as "approve" | "approve_session" | "decline"
 
     try {

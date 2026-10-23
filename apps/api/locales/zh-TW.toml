@@ -42,6 +42,7 @@ decline          = "❌ 拒絕"
 approved         = "✅ 已核准"
 declined         = "❌ 已拒絕"
 approvalExpired  = "此請求已被回應或已過期。"
+questionExpired  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
 
 
   [telegram.error]
