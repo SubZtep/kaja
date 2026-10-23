@@ -54,31 +54,31 @@ temp           = "temp"
 
 [args]
 help        = """
-[en-US] lorem ipsum dolor sit amet consectetur {version}
+Kaja command line tool • v{version} • https://kaja.io
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit
+USAGE
+  $ kaja [OPTIONS] [COMMAND]
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit amet
-                       [en-US] lorem ipsum dolor sit amet consectetur
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [en-US] lorem ipsum dolor sit amet consectetur
-                       [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+COMMANDS
+  config <wizard|fetch|diff|paths>
+                       Set up interactively, or manage config files
+  doctor               Print configured models, MCP servers and tools, and check connections
+  telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
+  abilities [update]   Pick which skills load, or fetch the marketplace
+  sessions             List saved local sessions with their ids
+  images [describe [--retry] | clean [--yes]]
+                       Show stored images; describe the ones without a description, or remove leftovers (--local)
+  login                Sign in to the cloud account without starting a chat
+  logout               Log out of the cloud account, clearing its stored credential
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet
-  [en-US] lorem ipsum dolor sit amet
+OPTIONS
+  --local         Run the local agent loop against your own provider instead of cloud login
+  --cloud         Force cloud login even if a local config exists (default)
+  --continue, -c  Resume the most recent session (--local only)
+  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
+  --session, -s   Resume a session by id (--local only; see: kaja sessions)
+  --help          Show this help
+  --version       Print the version
 """
 unknownFlag = "{message}. Run `kaja --help` to see the available options."
 
@@ -460,33 +460,33 @@ yolo                   = "yolo is on in {path}: every command and tool call runs
 
 
 [images]
-empty             = "[en-US] lorem ipsum dolor"
-totals            = "[en-US] lorem {count} {size}"
-descriptions      = "[en-US] lorem ipsum dolor sit amet {described} {undescribed}"
-added             = "[en-US] lorem ipsum dolor sit {count} {days} {size}"
-sitesTitle        = "[en-US] lorem ipsum dolor"
-sessionsTitle     = "[en-US] lorem ipsum dolor"
-sessionLine       = "[en-US] lorem {images} {size} {title}"
-describeHint      = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
-unknownAction     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {action}"
-localOnly         = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-signInFirst       = "[en-US] lorem ipsum dolor sit amet consectetur"
-cloudFailed       = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {status}"
-noVision          = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-nothingToDescribe = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-describing        = "[en-US] lorem ipsum dolor {count} {model}"
-noDescription     = "[en-US] lorem ipsum dolor sit"
-described         = "[en-US] lorem ipsum {described} {total}"
-nothingToClean    = "[en-US] lorem ipsum"
-removeAsk         = "[en-US] lorem ipsum"
-removed           = "[en-US] lorem {count}"
-removeHint        = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+empty             = "No images stored yet."
+totals            = "{count} images, {size}"
+descriptions      = "{described} described, {undescribed} without a description"
+added             = "{count} added in the last {days} days ({size})"
+sitesTitle        = "Where they came from:"
+sessionsTitle     = "Sessions with the most:"
+sessionLine       = "{images} images, {size}  {title}"
+describeHint      = "Describe the rest with `kaja --local images describe`."
+unknownAction     = "Unknown `kaja images {action}`. Use `describe` or `clean`."
+localOnly         = "`kaja images describe` and `clean` work on the local store only (`kaja --local images …`)."
+signInFirst       = "Not signed in. Run `kaja login` first."
+cloudFailed       = "Couldn't load your images from the cloud (HTTP {status})."
+noVision          = "No vision model in models.toml: add one with `vision` in its tasks to describe images."
+nothingToDescribe = "Every image has a description (images tried three times are skipped; add --retry for them)."
+describing        = "Describing {count} images with {model}…"
+noDescription     = "the model gave no description"
+described         = "Described {described} of {total}."
+nothingToClean    = "Nothing to clean."
+removeAsk         = "Remove them? [y/N]"
+removed           = "Removed {count}."
+removeHint        = "Run it in a terminal to be asked, or add --yes to remove them all."
 
 
   [images.orphans]
-  files   = "[en-US] lorem ipsum dolor {count} {size}"
-  rows    = "[en-US] lorem ipsum dolor sit {count} {size}"
-  unsaved = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {count} {size}"
+  files   = "{count} files without a row ({size}):"
+  rows    = "{count} rows whose file is gone ({size}):"
+  unsaved = "{count} images of sessions never saved, over a day old ({size}):"
 
 
 [session]

@@ -54,31 +54,31 @@ temp           = "ideiglenes"
 
 [args]
 help        = """
-[hu-HU] lorem ipsum dolor sit amet consectetur {version}
+Kaja parancssori eszköz • v{version} • https://kaja.io
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit
+HASZNÁLAT
+  $ kaja [OPTIONS] [COMMAND]
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet
-                       [hu-HU] lorem ipsum dolor sit amet consectetur
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [hu-HU] lorem ipsum dolor sit amet consectetur
-                       [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+PARANCSOK
+  config <wizard|fetch|diff|paths>
+                       Interaktív beállítás, vagy a konfigurációs fájlok kezelése
+  doctor               Kiírja a beállított modelleket, MCP-szervereket és eszközöket, és ellenőrzi a kapcsolatokat
+  telegram [--pair]    Elindítja a Telegram-botodat; a --pair kódot mutat egy újabb személy párosításához
+  abilities [update]   Válaszd ki, mely képességek töltődjenek be, vagy töltsd le a piacteret
+  sessions             Kilistázza a mentett helyi munkameneteket az azonosítóikkal
+  images [describe [--retry] | clean [--yes]]
+                       A tárolt képek megjelenítése; leírás nélküliek leírása vagy a maradványok törlése (--local)
+  login                Bejelentkezés a felhőfiókba csevegés indítása nélkül
+  logout               Kijelentkezés a felhőfiókból, a tárolt hitelesítő adat törlésével
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet
-  [hu-HU] lorem ipsum dolor sit amet
+OPCIÓK
+  --local         A helyi ágenshurok futtatása a saját szolgáltatóddal felhős bejelentkezés helyett
+  --cloud         Felhős bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció (alapértelmezett)
+  --continue, -c  A legutóbbi munkamenet folytatása (csak --local)
+  --headless      Terminálfelület nélkül; az ezt támogató alparancsokhoz (pl. telegram)
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local; lásd: kaja sessions)
+  --help          Ez a súgó
+  --version       A verzió kiírása
 """
 unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
@@ -460,33 +460,33 @@ yolo                   = "a yolo be van kapcsolva itt: {path}: minden parancs é
 
 
 [images]
-empty             = "[hu-HU] lorem ipsum dolor"
-totals            = "[hu-HU] lorem {count} {size}"
-descriptions      = "[hu-HU] lorem ipsum dolor sit amet {described} {undescribed}"
-added             = "[hu-HU] lorem ipsum dolor sit {count} {days} {size}"
-sitesTitle        = "[hu-HU] lorem ipsum dolor"
-sessionsTitle     = "[hu-HU] lorem ipsum dolor"
-sessionLine       = "[hu-HU] lorem {images} {size} {title}"
-describeHint      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-unknownAction     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {action}"
-localOnly         = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-signInFirst       = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-cloudFailed       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {status}"
-noVision          = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-nothingToDescribe = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-describing        = "[hu-HU] lorem ipsum dolor {count} {model}"
-noDescription     = "[hu-HU] lorem ipsum dolor sit"
-described         = "[hu-HU] lorem ipsum {described} {total}"
-nothingToClean    = "[hu-HU] lorem ipsum"
-removeAsk         = "[hu-HU] lorem ipsum"
-removed           = "[hu-HU] lorem {count}"
-removeHint        = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+empty             = "Még nincs tárolt kép."
+totals            = "{count} kép, {size}"
+descriptions      = "{described} leírással, {undescribed} leírás nélkül"
+added             = "{count} új az elmúlt {days} napban ({size})"
+sitesTitle        = "Honnan származnak:"
+sessionsTitle     = "A legtöbb képet tartalmazó munkamenetek:"
+sessionLine       = "{images} kép, {size}  {title}"
+describeHint      = "A többit így írhatod le: `kaja --local images describe`."
+unknownAction     = "Ismeretlen parancs: `kaja images {action}`. Használd a `describe` vagy a `clean` parancsot."
+localOnly         = "A `kaja images describe` és a `clean` csak a helyi tárolón működik (`kaja --local images …`)."
+signInFirst       = "Nem vagy bejelentkezve. Előbb futtasd a `kaja login` parancsot."
+cloudFailed       = "Nem sikerült betölteni a képeidet a felhőből (HTTP {status})."
+noVision          = "Nincs képfelismerő modell a models.toml-ban: adj hozzá egyet, amelynek a feladatai között szerepel a `vision`, hogy képeket írhass le."
+nothingToDescribe = "Minden képnek van leírása (a háromszor megpróbált képeket kihagyjuk; ezekhez add meg a --retry kapcsolót)."
+describing        = "{count} kép leírása a(z) {model} modellel…"
+noDescription     = "a modell nem adott leírást"
+described         = "{total} képből {described} leírva."
+nothingToClean    = "Nincs mit takarítani."
+removeAsk         = "Törlöd őket? [y/N]"
+removed           = "{count} törölve."
+removeHint        = "Futtasd terminálban, hogy rákérdezzen, vagy add meg a --yes kapcsolót, hogy mindet törölje."
 
 
   [images.orphans]
-  files   = "[hu-HU] lorem ipsum dolor {count} {size}"
-  rows    = "[hu-HU] lorem ipsum dolor sit {count} {size}"
-  unsaved = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {count} {size}"
+  files   = "{count} fájl sor nélkül ({size}):"
+  rows    = "{count} sor, amelynek eltűnt a fájlja ({size}):"
+  unsaved = "{count} kép soha el nem mentett munkamenetekből, egy napnál régebbiek ({size}):"
 
 
 [session]
