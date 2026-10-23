@@ -54,6 +54,12 @@ function getBottomChromeKey(modalOpen: boolean, pendingCommand: unknown, running
   return runningCommand ? "running" : "confirm"
 }
 
+/** The turn ended on an ask_user tool call, so the next input is its answer (a plain "?" reply has no fromTool). */
+const isAsking = (events: TimelineEvent[], pending: boolean) => {
+  const last = events.at(-1)
+  return !pending && last?.type === "ask_user" && last.fromTool === true
+}
+
 /** Whether Esc quits here (typing, or a command running) rather than dismissing a prompt. */
 const isQuittable = (key: BottomChromeKey) => key === "input" || key === "running"
 
@@ -274,6 +280,7 @@ function Chrome({
                 key="user-input"
                 pending={pending}
                 speaking={speaking}
+                asking={isAsking(events, pending)}
                 send={send}
                 history={history}
                 personaModels={personaModels}
