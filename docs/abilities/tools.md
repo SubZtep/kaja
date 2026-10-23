@@ -32,7 +32,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `run_command`                                                    | run a shell command                                                                            |                   your computer, opt-in                    |
 
 Locally, `generate_image` needs a model listing `image-generation` in
-[`models.toml`](/configuration/models).
+[`models.toml`](/config/models).
 
 `fetch_url`, `generate_image` and `edit_image` are opt-in: a persona with an `abilities` list gets them only by
 listing `fetch-url`, `generate-image` or `edit-image` there (see [Personas](/abilities/personas#abilities)). The
@@ -48,7 +48,7 @@ With no sandbox online, these calls fail.
 The **Cloud** column is an allowlist: nothing that touches the server's files or shell is offered there, and
 neither are code tools. "Your computer" means cloud chat in the terminal runs it there, asking first as in
 local mode; the shell only after you allow it (see
-[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)).
+[Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)).
 
 ## HTTP tools
 
@@ -109,7 +109,7 @@ redirect too. Keys and approvals work as described in [Abilities in the cloud](/
 ## Shell commands
 
 `run_command` asks first, except for simple read-only commands on the
-[safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`,
+[safe list](/config/settings#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`,
 and the like), which you can edit. Known-risky patterns get a louder warning and always ask:
 
 - `rm -rf` (any flag order, and the long form `--recursive --force`)

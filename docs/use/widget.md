@@ -21,7 +21,7 @@ all tied to the key and resolved on the server.
 
 ## Getting a key
 
-Create one on the **Widget** page of the [web app](/using/web-app):
+Create one on the **Widget** page of the [web app](/use/web):
 
 1. Give it a **label**, so you can tell your keys apart.
 2. List the **allowed origins**, the sites that may embed it: scheme and host (plus a port if it isn't the
@@ -70,7 +70,7 @@ other's, and none of it mixes into yours.
 
 ## What the agent can do
 
-A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud
+A widget turn runs in [cloud mode](/start/modes#cloud-mode) with the cloud
 [built-in tools](/abilities/tools#built-ins) except `fetch_url`, and no HTTP tools or MCP servers. A key's
 abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with
 Kaja's API keys. Every persona in the catalog is available, starting with the key's own.
@@ -100,4 +100,4 @@ kaja.io runs the `barkochba` widget on its landing page.
 
 Next:
 
-[Voice & language](/using/voice){: .btn .btn-green .fs-5 }
+[Voice & language](/use/voice){: .btn .btn-green .fs-5 }

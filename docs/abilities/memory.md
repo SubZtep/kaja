@@ -9,7 +9,7 @@ icon: 🧠
 
 # Memory & datasets
 
-Two kinds of remembering, kept in the same store: a [SQLite file](/configuration/storage) locally, Postgres
+Two kinds of remembering, kept in the same store: a [SQLite file](/config/storage) locally, Postgres
 in the cloud.
 
 |               | **Notes**                     | **Datasets**                   |

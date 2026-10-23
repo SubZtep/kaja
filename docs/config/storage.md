@@ -9,9 +9,9 @@ icon: 💾
 
 # Local storage
 
-In [local mode](/getting-started/modes) everything Kaja remembers lives in one SQLite file on your machine,
+In [local mode](/start/modes) everything Kaja remembers lives in one SQLite file on your machine,
 by default in `~/.local/share/kaja/` (XDG). Change that with `[memory] dbPath` in
-[`settings.toml`](/configuration/config). `kaja config paths` prints the resolved location.
+[`settings.toml`](/config/settings). `kaja config paths` prints the resolved location.
 
 The file opens in WAL mode, so the terminal chat and the Telegram bot can run at the same time.
 
@@ -29,7 +29,7 @@ In cloud mode there's no local database: the same data lives in the server's Pos
 | `sessions`          | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s`                                                                                                            |
 | `messages`          | the conversation itself, one row per message (assistant rows are its steps, with model, tokens and latency)                                                                                   |
 | `tool_calls`        | every tool call the assistant made, linked to its result message, with how it went and how long it took. A result too big for the context also keeps the condensed version the model was sent |
-| `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into. The messages themselves are never deleted                                                               |
+| `session_summaries` | each summary a long conversation was [compacted](/config/settings#context) into. The messages themselves are never deleted                                                                    |
 | `model_calls`       | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time                                                                                      |
 | `session_events`    | the terminal timeline (what the screen showed), replayed when you resume                                                                                                                      |
 | `dataset_answers`   | individual answers to a [dataset](/abilities/memory#datasets) field                                                                                                                           |
@@ -155,4 +155,4 @@ up.
 
 Next:
 
-[Doctor & troubleshooting](/configuration/commands){: .btn .btn-green .fs-5 }
+[Doctor & troubleshooting](/config/commands){: .btn .btn-green .fs-5 }

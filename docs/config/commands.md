@@ -14,7 +14,7 @@ icon: 🩺
 | Command              | What it does                                                                                                                            |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `kaja config paths`  | print where every config file resolves on this machine. Start here when unsure which file Kaja reads                                    |
-| `kaja config wizard` | re-run the [setup wizard](/getting-started/wizard)                                                                                      |
+| `kaja config wizard` | re-run the [setup wizard](/start/wizard)                                                                                                |
 | `kaja config diff`   | show what `fetch` would change, without writing anything                                                                                |
 | `kaja config fetch`  | rewrite `models.toml` and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none |
 | `kaja doctor`        | test every key, model and tool, see below                                                                                               |
@@ -31,7 +31,7 @@ commented out, and is only written if you have none, so fetching never loses a k
 `kaja doctor` (local mode) tests every credential your config relies on: model providers, HTTP tools and MCP
 servers, the Telegram token and web search. In a terminal it asks for anything missing or failing, tests the
 new value, and saves it to `secrets.toml`. A value that fails is saved too, so you can fix it there, and
-stays on the to-do list until it works. Then, like the [setup wizard](/getting-started/wizard#after-the-last-question),
+stays on the to-do list until it works. Then, like the [setup wizard](/start/wizard#after-the-last-question),
 it offers to install what an ability a persona uses is missing (uv, Chrome), or to run that ability on a
 [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode).
 
@@ -46,19 +46,19 @@ origin plus anything left out and why.
 Run `kaja doctor` first. For the rest:
 
 - **A local model doesn't answer:** check its server runs at the `base_url` in
-  [`models.toml`](/configuration/models). Local mode needs a model that lists `chat`, and never falls back to
+  [`models.toml`](/config/models). Local mode needs a model that lists `chat`, and never falls back to
   the cloud.
 - **Cloud mode won't sign in:** the token is only kept in the OS keychain
-  ([Cloud mode](/getting-started/modes#cloud-mode)). On Linux, install or unlock a Secret Service provider
+  ([Cloud mode](/start/modes#cloud-mode)). On Linux, install or unlock a Secret Service provider
   such as GNOME Keyring or KWallet, or use `--local`.
 - **`kaja abilities update` fails:** it needs `git` 2.25 or newer (`kaja doctor` shows yours), and a private
-  or mistyped [`[marketplace]`](/configuration/config#marketplace) `url` fails rather than asking for a
+  or mistyped [`[marketplace]`](/config/settings#marketplace) `url` fails rather than asking for a
   password. `enabled = false` there turns it off.
 - **An ability or MCP server is missing:** a chat only gets what its persona lists
   ([Personas](/abilities/personas#abilities)), an ability without its key stays out, and an MCP server that
   doesn't connect within 10 seconds is skipped. `kaja doctor` says which and why.
 - **Alt shortcuts type odd characters (macOS):** set `hotkeyModifier = "ctrl"`
-  ([Key bar](/using/tui#key-bar)).
+  ([Key bar](/use/tui#key-bar)).
 - **A setting change did nothing:** config is read once at startup, so restart Kaja (and `kaja telegram`).
 
 ## Logs

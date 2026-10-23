@@ -3,7 +3,7 @@ layout: page
 title: Inside Nasi
 parent: Abilities
 nav_order: 8
-summary: How the agent loop really works: rounds, pauses, and fitting a long chat into a small window.
+summary: "How the agent loop really works: rounds, pauses, and fitting a long chat into a small window."
 icon: 🔬
 ---
 
@@ -57,7 +57,7 @@ Most tools just run. Three are caught by the loop instead, because their whole j
 - **`ask_user`** stops the turn. The conversation remembers the open question, and your next message becomes
   its answer.
 - **`run_command`** runs a shell command at once only when it's plainly harmless: it matches your
-  [safe list](/configuration/config#commandstoml-commands-that-run-without-asking), has no shell tricks (no
+  [safe list](/config/settings#commandstoml-commands-that-run-without-asking), has no shell tricks (no
   `;`, `&&`, pipes, redirects or `$(…)`), nothing on the risky list (`rm -rf`, `sudo`, a force push) and doesn't touch a
   credentials file. Anything else waits for your OK.
 - **`switch_persona`** rewrites the brief in place, the system prompt the conversation started with, and may
@@ -88,7 +88,7 @@ outgrows it, so before every round Nasi decides what the model gets to see. What
 the conversation log keeps every message, every full tool result and every image.
 
 **How big is the window?** The host may know (the cloud has it per model), or your
-[`models.toml`](/configuration/models) says so. Otherwise Nasi asks the model's server (llama.cpp, Ollama,
+[`models.toml`](/config/models) says so. Otherwise Nasi asks the model's server (llama.cpp, Ollama,
 OpenAI-compatible and Fireworks APIs, all at once) and remembers the answer, falling back to 32,768 tokens.
 If a provider still says the prompt is too long, Nasi lowers its idea of the window, compacts, and tries the
 round once more.
@@ -135,7 +135,7 @@ turn pauses, your terminal runs it (asking you first wherever local mode would),
 The loop then carries on without you typing anything.
 
 An ability your terminal offers hides the cloud's copy of it for that turn, so one ability never runs in two
-places at once. [Cloud or local](/getting-started/modes#your-computer-in-cloud-mode) has the user's side of
+places at once. [Cloud or local](/start/modes#your-computer-in-cloud-mode) has the user's side of
 this.
 
 ## Careful by default
@@ -155,4 +155,4 @@ A few rules keep the cloud from doing anything by accident:
 
 Next:
 
-[Configuration](/configuration){: .btn .btn-green .fs-5 }
+[Configuration](/config){: .btn .btn-green .fs-5 }

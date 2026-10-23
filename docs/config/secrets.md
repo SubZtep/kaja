@@ -3,7 +3,7 @@ layout: page
 title: Secrets
 parent: Configuration
 nav_order: 4
-summary: secrets.toml: every key and token in one place.
+summary: "secrets.toml: every key and token in one place."
 icon: 🔑
 ---
 
@@ -48,4 +48,4 @@ other comments you add here don't survive that.
 
 Next:
 
-[Local storage](/configuration/storage){: .btn .btn-green .fs-5 }
+[Local storage](/config/storage){: .btn .btn-green .fs-5 }

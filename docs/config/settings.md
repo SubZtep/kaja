@@ -3,13 +3,13 @@ layout: page
 title: Settings
 parent: Configuration
 nav_order: 2
-summary: settings.toml: preferences, voice, marketplace and storage.
+summary: "settings.toml: preferences, voice, marketplace and storage."
 icon: ⚙️
 ---
 
 # settings.toml
 
-Install-wide preferences. Which model handles each task lives in [`models.toml`](/configuration/models).
+Install-wide preferences. Which model handles each task lives in [`models.toml`](/config/models).
 
 ```toml
 [preferences]
@@ -50,14 +50,14 @@ voice = false
 
 | Field              | Purpose                                                                                                                                                                                                                                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`             | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses)                                                                                                                                                                                                                             |
-| `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language))                                                                                                                                                                                                                            |
+| `mode`             | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/start/modes#which-mode-a-launch-uses)                                                                                                                                                                                                                                       |
+| `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/use/voice#language))                                                                                                                                                                                                                              |
 | `thinking`         | show the model's reasoning while it generates                                                                                                                                                                                                                                                                                                     |
-| `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show                                                                                                                                                                                                                                                          |
+| `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/use/tui#tool-calls) show                                                                                                                                                                                                                                                            |
 | `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all                                                                                                                                                                                                                                           |
 | `voice`            | speak replies aloud (needs a model listing `tts` in `models.toml`)                                                                                                                                                                                                                                                                                |
-| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                           |
-| `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/using/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                            |
+| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/use/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                             |
+| `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/use/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                              |
 | `yolo`             | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
 
 ## `commands.toml`: commands that run without asking
@@ -77,7 +77,7 @@ pattern that isn't a valid regex is skipped with a warning. The list applies to 
 
 ## `hooks.toml`: commands that run on chat events
 
-Optional: Kaja works without it. `kaja config hooks` (also a step of the [setup wizard](/getting-started/wizard))
+Optional: Kaja works without it. `kaja config hooks` (also a step of the [setup wizard](/start/wizard))
 looks for a sound player, a notification tool and a speech tool on your computer, asks what to switch on, downloads
 the sound effects into Kaja's data folder and writes this file. Without it nothing makes a sound.
 
@@ -115,7 +115,7 @@ title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`bell.wav`,
 
 `cancel = true` stops a still-running earlier run of the same command before the new one starts; `cancel = "name"` does
 that for every command sharing the name, so two `espeak-ng` never talk over each other. A command that fails is only
-logged (see [Logs](/configuration/commands#logs)), and one still running when you quit carries on. A session you resume
+logged (see [Logs](/config/commands#logs)), and one still running when you quit carries on. A session you resume
 doesn't replay its old messages, and `kaja telegram` has no hooks.
 
 `kaja config hooks` knows `paplay`, `pw-play`, `ffplay`, `mpv`, `play` and `aplay` for sounds, `notify-send` and
@@ -140,16 +140,16 @@ Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode
   the Kaja API. It needs a cloud sign-in (`kaja login`); signed out, those abilities are off and the chat
   says so. Network tools (`fetch_url`, HTTP tools, remote MCP servers) always run here.
 - **Cloud mode**, `computer`: your terminal runs it for cloud chat
-  ([Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)). Local-only abilities
+  ([Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)). Local-only abilities
   and your own always run here anyway.
 - `shell = "computer"` lets cloud chat use your shell (`run_command`), asking first unless
-  [`commands.toml`](/configuration/commands) lists the command as safe. Off by default.
+  [`commands.toml`](/config/commands) lists the command as safe. Off by default.
 
 ## `[context]`
 
-| Field        | Purpose                                                                                                                                              |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
+| Field        | Purpose                                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compact_at` | how full the chat model's [context window](/config/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
 
 Past that point, the older messages are summarised, and the model carries on from the summary plus the most
 recent turns, word for word. The chat shows a line each time, like `Context compacted: 26,000 → 4,000
@@ -172,15 +172,15 @@ works well), or else the chat model. The `summarize` tool uses the same model.
 
 ## `[stt]` / `[tts]`
 
-The speech server's URL and options, see [Voice](/using/voice). The models themselves are in `models.toml`.
+The speech server's URL and options, see [Voice](/use/voice). The models themselves are in `models.toml`.
 
 ## `[memory]`
 
-`dbPath` overrides where the [SQLite file](/configuration/storage) lives. Leave it out for the XDG data
+`dbPath` overrides where the [SQLite file](/config/storage) lives. Leave it out for the XDG data
 folder.
 
 ---
 
 Next:
 
-[Models](/configuration/models){: .btn .btn-green .fs-5 }
+[Models](/config/models){: .btn .btn-green .fs-5 }

@@ -33,7 +33,7 @@ Listen first. Reflect back what you heard before offering anything.
 | `instructions` | system-prompt text for this persona                                                                                                                                                                              |
 | `when`         | short clause telling the model when to switch here on its own                                                                                                                                                    |
 | `dataset`      | id of a [dataset](/abilities/memory#datasets) this persona collects                                                                                                                                              |
-| `models`       | a model id per task from your [`models.toml`](/configuration/models), like `chat = "reasoning-chat"`                                                                                                             |
+| `models`       | a model id per task from your [`models.toml`](/config/models), like `chat = "reasoning-chat"`                                                                                                                    |
 | `abilities`    | the [abilities](/abilities) this persona uses, by name (see below). Unset means every built-in tool and no abilities                                                                                             |
 | `localOnly`    | `true` keeps the persona to your own machine, for one whose abilities only work there: local mode, and cloud chat in the terminal (which runs them on your computer), never the cloud Telegram bot or the widget |
 | sampling       | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed`                                                                                                                   |
@@ -79,7 +79,7 @@ own. An MCP server starts only when a persona that lists it becomes active.
 
 Every persona's `when` goes into the system prompt, so the model can call `switch_persona` on its own
 mid-conversation. A persona without `when` can only be reached from the
-[persona picker](/using/tui#key-bar).
+[persona picker](/use/tui#key-bar).
 
 - **Automatic** (`switch_persona`) keeps the current conversation going.
 - **Manual** (the picker) starts a fresh one, and isn't remembered: every launch starts from `default`.

@@ -58,7 +58,7 @@ The sync never loses your edits:
 
 Besides `kaja abilities update`, Kaja goes online on the first `kaja abilities` (it fetches once before
 listing), and with a background pull at startup when the last sync is over a day old. That one applies on
-the next launch. You can turn both off in [`[marketplace]`](/configuration/config#marketplace), which also
+the next launch. You can turn both off in [`[marketplace]`](/config/settings#marketplace), which also
 takes a `url` and `ref` to fetch from a fork, a branch or a local checkout.
 
 Every valid ability and persona in the folder loads, your own included. `kaja abilities` lists them: each
@@ -77,7 +77,7 @@ it, and each persona's `abilities` list picks what a chat uses, the same as loca
 running conversation from its next message.
 
 The cloud has no shell of its own and serves many people, so it offers less (cloud chat in the terminal can
-still use your computer for the rest, see [Cloud or local](/getting-started/modes#your-computer-in-cloud-mode)):
+still use your computer for the rest, see [Cloud or local](/start/modes#your-computer-in-cloud-mode)):
 
 | Kind       | Not offered in the cloud when                                                                                         |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -108,7 +108,7 @@ one first:
 
 1. Put it in a copy of the repo, following the
    [marketplace README](https://github.com/SubZtep/kaja/blob/main/marketplace/README.md).
-2. Point [`[marketplace]`](/configuration/config#marketplace)'s `url` at that copy, run
+2. Point [`[marketplace]`](/config/settings#marketplace)'s `url` at that copy, run
    `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.
 

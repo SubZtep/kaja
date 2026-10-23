@@ -14,13 +14,13 @@ icon: 🎙️
 
 ## Voice
 
-Mic dictation and spoken replies work in [local mode](/getting-started/modes#local-mode), by default through
+Mic dictation and spoken replies work in [local mode](/start/modes#local-mode), by default through
 a [Speaches AI](https://github.com/speaches-ai/speaches) server. Any compatible STT/TTS provider works:
 the models go in `models.toml`, the endpoint in `settings.toml`. Ticking Speaches in the
-[setup wizard](/getting-started/wizard) writes both.
+[setup wizard](/start/wizard) writes both.
 
 1. Run a Speaches server (or an equivalent).
-2. Declare the models in [`models.toml`](/configuration/models):
+2. Declare the models in [`models.toml`](/config/models):
 
    ```toml
    [providers.speaches]
@@ -37,7 +37,7 @@ the models go in `models.toml`, the endpoint in `settings.toml`. Ticking Speache
    tasks = ["stt"]
    ```
 
-3. Point [`settings.toml`](/configuration/config) at the server:
+3. Point [`settings.toml`](/config/settings) at the server:
 
    ```toml
    [stt]

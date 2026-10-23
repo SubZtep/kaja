@@ -37,7 +37,7 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
 
 1. **Language.** What Kaja speaks to you in. The rest of the wizard switches right away.
 2. **Colours.** Dark or light. Moving the highlight previews it, and the one matching your terminal is
-   preselected. You can switch later with <kbd>Alt</kbd>+<kbd>D</kbd> ([Colours](/using/tui#colours)).
+   preselected. You can switch later with <kbd>Alt</kbd>+<kbd>D</kbd> ([Colours](/use/tui#colours)).
 3. **How to run Kaja.**
    - **Kaja Cloud** (default): after the wizard, Kaja shows a code, you approve it in your browser, and
      you're chatting. The server picks the models, every persona is yours, and Kaja provides the API
@@ -50,12 +50,12 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
 4. **Providers.** Tick every provider you can use (at least one):
    - **Fireworks**, **xAI** and **OpenRouter** run online, so you give an API key.
    - **Ollama**, **llama.cpp** and **Speaches** run on your machine, so you confirm where the server
-     listens. Speaches handles speech in and out for [voice](/using/voice).
+     listens. Speaches handles speech in and out for [voice](/use/voice).
    - **Custom** is any other OpenAI-compatible server (LM Studio, vLLM, a proxy). You give a name, an
      address and a key, then each model's id and what it's for. <kbd>Enter</kbd> on an empty model id
      ends the list.
 5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
-6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/using/telegram) and paste the bot token.
+6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
 
 After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
@@ -85,7 +85,7 @@ flowchart TD
 
 Either way, Kaja first looks for a sound player, a notification tool and a speech tool on your computer and
 offers sound effects, desktop notifications and reading replies aloud
-([`hooks.toml`](/configuration/config#hookstoml-commands-that-run-on-chat-events)). What it can't find, it tells you
+([`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events)). What it can't find, it tells you
 how to install. `kaja config hooks` runs just this part again.
 
 With **Kaja Cloud** that's it. The first time, Kaja goes straight on to sign you in. After a later
@@ -95,7 +95,7 @@ With **your own provider**, Kaja finishes setting up first and may ask a few mor
 
 1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and tools
    (needs `git`), and whether to keep it up to date on its own
-   ([`[marketplace]`](/configuration/config#marketplace)).
+   ([`[marketplace]`](/config/settings#marketplace)).
 2. **Abilities that can't run here.** An [MCP ability](/abilities/mcp) a persona uses that's missing what it
    needs on this machine (`uv` for a Python package, Chrome for `chrome-devtools`) is offered three ways out:
    install it (uv's official installer runs; for Chrome, its download page opens), run it on a
@@ -104,7 +104,7 @@ With **your own provider**, Kaja finishes setting up first and may ask a few mor
 3. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
 4. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
-5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
+5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/config/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
 
 The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.
@@ -113,17 +113,17 @@ The first time, the chat starts right after. After `kaja config wizard`, you're 
 
 Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 
-| You answer                 | It becomes                                                                                          | In                                       |
-| -------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Language                   | `[preferences] locale`                                                                              | [`settings.toml`](/configuration/config) |
-| Colours                    | `[preferences] theme`                                                                               | `settings.toml`                          |
-| How to run Kaja            | `[preferences] mode`                                                                                | `settings.toml`                          |
-| Providers, custom provider | `[providers.<name>]` tables and their models                                                        | [`models.toml`](/configuration/models)   |
-| Which model, per task      | the picked model comes first among the `[models.<id>]` listing that task; every model offered stays | `models.toml`                            |
-| A server address           | `[providers.<name>] base_url`                                                                       | `models.toml`                            |
-| Speaches address           | `[stt] speachesUrl`, `[tts] speachesUrl`                                                            | `settings.toml`                          |
-| A provider's API key       | `[providers.<name>] api_key`                                                                        | [`secrets.toml`](/configuration/secrets) |
-| Telegram bot token         | `[telegram] bot_token`                                                                              | `secrets.toml`                           |
+| You answer                 | It becomes                                                                                          | In                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Language                   | `[preferences] locale`                                                                              | [`settings.toml`](/config/settings) |
+| Colours                    | `[preferences] theme`                                                                               | `settings.toml`                     |
+| How to run Kaja            | `[preferences] mode`                                                                                | `settings.toml`                     |
+| Providers, custom provider | `[providers.<name>]` tables and their models                                                        | [`models.toml`](/config/models)     |
+| Which model, per task      | the picked model comes first among the `[models.<id>]` listing that task; every model offered stays | `models.toml`                       |
+| A server address           | `[providers.<name>] base_url`                                                                       | `models.toml`                       |
+| Speaches address           | `[stt] speachesUrl`, `[tts] speachesUrl`                                                            | `settings.toml`                     |
+| A provider's API key       | `[providers.<name>] api_key`                                                                        | [`secrets.toml`](/config/secrets)   |
+| Telegram bot token         | `[telegram] bot_token`                                                                              | `secrets.toml`                      |
 
 ## Running it again
 
@@ -138,4 +138,4 @@ The provider list is built in, so the wizard works offline. Without a terminal (
 
 Next:
 
-[Terminal UI](/using/tui){: .btn .btn-green .fs-5 }
+[Terminal UI](/use/tui){: .btn .btn-green .fs-5 }
