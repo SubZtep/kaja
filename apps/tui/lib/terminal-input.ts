@@ -31,8 +31,10 @@ const MODIFIER_KEYS = [
 ]
 const MODIFIER_KEY_REPORT = /^\[(574(?:4[1-9]|5[0-2]))(?:;\d*(?::(\d))?)?u$/
 
-// CSI codepoint ; modifiers u, or CSI 1|number ; modifiers (A-D, F, H, P, Q, S | ~) for the special keys
-const KEY_REPORT = /^\[(?:\d+(?::\d*)*(?:;(\d*)(?::\d+)?)?(?:;[\d:]+)?u|\d+;(\d+)(?::\d+)?[A-DFHPQS~])$/
+// CSI codepoint ; modifiers u
+const KEY_REPORT_U = /^\[\d+(?::\d*)*(?:;(\d*)(?::\d+)?)?(?:;[\d:]+)?u$/
+// CSI 1|number ; modifiers (A-D, F, H, P, Q, S | ~) for the special keys
+const KEY_REPORT_SPECIAL = /^\[\d+;(\d+)(?::\d+)?[A-DFHPQS~]$/
 
 function stripEsc(input: string): string {
   return input.startsWith(ESC) ? input.slice(1) : input
@@ -86,9 +88,10 @@ export function colorSchemeReport(input: string): "dark" | "light" | null {
  * included; null for any other report.
  */
 export function parseHeldModifiers(input: string): number | null {
-  const match = KEY_REPORT.exec(stripEsc(input))
+  const report = stripEsc(input)
+  const match = KEY_REPORT_U.exec(report) ?? KEY_REPORT_SPECIAL.exec(report)
   if (!match) return null
-  const field = match[1] ?? match[2]
+  const field = match[1]
   return field ? Number(field) - 1 : 0
 }
 

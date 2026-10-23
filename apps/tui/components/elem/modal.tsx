@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState
 } from "react"
@@ -51,8 +52,9 @@ export function ModalHost({ children }: Readonly<{ children: ReactNode }>) {
     return () => setCount(n => n - 1)
   }, [])
   const open = count > 0
+  const value = useMemo(() => ({ open, register }), [open, register])
   return (
-    <ModalContext value={{ open, register }}>
+    <ModalContext value={value}>
       <InputBlockedContext value={open}>{children}</InputBlockedContext>
     </ModalContext>
   )
