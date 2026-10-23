@@ -43,7 +43,7 @@ jobs:
         run: bun --filter @kaja/web generate:paraglide
 
       - name: Lint
-        run: bun lint
+        run: bun lint --max-warnings=0
 
       - name: Check formatting
         run: bun fmt --check

@@ -36,9 +36,7 @@ typeAware = true
   "bun/react-no-latest-value-ref"                     = "error"
   "bun/react-prefer-updater-function"                 = "error"
   "bun:test/max-nested-describe"                      = "error"
-  "bun:test/no-disabled-tests"                        = "error"
   "bun:test/no-duplicate-hooks"                       = "error"
-  "bun:test/no-export"                                = "error"
   "bun:test/no-identical-title"                       = "error"
   "bun:test/prefer-hooks-in-order"                    = "error"
   "eqeqeq"                                            = [
@@ -52,7 +50,6 @@ typeAware = true
   "import/no-self-import"                             = "error"
   "no-else-return"                                    = "error"
   "no-eval"                                           = "error"
-  "no-unreachable"                                    = "error"
   "promise/catch-or-return"                           = [
     "error",
     {

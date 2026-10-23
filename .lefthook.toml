@@ -104,7 +104,7 @@ piped = true
 
 
       [[pre-push.jobs.group.jobs]]
-      run = "bun lint"
+      run = "bun lint --max-warnings=0"
 
 
       [[pre-push.jobs.group.jobs]]
