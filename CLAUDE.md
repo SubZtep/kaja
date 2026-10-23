@@ -90,6 +90,7 @@ Files in `apps/api/migrations/` apply in lexicographic order. Each file only cre
 - `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`. Import packages by package name; `@kaja/nasi` exports its root `index.ts` (and `./client`), `@kaja/schema` and `@kaja/shared` only subpaths (e.g. `@kaja/schema/api`)
 - Prefer surgical diffs; do not drive-by refactor
+- Start a function name with `use` only for a React hook (the hooks lint rule flags any other); name the rest `register…`, `create…` and so on
 - Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values; `// ...` for internal notes
 
 ## Notes
