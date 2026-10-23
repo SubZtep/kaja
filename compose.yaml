@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: testpass
       POSTGRES_DB: kaja
     volumes:
-      - ./pgdata:/var/lib/postgresql
+      - ./data/postgres:/var/lib/postgresql
       - ./apps/api/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "testuser", "-d", "postgres"]
@@ -38,11 +38,11 @@ services:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
-      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ENABLE: true
       RUSTFS_ACCESS_KEY: kaja # matches apps/api/.env.example
       RUSTFS_SECRET_KEY: kaja-dev-storage
     volumes:
-      - storage:/data
+      - ./data/storage:/data
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/health"]
       start_period: 5s
@@ -73,6 +73,7 @@ services:
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production
       SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production
+      NODE_ENV: development
     networks:
       - default
       - sandbox
@@ -123,13 +124,9 @@ services:
       SANDBOX_CACHE_DIR: /home/node/.cache/mcp
       SANDBOX_STATE_DIR: /data
     volumes:
-      - sandbox:/data
+      - ./data/sandbox:/data
     networks:
       - sandbox
 
 networks:
-  sandbox:
-
-volumes:
-  storage:
   sandbox:

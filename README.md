@@ -92,10 +92,13 @@ cd kaja
 # Install dependencies
 bun i
 
+# Prepare local data folders (uses sudo for ownership fixes)
+scripts/prepare_data_dirs.sh
+
 # Start all the services
 docker compose up -d
 
-# Create the storage bucket (once)
+# Create the storage bucket
 scripts/storage_init.sh
 
 # Configure local API endpoint
@@ -106,6 +109,15 @@ bun dev:tui
 ```
 
 The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider(s) and it writes `~/.config/kaja/` for you.
+
+### Composed web service frontends
+
+| Address                         | Notes                                             |
+| ------------------------------- | ------------------------------------------------- |
+| http://localhost:3000           | Website and portal                                |
+| http://localhost:3001/reference | API documentation                                 |
+| http://localhost:1080           | Email inbox                                       |
+| http://localhost:9001           | Storage browser. Login: `kaja`:`kaja-dev-storage` |
 
 ## Documentation
 

@@ -2,7 +2,7 @@
 .dockerignore
 .git
 .gitignore
-pgdata
+data
 **/.output
 **/.tanstack
 **/dist
