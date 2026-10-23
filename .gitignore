@@ -11,7 +11,7 @@ apps/api/public/widget.js
 apps/api/.data/
 dist/
 node_modules/
-pgdata/
+data/
 *.local.*
 .env*
 !.env.example

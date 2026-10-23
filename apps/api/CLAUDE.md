@@ -11,7 +11,7 @@ bun run --filter @kaja/api build    # dist/server.js (bun target) + widget bundl
 bun test                            # needs Postgres + RustFS; uses its own <db>_test database
 ```
 
-Local secrets: `scripts/create_local_secrets.sh`; manual migrations: `scripts/db_migration.sh`. `migrate.ts` (stays here, path-coupled to `./migrations` and the Dockerfile build step) runs `scripts/migrations.ts`.
+Manual migrations: `scripts/db_migration.sh`. `migrate.ts` (stays here, path-coupled to `./migrations` and the Dockerfile build step) runs `scripts/migrations.ts`.
 
 ## Layout
 
@@ -70,4 +70,4 @@ Adding an endpoint: a route file under the matching `features/<prefix>/` (or a n
 
 ## Env
 
-See `.env.example` (generated from `packages/schema/env/api.ts`, the full list). With `NODE_ENV=production` (turns Sentry on) the API also needs `USER_SECRET_KEY`, a `CONFIG_API_TOKEN` other than the `.env.example` placeholder, a strong `BETTER_AUTH_SECRET` (at least 32 characters: `openssl rand -base64 32`), real SMTP, and `CORS_ORIGIN` matching the public web origin.
+See `.env.example` (generated from `packages/schema/env/api.ts`, the full list). With `NODE_ENV=production` (turns Sentry on) the API also needs `USER_SECRET_KEY`, a `CONFIG_API_TOKEN` other than the `.env.example` placeholder, a strong `BETTER_AUTH_SECRET` other than the placeholder (at least 32 characters: `openssl rand -base64 32`), real SMTP, and `CORS_ORIGIN` matching the public web origin.

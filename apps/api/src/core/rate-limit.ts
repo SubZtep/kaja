@@ -11,8 +11,7 @@ import { trustedSsrClientIp } from "./ssr-client-ip"
  */
 export function isRateLimitEnabled(): boolean {
   if (env.BUN_TEST === "1" || env.BUN_TEST === "true") return false
-  if (env.RATE_LIMIT_ENABLED === false) return false
-  return true
+  return env.RATE_LIMIT_ENABLED
 }
 
 /**

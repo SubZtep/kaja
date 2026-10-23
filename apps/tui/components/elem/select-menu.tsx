@@ -18,7 +18,7 @@ export function SelectMenu({
   accented,
   width = 32,
   initialIndex,
-  visibleCount,
+  visibleCount = 5,
   preview,
   closeOnBackspace = true,
   active = true,

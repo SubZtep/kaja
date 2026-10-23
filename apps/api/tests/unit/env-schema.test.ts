@@ -33,4 +33,14 @@ describe("ApiEnvSchema", () => {
     expect(problems({ ...production, CONFIG_API_TOKEN: "kaja" })).toEqual(["USER_SECRET_KEY", "CONFIG_API_TOKEN"])
     expect(problems({ ...production, USER_SECRET_KEY: userSecretKey, CONFIG_API_TOKEN: "a-real-token" })).toEqual([])
   })
+
+  test("production refuses the .env.example auth secret", () => {
+    const production = {
+      ...base,
+      NODE_ENV: "production",
+      USER_SECRET_KEY: userSecretKey,
+      BETTER_AUTH_SECRET: "dev_better_auth_secret_not_for_production"
+    }
+    expect(problems(production)).toEqual(["BETTER_AUTH_SECRET"])
+  })
 })
