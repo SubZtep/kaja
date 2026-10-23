@@ -40,6 +40,7 @@ import {
   resolveImageRefs,
   sessionImagesFor,
   storeImage,
+  storeRemoteImages,
   withoutImageParts
 } from "./images"
 import { personaTools, syncPersonaTools } from "./persona-tools"
@@ -880,6 +881,7 @@ async function* runTurn(
       continue
     }
 
+    if (typeof message.content === "string") message.content = await storeRemoteImages(agent, session, message.content)
     messages.push(message)
     recordRound(agent, session, round)
 
