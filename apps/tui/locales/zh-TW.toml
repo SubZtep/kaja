@@ -285,8 +285,9 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 
 
 [input]
-placeholder    = "輸入點什麼..."
-askPlaceholder = "[zh-TW] lorem ipsum"
+placeholder           = "輸入點什麼..."
+askPlaceholder        = "[zh-TW] lorem ipsum"
+askChoicesPlaceholder = "[zh-TW] lorem ipsum dolor"
 
 
 [header]

@@ -399,3 +399,73 @@ test("a question from the agent's ask_user tool changes the input's hint to an a
   t.unmount()
   await t.waitUntilExit()
 })
+
+/** A turn that asks "Proceed?" with options, then answers whatever comes back with "ok". */
+function mountQuestionWithOptions() {
+  const bodies: Record<string, unknown>[] = []
+  const asked =
+    'event: ask_user\ndata: {"type":"ask_user","question":"Proceed?","options":["Yes","No"],"fromTool":true}\n\n' +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_input"}\n\n'
+  nextTurnResponse = () =>
+    bodies.length === 1 ? new Response(asked, { headers: { "content-type": "text/event-stream" } }) : sseResponse("ok")
+  const fetchWithBodies = globalThis.fetch
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (
+      typeof init?.body === "string" &&
+      (url instanceof Request ? url.url : String(url)).endsWith("/nasi/turn/stream")
+    )
+      bodies.push(JSON.parse(init.body))
+    return fetchWithBodies(url, init)
+  }) as typeof fetch
+  return { t: renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />), bodies }
+}
+
+async function askWithOptions(t: ReturnType<typeof renderForTest>) {
+  await t.tick()
+  await t.press("deploy")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+}
+
+test("a question with options lists them beside the field, and picking one sends its text", async () => {
+  const { t, bodies } = mountQuestionWithOptions()
+  await askWithOptions(t)
+  expect(t.lastFrame()).toContain("Proceed?")
+  expect(t.lastFrame()).toContain("Yes")
+  expect(t.lastFrame()).toContain("Or type your own answer")
+
+  await t.press("\x1b[B") // down to "No"
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(bodies[1]?.message).toBe("No")
+  expect(t.lastFrame()).toContain("ok")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("typing beside a question's options answers with the typed text", async () => {
+  const { t, bodies } = mountQuestionWithOptions()
+  await askWithOptions(t)
+
+  await t.press("only staging")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(bodies[1]?.message).toBe("only staging")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("Esc beside a question's options empties the typed text without quitting, and quits from the empty list", async () => {
+  const { t } = mountQuestionWithOptions()
+  await askWithOptions(t)
+
+  await t.press("only")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("only")
+  expect(t.lastFrame()).toContain("Yes") // still here: nothing quit
+
+  t.unmount()
+  await t.waitUntilExit()
+})

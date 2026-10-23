@@ -43,7 +43,9 @@ export function UserInput({
   history: initialHistory,
   personaModels,
   placeholder,
-  onDraft
+  onDraft,
+  mic: controlledMic,
+  onMicChange
 }: Readonly<{
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
@@ -59,9 +61,14 @@ export function UserInput({
   placeholder?: string
   /** Called with the text whenever it changes (typed, dictated, recalled or cleared by sending). */
   onDraft?: (draft: string) => void
+  /** The mic switch kept by the caller, so it outlives this field being swapped for another (a question's options). */
+  mic?: boolean
+  onMicChange?: (mic: boolean) => void
 }>) {
   const [input, setInput] = useState("")
-  const [mic, setMic] = useState(false)
+  const [ownMic, setOwnMic] = useState(false)
+  const mic = controlledMic ?? ownMic
+  const setMic = onMicChange ?? setOwnMic
   const { columns } = useWindowSize()
   const history = usePromptHistory(initialHistory ?? [])
   useEffect(() => {
@@ -76,7 +83,7 @@ export function UserInput({
 
   // Ctrl+T toggles dictation (Esc quits, see useQuitGuard).
   useKey((char, key) => {
-    if (key.ctrl && char === "t") setMic(prev => !prev)
+    if (key.ctrl && char === "t") setMic(!mic)
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(

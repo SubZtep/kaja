@@ -285,8 +285,9 @@ invalidAt = "secrets 檔無效（{path}）：{message}"
 
 
 [input]
-placeholder    = "拍字⋯⋯"
-askPlaceholder = "[nan-TW] lorem ipsum"
+placeholder           = "拍字⋯⋯"
+askPlaceholder        = "[nan-TW] lorem ipsum"
+askChoicesPlaceholder = "[nan-TW] lorem ipsum dolor"
 
 
 [header]

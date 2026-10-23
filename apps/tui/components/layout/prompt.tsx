@@ -10,7 +10,8 @@ export type PromptOption = { kind: "choice"; id: string; label: string }
 
 /** What a prompt asks and how it can be answered: pick an option, or write something instead. */
 export type PromptSpec = {
-  title: string
+  /** Left out where the question is already on screen, e.g. the agent's, in the chat. */
+  title?: string
   /** Colours the title, e.g. the warning tone of an approval. */
   tone?: TextProps
   options: PromptOption[]
@@ -32,6 +33,10 @@ export function Prompt({
   busy,
   speaking = false,
   personaModels,
+  history,
+  mic,
+  onMicChange,
+  onDraft,
   onResolve,
   onDismiss
 }: Readonly<{
@@ -39,8 +44,16 @@ export function Prompt({
   busy?: string
   speaking?: boolean
   personaModels?: PersonaModels
+  /** Past prompts for the field's ↑/↓ recall. */
+  history?: string[]
+  /** The field's mic switch, owned by the caller so it survives this prompt coming and going. */
+  mic?: boolean
+  onMicChange?: (mic: boolean) => void
+  /** Called with the field's text as it changes. */
+  onDraft?: (draft: string) => void
   onResolve: (result: PromptResult) => void
-  onDismiss: () => void
+  /** Esc on the list; left out where Esc means something else (the chat's own quit). */
+  onDismiss?: () => void
 }>) {
   const [draft, setDraft] = useState("")
   // Remounting is how Esc empties the field, which keeps its text to itself
@@ -58,7 +71,7 @@ export function Prompt({
 
   return (
     <Box flexDirection="column" flexShrink={0} width="100%">
-      <Text {...spec.tone}>{spec.title}</Text>
+      {spec.title && <Text {...spec.tone}>{spec.title}</Text>}
       {busy ? (
         <Text dimColor>{busy}</Text>
       ) : (
@@ -76,8 +89,14 @@ export function Prompt({
             asking
             send={async text => onResolve({ kind: "text", text })}
             personaModels={personaModels}
+            history={history}
+            mic={mic}
+            onMicChange={onMicChange}
             placeholder={spec.placeholder}
-            onDraft={setDraft}
+            onDraft={text => {
+              setDraft(text)
+              onDraft?.(text)
+            }}
           />
         </>
       )}

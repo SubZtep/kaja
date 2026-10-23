@@ -32,6 +32,7 @@ import { Header } from "./header"
 import { HelpModal } from "./help-modal"
 import { KeyBar, type KeyBarEntry } from "./key-bar"
 import { PersonaPicker } from "./persona-picker"
+import { Prompt } from "./prompt"
 import { UserInput } from "./user-input"
 
 /** Docs shown by the help keybar entry. */
@@ -55,10 +56,10 @@ function getBottomChromeKey(modalOpen: boolean, pendingCommand: unknown, running
   return runningCommand ? "running" : "confirm"
 }
 
-/** The turn ended on an ask_user tool call, so the next input is its answer (a plain "?" reply has no fromTool). */
-const isAsking = (events: TimelineEvent[], pending: boolean) => {
+/** The ask_user tool call the turn ended on, so the next input is its answer (a plain "?" reply has no fromTool). */
+const pendingQuestion = (events: TimelineEvent[], pending: boolean) => {
   const last = events.at(-1)
-  return !pending && last?.type === "ask_user" && last.fromTool === true
+  return !pending && last?.type === "ask_user" && last.fromTool === true ? last : undefined
 }
 
 /** Whether Esc quits here (typing, or a command running) rather than dismissing a prompt. */
@@ -68,6 +69,7 @@ const isQuittable = (key: BottomChromeKey) => key === "input" || key === "runnin
 // modal/confirm prompt over it.
 function escKeyBarItem(
   bottomChromeKey: BottomChromeKey,
+  quittable: boolean,
   quitArmed: boolean,
   pressQuit: () => void
 ): KeyBarEntry | undefined {
@@ -79,7 +81,7 @@ function escKeyBarItem(
     running: quit
   }
   const label = labels[bottomChromeKey]
-  return label ? { key: "Esc", label, onPress: isQuittable(bottomChromeKey) ? pressQuit : undefined } : undefined
+  return label ? { key: "Esc", label, onPress: quittable ? pressQuit : undefined } : undefined
 }
 
 /** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
@@ -195,10 +197,17 @@ function Chrome({
   const [modal, setModal] = useState<ModalName | null>(null)
   const codeView = useCodeView(codePreviewLines)
 
-  const asking = isAsking(events, pending)
+  const question = pendingQuestion(events, pending)
+  const asking = Boolean(question)
+  const choices = question?.options
   const bottomChromeKey = getBottomChromeKey(modal !== null, pendingCommand, runningCommand)
   const showConfirm = Boolean(pendingCommand && resolvePending)
-  const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
+  const showChoices = !showConfirm && Boolean(choices?.length)
+  const [mic, setMic] = useState(false)
+  const [choiceDraft, setChoiceDraft] = useState("")
+  // While text is typed beside a question's options Esc only empties the field, it doesn't quit
+  const quittable = isQuittable(bottomChromeKey) && !(showChoices && choiceDraft)
+  const { armed: quitArmed, press: pressQuit } = useQuitGuard(quittable, pending || runningCommand)
   // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
   // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
   const bindings: KeyBinding[] = [
@@ -241,7 +250,7 @@ function Chrome({
     hotkeyModifier,
     modifierHeld,
     bindings,
-    escKeyBarItem(bottomChromeKey, quitArmed, pressQuit)
+    escKeyBarItem(bottomChromeKey, quittable, quitArmed, pressQuit)
   )
 
   return (
@@ -282,7 +291,23 @@ function Chrome({
                 onResolve={(approved, feedback) => resolvePending(approved, feedback)}
               />
             )}
-            {!showConfirm && (
+            {showChoices && choices && (
+              <Prompt
+                key="choices"
+                spec={{
+                  options: choices.map((label, index) => ({ kind: "choice", id: String(index), label })),
+                  placeholder: t("input.askChoicesPlaceholder")
+                }}
+                speaking={speaking}
+                personaModels={personaModels}
+                history={history}
+                mic={mic}
+                onMicChange={setMic}
+                onDraft={setChoiceDraft}
+                onResolve={result => void send(result.kind === "text" ? result.text : choices[Number(result.id)]!)}
+              />
+            )}
+            {!showConfirm && !showChoices && (
               <UserInput
                 key="user-input"
                 pending={pending}
@@ -292,6 +317,8 @@ function Chrome({
                 send={send}
                 history={history}
                 personaModels={personaModels}
+                mic={mic}
+                onMicChange={setMic}
               />
             )}
             <KeyBar items={keyBarItems} width={columns} />

@@ -148,3 +148,18 @@ test("a given placeholder replaces the chat one, and the draft is reported as it
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("a mic switch kept by the caller is what shows, and Ctrl+T asks to flip it instead of flipping its own", async () => {
+  const asked: boolean[] = []
+  const t = renderForTest(
+    <UserInput pending={false} speaking mic onMicChange={mic => asked.push(mic)} send={async () => {}} />
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("x ") // on, but muted while the agent speaks
+  await t.press("\x14")
+  expect(asked).toEqual([false])
+  expect(t.lastFrame()).toContain("x ")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
