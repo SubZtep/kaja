@@ -216,7 +216,7 @@ function Filters({
           />
           {m.admin_images_filter_undescribed()}
         </label>
-        <div className="flex items-center gap-2" role="group" aria-label={m.admin_images_filter_origin()}>
+        <fieldset className="m-0 flex items-center gap-2 border-0 p-0" aria-label={m.admin_images_filter_origin()}>
           {[undefined, ...ORIGINS].map(origin => (
             <Button
               key={origin ?? "any"}
@@ -228,7 +228,7 @@ function Filters({
               {origin ? ORIGIN_LABELS[origin]() : m.admin_images_origin_any()}
             </Button>
           ))}
-        </div>
+        </fieldset>
         <Button
           variant="secondary"
           size="sm"

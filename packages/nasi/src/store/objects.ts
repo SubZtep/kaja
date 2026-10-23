@@ -25,7 +25,10 @@ export function memoryObjects(): ObjectStore {
     },
     get: key => Promise.resolve(objects.get(key)),
     exists: key => Promise.resolve(objects.has(key)),
-    delete: key => Promise.resolve(void objects.delete(key)),
+    delete: key => {
+      objects.delete(key)
+      return Promise.resolve()
+    },
     deletePrefix: prefix => {
       // Deleting the key an iteration just read is safe on a Map, so no snapshot is needed.
       for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key)

@@ -156,17 +156,20 @@ export type Orphans = Record<OrphanKind, { count: number; bytes: number; example
 async function storedFiles(filesRoot: string): Promise<Orphan[]> {
   const root = join(filesRoot, "images")
   const sessions = await readdir(root).catch(() => [] as string[])
-  const found: Orphan[] = []
-  for (const sessionId of sessions) {
+  const inSession = async (sessionId: string) => {
     const names = await readdir(join(root, sessionId)).catch(() => [] as string[])
-    for (const name of names) {
-      if (name.endsWith(".json")) continue
-      const path = join(root, sessionId, name)
-      const info = await stat(path).catch(() => undefined)
-      if (info?.isFile()) found.push({ path, bytes: info.size, at: info.mtime, sessionId, id: name })
-    }
+    const files = await Promise.all(
+      names
+        .filter(name => !name.endsWith(".json"))
+        .map(async (name): Promise<Orphan | undefined> => {
+          const path = join(root, sessionId, name)
+          const info = await stat(path).catch(() => undefined)
+          return info?.isFile() ? { path, bytes: info.size, at: info.mtime, sessionId, id: name } : undefined
+        })
+    )
+    return files.filter(file => file !== undefined)
   }
-  return found
+  return (await Promise.all(sessions.map(inSession))).flat()
 }
 
 /** What the store holds that nothing needs, by kind, scanned now. */
@@ -181,19 +184,22 @@ export async function findOrphans(db: Database, filesRoot: string): Promise<Orph
   const known = new Set(rows.map(row => imagePath(filesRoot, row.sessionId, row.id)))
   const unsavedBefore = Date.now() - UNSAVED_AFTER_MS
   const files = (await storedFiles(filesRoot)).filter(file => !known.has(file.path))
-  const unsaved: Orphan[] = []
-  const missing: Orphan[] = []
-  for (const row of rows) {
-    const item = {
-      path: imagePath(filesRoot, row.sessionId, row.id),
-      bytes: row.bytes,
-      at: new Date(row.createdAt),
-      sessionId: row.sessionId,
-      id: row.id
-    }
-    if (!row.saved && item.at.getTime() < unsavedBefore) unsaved.push(item)
-    else if (!(await Bun.file(item.path).exists())) missing.push(item)
-  }
+  const checked = await Promise.all(
+    rows.map(async row => {
+      const item = {
+        path: imagePath(filesRoot, row.sessionId, row.id),
+        bytes: row.bytes,
+        at: new Date(row.createdAt),
+        sessionId: row.sessionId,
+        id: row.id
+      }
+      if (!row.saved && item.at.getTime() < unsavedBefore) return { item, kind: "unsaved" as const }
+      return { item, kind: (await Bun.file(item.path).exists()) ? ("kept" as const) : ("rows" as const) }
+    })
+  )
+  const ofKind = (kind: "unsaved" | "rows") => checked.filter(each => each.kind === kind).map(each => each.item)
+  const unsaved = ofKind("unsaved")
+  const missing = ofKind("rows")
   const summary = (items: Orphan[]) => ({
     count: items.length,
     bytes: items.reduce((sum, item) => sum + item.bytes, 0),
@@ -215,25 +221,27 @@ export async function removeOrphans(
     db
       .query("SELECT 1 FROM images WHERE sessionId = $sessionId AND id = $id")
       .get({ $sessionId: sessionId, $id: id }) !== null
-  let removed = 0
-  for (const item of found[kind].items) {
-    if (item.at.getTime() >= settled) continue
-    if (kind === "files") {
-      if (item.id && hasRow(item.sessionId, item.id)) continue
+  const deleteRow = (item: Orphan) =>
+    db
+      .query("DELETE FROM images WHERE sessionId = $sessionId AND id = $id")
+      .run({ $sessionId: item.sessionId, $id: item.id! }).changes
+  // Each item checked again just before it goes; the count of what went
+  const remove: Record<OrphanKind, (item: Orphan) => Promise<number>> = {
+    async files(item) {
+      if (item.id && hasRow(item.sessionId, item.id)) return 0
       await rm(item.path, { force: true })
-      removed++
-    } else if (kind === "rows") {
-      if (await Bun.file(item.path).exists()) continue
-      removed += db
-        .query("DELETE FROM images WHERE sessionId = $sessionId AND id = $id")
-        .run({ $sessionId: item.sessionId, $id: item.id! }).changes
-    } else {
-      if (db.query("SELECT 1 FROM sessions WHERE id = $id").get({ $id: item.sessionId }) !== null) continue
+      return 1
+    },
+    async rows(item) {
+      return (await Bun.file(item.path).exists()) ? 0 : deleteRow(item)
+    },
+    async unsaved(item) {
+      if (db.query("SELECT 1 FROM sessions WHERE id = $id").get({ $id: item.sessionId }) !== null) return 0
       await rm(item.path, { force: true })
-      removed += db
-        .query("DELETE FROM images WHERE sessionId = $sessionId AND id = $id")
-        .run({ $sessionId: item.sessionId, $id: item.id! }).changes
+      return deleteRow(item)
     }
   }
-  return removed
+  const settledItems = found[kind].items.filter(item => item.at.getTime() < settled)
+  const counts = await Promise.all(settledItems.map(item => remove[kind](item)))
+  return counts.reduce((sum, count) => sum + count, 0)
 }

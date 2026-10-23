@@ -24,7 +24,7 @@ export const IMAGES_PAGE = 48
 
 /** The SQL for a `source_url` column's host, lowercased and without `www.`; null when it isn't an http(s) URL. */
 export const sourceHost = (column: string) =>
-  `regexp_replace(lower(substring(${column} FROM '^https?://([^/:?#]+)')), '^www\\.', '')`
+  String.raw`regexp_replace(lower(substring(${column} FROM '^https?://([^/:?#]+)')), '^www\.', '')`
 
 type ImageListRow = {
   id: string
@@ -297,14 +297,16 @@ export class ImageService {
       "SELECT id, parts FROM nasi_message WHERE session_id = $1 AND parts::text LIKE $2",
       [sessionId, `%${imageLabel(ref, undefined, "").slice(0, -3)}%`]
     )
-    for (const message of rows) {
-      const parts = relabeledParts(message.parts, ref, size, description)
-      if (parts)
-        await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
-          message.id,
-          JSON.stringify(parts)
-        ])
-    }
+    await Promise.all(
+      rows.map(async message => {
+        const parts = relabeledParts(message.parts, ref, size, description)
+        if (parts)
+          await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
+            message.id,
+            JSON.stringify(parts)
+          ])
+      })
+    )
   }
 
   /** What the scan finds of each orphan kind right now (see {@link ImageOrphanKind}). */
@@ -328,12 +330,12 @@ export class ImageService {
     let removed = 0
     if (kind === "objects") {
       const found = (await this.#orphanObjects()).filter(item => item.modified.getTime() < settled)
-      for (const item of found) {
+      await eachLimited(found, CHECK_CONCURRENCY, async item => {
         const ref = refOf(item.key)
-        if (ref && (await this.#hasRow(ref))) continue
+        if (ref && (await this.#hasRow(ref))) return
         await objects.delete(item.key)
         removed++
-      }
+      })
     } else if (kind === "rows") {
       const found = (await this.#orphanRows()).filter(item => item.created.getTime() < settled)
       await eachLimited(found, CHECK_CONCURRENCY, async item => {
@@ -346,16 +348,16 @@ export class ImageService {
       })
     } else {
       const sessions = new Map((await this.#unsaved()).map(item => [`${item.userId}/${item.sessionId}`, item]))
-      for (const { userId, sessionId } of sessions.values()) {
+      await eachLimited([...sessions.values()], CHECK_CONCURRENCY, async ({ userId, sessionId }) => {
         const { rows } = await this.#db.query("SELECT 1 FROM nasi_session WHERE id = $1", [sessionId])
-        if (rows.length) continue
+        if (rows.length) return
         await objects.deletePrefix(`${sessionImagePrefix(sessionId, userId)}/`)
         const result = await this.#db.query("DELETE FROM nasi_image WHERE session_id = $1 AND user_id = $2", [
           sessionId,
           userId
         ])
         removed += result.rowCount ?? 0
-      }
+      })
     }
     return removed
   }

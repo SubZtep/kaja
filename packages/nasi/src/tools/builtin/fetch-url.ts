@@ -215,7 +215,8 @@ function toMarkdown(html: string, opts: Omit<FetchArgs, "url">): string {
         .getAttribute("title")
         ?.replace(/["\s]+/g, " ")
         .trim()
-      return `![${(img.getAttribute("alt") ?? "").replace(/[[\]]/g, "")}](${src}${title ? ` "${title}"` : ""})`
+      const titled = title ? `${src} "${title}"` : src
+      return `![${(img.getAttribute("alt") ?? "").replace(/[[\]]/g, "")}](${titled})`
     }
   })
   turndown.addRule("links", {
