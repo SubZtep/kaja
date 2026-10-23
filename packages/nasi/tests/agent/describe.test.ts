@@ -4,6 +4,7 @@ import { Agent, type AgentEvent, applyPersona, createSession, seesImages, tool }
 import { run } from "../../src/agent/run"
 import { Nasi } from "../../src/nasi"
 import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects, resolveImageLinks } from "../../src/store"
+import { setToolDeps } from "../../src/tools/deps"
 import { TINY_PNG, TINY_PNG_BASE64 } from "../fixtures/images"
 
 type SentMessage = { role: string; content?: unknown }
@@ -233,4 +234,51 @@ test("a persona's models.vision pin describes its images; one without goes back 
   expect(agent.describer).toEqual({ client: { for: "local-vlm" } as never, model: "vlm" })
   applyPersona(agent, { id: "plain", label: "Plain", instructions: "" } as never)
   expect(agent.describer).toBe(host)
+})
+
+test("a reply's remote image is stored and its link swapped for the stored ref", async () => {
+  const sent: string[] = []
+  setToolDeps({
+    fetchSend: async url => {
+      sent.push(String(url))
+      return new Response(new Uint8Array(TINY_PNG), { headers: { "content-type": "image/png" } })
+    }
+  })
+  const fetchUrl = tool({ name: "fetch_url", description: "Fetches", schema: z.object({}), execute: async () => "" })
+  const agent = new Agent({
+    model: "m",
+    client: chat(["Here: ![a square](https://img.example/a.png) and ![again](https://img.example/a.png)"], []) as never,
+    tools: [fetchUrl],
+    store: createMemoryStore()
+  })
+  const session = createSession()
+  const events: AgentEvent[] = []
+  for await (const event of run(agent, "show it", session)) events.push(event)
+  setToolDeps({})
+  expect(sent).toEqual(["https://img.example/a.png"])
+  expect(session.messages.at(-1)).toMatchObject({ content: `Here: ![a square](${LINK}) and ![again](${LINK})` })
+  const final = events.find(event => event.type === "final") as { content: string }
+  expect(final.content).not.toContain("https://img.example")
+  expect(await agent.store!.images(session.id!).get(imageId(TINY_PNG))).toBeDefined()
+})
+
+test("a reply's remote image stays a link where fetch_url isn't available", async () => {
+  let asked = 0
+  setToolDeps({
+    fetchSend: async () => {
+      asked++
+      return new Response(new Uint8Array(TINY_PNG), { headers: { "content-type": "image/png" } })
+    }
+  })
+  const agent = new Agent({
+    model: "m",
+    client: chat(["![a](https://img.example/a.png)"], []) as never,
+    tools: [],
+    store: createMemoryStore()
+  })
+  const events: AgentEvent[] = []
+  for await (const event of run(agent, "show it", createSession())) events.push(event)
+  setToolDeps({})
+  expect(asked).toBe(0)
+  expect(events.find(event => event.type === "final")).toMatchObject({ content: "![a](https://img.example/a.png)" })
 })

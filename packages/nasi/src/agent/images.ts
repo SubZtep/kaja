@@ -1,7 +1,9 @@
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { ImageError, normalizeImage } from "../images/normalize"
 import { dataUrlBytes, imageDataUrl } from "../images/parts"
+import { fetchPublicHttp } from "../security/ssrf"
 import { imageRefId, inlineImages, type SessionImages } from "../store/images"
+import { getToolDeps } from "../tools/deps"
 import { warn } from "../warn"
 import type { Agent, Session } from "./agent"
 import { describeInBackground, imageLabel } from "./describe"
@@ -90,6 +92,45 @@ export async function storeImage(
     if (error instanceof ImageError) return { error: error.message }
     throw error
   }
+}
+
+/** A remote image can be as big as a photo; it's shrunk when stored. */
+const MAX_REMOTE_IMAGE_BYTES = 20 * 1024 * 1024
+/** Remote images taken from one reply; a gallery past this stays as links. */
+const MAX_REPLY_IMAGES = 8
+const REMOTE_IMAGE = /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g
+
+/**
+ * A reply with each `![alt](http(s) url)` image fetched and stored like any other, and its link swapped for the
+ * `kaja-image:` ref, so what the user is shown is always the stored copy. Only where `fetch_url` could reach the
+ * network too (a cloud turn without egress has none) and the session has a home for images; a link that can't be
+ * fetched or used stays as the model wrote it.
+ */
+export async function storeRemoteImages(agent: Agent, session: Session, text: string): Promise<string> {
+  // Not `toolName`: tools.ts imports this file
+  const canFetch = agent.tools.some(
+    tool => tool.definition.type === "function" && tool.definition.function.name === "fetch_url"
+  )
+  if (!session.id || !text.includes("![") || !canFetch) return text
+  const alts = new Map<string, string>()
+  for (const [, alt, url] of text.matchAll(REMOTE_IMAGE)) if (!alts.has(url!)) alts.set(url!, alt!)
+  const refs = new Map<string, string>()
+  await Promise.all(
+    [...alts].slice(0, MAX_REPLY_IMAGES).map(async ([url, alt]) => {
+      try {
+        const res = await fetchPublicHttp(url, { maxBytes: MAX_REMOTE_IMAGE_BYTES, send: getToolDeps().fetchSend })
+        if (!res.ok || !res.headers.get("content-type")?.startsWith("image/")) return
+        const data = new Uint8Array(await res.arrayBuffer())
+        const stored = await storeImage(agent, session, data, alt || `Image from ${url}`)
+        if ("ref" in stored && imageRefId(stored.ref)) refs.set(url, stored.ref)
+      } catch (error) {
+        warn("A reply's image couldn't be stored", { url, error })
+      }
+    })
+  )
+  return text.replace(REMOTE_IMAGE, (link, alt: string, url: string) =>
+    refs.has(url) ? `![${alt}](${refs.get(url)})` : link
+  )
 }
 
 /**
