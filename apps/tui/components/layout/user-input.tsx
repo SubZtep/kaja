@@ -129,17 +129,15 @@ function Border({ children, variant = "solid" }: Readonly<{ children: React.Reac
     ...inputBox(),
     borderStyle: "classic",
     borderDimColor: true,
-    borderLeftDimColor: false,
-    borderRightDimColor: false,
+    borderLeft: false,
+    borderRight: false,
     width: "100%",
     flexShrink: 0,
     maxHeight: INPUT_MAX_HEIGHT,
     overflow: "hidden",
     ...(isPower && {
       borderStyle: "arrow",
-      borderColor: powerBox().borderColor,
-      borderLeftDimColor: true,
-      borderRightDimColor: true
+      borderColor: powerBox().borderColor
     })
   }
 
