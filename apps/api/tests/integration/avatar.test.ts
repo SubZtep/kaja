@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { objects } from "../../src/core/files"
 import {
   copyGooglePicture,
@@ -37,15 +37,12 @@ const gravatar = (displayName?: string) =>
 async function newUser(name = "") {
   const email = faker.internet.email().toLowerCase()
   await signUpAndSignIn(email, name)
-  const { rows } = await pool.query<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [email])
+  const rows = await sql<{ id: string }[]>`SELECT id FROM "user" WHERE email = ${email}`
   return { id: rows[0]!.id, email }
 }
 
 async function profile(id: string) {
-  const { rows } = await pool.query<{ name: string; image: string | null }>(
-    `SELECT name, image FROM "user" WHERE id = $1`,
-    [id]
-  )
+  const rows = await sql<{ name: string; image: string | null }[]>`SELECT name, image FROM "user" WHERE id = ${id}`
   return rows[0]!
 }
 
@@ -111,7 +108,7 @@ describe("Google picture copy", () => {
 
   test("a new Google account's picture is swapped for a stored copy", async () => {
     const user = await newUser("Ada")
-    await pool.query(`UPDATE "user" SET image = $2 WHERE id = $1`, [user.id, picture])
+    await sql`UPDATE "user" SET image = ${picture} WHERE id = ${user.id}`
     const { fetcher, asked } = fakeFetch({ "https://lh3.googleusercontent.com/": () => new Response(PNG) })
     await copyGooglePicture(user.id, picture, picture, fetcher)
 
@@ -122,7 +119,7 @@ describe("Google picture copy", () => {
 
   test("a picture the user changed meanwhile stays", async () => {
     const user = await newUser("Ada")
-    await pool.query(`UPDATE "user" SET image = 'https://example.com/me.png' WHERE id = $1`, [user.id])
+    await sql`UPDATE "user" SET image = 'https://example.com/me.png' WHERE id = ${user.id}`
     const { fetcher } = fakeFetch({ "https://lh3.googleusercontent.com/": () => new Response(PNG) })
     await copyGooglePicture(user.id, picture, picture, fetcher)
     expect((await profile(user.id)).image).toBe("https://example.com/me.png")

@@ -2,14 +2,14 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import type { ImageStats, UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { nasiStore } from "../../src/features/nasi/store"
 import { signUpAndSignIn } from "./helpers"
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, name)
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  const userId = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
   return { token, userId }
 }
 
@@ -32,19 +32,8 @@ async function seedImage(
   opts: { url?: string; description?: string; ageDays?: number } = {}
 ) {
   const created = new Date(Date.now() - (opts.ageDays ?? 0) * 86_400_000)
-  await pool.query(
-    `INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes, source_url, description, created_at)
-     VALUES ($1, $2, $3, 'image/png', 2, 2, $4, $5, $6, $7)`,
-    [
-      sessionId,
-      userId,
-      faker.string.hexadecimal({ length: 16, prefix: "" }).toLowerCase(),
-      bytes,
-      opts.url ?? null,
-      opts.description ?? null,
-      created
-    ]
-  )
+  await sql`INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes, source_url, description, created_at)
+     VALUES (${sessionId}, ${userId}, ${faker.string.hexadecimal({ length: 16, prefix: "" }).toLowerCase()}, 'image/png', 2, 2, ${bytes}, ${opts.url ?? null}, ${opts.description ?? null}, ${created})`
 }
 
 describe("image stats", () => {
@@ -58,7 +47,7 @@ describe("image stats", () => {
     mine = await signUp("Images")
     other = await signUp("Other")
     admin = await signUp("Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE id = $1`, [admin.userId])
+    await sql`UPDATE "user" SET role = 'admin' WHERE id = ${admin.userId}`
 
     big = await seedSession(mine.userId, "Photos", "telegram:1")
     small = await seedSession(mine.userId, "Chat")
@@ -73,7 +62,7 @@ describe("image stats", () => {
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[mine.userId, other.userId, admin.userId]])
+    await sql`DELETE FROM "user" WHERE id = ANY(${[mine.userId, other.userId, admin.userId]})`
   })
 
   const expected = (added: number, addedBytes: number): ImageStats => ({

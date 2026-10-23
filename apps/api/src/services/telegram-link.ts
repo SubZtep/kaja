@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 
 /** Time-to-live for a Telegram link token. */
 const TOKEN_TTL_MS = 10 * 60 * 1000
@@ -9,9 +9,9 @@ function hashToken(rawToken: string): string {
 }
 
 export class TelegramLinkService {
-  readonly #db: Pool
+  readonly #db: SQL
 
-  constructor(db: Pool) {
+  constructor(db: SQL) {
     this.#db = db
   }
 
@@ -22,12 +22,10 @@ export class TelegramLinkService {
   async createLinkToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
     const token = randomBytes(18).toString("base64url")
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS)
-    await this.#db.query(`DELETE FROM telegram_link_token WHERE user_id = $1`, [userId])
-    await this.#db.query(`INSERT INTO telegram_link_token (token_hash, user_id, expires_at) VALUES ($1, $2, $3)`, [
-      hashToken(token),
-      userId,
-      expiresAt
-    ])
+    await this.#db.begin(async tx => {
+      await tx`DELETE FROM telegram_link_token WHERE user_id = ${userId}`
+      await tx`INSERT INTO telegram_link_token (token_hash, user_id, expires_at) VALUES (${hashToken(token)}, ${userId}, ${expiresAt})`
+    })
     return { token, expiresAt }
   }
 
@@ -36,13 +34,10 @@ export class TelegramLinkService {
    * unknown/expired.
    */
   async peekLinkToken(rawToken: string): Promise<{ userId: string; email: string; locale: string | null } | undefined> {
-    const result = await this.#db.query(
-      `SELECT t.user_id, u.email, u.locale FROM telegram_link_token t
-       JOIN "user" u ON u.id = t.user_id
-       WHERE t.token_hash = $1 AND t.expires_at > NOW()`,
-      [hashToken(rawToken)]
-    )
-    const row = result.rows[0]
+    const [row] = await this.#db<{ user_id: string; email: string; locale: string | null }[]>`
+      SELECT t.user_id, u.email, u.locale FROM telegram_link_token t
+      JOIN "user" u ON u.id = t.user_id
+      WHERE t.token_hash = ${hashToken(rawToken)} AND t.expires_at > NOW()`
     return row ? { userId: row.user_id, email: row.email, locale: row.locale } : undefined
   }
 
@@ -51,8 +46,8 @@ export class TelegramLinkService {
    * double-confirm race.
    */
   async deleteLinkToken(rawToken: string): Promise<boolean> {
-    const result = await this.#db.query(`DELETE FROM telegram_link_token WHERE token_hash = $1`, [hashToken(rawToken)])
-    return (result.rowCount ?? 0) > 0
+    const result = await this.#db`DELETE FROM telegram_link_token WHERE token_hash = ${hashToken(rawToken)}`
+    return result.affectedRows > 0
   }
 
   /**
@@ -62,20 +57,17 @@ export class TelegramLinkService {
   async link(telegramUserId: number, userId: string): Promise<boolean> {
     const existing = await this.resolveUserId(telegramUserId)
     if (existing && existing !== userId) return false
-    await this.#db.query(
-      `INSERT INTO telegram_link (telegram_user_id, user_id) VALUES ($1, $2)
-       ON CONFLICT (telegram_user_id) DO UPDATE SET user_id = EXCLUDED.user_id`,
-      [telegramUserId, userId]
-    )
+    await this.#db`
+      INSERT INTO telegram_link (telegram_user_id, user_id) VALUES (${telegramUserId}, ${userId})
+      ON CONFLICT (telegram_user_id) DO UPDATE SET user_id = EXCLUDED.user_id`
     return true
   }
 
   /** When the Kaja account was last linked to a Telegram account, or null when it isn't. */
   async linkedAt(userId: string): Promise<Date | null> {
-    const { rows } = await this.#db.query("SELECT max(linked_at) AS linked_at FROM telegram_link WHERE user_id = $1", [
-      userId
-    ])
-    return rows[0]?.linked_at ? new Date(rows[0].linked_at) : null
+    const [row] = await this.#db<{ linked_at: Date | null }[]>`
+      SELECT max(linked_at) AS linked_at FROM telegram_link WHERE user_id = ${userId}`
+    return row?.linked_at ? new Date(row.linked_at) : null
   }
 
   /**
@@ -83,9 +75,9 @@ export class TelegramLinkService {
    * linked.
    */
   async unlink(userId: string): Promise<boolean> {
-    await this.#db.query("DELETE FROM telegram_link_token WHERE user_id = $1", [userId])
-    const result = await this.#db.query("DELETE FROM telegram_link WHERE user_id = $1", [userId])
-    return (result.rowCount ?? 0) > 0
+    await this.#db`DELETE FROM telegram_link_token WHERE user_id = ${userId}`
+    const result = await this.#db`DELETE FROM telegram_link WHERE user_id = ${userId}`
+    return result.affectedRows > 0
   }
 
   /**
@@ -93,19 +85,15 @@ export class TelegramLinkService {
    * if unlinked.
    */
   async resolveUser(telegramUserId: number): Promise<{ userId: string; locale: string | null } | undefined> {
-    const result = await this.#db.query(
-      `SELECT l.user_id, u.locale FROM telegram_link l JOIN "user" u ON u.id = l.user_id WHERE l.telegram_user_id = $1`,
-      [telegramUserId]
-    )
-    const row = result.rows[0]
+    const [row] = await this.#db<{ user_id: string; locale: string | null }[]>`
+      SELECT l.user_id, u.locale FROM telegram_link l JOIN "user" u ON u.id = l.user_id
+      WHERE l.telegram_user_id = ${telegramUserId}`
     return row ? { userId: row.user_id, locale: row.locale } : undefined
   }
 
   async resolveUserId(telegramUserId: number): Promise<string | undefined> {
-    const result = await this.#db.query<{ user_id: string }>(
-      `SELECT user_id FROM telegram_link WHERE telegram_user_id = $1`,
-      [telegramUserId]
-    )
-    return result.rows[0]?.user_id
+    const [row] = await this.#db<{ user_id: string }[]>`
+      SELECT user_id FROM telegram_link WHERE telegram_user_id = ${telegramUserId}`
+    return row?.user_id
   }
 }

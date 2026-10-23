@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import type { UsageStatsResponse } from "@kaja/schema/api"
-import type { PoolClient } from "pg"
+import { SQL } from "bun"
 import { z } from "zod"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { nasiStore } from "../../src/features/nasi/store"
 import { signUpAndSignIn } from "./helpers"
 
@@ -13,26 +13,21 @@ const INSTANT = new Date("2026-09-20T00:30:00Z")
 const INSTANT_EPOCH = INSTANT.getTime() / 1000
 const ZONES = ["UTC", "Asia/Tokyo", "America/Los_Angeles"] as const
 
-/** A connection whose session timezone is `zone`, standing in for a client somewhere else on Earth. */
-async function connectIn(zone: string) {
-  const client = await pool.connect()
-  await client.query(`SET TIME ZONE '${zone}'`)
-  return client
-}
+/** A client whose session timezone is `zone`, standing in for a client somewhere else on Earth. */
+const connectIn = (zone: string) => new SQL({ url: Bun.env.DATABASE_URL, max: 1, connection: { TimeZone: zone } })
 
 /** The `YYYY-MM-DD` calendar day `instant` falls on in `zone`. */
 const dayIn = (instant: Date, zone: string) => new Intl.DateTimeFormat("en-CA", { timeZone: zone }).format(instant)
 
 describe("timestamps are absolute instants, whoever inserts and reads them", () => {
   const table = `tz_probe_${faker.string.alphanumeric({ length: 8, casing: "lower" })}`
-  const clients: PoolClient[] = []
+  const clients = ZONES.map(connectIn)
 
   beforeAll(async () => {
-    await pool.query(`CREATE TABLE ${table} (id serial PRIMARY KEY, label text NOT NULL, at timestamptz NOT NULL)`)
-    for (const zone of ZONES) clients.push(await connectIn(zone))
-    const [utc, tokyo, la] = clients as [PoolClient, PoolClient, PoolClient]
-    const insert = (client: PoolClient, label: string, at: string | Date) =>
-      client.query(`INSERT INTO ${table} (label, at) VALUES ($1, $2)`, [label, at])
+    await sql`CREATE TABLE ${sql(table)} (id serial PRIMARY KEY, label text NOT NULL, at timestamptz NOT NULL)`
+    const [utc, tokyo, la] = clients as [SQL, SQL, SQL]
+    const insert = (client: SQL, label: string, at: string | Date) =>
+      client`INSERT INTO ${client(table)} (label, at) VALUES (${label}, ${at})`
 
     // Wall-clock literals without an offset mean "my local time", so each zone writes its own reading of the instant.
     await insert(utc, "utc-wall", "2026-09-20 00:30:00")
@@ -51,14 +46,13 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
   })
 
   afterAll(async () => {
-    for (const client of clients) client.release(true)
-    await pool.query(`DROP TABLE IF EXISTS ${table}`)
+    for (const client of clients) await client.close()
+    await sql`DROP TABLE IF EXISTS ${sql(table)}`
   })
 
   test("every way of writing the same moment is stored as the same instant", async () => {
-    const { rows } = await pool.query(
-      `SELECT label, extract(epoch FROM at)::float8 AS epoch FROM ${table} WHERE label NOT IN ('before', 'after')`
-    )
+    const rows = await sql<{ label: string; epoch: number }[]>`
+      SELECT label, extract(epoch FROM at)::float8 AS epoch FROM ${sql(table)} WHERE label NOT IN ('before', 'after')`
     expect(rows).toHaveLength(8)
     for (const row of rows) expect(row.epoch).toBe(INSTANT_EPOCH)
   })
@@ -68,10 +62,8 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
     const to = new Date("2026-09-20T00:30:01Z")
     const results: string[][] = []
     for (const client of clients) {
-      const { rows } = await client.query<{ label: string }>(
-        `SELECT label FROM ${table} WHERE at >= $1 AND at < $2 ORDER BY label`,
-        [from, to]
-      )
+      const rows = await client<{ label: string }[]>`
+        SELECT label FROM ${client(table)} WHERE at >= ${from} AND at < ${to} ORDER BY label`
       results.push(rows.map(row => row.label))
     }
     expect(results[0]).toHaveLength(8)
@@ -81,20 +73,18 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
 
   test("ordering and comparing across writers follows the instant, not the wall clock", async () => {
     // Tokyo's wall clock reads 09:30 and LA's 17:30 for the same instant, so text order would disagree with time order.
-    const { rows } = await pool.query<{ label: string }>(
-      `SELECT label FROM ${table} WHERE at > $1 OR at < $1 ORDER BY at`,
-      [INSTANT]
-    )
+    const rows = await sql<{ label: string }[]>`
+      SELECT label FROM ${sql(table)} WHERE at > ${INSTANT} OR at < ${INSTANT} ORDER BY at`
     expect(rows.map(row => row.label)).toEqual(["before", "after"])
   })
 
   test("each session shows its own local reading of the one instant", async () => {
     const shown: Record<string, string> = {}
     for (const [i, zone] of ZONES.entries()) {
-      const { rows } = await clients[i]!.query(
-        `SELECT to_char(at, 'YYYY-MM-DD HH24:MI') AS shown FROM ${table} WHERE label = 'utc-wall'`
-      )
-      shown[zone] = rows[0].shown
+      const client = clients[i]!
+      const [row] = await client<{ shown: string }[]>`
+        SELECT to_char(at, 'YYYY-MM-DD HH24:MI') AS shown FROM ${client(table)} WHERE label = 'utc-wall'`
+      shown[zone] = row!.shown
     }
     expect(shown).toEqual({
       UTC: "2026-09-20 00:30",
@@ -106,19 +96,17 @@ describe("timestamps are absolute instants, whoever inserts and reads them", () 
 
 describe("schema keeps every timestamp an instant", () => {
   test("no column stores a wall clock without a timezone", async () => {
-    const { rows } = await pool.query(
-      `SELECT table_name, column_name FROM information_schema.columns
-       WHERE table_schema = 'public' AND data_type = 'timestamp without time zone'`
-    )
-    expect(rows).toEqual([])
+    const rows = await sql`
+      SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND data_type = 'timestamp without time zone'`
+    expect([...rows]).toEqual([])
   })
 
   test("every *_at / *At column is timestamptz, not text or a number", async () => {
-    const { rows } = await pool.query(
-      `SELECT table_name, column_name, data_type FROM information_schema.columns
-       WHERE table_schema = 'public' AND column_name ~ '(_at|At)$' AND data_type <> 'timestamp with time zone'`
-    )
-    expect(rows).toEqual([])
+    const rows = await sql`
+      SELECT table_name, column_name, data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND column_name ~ '(_at|At)$' AND data_type <> 'timestamp with time zone'`
+    expect([...rows]).toEqual([])
   })
 })
 
@@ -129,11 +117,11 @@ describe("the API hands times out as UTC", () => {
 
   beforeAll(async () => {
     token = await signUpAndSignIn(email, "Zone Tester")
-    userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email.toLowerCase()])).rows[0].id
+    userId = (await sql`SELECT id FROM "user" WHERE email = ${email.toLowerCase()}`)[0].id
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = $1', [userId])
+    await sql`DELETE FROM "user" WHERE id = ${userId}`
   })
 
   test("a stored instant reaches the client as one UTC ISO string and parses back to the same moment", async () => {
@@ -144,7 +132,7 @@ describe("the API hands times out as UTC", () => {
     })
     expect(created.status).toBe(201)
     const { id } = await created.json()
-    await pool.query("UPDATE widget SET created_at = $2 WHERE id = $1", [id, INSTANT])
+    await sql`UPDATE widget SET created_at = ${INSTANT} WHERE id = ${id}`
 
     const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
     const { keys } = await list.json()
@@ -174,7 +162,7 @@ describe("stats days follow the viewer's timezone", () => {
 
   beforeAll(async () => {
     token = await signUpAndSignIn(email, "Zone Stats")
-    userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email.toLowerCase()])).rows[0].id
+    userId = (await sql`SELECT id FROM "user" WHERE email = ${email.toLowerCase()}`)[0].id
     const id = await nasiStore(userId).createSession({
       persona: "default",
       model: "model-a",
@@ -183,11 +171,11 @@ describe("stats days follow the viewer's timezone", () => {
       session: { messages: [], telemetry: { steps: [], calls: {} } },
       events: []
     })
-    await pool.query("UPDATE nasi_session SET created_at = $2, updated_at = $2 WHERE id = $1", [id, seededAt])
+    await sql`UPDATE nasi_session SET created_at = ${seededAt}, updated_at = ${seededAt} WHERE id = ${id}`
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = $1', [userId])
+    await sql`DELETE FROM "user" WHERE id = ${userId}`
   })
 
   test("the one session lands on the calendar day of whoever is looking", async () => {

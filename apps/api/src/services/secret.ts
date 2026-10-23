@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 
 const ALGORITHM = "aes-256-gcm"
 const IV_BYTES = 12
@@ -28,11 +28,11 @@ type SealedRow = { name: string; ciphertext: Buffer; iv: Buffer; tag: Buffer }
  * (USER_SECRET_KEY unset) nothing can be written, and reads find nothing.
  */
 export class SecretService {
-  readonly #db: Pool
+  readonly #db: SQL
   #key: Buffer | undefined
 
   /** @param key - USER_SECRET_KEY: 32 bytes, base64-encoded. */
-  constructor(db: Pool, key: string | undefined) {
+  constructor(db: SQL, key: string | undefined) {
     this.#db = db
     this.#key = key ? Buffer.from(key, "base64") : undefined
   }
@@ -50,14 +50,10 @@ export class SecretService {
   /** Stores (or replaces) a server-wide secret. Throws {@link SecretsUnavailableError} without a key. */
   async setService(name: string, value: string): Promise<void> {
     const { ciphertext, iv, tag } = this.#seal(SERVICE_OWNER, name, value)
-    await this.#db.query(
-      `
-      INSERT INTO service_secret (name, ciphertext, iv, tag) VALUES ($1, $2, $3, $4)
+    await this.#db`
+      INSERT INTO service_secret (name, ciphertext, iv, tag) VALUES (${name}, ${ciphertext}, ${iv}, ${tag})
       ON CONFLICT (name) DO UPDATE SET
-        ciphertext = EXCLUDED.ciphertext, iv = EXCLUDED.iv, tag = EXCLUDED.tag, updated_at = NOW()
-      `,
-      [name, ciphertext, iv, tag]
-    )
+        ciphertext = EXCLUDED.ciphertext, iv = EXCLUDED.iv, tag = EXCLUDED.tag, updated_at = NOW()`
   }
 
   /**
@@ -67,10 +63,8 @@ export class SecretService {
   async getAllService(prefix: string): Promise<Map<string, string>> {
     const secrets = new Map<string, string>()
     if (!this.#key) return secrets
-    const { rows } = await this.#db.query<SealedRow>(
-      "SELECT name, ciphertext, iv, tag FROM service_secret WHERE starts_with(name, $1)",
-      [prefix]
-    )
+    const rows = await this.#db<SealedRow[]>`
+      SELECT name, ciphertext, iv, tag FROM service_secret WHERE starts_with(name, ${prefix})`
     for (const row of rows) {
       const value = this.#open(SERVICE_OWNER, row)
       if (value === undefined) console.warn("Service secret doesn't decrypt; ignoring it", { name: row.name })
@@ -85,14 +79,14 @@ export class SecretService {
    */
   async serviceNames(prefix: string): Promise<Set<string>> {
     if (!this.#key) return new Set()
-    const { rows } = await this.#db.query("SELECT name FROM service_secret WHERE starts_with(name, $1)", [prefix])
-    return new Set(rows.map(row => row.name as string))
+    const rows = await this.#db<{ name: string }[]>`SELECT name FROM service_secret WHERE starts_with(name, ${prefix})`
+    return new Set(rows.map(row => row.name))
   }
 
   /** Removes a server-wide secret; false when there was none. */
   async deleteService(name: string): Promise<boolean> {
-    const result = await this.#db.query("DELETE FROM service_secret WHERE name = $1", [name])
-    return (result.rowCount ?? 0) > 0
+    const result = await this.#db`DELETE FROM service_secret WHERE name = ${name}`
+    return result.affectedRows > 0
   }
 
   #seal(owner: string, name: string, value: string): { ciphertext: Buffer; iv: Buffer; tag: Buffer } {

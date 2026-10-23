@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
@@ -102,17 +102,16 @@ const createIssueCall = (id: string) => ({
 
 /** The stored tool call for a provider call id, with the approval it got and the text of its result message. */
 async function savedCall(callId: string) {
-  const { rows } = await pool.query<{
-    approval: string | null
-    status: string | null
-    timed: boolean
-    result: string | null
-  }>(
-    `SELECT tc.approval, tc.status, tc.duration_ms IS NOT NULL AS timed, r.content AS result
+  const rows = await sql<
+    {
+      approval: string | null
+      status: string | null
+      timed: boolean
+      result: string | null
+    }[]
+  >`SELECT tc.approval, tc.status, tc.duration_ms IS NOT NULL AS timed, r.content AS result
      FROM nasi_tool_call tc LEFT JOIN nasi_message r ON r.id = tc.result_message_id
-     WHERE tc.call_id = $1`,
-    [callId]
-  )
+     WHERE tc.call_id = ${callId}`
   return rows[0]
 }
 
@@ -155,9 +154,9 @@ describe("HTTP tools in the cloud", () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-tools-test-"))
     const email = faker.internet.email().toLowerCase()
     token = await signUpAndSignIn(email, "Tools")
-    userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
+    userId = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id
     adminToken = await signUpAndSignIn(adminEmail, "Keys Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
+    await sql`UPDATE "user" SET role = 'admin' WHERE email = ${adminEmail}`
     secretService.setKey(TEST_SECRET_KEY)
     // With a sender set, the SSRF guard leaves DNS to it, so the fake hosts below are reachable through the faked fetch.
     setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
@@ -179,12 +178,12 @@ describe("HTTP tools in the cloud", () => {
     setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
     for (const name of [issues, extras]) await secretService.deleteService(`ability:${name}`)
-    await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
-    await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    await sql`DELETE FROM "user" WHERE email = ${adminEmail}`
+    await sql`DELETE FROM ability WHERE name LIKE ${`%-${tag}`}`
     // The fixture's default persona too, so later files get the built-in one again.
-    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
+    await sql`DELETE FROM ability WHERE type = 'persona' AND name = 'default'`
     // The sync below marked the real marketplace's tools removed; forget the stored commit so the next real sync re-applies it.
-    await pool.query("DELETE FROM marketplace_sync")
+    await sql`DELETE FROM marketplace_sync`
     rmSync(base, { recursive: true, force: true })
   })
 
@@ -225,7 +224,7 @@ describe("HTTP tools in the cloud", () => {
     expect(list.keysEnabled).toBe(true)
     expect(await listed(issues)).toMatchObject({ key: "required", saved: true })
     expect(JSON.stringify(list)).not.toContain(GOOD_KEY)
-    const { rows } = await pool.query("SELECT ciphertext FROM service_secret WHERE name = $1", [`ability:${issues}`])
+    const rows = await sql`SELECT ciphertext FROM service_secret WHERE name = ${`ability:${issues}`}`
     expect(Buffer.from(rows[0].ciphertext).toString("utf8")).not.toContain(GOOD_KEY)
     expect((await abilityService.serviceKeys()).get(issues)).toEqual({ value: GOOD_KEY, own: false })
 
@@ -442,10 +441,7 @@ describe("HTTP tools in the cloud", () => {
         { type: "image_url", image_url: { url: photo } }
       ]
     })
-    const { rows } = await pool.query(
-      "SELECT title FROM nasi_session WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
-      [userId]
-    )
+    const rows = await sql`SELECT title FROM nasi_session WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 1`
     expect(rows[0].title).toBe("📷 /new")
   })
 
@@ -574,11 +570,8 @@ describe("HTTP tools in the cloud", () => {
 
   test("a service key copied to another name doesn't decrypt", async () => {
     const copy = `ability:copy-${tag}`
-    await pool.query(
-      `INSERT INTO service_secret (name, ciphertext, iv, tag)
-       SELECT $1, ciphertext, iv, tag FROM service_secret WHERE name = $2`,
-      [copy, `ability:${issues}`]
-    )
+    await sql`INSERT INTO service_secret (name, ciphertext, iv, tag)
+       SELECT ${copy}, ciphertext, iv, tag FROM service_secret WHERE name = ${`ability:${issues}`}`
     try {
       const all = await secretService.getAllService("ability:")
       expect(all.get(`ability:${issues}`)).toBe(GOOD_KEY)

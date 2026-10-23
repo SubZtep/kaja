@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { registerAbilityDatasets, setNasiChatResolver } from "../../src/features/nasi/chat"
 import { marketplaceService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
@@ -78,9 +78,9 @@ describe("datasets in the cloud", () => {
 
   afterAll(async () => {
     setNasiChatResolver(undefined)
-    await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    await sql`DELETE FROM ability WHERE name LIKE ${`%-${tag}`}`
     // The sync below marked the real marketplace's abilities removed; forget the stored commit so the next real sync re-applies it.
-    await pool.query("DELETE FROM marketplace_sync")
+    await sql`DELETE FROM marketplace_sync`
     rmSync(base, { recursive: true, force: true })
   })
 

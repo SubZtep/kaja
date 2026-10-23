@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
 import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { marketplaceService } from "../../src/services"
@@ -75,9 +75,9 @@ describe("abilities", () => {
 
   afterAll(async () => {
     setNasiChatResolver(undefined)
-    await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    await sql`DELETE FROM ability WHERE name LIKE ${`%-${tag}`}`
     // The fixture's default persona too, so later files get the built-in one again.
-    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
+    await sql`DELETE FROM ability WHERE type = 'persona' AND name = 'default'`
     rmSync(base, { recursive: true, force: true })
   })
 
@@ -211,9 +211,9 @@ describe("marketplace sync from GitHub", () => {
   })
 
   afterAll(async () => {
-    await pool.query("DELETE FROM ability WHERE name = $1", [skillName])
+    await sql`DELETE FROM ability WHERE name = ${skillName}`
     // These tests rewrote the table; forget the stored commit so the next real sync re-applies the marketplace instead of skipping it.
-    await pool.query("DELETE FROM marketplace_sync")
+    await sql`DELETE FROM marketplace_sync`
   })
 
   const fakeGitHub = (commit = sha) =>
@@ -227,7 +227,7 @@ describe("marketplace sync from GitHub", () => {
 
   test("downloads and applies a new commit, then skips an unchanged one", async () => {
     requests = []
-    const service = new MarketplaceService(pool, { repo: "owner/repo", ref: "main" }, fakeGitHub())
+    const service = new MarketplaceService(sql, { repo: "owner/repo", ref: "main" }, fakeGitHub())
     const first = await service.sync({ force: true })
     expect(first).toMatchObject({ commit: sha, changed: true })
     expect(first.added).toContain(skillName)
@@ -244,7 +244,7 @@ describe("marketplace sync from GitHub", () => {
   test("a failed fetch is recorded in the status and thrown", async () => {
     requests = []
     const service = new MarketplaceService(
-      pool,
+      sql,
       { repo: "owner/repo", ref: "main" },
       (async () => new Response("rate limited", { status: 403 })) as unknown as typeof fetch
     )

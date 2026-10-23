@@ -1,7 +1,7 @@
 import { expect } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { auth } from "../../src/features/auth/auth"
 
 /**
@@ -9,22 +9,17 @@ import { auth } from "../../src/features/auth/auth"
  * must `cleanupModel` in `afterAll`.
  */
 export async function seedModel(namePrefix: string, tasks: string[] = ["chat"]) {
-  const provider = await pool.query<{ id: string }>(
-    "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
-    [`${namePrefix}-${faker.string.alphanumeric(8)}`, "http://localhost:1"]
-  )
-  const providerId = provider.rows[0]!.id
+  const provider = await sql<
+    { id: string }[]
+  >`INSERT INTO provider (name, base_url) VALUES (${`${namePrefix}-${faker.string.alphanumeric(8)}`}, ${"http://localhost:1"}) RETURNING id`
+  const providerId = provider[0]!.id
   const modelName = `${namePrefix}-${faker.string.alphanumeric(8)}`
-  await pool.query("INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES ($1, $2, $3, true, true)", [
-    providerId,
-    modelName,
-    tasks
-  ])
+  await sql`INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES (${providerId}, ${modelName}, ${tasks}, true, true)`
   return { providerId, modelName }
 }
 
 export async function cleanupModel(providerId: string) {
-  await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+  await sql`DELETE FROM provider WHERE id = ${providerId}`
 }
 
 // The email OTP plugin's server-only endpoint; auth.ts types its plugin list loosely, so `auth.api` doesn't infer it.

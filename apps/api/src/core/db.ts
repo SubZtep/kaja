@@ -17,7 +17,7 @@ export const sql = new SQL({
   connection: { application_name: "kaja-api", TimeZone: "UTC", statement_timeout: "15000" }
 })
 
-/** Better Auth's driver (`betterAuth({ database: pool })`), and the services not yet moved to `sql`. */
+/** Better Auth's driver only (`betterAuth({ database: pool })`); every query of ours goes through `sql`. */
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   idleTimeoutMillis: 30_000,

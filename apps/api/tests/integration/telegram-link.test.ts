@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { telegramLinkService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 
 test("the web sees whether the account is linked to Telegram, and can disconnect it", async () => {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, "Link")
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
+  const [{ id: userId }] = await sql`SELECT id FROM "user" WHERE email = ${email}`
   const headers = { Authorization: `Bearer ${token}` }
   const status = async () =>
     (await app.request("/telegram/admin/link", { headers })).json() as Promise<{
@@ -30,4 +30,17 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   expect(await telegramLinkService.resolveUserId(telegramUserId)).toBeUndefined()
 
   expect((await app.request("/telegram/admin/link")).status).toBe(401)
+})
+
+test("a link token is consumed once: the second delete finds no row", async () => {
+  const email = faker.internet.email().toLowerCase()
+  await signUpAndSignIn(email, "Token")
+  const [{ id }] = await sql`SELECT id FROM "user" WHERE email = ${email}`
+  const { token } = await telegramLinkService.createLinkToken(id)
+  expect(await telegramLinkService.peekLinkToken(token)).toMatchObject({ userId: id, email })
+  // A new token replaces the outstanding one
+  const { token: newer } = await telegramLinkService.createLinkToken(id)
+  expect(await telegramLinkService.peekLinkToken(token)).toBeUndefined()
+  expect(await telegramLinkService.deleteLinkToken(newer)).toBe(true)
+  expect(await telegramLinkService.deleteLinkToken(newer)).toBe(false)
 })

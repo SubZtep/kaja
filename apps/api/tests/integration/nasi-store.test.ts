@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { createSqlStore, sessionImagePrefix } from "@kaja/nasi"
 import type { StoredConversation } from "@kaja/schema/store"
-import { pool, sql } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { imageUrl, objects } from "../../src/core/files"
 import { nasiStore } from "../../src/features/nasi/store"
 import { noisyPng } from "../fixtures/images"
@@ -12,7 +12,7 @@ import { signUpAndSignIn } from "./helpers"
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   await signUpAndSignIn(email, name)
-  return (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  return (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
 }
 
 type Messages = StoredConversation["messages"]
@@ -46,7 +46,7 @@ describe("nasi store on Postgres", () => {
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[userId, otherId]])
+    await sql`DELETE FROM "user" WHERE id = ANY(${[userId, otherId]})`
   })
 
   test("a session round-trips through jsonb: pending call, granted tools and the timeline", async () => {

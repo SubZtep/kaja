@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { faker } from "@faker-js/faker"
 import type { ImageOrphansResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { objects } from "../../src/core/files"
 import { setNasiDescriberResolver } from "../../src/features/nasi/chat"
 import { nasiStore } from "../../src/features/nasi/store"
@@ -13,7 +13,7 @@ import { signUpAndSignIn } from "./helpers"
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, name)
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  const userId = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
   return { token, userId }
 }
 
@@ -46,10 +46,8 @@ const image = () => ({ data: noisyPng(2, 2), mimeType: "image/png", width: 2, he
 const idOf = (ref: string) => ref.slice("kaja-image:".length)
 
 async function row(sessionId: string, id: string) {
-  const { rows } = await pool.query(
-    "SELECT description, description_model, describe_attempts FROM nasi_image WHERE session_id = $1 AND id = $2",
-    [sessionId, id]
-  )
+  const rows =
+    await sql`SELECT description, description_model, describe_attempts FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
   return rows[0] as
     { description: string | null; description_model: string | null; describe_attempts: number } | undefined
 }
@@ -57,18 +55,18 @@ async function row(sessionId: string, id: string) {
 describe("image maintenance", () => {
   let owner: Awaited<ReturnType<typeof signUp>>
   let admin: Awaited<ReturnType<typeof signUp>>
-  const service = new ImageService(pool)
+  const service = new ImageService(sql)
 
   beforeAll(async () => {
     owner = await signUp("Owner")
     admin = await signUp("Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE id = $1`, [admin.userId])
+    await sql`UPDATE "user" SET role = 'admin' WHERE id = ${admin.userId}`
   })
 
   afterEach(() => setNasiDescriberResolver(undefined))
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[owner.userId, admin.userId]])
+    await sql`DELETE FROM "user" WHERE id = ANY(${[owner.userId, admin.userId]})`
   })
 
   /** A saved session holding one stored image, its message labelled as a turn would have it. */
@@ -100,11 +98,8 @@ describe("image maintenance", () => {
     const old = await sessionWithImage()
     const fresh = await sessionWithImage()
     const givenUp = await sessionWithImage()
-    await pool.query("UPDATE nasi_image SET created_at = $2 WHERE session_id = ANY($1)", [
-      [old.sessionId, givenUp.sessionId],
-      LONG_AGO
-    ])
-    await pool.query("UPDATE nasi_image SET describe_attempts = 3 WHERE session_id = $1", [givenUp.sessionId])
+    await sql`UPDATE nasi_image SET created_at = ${LONG_AGO} WHERE session_id = ANY(${[old.sessionId, givenUp.sessionId]})`
+    await sql`UPDATE nasi_image SET describe_attempts = 3 WHERE session_id = ${givenUp.sessionId}`
 
     const { calls, describer } = visionModel()
     await service.sweep(describer)
@@ -117,18 +112,16 @@ describe("image maintenance", () => {
     expect(await row(givenUp.sessionId, givenUp.id)).toMatchObject({ description: null, describe_attempts: 3 })
     expect(calls.length).toBeGreaterThanOrEqual(1)
 
-    const { rows: parts } = await pool.query("SELECT parts FROM nasi_message WHERE session_id = $1", [old.sessionId])
+    const parts = await sql`SELECT parts FROM nasi_message WHERE session_id = ${old.sessionId}`
     expect(parts[0].parts[0]).toEqual({ type: "text", text: `[Image ${old.ref} (2×2): A small noisy square.]` })
-    const { rows: modelCalls } = await pool.query(
-      "SELECT kind, model, prompt_tokens, completion_tokens FROM nasi_model_call WHERE session_id = $1",
-      [old.sessionId]
-    )
+    const modelCalls =
+      await sql`SELECT kind, model, prompt_tokens, completion_tokens FROM nasi_model_call WHERE session_id = ${old.sessionId}`
     expect(modelCalls).toEqual([{ kind: "describe", model: "vision-m", prompt_tokens: 7, completion_tokens: 3 }])
   })
 
   test("a model that keeps failing is tried three times by the sweep, then left alone", async () => {
     const broken = await sessionWithImage()
-    await pool.query("UPDATE nasi_image SET created_at = $2 WHERE session_id = $1", [broken.sessionId, LONG_AGO])
+    await sql`UPDATE nasi_image SET created_at = ${LONG_AGO} WHERE session_id = ${broken.sessionId}`
     const { describer } = visionModel(new Error("model down"))
     const warned = spyOn(console, "warn").mockImplementation(() => {})
     try {
@@ -159,7 +152,7 @@ describe("image maintenance", () => {
 
     const { describer } = visionModel("Described on request.")
     setNasiDescriberResolver(async () => describer)
-    await pool.query("UPDATE nasi_image SET describe_attempts = 3 WHERE session_id = $1", [one.sessionId])
+    await sql`UPDATE nasi_image SET describe_attempts = 3 WHERE session_id = ${one.sessionId}`
     const res = await post(path, admin.token)
     expect(await res.json()).toEqual({ description: "Described on request." })
     expect((await post(`/admin/images/${one.sessionId}/0000000000000000/describe`, admin.token)).status).toBe(404)
@@ -185,7 +178,7 @@ describe("image maintenance", () => {
     // A session that never got saved, a day and more ago
     const unsaved = Bun.randomUUIDv7()
     const { ref } = await nasiStore(owner.userId).images(unsaved).put(image())
-    await pool.query("UPDATE nasi_image SET created_at = $2 WHERE session_id = $1", [unsaved, LONG_AGO])
+    await sql`UPDATE nasi_image SET created_at = ${LONG_AGO} WHERE session_id = ${unsaved}`
 
     expect(
       (await app.request("/admin/images/orphans", { headers: { Authorization: `Bearer ${owner.token}` } })).status
@@ -204,7 +197,7 @@ describe("image maintenance", () => {
     expect(kept.status).toBe(200)
     expect(await objects.exists(strayKey)).toBe(true)
 
-    const now = new ImageService(pool, { orphanGraceMs: 0 })
+    const now = new ImageService(sql, { orphanGraceMs: 0 })
     expect(await now.removeOrphans("objects")).toBeGreaterThanOrEqual(1)
     expect(await objects.exists(strayKey)).toBe(false)
     expect(await now.removeOrphans("rows")).toBeGreaterThanOrEqual(1)

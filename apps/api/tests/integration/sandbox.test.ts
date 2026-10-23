@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { SANDBOX_KEY_HEADER, SANDBOX_RELAY_KEY_HEADER } from "@kaja/schema/api"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
 import {
@@ -49,24 +49,21 @@ const settings = (token: string, patch: object) =>
   app.request("/sandbox/settings", { method: "PATCH", headers: as(token), body: JSON.stringify(patch) })
 const rowOf = async (id: string) =>
   (
-    await pool.query<{ online: boolean; user_id: string | null }>(
-      "SELECT online, user_id::text FROM sandbox WHERE id = $1",
-      [id]
-    )
-  ).rows[0]
+    await sql<{ online: boolean; user_id: string | null }[]>`SELECT online, user_id::text FROM sandbox WHERE id = ${id}`
+  )[0]
 
 beforeAll(async () => {
   tokenA = await signUpAndSignIn(emails[0]!, "Sandbox A")
   tokenB = await signUpAndSignIn(emails[1]!, "Sandbox B")
-  userA = (await pool.query<{ id: string }>('SELECT id::text FROM "user" WHERE email = $1', [emails[0]])).rows[0]!.id
+  userA = (await sql<{ id: string }[]>`SELECT id::text FROM "user" WHERE email = ${emails[0]}`)[0]!.id
   server = serveApi()
   apiUrl = `http://127.0.0.1:${server.port}`
 }, 30_000)
 
 afterAll(async () => {
   server.stop(true)
-  await pool.query("DELETE FROM sandbox WHERE info->>'name' = 'test' AND user_id IS NULL AND NOT online")
-  await pool.query('DELETE FROM "user" WHERE email = ANY($1)', [emails])
+  await sql`DELETE FROM sandbox WHERE info->>'name' = 'test' AND user_id IS NULL AND NOT online`
+  await sql`DELETE FROM "user" WHERE email = ANY(${emails})`
 })
 
 describe("connecting", () => {
@@ -216,7 +213,7 @@ describe("load history", () => {
       const samples = await sandboxService.samples(sandbox.id, 1)
       expect(samples).toHaveLength(1)
       expect(samples[0]).toMatchObject({ running: 3, load: 1, memoryUsed: 2000 })
-      await pool.query("UPDATE sandbox_sample SET at = at - interval '8 days' WHERE sandbox_id = $1", [sandbox.id])
+      await sql`UPDATE sandbox_sample SET at = at - interval '8 days' WHERE sandbox_id = ${sandbox.id}`
       expect(await sandboxService.pruneSamples(7 * 24 * 60 * 60 * 1000)).toBeGreaterThanOrEqual(2)
       expect(await sandboxService.samples(sandbox.id, 168)).toEqual([])
     } finally {

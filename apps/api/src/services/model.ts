@@ -7,7 +7,7 @@ import type {
   UpdateModelRequest,
   UpdateProviderRequest
 } from "@kaja/schema/api"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 
 /**
  * `Provider` with the real api_key value — never returned from the admin API, only used to authenticate an actual
@@ -15,7 +15,7 @@ import type { Pool } from "pg"
  */
 type ProviderWithSecret = Omit<Provider, "hasApiKey"> & { apiKey: string | null }
 
-// Rows as pg returns them (timestamptz as Date); `last_used_at` only where a query joins usage in.
+// Rows as Bun.SQL returns them (timestamptz as Date); `last_used_at` only where a query joins usage in.
 type ProviderRow = {
   id: string
   name: string
@@ -39,107 +39,86 @@ type ModelRow = {
   last_used_at?: Date | null
 }
 
-export class ModelService {
-  readonly #db: Pool
+type ModelWithProviderRow = ModelRow & {
+  provider_name: string
+  provider_base_url: string
+  provider_api_key: string | null
+  provider_created_at: Date
+  provider_updated_at: Date
+}
 
-  constructor(db: Pool) {
+export class ModelService {
+  readonly #db: SQL
+
+  constructor(db: SQL) {
     this.#db = db
   }
 
   async createProvider(input: CreateProviderRequest): Promise<Provider> {
-    const result = await this.#db.query(
-      `
+    const [row] = await this.#db<ProviderRow[]>`
       INSERT INTO provider (name, base_url, api_key)
-      VALUES ($1, $2, $3)
-      RETURNING *
-      `,
-      [input.name, input.baseUrl, input.apiKey ?? null]
-    )
-
-    return this.#rowToProvider(result.rows[0])
+      VALUES (${input.name}, ${input.baseUrl}, ${input.apiKey ?? null})
+      RETURNING *`
+    return this.#rowToProvider(row!)
   }
 
   async updateProvider(id: string, input: UpdateProviderRequest): Promise<Provider | null> {
-    const result = await this.#db.query(
-      `
+    const [row] = await this.#db<ProviderRow[]>`
       UPDATE provider
-      SET name = COALESCE($2, name),
-          base_url = COALESCE($3, base_url),
-          api_key = COALESCE($4, api_key),
+      SET name = COALESCE(${input.name ?? null}, name),
+          base_url = COALESCE(${input.baseUrl ?? null}, base_url),
+          api_key = COALESCE(${input.apiKey ?? null}, api_key),
           updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-      `,
-      [id, input.name ?? null, input.baseUrl ?? null, input.apiKey ?? null]
-    )
-
-    return result.rows[0] ? this.#rowToProvider(result.rows[0]) : null
+      WHERE id = ${id}
+      RETURNING *`
+    return row ? this.#rowToProvider(row) : null
   }
 
   async deleteProvider(id: string): Promise<boolean> {
-    const result = await this.#db.query(`DELETE FROM provider WHERE id = $1`, [id])
-    return result.rowCount !== null && result.rowCount > 0
+    const result = await this.#db`DELETE FROM provider WHERE id = ${id}`
+    return result.affectedRows > 0
   }
 
   async listProviders(): Promise<Provider[]> {
-    const { rows } = await this.#db.query(`SELECT * FROM provider ORDER BY created_at`)
+    const rows = await this.#db<ProviderRow[]>`SELECT * FROM provider ORDER BY created_at`
     return rows.map(row => this.#rowToProvider(row))
   }
 
   async createModel(input: CreateModelRequest): Promise<Model> {
-    const result = await this.#db.query(
-      `
+    const [row] = await this.#db<ModelRow[]>`
       INSERT INTO model (provider_id, model, tasks, enabled, free, context_window, images)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-      `,
-      [input.providerId, input.model, input.tasks, input.enabled, input.free, input.contextWindow, input.images]
-    )
-
-    return this.#rowToModel(result.rows[0])
+      VALUES (${input.providerId}, ${input.model}, ${input.tasks}, ${input.enabled}, ${input.free},
+              ${input.contextWindow}, ${input.images})
+      RETURNING *`
+    return this.#rowToModel(row!)
   }
 
   async updateModel(id: string, input: UpdateModelRequest): Promise<Model | null> {
-    const result = await this.#db.query(
-      `
+    const [row] = await this.#db<ModelRow[]>`
       UPDATE model
-      SET provider_id = COALESCE($2, provider_id),
-          model = COALESCE($3, model),
-          tasks = COALESCE($4, tasks),
-          enabled = COALESCE($5, enabled),
-          free = COALESCE($6, free),
-          context_window = CASE WHEN $7 THEN $8 ELSE context_window END,
-          images = COALESCE($9, images),
+      SET provider_id = COALESCE(${input.providerId ?? null}, provider_id),
+          model = COALESCE(${input.model ?? null}, model),
+          tasks = COALESCE(${input.tasks ?? null}, tasks),
+          enabled = COALESCE(${input.enabled ?? null}, enabled),
+          free = COALESCE(${input.free ?? null}, free),
+          context_window = CASE WHEN ${input.contextWindow !== undefined} THEN ${input.contextWindow ?? null}::int
+                                ELSE context_window END,
+          images = COALESCE(${input.images ?? null}, images),
           updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-      `,
-      [
-        id,
-        input.providerId ?? null,
-        input.model ?? null,
-        input.tasks ?? null,
-        input.enabled ?? null,
-        input.free ?? null,
-        input.contextWindow !== undefined,
-        input.contextWindow ?? null,
-        input.images ?? null
-      ]
-    )
-
-    return result.rows[0] ? this.#rowToModel(result.rows[0]) : null
+      WHERE id = ${id}
+      RETURNING *`
+    return row ? this.#rowToModel(row) : null
   }
 
   async deleteModel(id: string): Promise<boolean> {
-    const result = await this.#db.query(`DELETE FROM model WHERE id = $1`, [id])
-    return result.rowCount !== null && result.rowCount > 0
+    const result = await this.#db`DELETE FROM model WHERE id = ${id}`
+    return result.affectedRows > 0
   }
 
   // TODO: rethink this — nasi_session.model is free text matched by name, not a foreign key to model.id,
   // so a renamed/re-added model silently loses its usage history.
   async listModels(): Promise<Model[]> {
-    const { rows } = await this.#db.query(
-      `
+    const rows = await this.#db<ModelRow[]>`
       SELECT m.*, s.last_used_at
       FROM model m
       LEFT JOIN (
@@ -147,43 +126,13 @@ export class ModelService {
         FROM nasi_session
         GROUP BY model
       ) s ON s.model = m.model
-      ORDER BY m.created_at
-      `
-    )
+      ORDER BY m.created_at`
     return rows.map(row => this.#rowToModel(row))
   }
 
   /** A single model with its resolved provider, for handing credentials to a caller. */
   async getModelWithProvider(id: string): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT m.*,
-             p.name AS provider_name,
-             p.base_url AS provider_base_url,
-             p.api_key AS provider_api_key,
-             p.created_at AS provider_created_at,
-             p.updated_at AS provider_updated_at
-      FROM model m
-      JOIN provider p ON p.id = m.provider_id
-      WHERE m.id = $1
-      `,
-      [id]
-    )
-
-    const row = rows[0]
-    if (!row) return null
-
-    return {
-      model: this.#rowToModel(row),
-      provider: this.#rowToProviderWithSecret({
-        id: row.provider_id,
-        name: row.provider_name,
-        base_url: row.provider_base_url,
-        api_key: row.provider_api_key,
-        created_at: row.provider_created_at,
-        updated_at: row.provider_updated_at
-      })
-    }
+    return this.#withProvider(this.#db`m.id = ${id}`)
   }
 
   /**
@@ -191,44 +140,41 @@ export class ModelService {
    * pinned model.
    */
   async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT m.*,
-             p.name AS provider_name,
-             p.base_url AS provider_base_url,
-             p.api_key AS provider_api_key,
-             p.created_at AS provider_created_at,
-             p.updated_at AS provider_updated_at
-      FROM model m
-      JOIN provider p ON p.id = m.provider_id
-      WHERE m.model = $1 AND m.enabled AND m.free AND m.tasks @> ARRAY['chat']::text[]
-      LIMIT 1
-      `,
-      [model]
+    return this.#withProvider(
+      this.#db`m.model = ${model} AND m.enabled AND m.free AND m.tasks @> ARRAY['chat']::text[]`
     )
-
-    const row = rows[0]
-    if (!row) return null
-
-    return {
-      model: this.#rowToModel(row),
-      provider: this.#rowToProviderWithSecret({
-        id: row.provider_id,
-        name: row.provider_name,
-        base_url: row.provider_base_url,
-        api_key: row.provider_api_key,
-        created_at: row.provider_created_at,
-        updated_at: row.provider_updated_at
-      })
-    }
   }
 
   /** A random free+enabled model for `task` (chat unless given) with its resolved provider. */
   async getRandomModelWithProvider(
     task: ModelTask = "chat"
   ): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
-    const { rows } = await this.#db.query(
-      `
+    return this.#withProvider(
+      this.#db`m.enabled AND m.free AND m.tasks @> ARRAY[${task}]::text[]`,
+      this.#db`ORDER BY random()`
+    )
+  }
+
+  /** Enabled models with their provider, for rendering models.toml. */
+  async listEnabledWithProviders(): Promise<{ providers: Provider[]; models: Model[] }> {
+    const providerRows = await this.#db<ProviderRow[]>`
+      SELECT DISTINCT p.* FROM provider p
+      JOIN model m ON m.provider_id = p.id
+      WHERE m.enabled
+      ORDER BY p.created_at`
+    const modelRows = await this.#db<ModelRow[]>`SELECT * FROM model WHERE enabled ORDER BY created_at`
+    return {
+      providers: providerRows.map(row => this.#rowToProvider(row)),
+      models: modelRows.map(row => this.#rowToModel(row))
+    }
+  }
+
+  // The first model matching `where` (in `order`), joined to its provider
+  async #withProvider(
+    where: SQL.Query<unknown>,
+    order: SQL.Query<unknown> = this.#db``
+  ): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
+    const [row] = await this.#db<ModelWithProviderRow[]>`
       SELECT m.*,
              p.name AS provider_name,
              p.base_url AS provider_base_url,
@@ -237,16 +183,10 @@ export class ModelService {
              p.updated_at AS provider_updated_at
       FROM model m
       JOIN provider p ON p.id = m.provider_id
-      WHERE m.enabled AND m.free AND m.tasks @> ARRAY[$1]::text[]
-      ORDER BY random()
-      LIMIT 1
-      `,
-      [task]
-    )
-
-    const row = rows[0]
+      WHERE ${where}
+      ${order}
+      LIMIT 1`
     if (!row) return null
-
     return {
       model: this.#rowToModel(row),
       provider: this.#rowToProviderWithSecret({
@@ -257,23 +197,6 @@ export class ModelService {
         created_at: row.provider_created_at,
         updated_at: row.provider_updated_at
       })
-    }
-  }
-
-  /** Enabled models with their provider, for rendering models.toml. */
-  async listEnabledWithProviders(): Promise<{ providers: Provider[]; models: Model[] }> {
-    const { rows: providerRows } = await this.#db.query(
-      `
-      SELECT DISTINCT p.* FROM provider p
-      JOIN model m ON m.provider_id = p.id
-      WHERE m.enabled
-      ORDER BY p.created_at
-      `
-    )
-    const { rows: modelRows } = await this.#db.query(`SELECT * FROM model WHERE enabled ORDER BY created_at`)
-    return {
-      providers: providerRows.map(row => this.#rowToProvider(row)),
-      models: modelRows.map(row => this.#rowToModel(row))
     }
   }
 
