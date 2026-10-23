@@ -11,13 +11,14 @@ icon: 🩺
 
 ## Commands
 
-| Command              | What it does                                                                                                                            |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `kaja config paths`  | print where every config file resolves on this machine. Start here when unsure which file Kaja reads                                    |
-| `kaja config wizard` | re-run the [setup wizard](/start/wizard)                                                                                                |
-| `kaja config diff`   | show what `fetch` would change, without writing anything                                                                                |
-| `kaja config fetch`  | rewrite `models.toml` and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none |
-| `kaja doctor`        | test every key, model and tool, see below                                                                                               |
+| Command              | What it does                                                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kaja config paths`  | print where every config file resolves on this machine. Start here when unsure which file Kaja reads                                                                   |
+| `kaja config wizard` | re-run the [setup wizard](/start/wizard)                                                                                                                               |
+| `kaja config diff`   | show what `fetch` would change, without writing anything                                                                                                               |
+| `kaja config fetch`  | rewrite `models.toml` and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none                                |
+| `kaja config hooks`  | find a sound player, notifier and speech tool on this machine and write [`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events) from what it finds |
+| `kaja doctor`        | test every key, model and tool, see below                                                                                                                              |
 
 `kaja config fetch` takes `models.toml` and `commands.toml` from the Kaja server's defaults, or from the
 templates bundled in the binary when you're offline or pass `--offline`. Your own patterns in
