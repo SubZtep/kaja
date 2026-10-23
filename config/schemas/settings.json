@@ -132,7 +132,7 @@
         "hotkeyModifier": {
           "description": "Modifier key for the help/persona hotkeys (default: alt)",
           "type": "string",
-          "enum": ["alt", "ctrl"]
+          "enum": ["alt", "ctrl", "meta", "ctrl+alt", "ctrl+meta", "alt+meta"]
         },
         "theme": {
           "description": "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)",

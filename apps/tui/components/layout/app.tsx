@@ -9,7 +9,7 @@ import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/u
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useCodeView } from "../../hooks/use-code-view"
 import { useHooks } from "../../hooks/use-hooks"
-import { useModifierKeys } from "../../hooks/use-modifier-keys"
+import { type HotkeyModifier, modifierLabel, useModifierHeld, useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useQuitGuard } from "../../hooks/use-quit-guard"
 import { useTheme } from "../../hooks/use-theme"
@@ -88,15 +88,21 @@ function confirmPrompt(
 /** One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree. */
 type KeyBinding = { letter: string; label: string; run: () => void; when: boolean }
 
-function buildKeyBarItems(hotkeyModifier: string | undefined, bindings: KeyBinding[], escItem?: KeyBarEntry) {
-  const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
+function buildKeyBarItems(
+  hotkeyModifier: HotkeyModifier | undefined,
+  modifierHeld: boolean,
+  bindings: KeyBinding[],
+  escItem?: KeyBarEntry
+) {
+  const label = modifierLabel(hotkeyModifier)
   return [
     ...bindings
       .filter(binding => binding.when)
       .map(binding => ({
-        key: `${modifierLabel}+${binding.letter.toUpperCase()}`,
+        key: `${label}+${binding.letter.toUpperCase()}`,
         label: binding.label,
-        onPress: binding.run
+        onPress: binding.run,
+        lit: modifierHeld
       })),
     ...(escItem ? [escItem] : [])
   ]
@@ -212,7 +218,13 @@ function Chrome({
     hotkeyModifier,
     Object.fromEntries(bindings.filter(binding => binding.when).map(binding => [binding.letter, binding.run]))
   )
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, bindings, escKeyBarItem(bottomChromeKey, quitArmed, pressQuit))
+  const modifierHeld = useModifierHeld(hotkeyModifier)
+  const keyBarItems = buildKeyBarItems(
+    hotkeyModifier,
+    modifierHeld,
+    bindings,
+    escKeyBarItem(bottomChromeKey, quitArmed, pressQuit)
+  )
 
   return (
     <ThemeProvider theme={themeFor(theme)}>

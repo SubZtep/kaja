@@ -28,7 +28,7 @@ export const KajaPreferencesSchema = z.object({
   // macOS terminals (Terminal.app/iTerm2 without "Option as Meta" enabled); Ctrl+<letter> can collide with host-app
   // global shortcuts (e.g. VS Code's integrated terminal reserves several of them regardless of focus).
   hotkeyModifier: z
-    .enum(["alt", "ctrl"])
+    .enum(["alt", "ctrl", "meta", "ctrl+alt", "ctrl+meta", "alt+meta"])
     .optional()
     .describe("Modifier key for the help/persona hotkeys (default: alt)"),
   theme: z

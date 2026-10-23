@@ -4,7 +4,35 @@
  * and decoded here; the text field only filters what still gets through as text.
  */
 
+import type { KittyKeyboardOptions } from "ink"
+
 const ESC = "\u001b"
+
+/**
+ * The chat's kitty keyboard protocol request (where the terminal has it): key releases and bare modifier presses are
+ * reported too, which the key bar lights up on, and typed text still arrives whole as associated text.
+ */
+export const KITTY_KEYBOARD = {
+  mode: "auto",
+  flags: ["disambiguateEscapeCodes", "reportEventTypes", "reportAllKeysAsEscapeCodes", "reportAssociatedText"]
+} satisfies KittyKeyboardOptions
+
+/** The kitty protocol's modifier bits. */
+export const MODIFIER_BITS = { shift: 1, alt: 2, ctrl: 4, super: 8, hyper: 16, meta: 32 }
+
+// The modifier keys' own codepoints, left then right: shift, ctrl, alt, super, hyper, meta
+const MODIFIER_KEYS = [
+  MODIFIER_BITS.shift,
+  MODIFIER_BITS.ctrl,
+  MODIFIER_BITS.alt,
+  MODIFIER_BITS.super,
+  MODIFIER_BITS.hyper,
+  MODIFIER_BITS.meta
+]
+const MODIFIER_KEY_REPORT = /^\[(574(?:4[1-9]|5[0-2]))(?:;\d*(?::(\d))?)?u$/
+
+// CSI codepoint ; modifiers u, or CSI 1|number ; modifiers (A-D, F, H, P, Q, S | ~) for the special keys
+const KEY_REPORT = /^\[(?:\d+(?::\d*)*(?:;(\d*)(?::\d+)?)?(?:;[\d:]+)?u|\d+;(\d+)(?::\d+)?[A-DFHPQS~])$/
 
 function stripEsc(input: string): string {
   return input.startsWith(ESC) ? input.slice(1) : input
@@ -51,6 +79,25 @@ export function colorSchemeReport(input: string): "dark" | "light" | null {
   if (s === "[?997;1n") return "dark"
   if (s === "[?997;2n") return "light"
   return null
+}
+
+/**
+ * The modifier bits (see {@link MODIFIER_BITS}) held at a kitty protocol key report, a bare modifier press or release
+ * included; null for any other report.
+ */
+export function parseHeldModifiers(input: string): number | null {
+  const match = KEY_REPORT.exec(stripEsc(input))
+  if (!match) return null
+  const field = match[1] ?? match[2]
+  return field ? Number(field) - 1 : 0
+}
+
+/** A bare modifier key's press (or repeat) or release in a kitty protocol report: which physical key, and its bit. */
+export function parseModifierKey(input: string): { key: number; bit: number; down: boolean } | null {
+  const match = MODIFIER_KEY_REPORT.exec(stripEsc(input))
+  if (!match) return null
+  const key = Number(match[1])
+  return { key, bit: MODIFIER_KEYS[(key - 57441) % MODIFIER_KEYS.length]!, down: match[2] !== "3" }
 }
 
 /** Terminal noise that still reaches useInput as text and must not be typed into the input. */

@@ -14,6 +14,7 @@ import { fireHook } from "../lib/config/hooks"
 import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { resolveTheme } from "../lib/terminal-background"
+import { KITTY_KEYBOARD } from "../lib/terminal-input"
 
 // The opener (xdg-open, open, PowerShell) exits at once when it hands the URL over; still running this long, it started a browser in the foreground.
 const OPENER_WAIT_MS = 3000
@@ -180,10 +181,7 @@ export async function runCloudSubcommand() {
       />,
       {
         alternateScreen: true,
-        kittyKeyboard: {
-          mode: "auto",
-          flags: ["disambiguateEscapeCodes"]
-        }
+        kittyKeyboard: KITTY_KEYBOARD
       }
     )
     try {

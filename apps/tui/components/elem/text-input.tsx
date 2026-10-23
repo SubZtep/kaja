@@ -10,9 +10,10 @@
  */
 
 import chalk from "chalk"
-import { Box, type Key, Text, useInput, useStdin } from "ink"
+import { Box, type Key, Text, useStdin } from "ink"
 import { useEffect, useMemo, useState } from "react"
 import { useBlink } from "../../hooks/use-blink"
+import { useKey } from "../../hooks/use-key"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
@@ -472,7 +473,7 @@ export function TextInput({
     })
   }, [originalValue, canFocus, showCursor])
 
-  useInput(
+  useKey(
     (input, key) => {
       if (onHistory && showCursor) {
         const dir = historyDirection(originalValue, cursorOffset, key, wrapWidth)

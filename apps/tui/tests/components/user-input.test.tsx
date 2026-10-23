@@ -15,6 +15,26 @@ test('plain typing works, and "/" is just a literal character', async () => {
   await t.waitUntilExit()
 })
 
+test("kitty key reports type once: releases, bare modifiers and shifted text change nothing extra", async () => {
+  const t = renderForTest(<UserInput pending={false} speaking={false} send={async () => {}} />)
+  await t.tick()
+
+  await t.press("\x1b[104u") // h down
+  await t.press("\x1b[104;1:3u") // h up
+  await t.press("\x1b[57441;2u") // Shift down
+  await t.press("\x1b[105;2;73u") // Shift+I with its text
+  await t.press("\x1b[105;2:3;73u") // up
+  await t.press("\x1b[57441;1:3u") // Shift up
+  await t.press("\x1b[57442;5u") // Ctrl down, alone
+  await t.press("\x1b[57442;1:3u")
+  expect(t.lastFrame()).toContain("hI")
+  expect(t.lastFrame()).not.toContain("hII")
+  expect(t.lastFrame()).not.toContain("hh")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("mic stays deaf and shows x while the agent speaks", async () => {
   const t = renderForTest(<UserInput pending={false} speaking={true} send={async () => {}} />)
   await t.tick()

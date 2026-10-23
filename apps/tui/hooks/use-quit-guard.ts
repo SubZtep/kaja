@@ -1,5 +1,6 @@
-import { useApp, useInput } from "ink"
+import { useApp } from "ink"
 import { useEffect, useState } from "react"
+import { useKey } from "./use-key"
 
 const ARMED_MS = 3000
 
@@ -17,7 +18,7 @@ export function useQuitGuard(active: boolean, busy: boolean): { armed: boolean; 
     if (busy && !armed) setArmed(true)
     else exit()
   }
-  useInput((_input, key) => {
+  useKey((_input, key) => {
     if (key.escape) press()
   })
 

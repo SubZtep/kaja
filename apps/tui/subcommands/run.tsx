@@ -7,6 +7,7 @@ import type { args as Cli } from "../lib/cli/args"
 export async function runSubcommand(cli: typeof Cli) {
   const { config } = await import("../lib/config/config")
   const { t } = await import("../lib/i18n")
+  const { KITTY_KEYBOARD } = await import("../lib/terminal-input")
   const { bootstrapLocalAgentDeps, installShutdownHandlers, requireConfiguredProvider } =
     await import("../lib/cli/headless")
 
@@ -78,10 +79,7 @@ export async function runSubcommand(cli: typeof Cli) {
     />,
     {
       alternateScreen: true,
-      kittyKeyboard: {
-        mode: "auto",
-        flags: ["disambiguateEscapeCodes"]
-      }
+      kittyKeyboard: KITTY_KEYBOARD
     }
   )
   // finally, not just a trailing call: an error thrown out of waitUntilExit (e.g. a render crash) must not skip closing MCP subprocess connections

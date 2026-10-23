@@ -96,10 +96,12 @@ screen is longer than `codePreviewLines`.
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                                                               |
 | `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
-`<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
-[`settings.toml`](/config/settings). Use `Ctrl` if Alt types special characters (macOS Terminal.app
-and iTerm2 without "Option as Meta"), and keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
-terminal does).
+`<modifier>` is `Alt` by default. Set `preferences.hotkeyModifier` in [`settings.toml`](/config/settings) to
+`"ctrl"`, `"meta"` (the Super key; needs a terminal with the kitty keyboard protocol) or two at once:
+`"ctrl+alt"`, `"ctrl+meta"`, `"alt+meta"`. Use `Ctrl` if Alt types special characters (macOS Terminal.app
+and iTerm2 without "Option as Meta"), keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
+terminal does), and pick a pair if your window manager grabs a combo (many bind `Ctrl+Alt+<letter>`).
+In a terminal with the kitty keyboard protocol, holding the modifier lights up the key bar's shortcuts.
 
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
 [persona](/abilities/personas) starts a fresh conversation and lasts until you quit.

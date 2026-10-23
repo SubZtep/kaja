@@ -191,6 +191,8 @@ function kajaStyles(p: Palette) {
     danger: (): TextProps => ({ color: p.danger }),
     reasoningText: (): TextProps => ({ color: p.frame }),
     keyCap: (): TextProps => ({ backgroundColor: p.user, color: p.background }),
+    /** A key bar entry whose hotkey modifier is held down. */
+    keyCapHeld: (): TextProps => ({ backgroundColor: p.accent, color: p.background, bold: true }),
     thinkingLabel: (): TextProps => ({ color: p.frame, dimColor: true }),
     toolLabel: (): TextProps => ({ color: p.success, dimColor: true }),
     /** A label such as the header's LOCAL/CLOUD/YOLO: its tone's colour on a tint of it. */

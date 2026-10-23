@@ -1,7 +1,8 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, type BoxProps, useInput, useWindowSize } from "ink"
+import { Box, type BoxProps, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
+import { useKey } from "../../hooks/use-key"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
@@ -67,7 +68,7 @@ export function UserInput({
   }
 
   // Ctrl+T toggles dictation (Esc quits, see useQuitGuard).
-  useInput((char, key) => {
+  useKey((char, key) => {
     if (key.ctrl && char === "t") setMic(prev => !prev)
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.

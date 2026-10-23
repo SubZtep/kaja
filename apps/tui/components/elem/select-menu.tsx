@@ -1,5 +1,6 @@
-import { Box, Text, useInput } from "ink"
+import { Box, Text } from "ink"
 import { useState } from "react"
+import { useKey } from "../../hooks/use-key"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
 
@@ -70,7 +71,7 @@ export function SelectMenu({
     else if (next >= from + VISIBLE_COUNT) setFrom(next - VISIBLE_COUNT + 1)
   }
 
-  useInput((_input, key) => {
+  useKey((_input, key) => {
     if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
       onClose()
       return

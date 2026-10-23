@@ -1,6 +1,7 @@
-import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
+import { Box, type Key, Text, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
+import { useKey } from "../../hooks/use-key"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { copyableText, copyToClipboard } from "../../lib/copy"
@@ -230,11 +231,7 @@ export function ChatViewport({
     else if (wheel === "down") scrollIfPossible(maxScroll, () => scrollByClamped(view, WHEEL_LINES))
   }
 
-  const handleKeyInput = (
-    view: VirtualScrollRef,
-    key: Parameters<Parameters<typeof useInput>[0]>[1],
-    maxScroll: number
-  ) => {
+  const handleKeyInput = (view: VirtualScrollRef, key: Key, maxScroll: number) => {
     if (key.ctrl && key.end) {
       setStick(true)
       view.scrollToBottom()
@@ -271,7 +268,7 @@ export function ChatViewport({
   }, [])
 
   // Nothing to scroll (getBottomOffset 0): the handlers keep stick and don't create empty overscroll
-  useInput((_input, key) => {
+  useKey((_input, key) => {
     const view = scrollRef.current
     if (view) handleKeyInput(view, key, view.getBottomOffset())
   })

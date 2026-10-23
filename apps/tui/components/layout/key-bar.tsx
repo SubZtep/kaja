@@ -4,7 +4,8 @@ import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { parseMouse } from "../../lib/terminal-input"
 import { useKajaTheme } from "../theme"
 
-export type KeyBarEntry = { key: string; label: string; onPress?: () => void }
+/** `lit` while the modifier of its hotkey is held. */
+export type KeyBarEntry = { key: string; label: string; onPress?: () => void; lit?: boolean }
 
 type Rect = { left: number; top: number; width: number; height: number }
 
@@ -13,14 +14,14 @@ function KeyBarItem({
   hovered,
   onRect
 }: Readonly<{ item: KeyBarEntry; hovered: boolean; onRect: (key: string, rect: Rect) => void }>) {
-  const { keyCap } = useKajaTheme()
+  const { keyCap, keyCapHeld } = useKajaTheme()
   const ref = useRef<DOMElement>(null)
   const { left, top, width, height } = useBoxMetrics(ref)
   useEffect(() => onRect(item.key, { left, top, width, height }), [item.key, left, top, width, height, onRect])
   return (
     <Box ref={ref} marginRight={2} flexShrink={0} columnGap={1}>
-      <Text {...keyCap()}>{item.key}</Text>
-      <Text bold={hovered}>{item.label}</Text>
+      <Text {...(item.lit ? keyCapHeld() : keyCap())}>{item.key}</Text>
+      <Text bold={hovered || item.lit}>{item.label}</Text>
     </Box>
   )
 }
