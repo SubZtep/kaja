@@ -2,6 +2,8 @@ import { afterEach, expect, spyOn, test } from "bun:test"
 import {
   albumCollector,
   approvalToken,
+  askButtons,
+  askCallbackData,
   asRateLimitError,
   commandArgument,
   downloadTelegramImage,
@@ -10,6 +12,7 @@ import {
   incomingImage,
   isCommand,
   isNotModifiedError,
+  parseAskCallback,
   TelegramRateLimitError,
   withRateLimitRetry
 } from "../telegram/bot"
@@ -202,4 +205,18 @@ test("a failed download's error never carries the bot token", async () => {
   )
   expect(error.message).toBe("Telegram file download failed: Unable to connect: https://api.telegram.org/file/bot***/x")
   expect(error.cause).toBeUndefined()
+})
+
+test("an option's callback data fits the Bot API's 64 bytes however long the call id, and parses back", () => {
+  const data = askCallbackData(`functions.ask_user:${"x".repeat(80)}`, 5)
+  expect(Buffer.byteLength(data)).toBeLessThan(64)
+  expect(parseAskCallback(data)).toEqual({ token: approvalToken(`functions.ask_user:${"x".repeat(80)}`), index: 5 })
+  expect(parseAskCallback("tool:approve:0123456789abcdef")).toBeUndefined()
+  expect(parseAskCallback("ask:short:1")).toBeUndefined()
+})
+
+test("a question's options become one button each, in order", () => {
+  const rows = askButtons("call_1", ["Yes", "No"])
+  expect(rows.map(row => row.map(button => button.text))).toEqual([["Yes"], ["No"]])
+  expect(rows.map(row => parseAskCallback(row[0]!.data)?.index)).toEqual([0, 1])
 })

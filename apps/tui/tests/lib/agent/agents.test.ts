@@ -188,7 +188,7 @@ test("content alongside an ask_user call is yielded as a message event", async (
   const finalized = events.filter(e => e.type !== "delta")
   expect(finalized).toEqual([
     { type: "message", content: "No, it's not a pet." },
-    { type: "ask_user", question: "Question 4?", fromTool: true }
+    { type: "ask_user", question: "Question 4?", id: "call_1", fromTool: true }
   ])
 })
 

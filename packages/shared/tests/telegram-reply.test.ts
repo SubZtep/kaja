@@ -1,19 +1,21 @@
 import { expect, test } from "bun:test"
-import { compactedLine, openReply, type ReplyChannel, TelegramRateLimitError } from "../telegram"
+import { compactedLine, openReply, type ReplyButton, type ReplyChannel, TelegramRateLimitError } from "../telegram"
 
 function fakeChannel(overrides: Partial<ReplyChannel<string>> = {}) {
   const sent: string[] = []
-  const edits: { messageId: number; text: string }[] = []
+  const sentRows: (ReplyButton[][] | undefined)[] = []
+  const edits: { messageId: number; text: string; rows?: ReplyButton[][] }[] = []
   const removed: number[] = []
   const photos: { photo: string; caption?: string }[] = []
   const warnings: string[] = []
   const channel: ReplyChannel<string> = {
-    send: async text => {
+    send: async (text, rows) => {
       sent.push(text)
+      sentRows.push(rows)
       return { messageId: sent.length }
     },
-    edit: async (messageId, text) => {
-      edits.push({ messageId, text })
+    edit: async (messageId, text, rows) => {
+      edits.push({ messageId, text, rows })
     },
     remove: async messageId => {
       removed.push(messageId)
@@ -27,7 +29,7 @@ function fakeChannel(overrides: Partial<ReplyChannel<string>> = {}) {
     ...overrides
   }
   const texts = () => edits.map(edit => edit.text)
-  return { channel, sent, edits, texts, removed, photos, warnings }
+  return { channel, sent, sentRows, edits, texts, removed, photos, warnings }
 }
 
 test("a reply starts as a placeholder and finishes with the rendered text, never sending the same edit twice", async () => {
@@ -137,4 +139,20 @@ test("compactedLine picks the key by whether the summary was written, with numbe
     `telegram.compacted ${(1200).toLocaleString("hu-HU")}→300`
   )
   expect(compactedLine({ beforeTokens: 10, afterTokens: 5, dropped: true }, t)).toBe("telegram.compactedDropped 10→5")
+})
+
+test("a finished reply's buttons go under its last message, and none of the streaming edits carry them", async () => {
+  const rows = [[{ text: "Yes", data: "ask:0123456789abcdef:0" }]]
+  const one = fakeChannel()
+  const reply = await openReply(one.channel)
+  reply.append("Proceed?")
+  await reply.finish("Proceed?", rows)
+  expect(one.edits.at(-1)).toMatchObject({ text: "Proceed?", rows })
+
+  const long = fakeChannel()
+  await (await openReply(long.channel)).finish(`${"word ".repeat(1500)}\n\n${"more ".repeat(1500)}`, rows)
+  expect(long.sent.length).toBeGreaterThan(1)
+  expect(long.edits.at(-1)?.rows).toBeUndefined()
+  expect(long.sentRows.at(-1)).toEqual(rows)
+  expect(long.sentRows.slice(0, -1).every(sentRow => sentRow === undefined)).toBe(true)
 })

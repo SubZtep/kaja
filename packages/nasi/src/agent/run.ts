@@ -641,6 +641,7 @@ function* handlePendingHandoff(
       question: ask.question,
       note: ask.note,
       ...(ask.options ? { options: ask.options } : {}),
+      id: ask.id,
       fromTool: true
     }
     return true

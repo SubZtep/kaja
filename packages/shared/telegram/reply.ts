@@ -6,11 +6,14 @@ const MAX_FINAL_RETRY_SEC = 30
 
 const PLACEHOLDER = "…"
 
+/** One inline button: its label and the callback data a tap sends back (at most 64 bytes). */
+export type ReplyButton = { text: string; data: string }
+
 /** What a streamed Telegram reply needs from its bot: plain sends and edits, photos, and the host's own rules. */
 export type ReplyChannel<Photo> = {
-  send(text: string): Promise<{ messageId: number }>
-  /** Throws {@link TelegramRateLimitError} on a 429, so the stream backs off. */
-  edit(messageId: number, text: string): Promise<void>
+  send(text: string, rows?: ReplyButton[][]): Promise<{ messageId: number }>
+  /** Throws {@link TelegramRateLimitError} on a 429, so the stream backs off. Without `rows` the message has no buttons. */
+  edit(messageId: number, text: string, rows?: ReplyButton[][]): Promise<void>
   /** Deletes a sent message: the placeholder, when a turn pauses for an approval before writing anything. */
   remove(messageId: number): Promise<void>
   sendPhoto(photo: Photo, caption?: string): Promise<void>
@@ -39,8 +42,11 @@ export type Reply = {
    * starts a new one.
    */
   endRound(content: string): Promise<void>
-  /** Writes the finished reply: its HTML (split over more messages past Telegram's limit), then its images as photos. */
-  finish(rawText: string): Promise<void>
+  /**
+   * Writes the finished reply: its HTML (split over more messages past Telegram's limit), then its images as photos.
+   * `rows` are buttons under the last message of its text, e.g. a question's options.
+   */
+  finish(rawText: string, rows?: ReplyButton[][]): Promise<void>
   /**
    * Before a prompt that pauses the turn (an approval): what was streamed becomes the finished text, and an untouched
    * placeholder is removed.
@@ -61,11 +67,11 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
   let streamed = ""
   let queue = Promise.resolve()
 
-  function show(text: string): Promise<void> {
+  function show(text: string, rows?: ReplyButton[][]): Promise<void> {
     const run = queue.then(async () => {
-      if (text === shown) return
-      if (messageId === undefined) messageId = (await channel.send(text)).messageId
-      else await channel.edit(messageId, text)
+      if (text === shown && !rows) return
+      if (messageId === undefined) messageId = (await channel.send(text, rows)).messageId
+      else await channel.edit(messageId, text, rows)
       shown = text
     })
     queue = run.catch(() => {})
@@ -76,21 +82,21 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
    * {@link show} for a finished text: nothing after it would fix a failure, so it sits out one rate limit, then only
    * logs.
    */
-  async function showFinal(text: string) {
+  async function showFinal(text: string, rows?: ReplyButton[][]) {
     try {
-      await show(text)
+      await show(text, rows)
     } catch (error) {
       const wait = error instanceof TelegramRateLimitError ? error.retryAfterSec : undefined
       if (wait === undefined || wait > MAX_FINAL_RETRY_SEC) return channel.warn("Telegram edit failed", error)
       await Bun.sleep(wait * 1000)
-      await show(text).catch(retryError => channel.warn("Telegram edit failed", retryError))
+      await show(text, rows).catch(retryError => channel.warn("Telegram edit failed", retryError))
     }
   }
 
   const throttle = new EditThrottle(show, error => channel.warn("Telegram edit failed", error))
   const renderStreamed = () => (streamed.trim() ? truncateForStreaming(renderTelegramHtml(streamed)) : PLACEHOLDER)
 
-  async function finish(rawText: string) {
+  async function finish(rawText: string, rows?: ReplyButton[][]) {
     throttle.cancel()
     const photos = telegramImages(rawText).flatMap(image => {
       const photo = channel.photoSource(image.src)
@@ -99,10 +105,10 @@ export async function openReply<Photo>(channel: ReplyChannel<Photo>): Promise<Re
     // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
     const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : channel.emptyReply)
     const [first, ...rest] = splitTelegramMessage(html)
-    await showFinal(first!)
-    for (const chunk of rest) {
+    await showFinal(first!, rest.length === 0 ? rows : undefined)
+    for (const [index, chunk] of rest.entries()) {
       try {
-        await channel.send(chunk)
+        await channel.send(chunk, index === rest.length - 1 ? rows : undefined)
       } catch (error) {
         channel.warn("Telegram send failed", error)
       }

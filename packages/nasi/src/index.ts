@@ -143,7 +143,15 @@ export {
   lowerContextWindow,
   resolveContextWindow
 } from "./models/context-window"
-export { Nasi, type NasiOpenOptions, type NasiTurnInput, notApprovedPrompt, pendingToolCall, photoLabel } from "./nasi"
+export {
+  Nasi,
+  type NasiOpenOptions,
+  type NasiTurnInput,
+  notApprovedPrompt,
+  pendingQuestionOptions,
+  pendingToolCall,
+  photoLabel
+} from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export {
   createGuardedFetch,

@@ -349,7 +349,18 @@ export type AgentEvent =
    * `fromTool` is set when the model called the ask_user tool; a plain reply ending in "?" arrives as ask_user too,
    * without it.
    */
-  | { type: "ask_user"; question: string; note?: string; options?: string[]; fromTool?: true }
+  | {
+      type: "ask_user"
+      question: string
+      note?: string
+      options?: string[]
+      /**
+       * The pending call's id (`session.pendingAskUserId`), for hosts that correlate the answer themselves; with
+       * `fromTool`.
+       */
+      id?: string
+      fromTool?: true
+    }
   | { type: "confirm_command"; command: string; description: string }
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }

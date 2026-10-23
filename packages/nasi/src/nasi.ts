@@ -168,6 +168,18 @@ export function pendingToolCall(session: Session, id: string) {
   }
 }
 
+/** The options of the question the session waits on (its pending ask_user call), none if it has no pending question. */
+export function pendingQuestionOptions(session: Session): string[] {
+  const call = session.pendingAskUserId ? pendingToolCall(session, session.pendingAskUserId) : undefined
+  if (!call) return []
+  try {
+    const { options } = JSON.parse(call.function.arguments) as { options?: unknown }
+    return Array.isArray(options) && options.every(option => typeof option === "string") ? options : []
+  } catch {
+    return []
+  }
+}
+
 type LoadedTurn = {
   agent: Agent
   session: Session
