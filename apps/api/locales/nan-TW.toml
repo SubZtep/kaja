@@ -42,7 +42,7 @@ decline          = "❌ 拒絕"
 approved         = "✅ 允准了"
 declined         = "❌ 拒絕了"
 approvalExpired  = "這个要求已經答覆過抑是已經過期矣。"
-questionExpired  = "[nan-TW] lorem ipsum dolor sit amet"
+questionExpired  = "這个問題已經答覆過矣。"
 
 
   [telegram.error]

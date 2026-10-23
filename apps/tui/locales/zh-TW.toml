@@ -286,8 +286,8 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 
 [input]
 placeholder           = "輸入點什麼..."
-askPlaceholder        = "[zh-TW] lorem ipsum"
-askChoicesPlaceholder = "[zh-TW] lorem ipsum dolor"
+askPlaceholder        = "輸入你的回答…"
+askChoicesPlaceholder = "或輸入你自己的回答…"
 
 
 [header]
@@ -307,7 +307,7 @@ quitAgain = "仍在執行：再按一次 Esc 離開"
 cancel    = "取消"
 decline   = "拒絕"
 close     = "關閉"
-command   = "[zh-TW] lorem"
+command   = "指令"
 
 
 [viewport]
@@ -319,9 +319,9 @@ yes          = "是，執行"
 no           = "否，取消"
 running      = "執行中…"
 truncated    = "… 還有 {count} 行"
-placeholder  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
-commandTitle = "[zh-TW] lorem ipsum dolor sit"
-requestTitle = "[zh-TW] lorem ipsum dolor sit"
+placeholder  = "或輸入要改做的事（會略過此項）"
+commandTitle = "等待核准的指令"
+requestTitle = "等待核准的請求"
 toolRequest  = "{name} 想要送出這個請求："
 
 
@@ -341,7 +341,7 @@ intro    = "輸入訊息後按 Enter 送出。按 Esc 離開。"
 persona  = "切換角色"
 copy     = "複製最新回覆（或點選任一則回覆來複製）"
 expand   = "展開或收合長程式碼"
-command  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+command  = "顯示等待核准的指令"
 help     = "顯示這份說明"
 scroll   = "捲動聊天"
 newline  = "在訊息中換行"
@@ -482,7 +482,7 @@ newSession           = "🆕 已開始新的對話。"
 stillWorking         = "仍在處理你的上一則訊息…"
 pendingCommand       = "上方有指令或請求正等待你的核准 — 請先點選「核准」或「拒絕」。"
 commandExpired       = "此指令已不再等待處理。"
-questionExpired      = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+questionExpired      = "此問題已被回答。"
 approved             = "已核准"
 approveSession       = "核准此對話"
 declined             = "已拒絕"

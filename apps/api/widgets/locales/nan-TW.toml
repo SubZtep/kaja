@@ -1,7 +1,7 @@
 openChat          = "拍開聊天"
 askPlaceholder    = "問一項…"
 answerPlaceholder = "你个答案…"
-suggestedAnswers  = "[nan-TW] lorem ipsum"
+suggestedAnswers  = "建議的答案"
 send              = "送出"
 error             = "出代誌矣，請閣試一改。"
 rateLimited       = "訊息傷濟矣 — 請等一下仔。"

@@ -42,7 +42,7 @@ decline          = "❌ Elutasítás"
 approved         = "✅ Jóváhagyva"
 declined         = "❌ Elutasítva"
 approvalExpired  = "Erre a kérésre már válaszoltak vagy lejárt."
-questionExpired  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+questionExpired  = "Erre a kérdésre már válaszoltak."
 
 
   [telegram.error]

@@ -286,8 +286,8 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 [input]
 placeholder           = "Írj valamit..."
-askPlaceholder        = "[hu-HU] lorem ipsum"
-askChoicesPlaceholder = "[hu-HU] lorem ipsum dolor"
+askPlaceholder        = "Írd be a válaszod…"
+askChoicesPlaceholder = "Vagy írd be a saját válaszod…"
 
 
 [header]
@@ -307,7 +307,7 @@ quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
 close     = "Bezárás"
-command   = "[hu-HU] lorem"
+command   = "Parancs"
 
 
 [viewport]
@@ -319,9 +319,9 @@ yes          = "Igen, futtasd"
 no           = "Nem, mégse"
 running      = "Fut…"
 truncated    = "… még {count} sor"
-placeholder  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-commandTitle = "[hu-HU] lorem ipsum dolor sit"
-requestTitle = "[hu-HU] lorem ipsum dolor sit"
+placeholder  = "Vagy írd le, mit csináljon helyette (ezt kihagyja)"
+commandTitle = "Jóváhagyásra váró parancs"
+requestTitle = "Jóváhagyásra váró kérés"
 toolRequest  = "A(z) {name} ezt a kérést küldené:"
 
 
@@ -341,7 +341,7 @@ intro    = "Írj üzenetet, és az Enterrel küldd el. Az Esc kilép."
 persona  = "Perszóna váltása"
 copy     = "Legutóbbi válasz másolása (vagy kattints bármelyik válaszra a másoláshoz)"
 expand   = "Hosszú kód kibontása vagy összecsukása"
-command  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+command  = "A jóváhagyásra váró parancs megjelenítése"
 help     = "Ennek a súgónak a megjelenítése"
 scroll   = "Chat görgetése"
 newline  = "Új sor az üzenetben"
@@ -482,7 +482,7 @@ newSession           = "🆕 Új munkamenet elindítva."
 stillWorking         = "Még dolgozom az előző üzeneteden…"
 pendingCommand       = "Egy parancs vagy kérés a jóváhagyásodra vár fent — nyomd meg a Jóváhagyást vagy az Elutasítást előbb."
 commandExpired       = "Ez a parancs már nem vár jóváhagyásra."
-questionExpired      = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+questionExpired      = "Erre a kérdésre már válaszoltak."
 approved             = "Jóváhagyva"
 approveSession       = "Jóváhagyás ehhez a beszélgetéshez"
 declined             = "Elutasítva"

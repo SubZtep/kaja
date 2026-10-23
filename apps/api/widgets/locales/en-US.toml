@@ -1,7 +1,7 @@
 openChat          = "Open chat"
 askPlaceholder    = "Ask something…"
 answerPlaceholder = "Your answer…"
-suggestedAnswers  = "[en-US] lorem ipsum"
+suggestedAnswers  = "Suggested answers"
 send              = "Send"
 error             = "Something went wrong. Please try again."
 rateLimited       = "Too many messages — please wait a moment."

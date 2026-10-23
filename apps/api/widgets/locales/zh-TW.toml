@@ -1,7 +1,7 @@
 openChat          = "開啟聊天"
 askPlaceholder    = "詢問…"
 answerPlaceholder = "你的回答…"
-suggestedAnswers  = "[zh-TW] lorem ipsum"
+suggestedAnswers  = "建議的回答"
 send              = "送出"
 error             = "發生了一些問題，請再試一次。"
 rateLimited       = "訊息太多了 — 請稍候一下。"

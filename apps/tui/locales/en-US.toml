@@ -286,8 +286,8 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 [input]
 placeholder           = "Type something..."
-askPlaceholder        = "[en-US] lorem ipsum"
-askChoicesPlaceholder = "[en-US] lorem ipsum dolor"
+askPlaceholder        = "Type your answer…"
+askChoicesPlaceholder = "Or type your own answer…"
 
 
 [header]
@@ -307,7 +307,7 @@ quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
 close     = "Close"
-command   = "[en-US] lorem"
+command   = "Command"
 
 
 [viewport]
@@ -319,9 +319,9 @@ yes          = "Yes, run it"
 no           = "No, cancel"
 running      = "Running…"
 truncated    = "… {count} more lines"
-placeholder  = "[en-US] lorem ipsum dolor sit amet consectetur"
-commandTitle = "[en-US] lorem ipsum dolor sit"
-requestTitle = "[en-US] lorem ipsum dolor sit"
+placeholder  = "Or type what to do instead (it skips this)"
+commandTitle = "Command waiting for approval"
+requestTitle = "Request waiting for approval"
 toolRequest  = "{name} wants to send this request:"
 
 
@@ -341,7 +341,7 @@ intro    = "Type a message and press Enter to send it. Esc quits."
 persona  = "Switch persona"
 copy     = "Copy the latest reply (or click any reply to copy it)"
 expand   = "Expand or collapse long code"
-command  = "[en-US] lorem ipsum dolor sit amet consectetur"
+command  = "Show the command waiting for approval"
 help     = "Show this help"
 scroll   = "Scroll the chat"
 newline  = "New line in your message"
@@ -482,7 +482,7 @@ newSession           = "🆕 Started a new session."
 stillWorking         = "Still working on your last message…"
 pendingCommand       = "There's a command or request waiting for your approval above — tap Approve or Decline first."
 commandExpired       = "This command is no longer pending."
-questionExpired      = "[en-US] lorem ipsum dolor sit amet consectetur"
+questionExpired      = "This question was already answered."
 approved             = "Approved"
 approveSession       = "Approve for this chat"
 declined             = "Declined"

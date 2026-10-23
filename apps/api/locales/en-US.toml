@@ -42,7 +42,7 @@ decline          = "❌ Decline"
 approved         = "✅ Approved"
 declined         = "❌ Declined"
 approvalExpired  = "This request was already answered or has expired."
-questionExpired  = "[en-US] lorem ipsum dolor sit amet consectetur"
+questionExpired  = "This question was already answered."
 
 
   [telegram.error]
