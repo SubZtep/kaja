@@ -9,9 +9,9 @@ import { auth } from "../../src/features/auth/auth"
  * must `cleanupModel` in `afterAll`.
  */
 export async function seedModel(namePrefix: string, tasks: string[] = ["chat"]) {
-  const provider = await sql<
-    { id: string }[]
-  >`INSERT INTO provider (name, base_url) VALUES (${`${namePrefix}-${faker.string.alphanumeric(8)}`}, ${"http://localhost:1"}) RETURNING id`
+  const providerName = `${namePrefix}-${faker.string.alphanumeric(8)}`
+  const provider = await sql<{ id: string }[]>`
+    INSERT INTO provider (name, base_url) VALUES (${providerName}, ${"http://localhost:1"}) RETURNING id`
   const providerId = provider[0]!.id
   const modelName = `${namePrefix}-${faker.string.alphanumeric(8)}`
   await sql`INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES (${providerId}, ${modelName}, ${tasks}, true, true)`

@@ -112,7 +112,7 @@ function filterSql(sql: SQL, filters: Filters): SQL.Query<unknown>[] {
 
 // Every clause, joined with AND; none matches every row
 const allOf = (sql: SQL, clauses: SQL.Query<unknown>[]) =>
-  clauses.length ? clauses.reduce((all, clause) => sql`${all} AND ${clause}`) : sql`TRUE`
+  clauses.reduce((all, clause) => sql`${all} AND ${clause}`, sql`TRUE`)
 
 type ImageRef = { userId: string; sessionId: string; id: string }
 

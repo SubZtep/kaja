@@ -11,7 +11,7 @@ export function readJson<T>(value: unknown): T {
 }
 
 /** A boolean column's value: `true`/`false` from Postgres, `1`/`0` from SQLite. */
-export const readBool = (value: unknown): boolean => Boolean(value)
+export const readBool: (value: unknown) => boolean = Boolean
 
 /** Text without NUL bytes, which Postgres `text` rejects (a tool that returned binary data would fail the save). */
 export const pgText = (text: string | null | undefined): string | null => text?.replaceAll("\0", "") ?? null
