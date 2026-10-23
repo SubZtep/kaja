@@ -11,14 +11,17 @@ import {
   localImageStats,
   removeOrphans
 } from "../../../lib/store/image-maintenance"
-import { createSqliteStore, imagesRoot, openDb } from "../../../lib/store/sqlite"
+import { createSqliteStore, imagesRoot, openLocalDb } from "../../../lib/store/sqlite"
 import { png } from "../../fixtures/images"
 
 const dir = mkdtempSync(join(tmpdir(), "kaja-image-maintenance-"))
-afterAll(() => rmSync(dir, { recursive: true, force: true }))
 const dbPath = join(dir, "memory.sqlite")
-const store = createSqliteStore(dbPath)
-const db = openDb(dbPath)
+const store = await createSqliteStore(dbPath)
+const db = await openLocalDb(dbPath)
+afterAll(async () => {
+  await db.close()
+  rmSync(dir, { recursive: true, force: true })
+})
 const filesRoot = imagesRoot(dbPath)
 const LONG_AGO = "2000-01-01T00:00:00.000Z"
 
@@ -69,17 +72,17 @@ async function savedImage(source?: { url?: string; fileName?: string }, size = 2
   }
 }
 
-const rowOf = (sessionId: string, id: string) =>
-  db.query("SELECT description, describeAttempts FROM images WHERE sessionId = ? AND id = ?").get(sessionId, id) as {
-    description: string | null
-    describeAttempts: number
-  } | null
+const rowOf = async (sessionId: string, id: string) =>
+  (
+    await db<{ description: string | null; describe_attempts: number }[]>`
+      SELECT description, describe_attempts FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
+  )[0] ?? null
 
 test("the numbers count the store's images, their sites and the sessions holding the most", async () => {
   const a = await savedImage({ url: "https://www.Example.com/a.png" }, 4)
   await savedImage({ url: "https://example.com/b.png" })
   await savedImage({ fileName: "shot.png" })
-  const stats = localImageStats(db)
+  const stats = await localImageStats(db)
   expect(stats.count).toBe(3)
   expect(stats.undescribed).toBe(3)
   expect(stats.sites).toEqual([{ host: "example.com", images: 2 }])
@@ -88,25 +91,25 @@ test("the numbers count the store's images, their sites and the sessions holding
 
 test("describing keeps the description in the row, the message's label and the model calls; tries are counted", async () => {
   const image = await savedImage()
-  const local = imagesToDescribe(db, false).find(each => each.sessionId === image.sessionId)!
+  const local = (await imagesToDescribe(db, false)).find(each => each.sessionId === image.sessionId)!
   expect(await describeLocalImage(db, filesRoot, describer(), local)).toBe("A small square.")
-  expect(rowOf(image.sessionId, image.id)).toEqual({ description: "A small square.", describeAttempts: 1 })
-  const { parts } = db.query("SELECT parts FROM messages WHERE sessionId = ?").get(image.sessionId) as { parts: string }
+  expect(await rowOf(image.sessionId, image.id)).toEqual({ description: "A small square.", describe_attempts: 1 })
+  const [{ parts }] = await db`SELECT parts FROM nasi_message WHERE session_id = ${image.sessionId}`
   expect(JSON.parse(parts)[0]).toEqual({ type: "text", text: `[Image ${image.ref} (2×2): A small square.]` })
-  expect(db.query("SELECT kind, model FROM model_calls WHERE sessionId = ?").all(image.sessionId)).toEqual([
+  expect([...(await db`SELECT kind, model FROM nasi_model_call WHERE session_id = ${image.sessionId}`)]).toEqual([
     { kind: "describe", model: "vision-m" }
   ])
 
   const stubborn = await savedImage()
-  const target = imagesToDescribe(db, false).find(each => each.sessionId === stubborn.sessionId)!
+  const target = (await imagesToDescribe(db, false)).find(each => each.sessionId === stubborn.sessionId)!
   for (let i = 0; i < 3; i++)
     await expect(describeLocalImage(db, filesRoot, describer(new Error("down")), target)).rejects.toThrow("down")
-  expect(rowOf(stubborn.sessionId, stubborn.id)?.describeAttempts).toBe(3)
-  expect(imagesToDescribe(db, false).some(each => each.sessionId === stubborn.sessionId)).toBe(false)
-  expect(imagesToDescribe(db, true).some(each => each.sessionId === stubborn.sessionId)).toBe(true)
+  expect((await rowOf(stubborn.sessionId, stubborn.id))?.describe_attempts).toBe(3)
+  expect((await imagesToDescribe(db, false)).some(each => each.sessionId === stubborn.sessionId)).toBe(false)
+  expect((await imagesToDescribe(db, true)).some(each => each.sessionId === stubborn.sessionId)).toBe(true)
   // An empty answer is a try too
   expect(await describeLocalImage(db, filesRoot, describer(""), target)).toBeUndefined()
-  expect(rowOf(stubborn.sessionId, stubborn.id)?.describeAttempts).toBe(4)
+  expect((await rowOf(stubborn.sessionId, stubborn.id))?.describe_attempts).toBe(4)
 })
 
 test("orphans of each kind are found, and removed once they're old enough", async () => {
@@ -122,7 +125,7 @@ test("orphans of each kind are found, and removed once they're old enough", asyn
   // A session never saved, a day and more ago
   const unsavedId = Bun.randomUUIDv7()
   const { ref } = await store.images(unsavedId).put(await normalizeImage(await png(3, 3)))
-  db.query("UPDATE images SET createdAt = ? WHERE sessionId = ?").run(LONG_AGO, unsavedId)
+  await db`UPDATE nasi_image SET created_at = ${LONG_AGO} WHERE session_id = ${unsavedId}`
 
   const found = await findOrphans(db, filesRoot)
   expect(found.files.examples).toEqual([stray])
@@ -138,9 +141,9 @@ test("orphans of each kind are found, and removed once they're old enough", asyn
   expect(await Bun.file(stray).exists()).toBe(false)
   expect(await Bun.file(join(strayDir, "0123456789abcdef.json")).exists()).toBe(true)
 
-  db.query("UPDATE images SET createdAt = ? WHERE sessionId = ?").run(LONG_AGO, lost.sessionId)
+  await db`UPDATE nasi_image SET created_at = ${LONG_AGO} WHERE session_id = ${lost.sessionId}`
   expect(await removeOrphans(db, "rows", await findOrphans(db, filesRoot))).toBe(1)
-  expect(rowOf(lost.sessionId, lost.id)).toBeNull()
+  expect(await rowOf(lost.sessionId, lost.id)).toBeNull()
   expect(await removeOrphans(db, "unsaved", await findOrphans(db, filesRoot))).toBe(1)
-  expect(rowOf(unsavedId, ref.slice("kaja-image:".length))).toBeNull()
+  expect(await rowOf(unsavedId, ref.slice("kaja-image:".length))).toBeNull()
 })

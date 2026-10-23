@@ -33,4 +33,14 @@ export {
   splitConversation,
   type ToolCallRow
 } from "./rows"
+export { iso, jsonParam, pgText, readBool, readJson } from "./sql-codec"
+export {
+  bumpDescribeAttempt,
+  createSqlStore,
+  LOCAL_USER_ID,
+  recordDescribeCall,
+  recordDescribedImage,
+  type SqlStoreOptions
+} from "./sql-store"
+export { SQLITE_SCHEMA } from "./sqlite-schema"
 export type { DatasetAnswer, NasiStore, SessionWrite } from "./types"

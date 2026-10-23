@@ -5,7 +5,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { objects } from "../../src/core/files"
 import { setNasiDescriberResolver } from "../../src/features/nasi/chat"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { ImageService } from "../../src/services/image"
 import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
@@ -73,7 +73,7 @@ describe("image maintenance", () => {
 
   /** A saved session holding one stored image, its message labelled as a turn would have it. */
   async function sessionWithImage() {
-    const store = createPostgresStore(pool, owner.userId)
+    const store = nasiStore(owner.userId)
     const sessionId = Bun.randomUUIDv7()
     const { ref } = await store.images(sessionId).put(image())
     const messages = [
@@ -184,7 +184,7 @@ describe("image maintenance", () => {
     await objects.delete(`images/${owner.userId}/${lost.sessionId}/${lost.id}`)
     // A session that never got saved, a day and more ago
     const unsaved = Bun.randomUUIDv7()
-    const { ref } = await createPostgresStore(pool, owner.userId).images(unsaved).put(image())
+    const { ref } = await nasiStore(owner.userId).images(unsaved).put(image())
     await pool.query("UPDATE nasi_image SET created_at = $2 WHERE session_id = $1", [unsaved, LONG_AGO])
 
     expect(

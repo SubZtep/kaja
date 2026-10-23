@@ -23,19 +23,19 @@ export async function runImagesSubcommand(args: ImagesArgs, mode: KajaMode) {
   }
 
   const { resolveMemoryDbPath } = await import("../lib/memory/store")
-  const { imagesRoot, openDb } = await import("../lib/store/sqlite")
+  const { imagesRoot, openLocalDb } = await import("../lib/store/sqlite")
   const dbPath = await resolveMemoryDbPath()
-  const db = openDb(dbPath)
+  const db = await openLocalDb(dbPath)
   try {
     if (action === "describe") await describeMissing(db, imagesRoot(dbPath), args.flags.retry === true)
     else if (action === "clean") await clean(db, imagesRoot(dbPath), args.flags.yes === true)
     else {
       const { localImageStats } = await import("../lib/store/image-maintenance")
       const { formatImageReport } = await import("../lib/image/report")
-      console.log(formatImageReport(localImageStats(db)))
+      console.log(formatImageReport(await localImageStats(db)))
     }
   } finally {
-    db.close()
+    await db.close()
   }
   process.exit(0)
 }
@@ -70,14 +70,14 @@ async function printCloudImages() {
   )
 }
 
-async function describeMissing(db: import("bun:sqlite").Database, filesRoot: string, retry: boolean) {
+async function describeMissing(db: import("bun").SQL, filesRoot: string, retry: boolean) {
   const { describer } = await import("../lib/models/openai")
   if (!describer) {
     console.log(t("images.noVision"))
     process.exit(1)
   }
   const { DESCRIBE_CONCURRENCY, describeLocalImage, imagesToDescribe } = await import("../lib/store/image-maintenance")
-  const queue = imagesToDescribe(db, retry)
+  const queue = await imagesToDescribe(db, retry)
   if (queue.length === 0) {
     console.log(t("images.nothingToDescribe"))
     return
@@ -101,7 +101,7 @@ async function describeMissing(db: import("bun:sqlite").Database, filesRoot: str
   console.log(t("images.described", { described, total: queue.length }))
 }
 
-async function clean(db: import("bun:sqlite").Database, filesRoot: string, yes: boolean) {
+async function clean(db: import("bun").SQL, filesRoot: string, yes: boolean) {
   const { findOrphans, removeOrphans } = await import("../lib/store/image-maintenance")
   const { formatBytes } = await import("../lib/image/report")
   const found = await findOrphans(db, filesRoot)

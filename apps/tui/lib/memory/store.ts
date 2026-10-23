@@ -29,15 +29,18 @@ async function persistDbPathIfMissing(dbPath: string) {
   }
 }
 
-let cached: { path: string; store: NasiStore } | undefined
+// The open is kept as a promise, so callers racing the first open share one connection
+let cached: { path: string; opening: Promise<NasiStore>; store?: NasiStore } | undefined
 
 export async function getStore(): Promise<NasiStore> {
   const dbPath = await resolveMemoryDbPath()
   if (cached?.path !== dbPath) {
-    cached = { path: dbPath, store: createSqliteStore(dbPath) }
+    const entry: NonNullable<typeof cached> = { path: dbPath, opening: createSqliteStore(dbPath) }
+    cached = entry
+    entry.store = await entry.opening
     await persistDbPathIfMissing(dbPath)
   }
-  return cached.store
+  return cached.opening
 }
 
 export function peekStore(): NasiStore | undefined {

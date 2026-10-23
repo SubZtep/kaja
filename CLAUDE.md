@@ -16,7 +16,7 @@ Kaja is a TypeScript monorepo built with Bun. There is no mobile app.
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built with the API and served at `/widget/<widget-key>.js` (the key resolves the persona/mode server-side)
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers for cloud turns (`subztep/kaja-sandbox`); anyone can run one. It dials the API's WebSocket (`/sandbox/connect`), so nothing connects in
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
-- **Image bytes** are never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)` over nasi's `ObjectStore`: the API uses Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, the TUI plain files in `files/` beside the SQLite file). Only the normalised copy is kept; its metadata (type, size, description, and its source's URL, alt, title or file name) is a row: Postgres `nasi_image`, the TUI's SQLite `images` (no session FK, since a new session's images arrive before its first save; `clear()` removes them). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (set by hand on Hetzner; `scripts/storage_init.sh` sets it on the dev RustFS), so cloud clients and Telegram get plain URLs
+- **Image bytes** are never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)` over nasi's `ObjectStore`: the API uses Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, the TUI plain files in `files/` beside the SQLite file). Only the normalised copy is kept; its metadata (type, size, description, and its source's URL, alt, title or file name) is a `nasi_image` row (no session FK, since a new session's images arrive before its first save; `clear()` removes them). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (set by hand on Hetzner; `scripts/storage_init.sh` sets it on the dev RustFS), so cloud clients and Telegram get plain URLs
 
 ## Key File Locations
 
@@ -70,7 +70,7 @@ Per workspace: `bun run --filter @kaja/<name> dev|build|test`.
 | -------------- | -------------------------------------------------------------------------------------- |
 | `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types)        |
 | `@kaja/shared` | Pure utils by subpath (`/date`, `/text`, `/ui`, `/net`, `/id`, `/locale`, `/telegram`) |
-| `@kaja/nasi`   | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres.                |
+| `@kaja/nasi`   | Agent loop, tools, and one `Bun.SQL` store: the CLI opens SQLite, the API Postgres     |
 
 ### Type architecture
 

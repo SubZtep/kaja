@@ -1,4 +1,4 @@
--- Cloud agent state: a session is rows (one per message and tool call), plus the user's memory notes and dataset answers.
+-- Agent state (the TUI's SQLite has the same columns, packages/nasi/src/store/sqlite-schema.ts): a session is rows (one per message and tool call), plus the user's memory notes and dataset answers.
 CREATE TABLE IF NOT EXISTS nasi_session (
   id uuid PRIMARY KEY,
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS nasi_session (
   pending_call_id text,
   pending_kind text CHECK (pending_kind IN ('ask_user', 'run_command', 'tool_approval', 'client_tools')),
   -- Tools (allow keys) the user approved for the rest of this session
-  granted_tools text[] NOT NULL DEFAULT '{}'
+  granted_tools jsonb NOT NULL DEFAULT '[]'
 );
 
 CREATE INDEX IF NOT EXISTS nasi_session_user_updated_idx ON nasi_session (user_id, updated_at DESC);
@@ -70,6 +70,17 @@ CREATE TABLE IF NOT EXISTS nasi_session_summary (
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (session_id, summary_from)
 );
+
+-- The rendered timeline a client resumes from (the conversation is the message rows); append-only, ordered by seq.
+CREATE TABLE IF NOT EXISTS nasi_session_event (
+  session_id uuid NOT NULL REFERENCES nasi_session (id) ON DELETE CASCADE,
+  seq integer NOT NULL,
+  type text NOT NULL,
+  payload jsonb NOT NULL,
+  PRIMARY KEY (session_id, seq)
+);
+
+CREATE INDEX IF NOT EXISTS nasi_session_event_type_idx ON nasi_session_event (type, session_id, seq);
 
 -- Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool; image descriptions), so stats count their tokens.
 CREATE TABLE IF NOT EXISTS nasi_model_call (

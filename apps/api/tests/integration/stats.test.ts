@@ -4,7 +4,7 @@ import type { CallStat, ModelCallStat, StepStat } from "@kaja/nasi"
 import type { UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { expectUnauthenticated, signUpAndSignIn } from "./helpers"
 
 const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function", function: { name, arguments: "{}" } })
@@ -30,7 +30,7 @@ async function seedSession(
     modelCalls?: ModelCallStat[]
   }
 ) {
-  const id = await createPostgresStore(pool, userId).createSession({
+  const id = await nasiStore(userId).createSession({
     persona: opts.persona ?? "default",
     model: opts.model ?? "model-a",
     owner: opts.owner ?? null,

@@ -14,14 +14,14 @@ import {
 import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import { pool } from "../../core/db"
+import { sql } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService, sandboxService } from "../../services"
 import type { AbilityKeyValue } from "../../services/ability"
 import { egressFor, mcpSandboxFor, type SandboxKeys } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
-import { createPostgresStore } from "./pg-store"
+import { nasiStore } from "./store"
 
 export type ChatResolver = () => Promise<{
   client: ReturnType<typeof createOpenAIClient>
@@ -240,7 +240,7 @@ export async function openNasiFor(opts: {
       : [new Map<string, AbilityKeyValue>(), undefined]
   const keyOf: SandboxKeys = name => keys.get(name)
   return Nasi.open({
-    store: createPostgresStore(pool, opts.userId),
+    store: nasiStore(opts.userId),
     chat,
     summarizer,
     describer,
@@ -312,11 +312,10 @@ function withSessionLock<T>(userId: string, body: NasiTurnRequest, fn: () => Pro
  */
 export async function pinnedModelFor(userId: string, sessionId: string | undefined): Promise<string | undefined> {
   if (!sessionId) return undefined
-  const result = await pool.query<{ model: string }>("SELECT model FROM nasi_session WHERE id = $1 AND user_id = $2", [
-    sessionId,
-    userId
-  ])
-  return result.rows[0]?.model
+  const [row] = await sql<
+    { model: string }[]
+  >`SELECT model FROM nasi_session WHERE id = ${sessionId} AND user_id = ${userId}`
+  return row?.model
 }
 
 export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {

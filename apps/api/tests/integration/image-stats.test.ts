@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker"
 import type { ImageStats, UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { signUpAndSignIn } from "./helpers"
 
 async function signUp(name: string) {
@@ -14,7 +14,7 @@ async function signUp(name: string) {
 }
 
 async function seedSession(userId: string, title: string, owner: string | null = null) {
-  return createPostgresStore(pool, userId).createSession({
+  return nasiStore(userId).createSession({
     persona: "default",
     model: "m",
     owner,

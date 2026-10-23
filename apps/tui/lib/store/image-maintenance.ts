@@ -1,7 +1,15 @@
-import type { Database } from "bun:sqlite"
 import { readdir, rm, stat } from "node:fs/promises"
 import { join } from "node:path"
-import { describeImage, type Describer, IMAGE_REF_PREFIX, imageDataUrl, imageLabel, relabeledParts } from "@kaja/nasi"
+import {
+  bumpDescribeAttempt,
+  describeImage,
+  type Describer,
+  imageDataUrl,
+  LOCAL_USER_ID,
+  recordDescribeCall,
+  recordDescribedImage
+} from "@kaja/nasi"
+import type { SQL } from "bun"
 import { siteOf } from "../image/source"
 
 /** `kaja images describe` gives an image up after this many tries, unless it's run with `--retry`. */
@@ -25,46 +33,41 @@ export type LocalImageStats = {
 }
 
 /** What the local store keeps of its images: counts, size, the sites most came from, the sessions holding the most. */
-export function localImageStats(db: Database): LocalImageStats {
-  const totals = db
-    .query("SELECT COUNT(*) AS count, COALESCE(SUM(bytes), 0) AS bytes, COUNT(description) AS described FROM images")
-    .get() as { count: number; bytes: number; described: number }
-  const urls = db.query("SELECT sourceUrl FROM images WHERE sourceUrl IS NOT NULL").all() as { sourceUrl: string }[]
+export async function localImageStats(sql: SQL): Promise<LocalImageStats> {
+  const [totals] = await sql<{ count: number; bytes: number; described: number }[]>`
+    SELECT COUNT(*) AS count, COALESCE(SUM(bytes), 0) AS bytes, COUNT(description) AS described FROM nasi_image`
+  const urls = await sql<{ source_url: string }[]>`SELECT source_url FROM nasi_image WHERE source_url IS NOT NULL`
   const perSite = new Map<string, number>()
-  for (const { sourceUrl } of urls) {
-    const host = siteOf(sourceUrl)
+  for (const { source_url } of urls) {
+    const host = siteOf(source_url)
     if (host) perSite.set(host, (perSite.get(host) ?? 0) + 1)
   }
   // Only saved sessions: a new session's images arrive before its first save
-  const sessions = db
-    .query(
-      `SELECT s.id AS id, s.title AS title, COUNT(*) AS images, SUM(i.bytes) AS bytes
-       FROM images i JOIN sessions s ON s.id = i.sessionId
-       GROUP BY s.id ORDER BY bytes DESC, s.id LIMIT ${TOP}`
-    )
-    .all() as LocalImageStats["sessions"]
+  const sessions = await sql<LocalImageStats["sessions"]>`
+    SELECT s.id AS id, s.title AS title, COUNT(*) AS images, SUM(i.bytes) AS bytes
+    FROM nasi_image i JOIN nasi_session s ON s.id = i.session_id
+    GROUP BY s.id ORDER BY bytes DESC, s.id LIMIT ${TOP}`
   return {
-    ...totals,
-    undescribed: totals.count - totals.described,
+    ...totals!,
+    undescribed: totals!.count - totals!.described,
     sites: [...perSite]
       .map(([host, images]) => ({ host, images }))
       .toSorted((a, b) => b.images - a.images || a.host.localeCompare(b.host))
       .slice(0, TOP),
-    sessions
+    sessions: [...sessions]
   }
 }
 
 export type LocalImage = { sessionId: string; id: string; mimeType: string; width: number; height: number }
 
 /** Images still without a description, oldest first; ones given up on only with `retry`. */
-export function imagesToDescribe(db: Database, retry: boolean): LocalImage[] {
-  return db
-    .query(
-      `SELECT sessionId, id, mimeType, width, height FROM images
-       WHERE description IS NULL ${retry ? "" : `AND describeAttempts < ${MAX_DESCRIBE_ATTEMPTS}`}
-       ORDER BY createdAt`
-    )
-    .all() as LocalImage[]
+export async function imagesToDescribe(sql: SQL, retry: boolean): Promise<LocalImage[]> {
+  return [
+    ...(await sql<LocalImage[]>`
+      SELECT session_id AS "sessionId", id, mime_type AS "mimeType", width, height FROM nasi_image
+      WHERE description IS NULL ${retry ? sql`` : sql`AND describe_attempts < ${MAX_DESCRIBE_ATTEMPTS}`}
+      ORDER BY created_at`)
+  ]
 }
 
 const imagePath = (filesRoot: string, sessionId: string, id: string) => join(filesRoot, "images", sessionId, id)
@@ -75,74 +78,31 @@ const imagePath = (filesRoot: string, sessionId: string, id: string) => join(fil
  * is counted as a try and thrown.
  */
 export async function describeLocalImage(
-  db: Database,
+  sql: SQL,
   filesRoot: string,
   describer: Describer,
   image: LocalImage
 ): Promise<string | undefined> {
-  const tried = () =>
-    db
-      .query(
-        "UPDATE images SET describeAttempts = describeAttempts + 1, describeTriedAt = $at WHERE sessionId = $sessionId AND id = $id"
-      )
-      .run({ $at: new Date().toISOString(), $sessionId: image.sessionId, $id: image.id })
+  const tried = () => bumpDescribeAttempt(sql, LOCAL_USER_ID, image.sessionId, image.id)
   const file = Bun.file(imagePath(filesRoot, image.sessionId, image.id))
   if (!(await file.exists())) {
-    tried()
+    await tried()
     return undefined
   }
   const data = new Uint8Array(await file.arrayBuffer())
+  let usage: Parameters<typeof recordDescribeCall>[3] | undefined
   let text: string | undefined
   try {
-    text = await describeImage(describer, imageDataUrl({ data, mimeType: image.mimeType }), usage => {
-      db.query(
-        `INSERT INTO model_calls (sessionId, kind, model, promptTokens, completionTokens, latencyMs, createdAt)
-         SELECT $sessionId, 'describe', $model, $promptTokens, $completionTokens, $latencyMs, $now
-         WHERE EXISTS (SELECT 1 FROM sessions WHERE id = $sessionId)`
-      ).run({
-        $sessionId: image.sessionId,
-        $model: usage.model,
-        $promptTokens: usage.promptTokens ?? null,
-        $completionTokens: usage.completionTokens ?? null,
-        $latencyMs: usage.latencyMs,
-        $now: new Date().toISOString()
-      })
+    text = await describeImage(describer, imageDataUrl({ data, mimeType: image.mimeType }), call => {
+      usage = call
     })
   } finally {
-    tried()
+    await tried()
+    if (usage) await recordDescribeCall(sql, LOCAL_USER_ID, image.sessionId, usage)
   }
   if (!text) return undefined
-  db.query(
-    `UPDATE images SET description = $description, descriptionModel = $model, describedAt = $at
-     WHERE sessionId = $sessionId AND id = $id`
-  ).run({
-    $description: text,
-    $model: describer.model,
-    $at: new Date().toISOString(),
-    $sessionId: image.sessionId,
-    $id: image.id
-  })
-  relabel(db, image, text)
+  await recordDescribedImage(sql, LOCAL_USER_ID, image, text, describer.model)
   return text
-}
-
-// The image's label in its saved messages, with `description` in place of what it said before (its alt text)
-function relabel(db: Database, image: LocalImage, description: string) {
-  const ref = `${IMAGE_REF_PREFIX}${image.id}`
-  const rows = db
-    .query("SELECT id, parts FROM messages WHERE sessionId = $sessionId AND parts LIKE $label")
-    .all({ $sessionId: image.sessionId, $label: `%${imageLabel(ref, undefined, "").slice(0, -3)}%` }) as {
-    id: string
-    parts: string
-  }[]
-  for (const message of rows) {
-    const parts = relabeledParts(JSON.parse(message.parts) as unknown[], ref, image, description)
-    if (parts)
-      db.query("UPDATE messages SET parts = $parts WHERE id = $id").run({
-        $parts: JSON.stringify(parts),
-        $id: message.id
-      })
-  }
 }
 
 /** Orphan kinds: files with no row, rows whose file is gone, and images of sessions never saved (over a day ago). */
@@ -173,14 +133,11 @@ async function storedFiles(filesRoot: string): Promise<Orphan[]> {
 }
 
 /** What the store holds that nothing needs, by kind, scanned now. */
-export async function findOrphans(db: Database, filesRoot: string): Promise<Orphans> {
-  const rows = db
-    .query(
-      `SELECT i.sessionId AS sessionId, i.id AS id, i.bytes AS bytes, i.createdAt AS createdAt,
-              EXISTS (SELECT 1 FROM sessions s WHERE s.id = i.sessionId) AS saved
-       FROM images i`
-    )
-    .all() as { sessionId: string; id: string; bytes: number; createdAt: string; saved: number }[]
+export async function findOrphans(sql: SQL, filesRoot: string): Promise<Orphans> {
+  const rows = await sql<{ sessionId: string; id: string; bytes: number; createdAt: string; saved: number }[]>`
+    SELECT i.session_id AS "sessionId", i.id AS id, i.bytes AS bytes, i.created_at AS "createdAt",
+           EXISTS (SELECT 1 FROM nasi_session s WHERE s.id = i.session_id) AS saved
+    FROM nasi_image i`
   const known = new Set(rows.map(row => imagePath(filesRoot, row.sessionId, row.id)))
   const unsavedBefore = Date.now() - UNSAVED_AFTER_MS
   const files = (await storedFiles(filesRoot)).filter(file => !known.has(file.path))
@@ -211,24 +168,21 @@ export async function findOrphans(db: Database, filesRoot: string): Promise<Orph
 
 /** Removes one kind of orphan, as `found` listed it; each is checked again, and anything younger than `graceMs` stays. */
 export async function removeOrphans(
-  db: Database,
+  sql: SQL,
   kind: OrphanKind,
   found: Orphans,
   graceMs = ORPHAN_GRACE_MS
 ): Promise<number> {
   const settled = Date.now() - graceMs
-  const hasRow = (sessionId: string, id: string) =>
-    db
-      .query("SELECT 1 FROM images WHERE sessionId = $sessionId AND id = $id")
-      .get({ $sessionId: sessionId, $id: id }) !== null
-  const deleteRow = (item: Orphan) =>
-    db
-      .query("DELETE FROM images WHERE sessionId = $sessionId AND id = $id")
-      .run({ $sessionId: item.sessionId, $id: item.id! }).changes
+  const hasRow = async (sessionId: string, id: string) =>
+    (await sql`SELECT 1 FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`).length > 0
+  const deleteRow = async (item: Orphan) =>
+    (await sql.begin(tx => tx`DELETE FROM nasi_image WHERE session_id = ${item.sessionId} AND id = ${item.id!}`))
+      .affectedRows as number
   // Each item checked again just before it goes; the count of what went
   const remove: Record<OrphanKind, (item: Orphan) => Promise<number>> = {
     async files(item) {
-      if (item.id && hasRow(item.sessionId, item.id)) return 0
+      if (item.id && (await hasRow(item.sessionId, item.id))) return 0
       await rm(item.path, { force: true })
       return 1
     },
@@ -236,7 +190,7 @@ export async function removeOrphans(
       return (await Bun.file(item.path).exists()) ? 0 : deleteRow(item)
     },
     async unsaved(item) {
-      if (db.query("SELECT 1 FROM sessions WHERE id = $id").get({ $id: item.sessionId }) !== null) return 0
+      if ((await sql`SELECT 1 FROM nasi_session WHERE id = ${item.sessionId}`).length > 0) return 0
       await rm(item.path, { force: true })
       return deleteRow(item)
     }

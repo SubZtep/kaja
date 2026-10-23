@@ -1,11 +1,11 @@
 import {
+  bumpDescribeAttempt,
   describeImage,
   type Describer,
-  IMAGE_REF_PREFIX,
   imageDataUrl,
   imageKey,
-  imageLabel,
-  relabeledParts,
+  recordDescribeCall,
+  recordDescribedImage,
   sessionImagePrefix
 } from "@kaja/nasi"
 import type {
@@ -17,6 +17,8 @@ import type {
   StatsChannel
 } from "@kaja/schema/api"
 import type { Pool } from "pg"
+// The describe writes are nasi's shared ones, on the Bun.SQL client; the rest of the service is still on the pool
+import { sql } from "../core/db"
 import { imageUrl, listObjects, objects } from "../core/files"
 
 /** A page of the admin images list. */
@@ -248,17 +250,13 @@ export class ImageService {
     )
     const row = rows[0]
     if (!row) return undefined
-    const tried = () =>
-      this.#db.query(
-        "UPDATE nasi_image SET describe_attempts = describe_attempts + 1, describe_tried_at = now() WHERE session_id = $1 AND id = $2",
-        [sessionId, id]
-      )
+    const tried = () => bumpDescribeAttempt(sql, row.user_id, sessionId, id)
     const data = await objects.get(keyOf({ userId: row.user_id, sessionId, id }))
     if (!data) {
       await tried()
       return undefined
     }
-    let usage: { model: string; promptTokens?: number; completionTokens?: number; latencyMs: number } | undefined
+    let usage: Parameters<typeof recordDescribeCall>[3] | undefined
     let text: string | undefined
     try {
       text = await describeImage(describer, imageDataUrl({ data, mimeType: row.mime_type }), call => {
@@ -266,47 +264,12 @@ export class ImageService {
       })
     } finally {
       await tried()
-      if (usage)
-        await this.#db.query(
-          `INSERT INTO nasi_model_call (session_id, kind, model, prompt_tokens, completion_tokens, latency_ms)
-           SELECT $1, 'describe', $2, $3, $4, $5 WHERE EXISTS (SELECT 1 FROM nasi_session WHERE id = $1 AND user_id = $6)`,
-          [
-            sessionId,
-            usage.model,
-            usage.promptTokens ?? null,
-            usage.completionTokens ?? null,
-            usage.latencyMs,
-            row.user_id
-          ]
-        )
+      if (usage) await recordDescribeCall(sql, row.user_id, sessionId, usage)
     }
     if (!text) return undefined
-    await this.#db.query(
-      `UPDATE nasi_image SET description = $3, description_model = $4, described_at = now()
-       WHERE session_id = $1 AND id = $2`,
-      [sessionId, id, text, describer.model]
-    )
-    await this.#relabel(sessionId, id, { width: row.width, height: row.height }, text)
+    const image = { sessionId, id, width: row.width, height: row.height }
+    await recordDescribedImage(sql, row.user_id, image, text, describer.model)
     return text
-  }
-
-  // The image's label in its saved messages, with `description` in place of what it said before (its alt text)
-  async #relabel(sessionId: string, id: string, size: { width: number; height: number }, description: string) {
-    const ref = `${IMAGE_REF_PREFIX}${id}`
-    const { rows } = await this.#db.query<{ id: string; parts: unknown[] }>(
-      "SELECT id, parts FROM nasi_message WHERE session_id = $1 AND parts::text LIKE $2",
-      [sessionId, `%${imageLabel(ref, undefined, "").slice(0, -3)}%`]
-    )
-    await Promise.all(
-      rows.map(async message => {
-        const parts = relabeledParts(message.parts, ref, size, description)
-        if (parts)
-          await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
-            message.id,
-            JSON.stringify(parts)
-          ])
-      })
-    )
   }
 
   /** What the scan finds of each orphan kind right now (see {@link ImageOrphanKind}). */

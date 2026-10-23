@@ -4,7 +4,7 @@ import type { AdminImagesResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { objects } from "../../src/core/files"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
 
@@ -37,7 +37,7 @@ describe("/admin/images", () => {
     crowd = await signUp("Crowd")
     await pool.query(`UPDATE "user" SET role = 'admin' WHERE id = $1`, [admin.userId])
 
-    const store = createPostgresStore(pool, owner.userId)
+    const store = nasiStore(owner.userId)
     session = await store.createSession({
       persona: "default",
       model: "m",
@@ -69,8 +69,8 @@ describe("/admin/images", () => {
   })
 
   afterAll(async () => {
-    await createPostgresStore(pool, owner.userId).deleteSession(session)
-    await createPostgresStore(pool, owner.userId).images(unsaved).clear()
+    await nasiStore(owner.userId).deleteSession(session)
+    await nasiStore(owner.userId).images(unsaved).clear()
     await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[admin.userId, owner.userId, crowd.userId]])
   })
 

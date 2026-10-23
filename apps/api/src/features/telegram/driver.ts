@@ -22,13 +22,12 @@ import {
   parseAskCallback,
   type Reply
 } from "@kaja/shared/telegram"
-import { pool } from "../../core/db"
 import { imageUrl, objects } from "../../core/files"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
 import { openNasiFor } from "../nasi/chat"
-import { createPostgresStore } from "../nasi/pg-store"
+import { nasiStore } from "../nasi/store"
 import { type BotLanguage, botLanguage } from "./language"
 
 const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
@@ -60,7 +59,7 @@ export type CloudTelegramDriverConfig = {
 
 /** An account's latest conversation with one Telegram user. */
 function loadLatestSession(userId: string, owner: string) {
-  return createPostgresStore(pool, userId).loadLatestSession(owner)
+  return nasiStore(userId).loadLatestSession(owner)
 }
 
 /** The events after which the turn has nothing more to say. */

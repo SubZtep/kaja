@@ -5,7 +5,7 @@ import type { PoolClient } from "pg"
 import { z } from "zod"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { signUpAndSignIn } from "./helpers"
 
 // The moment everything below points at: 00:30 UTC on 20 Sep 2026 (09:30 in Tokyo, 17:30 the day before in Los Angeles).
@@ -175,7 +175,7 @@ describe("stats days follow the viewer's timezone", () => {
   beforeAll(async () => {
     token = await signUpAndSignIn(email, "Zone Stats")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email.toLowerCase()])).rows[0].id
-    const id = await createPostgresStore(pool, userId).createSession({
+    const id = await nasiStore(userId).createSession({
       persona: "default",
       model: "model-a",
       owner: null,
