@@ -1,19 +1,16 @@
 import type { ImageStats, StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 import { sourceHost } from "./image"
 
 const MAX_TOOLS = 50
 const MAX_IMAGE_SITES = 5
 const MAX_IMAGE_SESSIONS = 5
 
-// Sessions active in the range.
-const ACTIVE = "s.user_id = $1 AND s.updated_at >= $2"
-
 /** Activity numbers for one user, straight from their saved sessions — nothing extra is recorded. */
 export class StatsService {
-  readonly #db: Pool
+  readonly #db: SQL
 
-  constructor(db: Pool) {
+  constructor(db: SQL) {
     this.#db = db
   }
 
@@ -23,97 +20,91 @@ export class StatsService {
    */
   async usage(userId: string, days: number, timeZone = "UTC"): Promise<UsageStatsResponse> {
     const since = await this.#rangeStart(days, timeZone)
-    const args = [userId, since]
+    const db = this.#db
+    // Sessions active in the range
+    const active = db`s.user_id = ${userId} AND s.updated_at >= ${since}`
 
     const [perDay, totals, channels, calls, approvals, personas, models, images] = await Promise.all([
-      this.#db.query(
-        `
+      db<UsageStatsResponse["perDay"]>`
         WITH days AS (
-          SELECT generate_series(($2::timestamptz AT TIME ZONE $4)::date, ($2::timestamptz AT TIME ZONE $4)::date + ($3::int - 1), interval '1 day')::date AS day
+          SELECT generate_series((${since}::timestamptz AT TIME ZONE ${timeZone})::date,
+            (${since}::timestamptz AT TIME ZONE ${timeZone})::date + (${days}::int - 1), interval '1 day')::date AS day
         ),
         started AS (
-          SELECT (created_at AT TIME ZONE $4)::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND created_at >= $2 GROUP BY 1
+          SELECT (created_at AT TIME ZONE ${timeZone})::date AS day, COUNT(*) AS n FROM nasi_session
+          WHERE user_id = ${userId} AND created_at >= ${since} GROUP BY 1
         ),
         active AS (
-          SELECT (updated_at AT TIME ZONE $4)::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND updated_at >= $2 GROUP BY 1
+          SELECT (updated_at AT TIME ZONE ${timeZone})::date AS day, COUNT(*) AS n FROM nasi_session
+          WHERE user_id = ${userId} AND updated_at >= ${since} GROUP BY 1
         )
         SELECT to_char(days.day, 'YYYY-MM-DD') AS date, coalesce(started.n, 0)::int AS started, coalesce(active.n, 0)::int AS active
         FROM days LEFT JOIN started USING (day) LEFT JOIN active USING (day)
-        ORDER BY days.day
-        `,
-        [...args, days, timeZone]
-      ),
-      this.#db.query(
-        `
+        ORDER BY days.day`,
+      db`
         WITH summaries AS (
           SELECT COALESCE(SUM(c.prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(c.completion_tokens), 0) AS completion_tokens
           FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
-          WHERE ${ACTIVE}
+          WHERE ${active}
         )
-        SELECT (SELECT COUNT(*) FROM nasi_session s WHERE ${ACTIVE})::int AS sessions,
+        SELECT (SELECT COUNT(*) FROM nasi_session s WHERE ${active})::int AS sessions,
           COUNT(*) FILTER (WHERE m.role = 'user')::int AS messages,
           (COALESCE(SUM(m.prompt_tokens), 0) + (SELECT prompt_tokens FROM summaries))::float8 AS prompt_tokens,
           (COALESCE(SUM(m.completion_tokens), 0) + (SELECT completion_tokens FROM summaries))::float8 AS completion_tokens,
           ROUND(AVG(m.latency_ms))::int AS avg_latency_ms
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
-        WHERE ${ACTIVE}
+        WHERE ${active}
         `,
-        args
-      ),
-      this.#db.query(
-        `SELECT s.channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${ACTIVE} GROUP BY 1 ORDER BY 2 DESC, 1`,
-        args
-      ),
-      this.#db.query(
-        `
+      db<
+        { channel: string; sessions: number }[]
+      >`SELECT s.channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${active} GROUP BY 1 ORDER BY 2 DESC, 1`,
+      db`
         SELECT tc.name, COUNT(*)::int AS calls, COUNT(*) FILTER (WHERE tc.status = 'error')::int AS errors,
           ROUND(AVG(tc.duration_ms))::int AS avg_duration_ms
         FROM nasi_tool_call tc
         JOIN nasi_message m ON m.id = tc.message_id
         JOIN nasi_session s ON s.id = m.session_id
-        WHERE ${ACTIVE}
+        WHERE ${active}
         GROUP BY 1
         `,
-        args
-      ),
-      this.#db.query(
-        `
+      db`
         SELECT tc.name, COUNT(*) FILTER (WHERE tc.approval = 'approved')::int AS approved, COUNT(*) FILTER (WHERE tc.approval = 'declined')::int AS declined
         FROM nasi_tool_call tc
         JOIN nasi_message m ON m.id = tc.message_id
         JOIN nasi_session s ON s.id = m.session_id
-        WHERE ${ACTIVE} AND tc.approval IS NOT NULL
+        WHERE ${active} AND tc.approval IS NOT NULL
         GROUP BY 1
         `,
-        args
-      ),
-      this.#db.query(
-        `
+      db`
         SELECT COALESCE(m.persona, 'default') AS persona, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
-        WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
+        WHERE ${active} AND m.role = 'assistant' AND m.model IS NOT NULL
         GROUP BY 1 ORDER BY 2 DESC, 1
         `,
-        args
-      ),
-      this.#db.query(
-        `
+      db<
+        {
+          model: string
+          replies: number
+          summaries: number
+          sessions: number
+          prompt_tokens: number
+          completion_tokens: number
+        }[]
+      >`
         WITH used AS (
           SELECT m.session_id, m.model, 1 AS reply, 0 AS summary, m.prompt_tokens, m.completion_tokens
           FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
-          WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
+          WHERE ${active} AND m.role = 'assistant' AND m.model IS NOT NULL
           UNION ALL
           SELECT c.session_id, c.model, 0, 1, c.prompt_tokens, c.completion_tokens
           FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
-          WHERE ${ACTIVE}
+          WHERE ${active}
         )
         SELECT model, SUM(reply)::int AS replies, SUM(summary)::int AS summaries, COUNT(DISTINCT session_id)::int AS sessions,
           COALESCE(SUM(prompt_tokens), 0)::float8 AS prompt_tokens, COALESCE(SUM(completion_tokens), 0)::float8 AS completion_tokens
         FROM used
         GROUP BY 1 ORDER BY SUM(reply) + SUM(summary) DESC, 1
         `,
-        args
-      ),
       this.#imagesSince(userId, since)
     ])
 
@@ -123,13 +114,13 @@ export class StatsService {
       tools.set(name, entry)
       return entry
     }
-    for (const row of calls.rows) {
+    for (const row of calls) {
       const entry = tool(row.name)
       entry.calls = row.calls
       entry.errors = row.errors
       entry.avgDurationMs = row.avg_duration_ms
     }
-    for (const row of approvals.rows) {
+    for (const row of approvals) {
       const entry = tool(row.name)
       entry.approved = row.approved
       entry.declined = row.declined
@@ -140,18 +131,18 @@ export class StatsService {
       days,
       timeZone,
       totals: {
-        sessions: totals.rows[0]?.sessions ?? 0,
-        messages: totals.rows[0]?.messages ?? 0,
+        sessions: totals[0]?.sessions ?? 0,
+        messages: totals[0]?.messages ?? 0,
         toolCalls: ranked.reduce((sum, entry) => sum + entry.calls, 0),
-        promptTokens: totals.rows[0]?.prompt_tokens ?? 0,
-        completionTokens: totals.rows[0]?.completion_tokens ?? 0,
-        avgLatencyMs: totals.rows[0]?.avg_latency_ms ?? null
+        promptTokens: totals[0]?.prompt_tokens ?? 0,
+        completionTokens: totals[0]?.completion_tokens ?? 0,
+        avgLatencyMs: totals[0]?.avg_latency_ms ?? null
       },
-      perDay: perDay.rows,
-      channels: channels.rows.map(row => ({ channel: row.channel as StatsChannel, sessions: row.sessions })),
+      perDay: [...perDay],
+      channels: channels.map(row => ({ channel: row.channel as StatsChannel, sessions: row.sessions })),
       tools: ranked.slice(0, MAX_TOOLS),
-      personas: personas.rows,
-      models: models.rows.map(row => ({
+      personas: [...personas],
+      models: models.map(row => ({
         model: row.model,
         replies: row.replies,
         summaries: row.summaries,
@@ -170,50 +161,37 @@ export class StatsService {
 
   // Midnight, in the viewer's zone, of the first day: a wall-clock day count keeps DST days whole.
   async #rangeStart(days: number, timeZone: string): Promise<Date> {
-    const { rows } = await this.#db.query<{ since: Date }>(
-      "SELECT (date_trunc('day', now() AT TIME ZONE $1) - ($2::int - 1) * interval '1 day') AT TIME ZONE $1 AS since",
-      [timeZone, days]
-    )
-    return rows[0]!.since
+    const [row] = await this.#db<{ since: Date }[]>`
+      SELECT (date_trunc('day', now() AT TIME ZONE ${timeZone}) - (${days}::int - 1) * interval '1 day')
+        AT TIME ZONE ${timeZone} AS since`
+    return row!.since
   }
 
   // What's kept now, what arrived since `since`, where most came from and which chats hold the most.
   async #imagesSince(userId: string, since: Date): Promise<ImageStats> {
     const [totals, sites, sessions] = await Promise.all([
-      this.#db.query(
-        `
+      this.#db<{ count: number; bytes: number; described: number; added: number; added_bytes: number }[]>`
         SELECT COUNT(*)::int AS count, COALESCE(SUM(bytes), 0)::float8 AS bytes,
           COUNT(description)::int AS described,
-          COUNT(*) FILTER (WHERE created_at >= $2)::int AS added,
-          COALESCE(SUM(bytes) FILTER (WHERE created_at >= $2), 0)::float8 AS added_bytes
-        FROM nasi_image WHERE user_id = $1
-        `,
-        [userId, since]
-      ),
+          COUNT(*) FILTER (WHERE created_at >= ${since})::int AS added,
+          COALESCE(SUM(bytes) FILTER (WHERE created_at >= ${since}), 0)::float8 AS added_bytes
+        FROM nasi_image WHERE user_id = ${userId}`,
       // A URL's host, without "www."; images from files or tools without a URL have none
-      this.#db.query(
-        `
+      this.#db<ImageStats["sites"]>`
         SELECT host, COUNT(*)::int AS images FROM (
-          SELECT ${sourceHost("source_url")} AS host
-          FROM nasi_image WHERE user_id = $1 AND source_url IS NOT NULL
+          SELECT ${sourceHost(this.#db, "source_url")} AS host
+          FROM nasi_image WHERE user_id = ${userId} AND source_url IS NOT NULL
         ) hosts
         WHERE host IS NOT NULL
-        GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT $2
-        `,
-        [userId, MAX_IMAGE_SITES]
-      ),
+        GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT ${MAX_IMAGE_SITES}`,
       // Only saved sessions: a new session's images arrive before its first save
-      this.#db.query(
-        `
+      this.#db<{ id: string; title: string; channel: string; images: number; bytes: number }[]>`
         SELECT s.id, s.title, s.channel, COUNT(*)::int AS images, SUM(i.bytes)::float8 AS bytes
         FROM nasi_image i JOIN nasi_session s ON s.id = i.session_id AND s.user_id = i.user_id
-        WHERE i.user_id = $1
-        GROUP BY 1, 2, 3 ORDER BY 5 DESC, 1 LIMIT $2
-        `,
-        [userId, MAX_IMAGE_SESSIONS]
-      )
+        WHERE i.user_id = ${userId}
+        GROUP BY 1, 2, 3 ORDER BY 5 DESC, 1 LIMIT ${MAX_IMAGE_SESSIONS}`
     ])
-    const row = totals.rows[0]
+    const row = totals[0]!
     return {
       count: row.count,
       bytes: row.bytes,
@@ -221,8 +199,8 @@ export class StatsService {
       undescribed: row.count - row.described,
       added: row.added,
       addedBytes: row.added_bytes,
-      sites: sites.rows,
-      sessions: sessions.rows.map(session => ({
+      sites: [...sites],
+      sessions: sessions.map(session => ({
         id: session.id,
         title: session.title,
         channel: session.channel as StatsChannel,

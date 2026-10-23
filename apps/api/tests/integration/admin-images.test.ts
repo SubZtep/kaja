@@ -2,16 +2,16 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import type { AdminImagesResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { objects } from "../../src/core/files"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { nasiStore } from "../../src/features/nasi/store"
 import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, name)
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  const userId = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
   return { token, userId, email }
 }
 
@@ -35,9 +35,9 @@ describe("/admin/images", () => {
     admin = await signUp("Admin")
     owner = await signUp("Owner")
     crowd = await signUp("Crowd")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE id = $1`, [admin.userId])
+    await sql`UPDATE "user" SET role = 'admin' WHERE id = ${admin.userId}`
 
-    const store = createPostgresStore(pool, owner.userId)
+    const store = nasiStore(owner.userId)
     session = await store.createSession({
       persona: "default",
       model: "m",
@@ -61,17 +61,14 @@ describe("/admin/images", () => {
     const crowdSession = Bun.randomUUIDv7()
     const at = new Date()
     for (let i = 0; i < 50; i++)
-      await pool.query(
-        `INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes, created_at)
-         VALUES ($1, $2, $3, 'image/png', 1, 1, 1, $4)`,
-        [crowdSession, crowd.userId, hexId(), at]
-      )
+      await sql`INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes, created_at)
+         VALUES (${crowdSession}, ${crowd.userId}, ${hexId()}, 'image/png', 1, 1, 1, ${at})`
   })
 
   afterAll(async () => {
-    await createPostgresStore(pool, owner.userId).deleteSession(session)
-    await createPostgresStore(pool, owner.userId).images(unsaved).clear()
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[admin.userId, owner.userId, crowd.userId]])
+    await nasiStore(owner.userId).deleteSession(session)
+    await nasiStore(owner.userId).images(unsaved).clear()
+    await sql`DELETE FROM "user" WHERE id = ANY(${[admin.userId, owner.userId, crowd.userId]})`
   })
 
   test("is for admins only", async () => {

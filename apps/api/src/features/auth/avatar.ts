@@ -1,5 +1,5 @@
 import { userImagePrefix } from "@kaja/nasi"
-import { pool } from "../../core/db"
+import { sql } from "../../core/db"
 import { imageUrl, objects } from "../../core/files"
 import { reportError } from "../../core/report"
 
@@ -66,11 +66,7 @@ export async function storeAvatar(userId: string, source: string, fetcher: Fetch
 async function copyPicture(userId: string, source: string, previous: string, fetcher: Fetch) {
   const image = await storeAvatar(userId, source, fetcher)
   if (!image) return
-  await pool.query(`UPDATE "user" SET image = $2, updated_at = now() WHERE id = $1 AND COALESCE(image, '') = $3`, [
-    userId,
-    image,
-    previous
-  ])
+  await sql`UPDATE "user" SET image = ${image}, updated_at = now() WHERE id = ${userId} AND COALESCE(image, '') = ${previous}`
 }
 
 /** Whether a URL is a Google account picture: the only outside picture the API fetches besides Gravatar's. */
@@ -103,10 +99,7 @@ export async function copyGooglePicture(
 export async function fillFromGravatar(user: { id: string; email: string }, fetcher: Fetch = fetch): Promise<void> {
   const name = gravatarName(user.email, fetcher).then(async found => {
     if (found)
-      await pool.query(`UPDATE "user" SET name = $2, updated_at = now() WHERE id = $1 AND btrim(name) = ''`, [
-        user.id,
-        found
-      ])
+      await sql`UPDATE "user" SET name = ${found}, updated_at = now() WHERE id = ${user.id} AND btrim(name) = ''`
   })
   const picture = copyPicture(user.id, gravatarImageUrl(user.email), "", fetcher)
   for (const result of await Promise.allSettled([name, picture]))

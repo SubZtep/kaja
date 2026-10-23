@@ -35,10 +35,7 @@ export type ConversationRows = {
   summary: { text: string; from: number } | null
   /** Condensed oversized tool results by call id, kept beside the call; the message keeps the full output. */
   toolSummaries: Record<string, string>
-  /**
-   * Tools the user approved for the rest of the session (allow keys); a store that has no column for them leaves it
-   * out.
-   */
+  /** Tools the user approved for the rest of the session (allow keys), kept on the session row. */
   grantedTools?: string[]
   /** Set on saving, never read back. */
   calls?: CallUpdate[]

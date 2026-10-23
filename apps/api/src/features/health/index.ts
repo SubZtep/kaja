@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { pool } from "../../core/db"
+import { pool, sql } from "../../core/db"
 import { storageReachable } from "../../core/files"
 import type { RouteVariables } from "../../types"
 
@@ -61,10 +61,10 @@ healthRoutes.openapi(readyRoute, async c => {
   return c.json({ status: storageOk ? ("ok" as const) : ("degraded" as const), ...probes }, 200)
 })
 
-// SELECT 1 within the probe timeout (the pool's own connect timeout is shorter; this also bounds a busy pool's queue)
+// SELECT 1 on both clients within the probe timeout (a dead auth pool beside a live `sql` would still be down)
 async function databaseReachable(): Promise<boolean> {
   const timeout = new Promise<false>(resolve => setTimeout(resolve, PROBE_TIMEOUT_MS, false))
-  const query = pool.query("SELECT 1").then(
+  const query = Promise.all([pool.query("SELECT 1"), sql`SELECT 1`]).then(
     () => true,
     () => false
   )

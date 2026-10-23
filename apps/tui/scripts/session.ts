@@ -29,6 +29,7 @@ type SessionRow = Record<string, unknown> & {
   systemPrompt: string | null
   pendingCallId: string | null
   pendingKind: string | null
+  grantedTools: string
 }
 
 type MessageRow = {
@@ -118,11 +119,11 @@ export function openReadonly(dbPath: string): Database {
 export function listTerminalSessions(db: Database): SessionListRow[] {
   const rows = db
     .query(
-      `SELECT s.id, s.updatedAt, s.persona, s.model, s.title,
-              (SELECT COUNT(*) FROM messages AS m WHERE m.sessionId = s.id) AS messages
-       FROM sessions AS s
+      `SELECT s.id, s.updated_at AS updatedAt, s.persona, s.model, s.title,
+              (SELECT COUNT(*) FROM nasi_message AS m WHERE m.session_id = s.id) AS messages
+       FROM nasi_session AS s
        WHERE s.owner IS NULL
-       ORDER BY s.updatedAt DESC, s.id DESC`
+       ORDER BY s.updated_at DESC, s.id DESC`
     )
     .all() as SessionListRow[]
   return rows
@@ -142,9 +143,9 @@ export function resolveTerminalSessionId(db: Database, idOrPrefix: string): stri
   if (idOrPrefix.length === 0) throw new Error("Session id is required.")
   const rows = db
     .query(
-      String.raw`SELECT id FROM sessions
+      String.raw`SELECT id FROM nasi_session
        WHERE owner IS NULL AND (id = $id OR id LIKE $like ESCAPE '\')
-       ORDER BY updatedAt DESC, id DESC`
+       ORDER BY updated_at DESC, id DESC`
     )
     .all({ $id: idOrPrefix, $like: likePrefix(idOrPrefix) }) as { id: string }[]
   const exact = rows.find(row => row.id === idOrPrefix)
@@ -159,29 +160,57 @@ export function resolveTerminalSessionId(db: Database, idOrPrefix: string): stri
 
 /** Markdown for one terminal session: a linked step diagram, then the transcript and every stored row. */
 export function renderSessionMarkdown(db: Database, id: string, dbPath: string): string {
-  const row = db.query("SELECT * FROM sessions WHERE id = $id AND owner IS NULL").get({ $id: id }) as SessionRow | null
+  const row = db
+    .query(
+      `SELECT id, created_at AS createdAt, updated_at AS updatedAt, persona, model, title, owner,
+              system_prompt AS systemPrompt, pending_call_id AS pendingCallId, pending_kind AS pendingKind,
+              granted_tools AS grantedTools
+       FROM nasi_session WHERE id = $id AND owner IS NULL`
+    )
+    .get({ $id: id }) as SessionRow | null
   if (!row) throw new Error(`No terminal session matches "${id}".`)
 
   const messages = db
-    .query("SELECT * FROM messages WHERE sessionId = $id ORDER BY seq")
+    .query(
+      `SELECT id, session_id AS sessionId, seq, role, content, parts, reasoning, tool_call_id AS toolCallId, persona,
+              model, prompt_tokens AS promptTokens, completion_tokens AS completionTokens, latency_ms AS latencyMs,
+              finish_reason AS finishReason, created_at AS createdAt
+       FROM nasi_message WHERE session_id = $id ORDER BY seq`
+    )
     .all({ $id: id }) as MessageRow[]
   const toolCalls = db
     .query(
-      `SELECT tc.* FROM tool_calls AS tc
-       JOIN messages AS m ON m.id = tc.messageId
-       WHERE m.sessionId = $id
+      `SELECT tc.id, tc.message_id AS messageId, tc.position, tc.call_id AS callId, tc.name, tc.arguments,
+              tc.result_message_id AS resultMessageId, tc.status, tc.duration_ms AS durationMs, tc.approval
+       FROM nasi_tool_call AS tc
+       JOIN nasi_message AS m ON m.id = tc.message_id
+       WHERE m.session_id = $id
        ORDER BY m.seq, tc.position`
     )
     .all({ $id: id }) as ToolCallRow[]
   const events = db
-    .query("SELECT * FROM session_events WHERE sessionId = $id ORDER BY seq")
+    .query(
+      "SELECT session_id AS sessionId, seq, type, payload FROM nasi_session_event WHERE session_id = $id ORDER BY seq"
+    )
     .all({ $id: id }) as EventRow[]
-  const notes = db.query("SELECT * FROM notes WHERE owner = '' ORDER BY key").all() as NoteRow[]
+  const notes = db
+    .query(
+      `SELECT owner, key, content, importance, tags, sticky, created_at AS createdAt, last_used_at AS lastUsedAt,
+              use_count AS useCount
+       FROM nasi_note WHERE owner = '' ORDER BY key`
+    )
+    .all() as NoteRow[]
   const answers = db
-    .query("SELECT * FROM dataset_answers WHERE owner = '' ORDER BY topic, version, field")
+    .query(
+      `SELECT topic, owner, version, field, value, answered_at AS answeredAt
+       FROM nasi_dataset_answer WHERE owner = '' ORDER BY topic, version, field`
+    )
     .all() as AnswerRow[]
   const versions = db
-    .query("SELECT * FROM dataset_versions WHERE owner = '' ORDER BY topic, version")
+    .query(
+      `SELECT topic, owner, version, completed_at AS completedAt
+       FROM nasi_dataset_version WHERE owner = '' ORDER BY topic, version`
+    )
     .all() as VersionRow[]
 
   const callsByMessage = Map.groupBy(toolCalls, call => call.messageId)
@@ -212,6 +241,7 @@ export function renderSessionMarkdown(db: Database, id: string, dbPath: string):
       ["model", row.model],
       ["owner", "terminal"],
       ["pending", pendingText(row)],
+      ["granted tools", grantedText(row.grantedTools)],
       ["messages", String(messages.length)],
       ["database", dbPath]
     ]),
@@ -264,6 +294,11 @@ function headingOf(title: string): string {
 function pendingText(row: SessionRow): string {
   if (row.pendingCallId == null && row.pendingKind == null) return "none"
   return [row.pendingKind, row.pendingCallId].filter(part => part != null).join(" · ")
+}
+
+function grantedText(json: string): string {
+  const tools = JSON.parse(json) as string[]
+  return tools.length === 0 ? "none" : tools.join(", ")
 }
 
 // Backslashes first, so an escaped pipe can't be undone by a trailing backslash in the value.

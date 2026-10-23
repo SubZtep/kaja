@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, type TestSandbox } from "./sandbox-helpers"
 
@@ -19,8 +19,8 @@ let sandbox: TestSandbox
 beforeAll(async () => {
   adminToken = await signUpAndSignIn(adminEmail, "Sandbox Admin")
   userToken = await signUpAndSignIn(userEmail, "Sandbox User")
-  await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
-  userId = (await pool.query<{ id: string }>('SELECT id FROM "user" WHERE email = $1', [userEmail])).rows[0]!.id
+  await sql`UPDATE "user" SET role = 'admin' WHERE email = ${adminEmail}`
+  userId = (await sql<{ id: string }[]>`SELECT id FROM "user" WHERE email = ${userEmail}`)[0]!.id
   server = serveApi()
   const { key } = await (
     await app.request("/sandbox/key", { method: "POST", headers: { Authorization: `Bearer ${userToken}` } })
@@ -31,7 +31,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await sandbox.close()
   server.stop(true)
-  await pool.query('DELETE FROM "user" WHERE email = ANY($1)', [[adminEmail, userEmail]])
+  await sql`DELETE FROM "user" WHERE email = ANY(${[adminEmail, userEmail]})`
 })
 
 const stats = (token: string) => app.request("/admin/sandbox", { headers: { Authorization: `Bearer ${token}` } })

@@ -3,8 +3,8 @@ import { faker } from "@faker-js/faker"
 import type { CallStat, ModelCallStat, StepStat } from "@kaja/nasi"
 import type { UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
-import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { sql } from "../../src/core/db"
+import { nasiStore } from "../../src/features/nasi/store"
 import { expectUnauthenticated, signUpAndSignIn } from "./helpers"
 
 const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function", function: { name, arguments: "{}" } })
@@ -12,7 +12,7 @@ const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function",
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, name)
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  const userId = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
   return { token, userId }
 }
 
@@ -30,7 +30,7 @@ async function seedSession(
     modelCalls?: ModelCallStat[]
   }
 ) {
-  const id = await createPostgresStore(pool, userId).createSession({
+  const id = await nasiStore(userId).createSession({
     persona: opts.persona ?? "default",
     model: opts.model ?? "model-a",
     owner: opts.owner ?? null,
@@ -47,7 +47,7 @@ async function seedSession(
     at.setUTCHours(12, 0, 0, 0)
     at.setUTCDate(at.getUTCDate() - opts.ageDays)
   }
-  await pool.query("UPDATE nasi_session SET created_at = $2, updated_at = $2 WHERE id = $1", [id, at])
+  await sql`UPDATE nasi_session SET created_at = ${at}, updated_at = ${at} WHERE id = ${id}`
 }
 
 describe("GET /stats", () => {
@@ -126,7 +126,7 @@ describe("GET /stats", () => {
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[mine.userId, other.userId]])
+    await sql`DELETE FROM "user" WHERE id = ANY(${[mine.userId, other.userId]})`
   })
 
   test("needs a signed-in user", async () => {

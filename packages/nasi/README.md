@@ -52,9 +52,8 @@ for await (const event of run(agent, prompt, createSession(), owner)) {
 
 `Nasi.open({ store })` takes a `NasiStore`. Nasi never opens a database itself.
 
-- CLI: sqlite via `createSqliteStore(path)` (`apps/tui/lib/store/sqlite.ts`)
-- API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
-- Tests: `createMemoryStore()`
+- CLI and API: `createSqlStore(sql, opts)` over a `Bun.SQL` client the host opens: SQLite in the CLI (`apps/tui/lib/store/sqlite.ts`, which applies `SQLITE_SCHEMA`), Postgres in the API (`apps/api/src/features/nasi/store.ts`, schema in `apps/api/migrations/2026-09-07-nasi.sql`)
+- Tests: `createMemoryStore()`, or `createSqlStore` on an in-memory SQLite (`tests/store/sql-store.test.ts`)
 
 `createOpenAIClient({ baseURL, apiKey, headers?, fetch? })` builds a client, with no process-wide singleton. The cloud passes `createGuardedFetch()` as `fetch` (and to `resolveContextWindow`), so a model URL can't reach a private host; the TUI uses plain `fetch`, so a model on the local network works. The free-chat proxy may set `x-kaja-model`, and `takeLastServedModel()` reads that for usage events.
 

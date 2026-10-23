@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { signInWithCode, signUpAndSignIn } from "./helpers"
 
 const CLIENT_ID = "kaja-tui"
@@ -17,7 +17,7 @@ const post = (path: string, body: object, token?: string) =>
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
   const token = await signUpAndSignIn(email, name)
-  const id = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  const id = (await sql`SELECT id FROM "user" WHERE email = ${email}`)[0].id as string
   return { token, id }
 }
 
@@ -27,12 +27,12 @@ describe("Better Auth reads and writes the snake_case columns", () => {
 
   beforeAll(async () => {
     admin = await signUp("Auth Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE id = $1`, [admin.id])
+    await sql`UPDATE "user" SET role = 'admin' WHERE id = ${admin.id}`
     member = await signUp("Auth Member")
   })
 
   afterAll(async () => {
-    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[admin.id, member.id]])
+    await sql`DELETE FROM "user" WHERE id = ANY(${[admin.id, member.id]})`
   })
 
   test("device login: the code is stored in device_code, polled, approved and exchanged for a token", async () => {
@@ -40,15 +40,15 @@ describe("Better Auth reads and writes the snake_case columns", () => {
     expect(created.status).toBe(200)
     const { device_code: deviceCode, user_code: userCode } = await created.json()
 
-    const stored = (await pool.query("SELECT * FROM device_code WHERE device_code = $1", [deviceCode])).rows[0]
+    const stored = (await sql`SELECT * FROM device_code WHERE device_code = ${deviceCode}`)[0]
     expect(stored).toMatchObject({ user_code: userCode, client_id: CLIENT_ID, status: "pending", user_id: null })
     expect(stored.expires_at.getTime()).toBeGreaterThan(Date.now())
 
     const pending = await post("/device/token", { grant_type: GRANT, device_code: deviceCode, client_id: CLIENT_ID })
     expect(pending.status).toBe(400)
     expect((await pending.json()).error).toBe("authorization_pending")
-    const polled = await pool.query("SELECT last_polled_at FROM device_code WHERE device_code = $1", [deviceCode])
-    expect(polled.rows[0].last_polled_at).toBeInstanceOf(Date)
+    const polled = await sql`SELECT last_polled_at FROM device_code WHERE device_code = ${deviceCode}`
+    expect(polled[0].last_polled_at).toBeInstanceOf(Date)
 
     // the signed-in user opens the verification page first, which claims the code for their session
     const claim = await app.request(`/auth/device?user_code=${userCode}`, {
@@ -57,13 +57,11 @@ describe("Better Auth reads and writes the snake_case columns", () => {
     expect(claim.status).toBe(200)
     const approve = await post("/device/approve", { userCode }, member.token)
     expect(approve.status).toBe(200)
-    const approved = await pool.query("SELECT status, user_id FROM device_code WHERE device_code = $1", [deviceCode])
-    expect(approved.rows[0]).toEqual({ status: "approved", user_id: member.id })
+    const approved = await sql`SELECT status, user_id FROM device_code WHERE device_code = ${deviceCode}`
+    expect(approved[0]).toEqual({ status: "approved", user_id: member.id })
 
     // polling again right away would be "slow_down", so pretend the terminal waited its interval
-    await pool.query("UPDATE device_code SET last_polled_at = now() - interval '1 minute' WHERE device_code = $1", [
-      deviceCode
-    ])
+    await sql`UPDATE device_code SET last_polled_at = now() - interval '1 minute' WHERE device_code = ${deviceCode}`
     const token = await post("/device/token", { grant_type: GRANT, device_code: deviceCode, client_id: CLIENT_ID })
     expect(token.status).toBe(200)
     expect((await token.json()).access_token).toBeString()
@@ -80,25 +78,21 @@ describe("Better Auth reads and writes the snake_case columns", () => {
       admin.token
     )
     expect(ban.status).toBe(200)
-    const banned = (await pool.query('SELECT banned, ban_reason, ban_expires FROM "user" WHERE id = $1', [member.id]))
-      .rows[0]
+    const banned = (await sql`SELECT banned, ban_reason, ban_expires FROM "user" WHERE id = ${member.id}`)[0]
     expect(banned.banned).toBe(true)
     expect(banned.ban_reason).toBe("testing")
     expect(banned.ban_expires.getTime()).toBeGreaterThan(Date.now())
 
     expect((await post("/admin/unban-user", { userId: member.id }, admin.token)).status).toBe(200)
-    const unbanned = (await pool.query('SELECT banned FROM "user" WHERE id = $1', [member.id])).rows[0]
+    const unbanned = (await sql`SELECT banned FROM "user" WHERE id = ${member.id}`)[0]
     expect(unbanned.banned).toBe(false)
   })
 
   test("impersonating a user records who did it in impersonated_by", async () => {
     const res = await post("/admin/impersonate-user", { userId: member.id }, admin.token)
     expect(res.status).toBe(200)
-    const rows = (
-      await pool.query("SELECT impersonated_by FROM session WHERE user_id = $1 AND impersonated_by IS NOT NULL", [
-        member.id
-      ])
-    ).rows
+    const rows =
+      await sql`SELECT impersonated_by FROM session WHERE user_id = ${member.id} AND impersonated_by IS NOT NULL`
     expect(rows).toEqual([{ impersonated_by: admin.id }])
   })
 
@@ -106,19 +100,17 @@ describe("Better Auth reads and writes the snake_case columns", () => {
     const email = faker.internet.email().toLowerCase()
     await signUpAndSignIn(email, "Agent")
     await signInWithCode(email, {}, { "User-Agent": "tz-test/1.0", "X-Forwarded-For": "203.0.113.7" })
-    const { rows } = await pool.query(
-      `SELECT s.user_agent FROM session s JOIN "user" u ON u.id = s.user_id WHERE u.email = $1 AND s.user_agent = 'tz-test/1.0'`,
-      [email]
-    )
+    const rows =
+      await sql`SELECT s.user_agent FROM session s JOIN "user" u ON u.id = s.user_id WHERE u.email = ${email} AND s.user_agent = 'tz-test/1.0'`
     expect(rows).toHaveLength(1)
-    await pool.query('DELETE FROM "user" WHERE email = $1', [email])
+    await sql`DELETE FROM "user" WHERE email = ${email}`
   })
 
   test("the user's locale is saved, returned on the session and refused when unsupported", async () => {
     const user = await signUp("Auth Locale")
     const saved = await post("/update-user", { locale: "hu-HU" }, user.token)
     expect(saved.status).toBe(200)
-    const { rows } = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
+    const rows = await sql`SELECT locale FROM "user" WHERE id = ${user.id}`
     expect(rows[0].locale).toBe("hu-HU")
 
     const session = await app.request("/auth/get-session", { headers: { Authorization: `Bearer ${user.token}` } })
@@ -126,14 +118,14 @@ describe("Better Auth reads and writes the snake_case columns", () => {
 
     const refused = await post("/update-user", { locale: "xx-XX" }, user.token)
     expect(refused.status).toBe(400)
-    const after = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
-    expect(after.rows[0].locale).toBe("hu-HU")
+    const after = await sql`SELECT locale FROM "user" WHERE id = ${user.id}`
+    expect(after[0].locale).toBe("hu-HU")
 
     // Switching back to the base locale saves it too
     const back = await post("/update-user", { locale: "en-GB" }, user.token)
     expect(back.status).toBe(200)
-    const base = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
-    expect(base.rows[0].locale).toBe("en-GB")
-    await pool.query('DELETE FROM "user" WHERE id = $1', [user.id])
+    const base = await sql`SELECT locale FROM "user" WHERE id = ${user.id}`
+    expect(base[0].locale).toBe("en-GB")
+    await sql`DELETE FROM "user" WHERE id = ${user.id}`
   })
 })

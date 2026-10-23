@@ -1,8 +1,8 @@
 # @kaja/nasi
 
-The agent brain: OpenAI-compatible tool loop, the store interface (sessions as message and tool-call rows, memory, datasets; hosts implement it over SQLite or Postgres), built-in tools, and `Nasi`, the cloud turn wrapper the API uses.
+The agent brain: OpenAI-compatible tool loop, the store interface (sessions as message and tool-call rows, memory, datasets) and `createSqlStore`, its one SQL implementation over a `Bun.SQL` client the host opens (SQLite in the TUI, Postgres in the API), built-in tools, and `Nasi`, the cloud turn wrapper the API uses.
 
-Hosts (full CLI, API) construct it and pass a store, model client, prompt context, and `includeLocalTools`. This package has no Ink, Hono, Better Auth, sqlite, or pg.
+Hosts (full CLI, API) construct it and pass a store, model client, prompt context, and `includeLocalTools`. This package has no Ink, Hono, Better Auth, `bun:sqlite`, or pg; it never opens a database or runs DDL (it exports `SQLITE_SCHEMA` for the TUI to apply).
 
 ## Commands
 
@@ -19,7 +19,7 @@ src/
   personas.ts        # dataset loaders the host registers (setDatasetLoaders, loadDataset)
   warn.ts            # warn + setWarnHandler
   agent/             # Agent, run(), system prompt, compaction, command risk, telemetry
-  store/             # NasiStore interface + in-memory adapter; images.ts (SessionImages over the host's ObjectStore plus its ImageRows: SQL in the stores, `memoryImageRows` here); rows.ts splits a session into message/tool-call rows and joins it back
+  store/             # NasiStore interface + in-memory adapter; sql-store.ts (createSqlStore, the describe writes), sql-codec.ts, sqlite-schema.ts; images.ts (SessionImages over the host's ObjectStore plus its ImageRows); rows.ts splits a session into message/tool-call rows and joins it back
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # connectMcpServer; launch.ts resolveLaunch (a stdio manifest's package → the runner this host has)
@@ -31,6 +31,7 @@ src/
 ## Conventions
 
 - No reads of `settings.toml`; hosts inject store, model client, prompt context. Parameterized SQL only; session ids are UUIDv7 text. Do not log prompts, memory content, or API keys.
+- `createSqlStore` runs the same statements on both engines, so its SQL stays in their common dialect: no `::casts`, `NOW()`, `ANY()`, `INSERT OR IGNORE` or `PRAGMA`. Values go through `sql-codec.ts` (ISO text for timestamps, `jsonParam` for JSON, which also drops NUL and keeps null SQL `NULL`; `readJson`/`readBool`/`iso` on the way back), and `tests/store/sql-dialect.test.ts` plus the API's `sql-dialect.test.ts` pin what Bun returns on each. Every statement is scoped by `userId`, and every write goes through `sql.begin` (on SQLite a plain query would join another save's open transaction). Columns must match `apps/api/migrations/2026-09-07-nasi.sql` (`apps/api/tests/unit/nasi-schema.test.ts`).
 - Recoverable problems (a skipped ability, a missing key, a failed MCP connect) go through `warn`; hosts route them with `setWarnHandler`, silent until they do.
 - `includeLocalTools` (default false): files, shell, MCP. Code tools (an ability's `tool.ts`) come only from a store on the user's machine (`AbilityStore.listCodeTools`), and `loadAbilities` imports only the ones a persona lists.
 - The system prompt is built when a conversation starts; `refreshAbilitiesInPrompt` (every turn, in `run`) rebuilds it only when the `## Skills`, `## Personas` or a sticky `## Skill: <name>` section no longer matches, so changes reach running conversations without breaking prompt caching.

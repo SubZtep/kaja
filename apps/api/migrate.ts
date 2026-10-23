@@ -1,6 +1,6 @@
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { Client } from "pg"
+import { SQL } from "bun"
 import { applyMigrations, readMigrations } from "./scripts/migrations"
 import { seedConfig } from "./scripts/seed-config"
 
@@ -10,14 +10,14 @@ const migrationsDir = join(scriptDir, "migrations")
 
 const migrations = readMigrations(migrationsDir)
 
-const client = new Client({ connectionString: process.env.DATABASE_URL })
-await client.connect()
+// Its own client, without the app's 15 s statement timeout: one file is one transaction, however long it takes
+const db = new SQL({ url: process.env.DATABASE_URL, max: 1 })
 
-const applied = await applyMigrations(client, migrations)
+const applied = await applyMigrations(db, migrations)
 console.log(`migrations: ${applied} applied, ${migrations.length - applied} already up to date`)
 
 // The cloud agent reads its persona catalog from the DB, so an unseeded database means no
 // personas at all. Idempotent, so running it on every deploy leaves admin edits untouched.
-await seedConfig(client)
+await seedConfig(db)
 
-await client.end()
+await db.close()

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { createHash } from "node:crypto"
-import { Client } from "pg"
+import { SQL } from "bun"
 import { applyMigrations, type Migration } from "../../scripts/migrations"
 
 const migration = (name: string, sql: string): Migration => ({
@@ -13,29 +13,24 @@ const quiet = { log: () => {} }
 describe("applyMigrations", () => {
   // Its own schema in the test database, so the runner creates a schema_migrations of its own
   const schema = "migrations_test"
-  const client = new Client({ connectionString: Bun.env.DATABASE_URL })
+  // search_path as a startup parameter, so every connection the runner reserves lands in the schema
+  const client = new SQL({ url: Bun.env.DATABASE_URL, max: 1, connection: { search_path: schema } })
   const tables = async () =>
     (
-      await client.query<{ name: string }>(
-        "SELECT table_name AS name FROM information_schema.tables WHERE table_schema = $1 ORDER BY 1",
-        [schema]
-      )
-    ).rows.map(row => row.name)
+      await client<{ name: string }[]>`
+        SELECT table_name AS name FROM information_schema.tables WHERE table_schema = ${schema} ORDER BY 1`
+    ).map(row => row.name)
   const recorded = async () =>
-    (await client.query<{ filename: string }>("SELECT filename FROM schema_migrations ORDER BY 1")).rows.map(
-      row => row.filename
-    )
+    (await client<{ filename: string }[]>`SELECT filename FROM schema_migrations ORDER BY 1`).map(row => row.filename)
 
   beforeAll(async () => {
-    await client.connect()
-    await client.query("DROP SCHEMA IF EXISTS migrations_test CASCADE")
-    await client.query("CREATE SCHEMA migrations_test")
-    await client.query("SET search_path TO migrations_test")
+    await client`DROP SCHEMA IF EXISTS migrations_test CASCADE`
+    await client`CREATE SCHEMA migrations_test`
   })
 
   afterAll(async () => {
-    await client.query("DROP SCHEMA migrations_test CASCADE")
-    await client.end()
+    await client`DROP SCHEMA migrations_test CASCADE`
+    await client.close()
   })
 
   test("applies new files once, in order, and records them", async () => {

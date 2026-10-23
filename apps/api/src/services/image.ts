@@ -1,11 +1,11 @@
 import {
+  bumpDescribeAttempt,
   describeImage,
   type Describer,
-  IMAGE_REF_PREFIX,
   imageDataUrl,
   imageKey,
-  imageLabel,
-  relabeledParts,
+  recordDescribeCall,
+  recordDescribedImage,
   sessionImagePrefix
 } from "@kaja/nasi"
 import type {
@@ -16,15 +16,15 @@ import type {
   ImageOrphansResponse,
   StatsChannel
 } from "@kaja/schema/api"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 import { imageUrl, listObjects, objects } from "../core/files"
 
 /** A page of the admin images list. */
 export const IMAGES_PAGE = 48
 
-/** The SQL for a `source_url` column's host, lowercased and without `www.`; null when it isn't an http(s) URL. */
-export const sourceHost = (column: string) =>
-  String.raw`regexp_replace(lower(substring(${column} FROM '^https?://([^/:?#]+)')), '^www\.', '')`
+/** A `source_url` column's host, lowercased and without `www.`; null when it isn't an http(s) URL. */
+export const sourceHost = (sql: SQL, column: "source_url" | "i.source_url") =>
+  sql`regexp_replace(lower(substring(${sql(column)} FROM '^https?://([^/:?#]+)')), '^www[.]', '')`
 
 type ImageListRow = {
   id: string
@@ -97,17 +97,22 @@ async function eachLimited<T>(items: T[], limit: number, run: (item: T) => Promi
 
 type Filters = Omit<AdminImagesQuery, "cursor">
 
-// The list's filters as SQL over `nasi_image i`, adding their values to `param`
-function filterSql(filters: Filters, param: (value: unknown) => string): string[] {
-  const where: string[] = []
-  if (filters.user) where.push(`i.user_id = ${param(filters.user)}`)
-  if (filters.site) where.push(`${sourceHost("i.source_url")} = ${param(filters.site.replace(/^www\./, ""))}`)
-  if (filters.undescribed !== undefined) where.push(`i.description IS ${filters.undescribed ? "" : "NOT "}NULL`)
-  if (filters.origin === "url") where.push("i.source_url IS NOT NULL")
-  if (filters.origin === "file") where.push("i.file_name IS NOT NULL")
-  if (filters.origin === "none") where.push("i.source_url IS NULL AND i.file_name IS NULL")
+// The list's filters as fragments over `nasi_image i`
+function filterSql(sql: SQL, filters: Filters): SQL.Query<unknown>[] {
+  const where: SQL.Query<unknown>[] = []
+  if (filters.user) where.push(sql`i.user_id = ${filters.user}`)
+  if (filters.site) where.push(sql`${sourceHost(sql, "i.source_url")} = ${filters.site.replace(/^www\./, "")}`)
+  if (filters.undescribed === true) where.push(sql`i.description IS NULL`)
+  if (filters.undescribed === false) where.push(sql`i.description IS NOT NULL`)
+  if (filters.origin === "url") where.push(sql`i.source_url IS NOT NULL`)
+  if (filters.origin === "file") where.push(sql`i.file_name IS NOT NULL`)
+  if (filters.origin === "none") where.push(sql`i.source_url IS NULL AND i.file_name IS NULL`)
   return where
 }
+
+// Every clause, joined with AND; none matches every row
+const allOf = (sql: SQL, clauses: SQL.Query<unknown>[]) =>
+  clauses.reduce((all, clause) => sql`${all} AND ${clause}`, sql`TRUE`)
 
 type ImageRef = { userId: string; sessionId: string; id: string }
 
@@ -124,43 +129,36 @@ function refOf(key: string): ImageRef | undefined {
  * they have no description, and their orphans found and removed.
  */
 export class ImageService {
-  readonly #db: Pool
+  readonly #db: SQL
   // One instance runs the API, so this is every description being written, by image
   readonly #describing = new Map<string, Promise<string | undefined>>()
   readonly #orphanGraceMs: number
 
   /** `orphanGraceMs`: how young an orphan is still left alone (an hour; tests set less, the bucket can't backdate). */
-  constructor(db: Pool, opts: { orphanGraceMs?: number } = {}) {
+  constructor(db: SQL, opts: { orphanGraceMs?: number } = {}) {
     this.#db = db
     this.#orphanGraceMs = opts.orphanGraceMs ?? ORPHAN_GRACE_MS
   }
 
   /** One page of images matching every filter given; `next` is the cursor for the page after it. */
   async list(query: AdminImagesQuery): Promise<{ images: AdminImage[]; next: string | null }> {
-    const params: unknown[] = []
-    const param = (value: unknown) => `$${params.push(value)}`
-    const where = filterSql(query, param)
+    const db = this.#db
+    const where = filterSql(db, query)
     if (query.cursor) {
       const cursor = decodeCursor(query.cursor)
       if (!cursor) throw new BadCursorError("Not a cursor from this list")
-      where.push(
-        `(i.created_at, i.session_id, i.id) < (${param(cursor[0])}::timestamptz, ${param(cursor[1])}::uuid, ${param(cursor[2])})`
-      )
+      where.push(db`(i.created_at, i.session_id, i.id) < (${cursor[0]}::timestamptz, ${cursor[1]}::uuid, ${cursor[2]})`)
     }
-    const { rows } = await this.#db.query<ImageListRow>(
-      `
+    const rows = await db<ImageListRow[]>`
       SELECT i.id, i.session_id, i.user_id, u.email, u.name, s.title AS session_title, s.channel,
         i.mime_type, i.width, i.height, i.bytes, i.source_url, i.alt, i.title, i.file_name,
         i.description, i.description_model, i.described_at, i.created_at, i.created_at::text AS created_text
       FROM nasi_image i
       JOIN "user" u ON u.id = i.user_id
       LEFT JOIN nasi_session s ON s.id = i.session_id AND s.user_id = i.user_id
-      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+      WHERE ${allOf(db, where)}
       ORDER BY i.created_at DESC, i.session_id DESC, i.id DESC
-      LIMIT ${param(IMAGES_PAGE + 1)}
-      `,
-      params
-    )
+      LIMIT ${IMAGES_PAGE + 1}`
     const page = rows.slice(0, IMAGES_PAGE)
     const last = page.at(-1)
     return {
@@ -171,20 +169,18 @@ export class ImageService {
 
   /** Whether the image has a row. */
   async exists(sessionId: string, id: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT 1 FROM nasi_image WHERE session_id = $1 AND id = $2", [sessionId, id])
+    const rows = await this.#db`SELECT 1 FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
     return rows.length > 0
   }
 
   /** Removes one image, its object first and then its row; the owner's id, or undefined when there's no such image. */
   async remove(sessionId: string, id: string): Promise<{ userId: string } | undefined> {
-    const { rows } = await this.#db.query<{ user_id: string }>(
-      "SELECT user_id FROM nasi_image WHERE session_id = $1 AND id = $2",
-      [sessionId, id]
-    )
-    const userId = rows[0]?.user_id
+    const [row] = await this.#db<{ user_id: string }[]>`
+      SELECT user_id FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
+    const userId = row?.user_id
     if (!userId) return undefined
     await objects.delete(keyOf({ userId, sessionId, id }))
-    await this.#db.query("DELETE FROM nasi_image WHERE session_id = $1 AND id = $2", [sessionId, id])
+    await this.#db`DELETE FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
     return { userId }
   }
 
@@ -204,12 +200,11 @@ export class ImageService {
 
   /** The hourly sweep: describes up to {@link SWEEP_BATCH} of the oldest images still without a description. */
   async sweep(describer: Describer): Promise<{ described: number; failed: number }> {
-    const { rows } = await this.#db.query<{ session_id: string; id: string }>(
-      `SELECT session_id, id FROM nasi_image
-       WHERE description IS NULL AND describe_attempts < $1 AND created_at < now() - $2 * interval '1 millisecond'
-       ORDER BY created_at LIMIT $3`,
-      [MAX_DESCRIBE_ATTEMPTS, SWEEP_MIN_AGE_MS, SWEEP_BATCH]
-    )
+    const rows = await this.#db<{ session_id: string; id: string }[]>`
+      SELECT session_id, id FROM nasi_image
+      WHERE description IS NULL AND describe_attempts < ${MAX_DESCRIBE_ATTEMPTS}
+        AND created_at < now() - ${SWEEP_MIN_AGE_MS} * interval '1 millisecond'
+      ORDER BY created_at LIMIT ${SWEEP_BATCH}`
     const counts = { described: 0, failed: 0 }
     await eachLimited(rows, DESCRIBE_CONCURRENCY, async row => {
       try {
@@ -225,13 +220,10 @@ export class ImageService {
 
   /** Queues every undescribed image matching `filters` (at most 1000) to be described in the background. */
   async describeMatching(filters: DescribeImagesRequest, describer: Describer): Promise<number> {
-    const params: unknown[] = []
-    const param = (value: unknown) => `$${params.push(value)}`
-    const where = filterSql({ ...filters, undescribed: true }, param)
-    const { rows } = await this.#db.query<{ session_id: string; id: string }>(
-      `SELECT i.session_id, i.id FROM nasi_image i WHERE ${where.join(" AND ")} ORDER BY i.created_at LIMIT ${param(MAX_QUEUED)}`,
-      params
-    )
+    const where = filterSql(this.#db, { ...filters, undescribed: true })
+    const rows = await this.#db<{ session_id: string; id: string }[]>`
+      SELECT i.session_id, i.id FROM nasi_image i WHERE ${allOf(this.#db, where)}
+      ORDER BY i.created_at LIMIT ${MAX_QUEUED}`
     const queued = rows.filter(row => !this.#describing.has(`${row.session_id}/${row.id}`))
     void eachLimited(queued, DESCRIBE_CONCURRENCY, async row => {
       await this.describe(row.session_id, row.id, describer).catch((error: unknown) =>
@@ -242,23 +234,16 @@ export class ImageService {
   }
 
   async #describeOnce(sessionId: string, id: string, describer: Describer): Promise<string | undefined> {
-    const { rows } = await this.#db.query<{ user_id: string; mime_type: string; width: number; height: number }>(
-      "SELECT user_id, mime_type, width, height FROM nasi_image WHERE session_id = $1 AND id = $2",
-      [sessionId, id]
-    )
-    const row = rows[0]
+    const [row] = await this.#db<{ user_id: string; mime_type: string; width: number; height: number }[]>`
+      SELECT user_id, mime_type, width, height FROM nasi_image WHERE session_id = ${sessionId} AND id = ${id}`
     if (!row) return undefined
-    const tried = () =>
-      this.#db.query(
-        "UPDATE nasi_image SET describe_attempts = describe_attempts + 1, describe_tried_at = now() WHERE session_id = $1 AND id = $2",
-        [sessionId, id]
-      )
+    const tried = () => bumpDescribeAttempt(this.#db, row.user_id, sessionId, id)
     const data = await objects.get(keyOf({ userId: row.user_id, sessionId, id }))
     if (!data) {
       await tried()
       return undefined
     }
-    let usage: { model: string; promptTokens?: number; completionTokens?: number; latencyMs: number } | undefined
+    let usage: Parameters<typeof recordDescribeCall>[3] | undefined
     let text: string | undefined
     try {
       text = await describeImage(describer, imageDataUrl({ data, mimeType: row.mime_type }), call => {
@@ -266,47 +251,12 @@ export class ImageService {
       })
     } finally {
       await tried()
-      if (usage)
-        await this.#db.query(
-          `INSERT INTO nasi_model_call (session_id, kind, model, prompt_tokens, completion_tokens, latency_ms)
-           SELECT $1, 'describe', $2, $3, $4, $5 WHERE EXISTS (SELECT 1 FROM nasi_session WHERE id = $1 AND user_id = $6)`,
-          [
-            sessionId,
-            usage.model,
-            usage.promptTokens ?? null,
-            usage.completionTokens ?? null,
-            usage.latencyMs,
-            row.user_id
-          ]
-        )
+      if (usage) await recordDescribeCall(this.#db, row.user_id, sessionId, usage)
     }
     if (!text) return undefined
-    await this.#db.query(
-      `UPDATE nasi_image SET description = $3, description_model = $4, described_at = now()
-       WHERE session_id = $1 AND id = $2`,
-      [sessionId, id, text, describer.model]
-    )
-    await this.#relabel(sessionId, id, { width: row.width, height: row.height }, text)
+    const image = { sessionId, id, width: row.width, height: row.height }
+    await recordDescribedImage(this.#db, row.user_id, image, text, describer.model)
     return text
-  }
-
-  // The image's label in its saved messages, with `description` in place of what it said before (its alt text)
-  async #relabel(sessionId: string, id: string, size: { width: number; height: number }, description: string) {
-    const ref = `${IMAGE_REF_PREFIX}${id}`
-    const { rows } = await this.#db.query<{ id: string; parts: unknown[] }>(
-      "SELECT id, parts FROM nasi_message WHERE session_id = $1 AND parts::text LIKE $2",
-      [sessionId, `%${imageLabel(ref, undefined, "").slice(0, -3)}%`]
-    )
-    await Promise.all(
-      rows.map(async message => {
-        const parts = relabeledParts(message.parts, ref, size, description)
-        if (parts)
-          await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
-            message.id,
-            JSON.stringify(parts)
-          ])
-      })
-    )
   }
 
   /** What the scan finds of each orphan kind right now (see {@link ImageOrphanKind}). */
@@ -340,41 +290,31 @@ export class ImageService {
       const found = (await this.#orphanRows()).filter(item => item.created.getTime() < settled)
       await eachLimited(found, CHECK_CONCURRENCY, async item => {
         if (await objects.exists(item.key)) return
-        const result = await this.#db.query("DELETE FROM nasi_image WHERE session_id = $1 AND id = $2", [
-          item.sessionId,
-          item.id
-        ])
-        removed += result.rowCount ?? 0
+        const result = await this.#db`DELETE FROM nasi_image WHERE session_id = ${item.sessionId} AND id = ${item.id}`
+        removed += result.affectedRows
       })
     } else {
       const sessions = new Map((await this.#unsaved()).map(item => [`${item.userId}/${item.sessionId}`, item]))
       await eachLimited([...sessions.values()], CHECK_CONCURRENCY, async ({ userId, sessionId }) => {
-        const { rows } = await this.#db.query("SELECT 1 FROM nasi_session WHERE id = $1", [sessionId])
-        if (rows.length) return
+        if ((await this.#db`SELECT 1 FROM nasi_session WHERE id = ${sessionId}`).length) return
         await objects.deletePrefix(`${sessionImagePrefix(sessionId, userId)}/`)
-        const result = await this.#db.query("DELETE FROM nasi_image WHERE session_id = $1 AND user_id = $2", [
-          sessionId,
-          userId
-        ])
-        removed += result.rowCount ?? 0
+        const result = await this.#db`DELETE FROM nasi_image WHERE session_id = ${sessionId} AND user_id = ${userId}`
+        removed += result.affectedRows
       })
     }
     return removed
   }
 
   async #hasRow(ref: ImageRef): Promise<boolean> {
-    const { rows } = await this.#db.query(
-      "SELECT 1 FROM nasi_image WHERE user_id = $1 AND session_id = $2 AND id = $3",
-      [ref.userId, ref.sessionId, ref.id]
-    )
+    const rows = await this.#db`
+      SELECT 1 FROM nasi_image WHERE user_id = ${ref.userId} AND session_id = ${ref.sessionId} AND id = ${ref.id}`
     return rows.length > 0
   }
 
   // Objects under images/ that no row describes (a leftover <key>.json from before the table isn't one)
   async #orphanObjects(): Promise<{ key: string; bytes: number; modified: Date }[]> {
-    const { rows } = await this.#db.query<{ user_id: string; session_id: string; id: string }>(
-      "SELECT user_id, session_id, id FROM nasi_image"
-    )
+    const rows = await this.#db<{ user_id: string; session_id: string; id: string }[]>`
+      SELECT user_id, session_id, id FROM nasi_image`
     const known = new Set(rows.map(row => keyOf({ userId: row.user_id, sessionId: row.session_id, id: row.id })))
     const found: { key: string; bytes: number; modified: Date }[] = []
     for await (const object of listObjects("images/"))
@@ -385,18 +325,10 @@ export class ImageService {
 
   // Rows whose object is gone; the never-saved sessions' rows are their own kind
   async #orphanRows(): Promise<(ImageRef & { key: string; bytes: number; created: Date })[]> {
-    const { rows } = await this.#db.query<{
-      user_id: string
-      session_id: string
-      id: string
-      bytes: number
-      created_at: Date
-    }>(
-      `SELECT i.user_id, i.session_id, i.id, i.bytes, i.created_at FROM nasi_image i
-       WHERE EXISTS (SELECT 1 FROM nasi_session s WHERE s.id = i.session_id)
-          OR i.created_at >= now() - $1 * interval '1 millisecond'`,
-      [UNSAVED_AFTER_MS]
-    )
+    const rows = await this.#db<{ user_id: string; session_id: string; id: string; bytes: number; created_at: Date }[]>`
+      SELECT i.user_id, i.session_id, i.id, i.bytes, i.created_at FROM nasi_image i
+      WHERE EXISTS (SELECT 1 FROM nasi_session s WHERE s.id = i.session_id)
+         OR i.created_at >= now() - ${UNSAVED_AFTER_MS} * interval '1 millisecond'`
     const missing: (ImageRef & { key: string; bytes: number; created: Date })[] = []
     await eachLimited(rows, CHECK_CONCURRENCY, async row => {
       const ref = { userId: row.user_id, sessionId: row.session_id, id: row.id }
@@ -408,13 +340,11 @@ export class ImageService {
 
   // Images of sessions that still don't exist a day on: a turn that crashed before its first save
   async #unsaved(): Promise<(ImageRef & { key: string; bytes: number })[]> {
-    const { rows } = await this.#db.query<{ user_id: string; session_id: string; id: string; bytes: number }>(
-      `SELECT i.user_id, i.session_id, i.id, i.bytes FROM nasi_image i
-       WHERE NOT EXISTS (SELECT 1 FROM nasi_session s WHERE s.id = i.session_id)
-         AND i.created_at < now() - $1 * interval '1 millisecond'
-       ORDER BY i.created_at`,
-      [UNSAVED_AFTER_MS]
-    )
+    const rows = await this.#db<{ user_id: string; session_id: string; id: string; bytes: number }[]>`
+      SELECT i.user_id, i.session_id, i.id, i.bytes FROM nasi_image i
+      WHERE NOT EXISTS (SELECT 1 FROM nasi_session s WHERE s.id = i.session_id)
+        AND i.created_at < now() - ${UNSAVED_AFTER_MS} * interval '1 millisecond'
+      ORDER BY i.created_at`
     return rows.map(row => {
       const ref = { userId: row.user_id, sessionId: row.session_id, id: row.id }
       return { ...ref, key: keyOf(ref), bytes: row.bytes }

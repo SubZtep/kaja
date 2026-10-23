@@ -18,7 +18,6 @@ import {
   NasiTurnResponseSchema
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
-import { pool } from "../../core/db"
 import { imageUrl } from "../../core/files"
 import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
@@ -43,7 +42,7 @@ import {
   runUserTurn
 } from "./chat"
 import { createPostgresAbilityStore } from "./pg-abilities"
-import { createPostgresStore } from "./pg-store"
+import { nasiStore } from "./store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
 
@@ -327,7 +326,7 @@ const listRoute = createRoute({
 
 nasiRoutes.openapi(listRoute, async c => {
   const user = sessionUser(c)
-  const sessions = await createPostgresStore(pool, user.id).listSessions()
+  const sessions = await nasiStore(user.id).listSessions()
   return c.json(
     {
       sessions: sessions.map(s => ({
@@ -359,7 +358,7 @@ const getRoute = createRoute({
 nasiRoutes.openapi(getRoute, async c => {
   const user = sessionUser(c)
   const { id } = c.req.valid("param")
-  const row = await createPostgresStore(pool, user.id).loadSession(id)
+  const row = await nasiStore(user.id).loadSession(id)
   if (!row) return notFound(c, "Session not found")
   return c.json({
     id: row.id,
@@ -388,7 +387,7 @@ const deleteRoute = createRoute({
 nasiRoutes.openapi(deleteRoute, async c => {
   const user = sessionUser(c)
   const { id } = c.req.valid("param")
-  const ok = await createPostgresStore(pool, user.id).deleteSession(id)
+  const ok = await nasiStore(user.id).deleteSession(id)
   if (!ok) return notFound(c, "Session not found")
   return c.json({ ok: true }, 200)
 })

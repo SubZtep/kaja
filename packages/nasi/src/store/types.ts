@@ -12,7 +12,7 @@ export type SessionWrite = {
   model: string
   owner: string | null
   session: unknown
-  /** The rendered timeline; a store that keeps none (the cloud's) ignores it. */
+  /** The rendered timeline; append-only, so a save writes the events past what's stored. */
   events: unknown[]
 }
 

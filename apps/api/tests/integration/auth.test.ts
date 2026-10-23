@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { userImagePrefix } from "@kaja/nasi"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { objects } from "../../src/core/files"
 import { emailCode, signInCode, signInWithCode, signUpAndSignIn } from "./helpers"
@@ -35,7 +35,7 @@ describe("authentication flow", () => {
     })
 
     test("records when the user consented", async () => {
-      const { rows } = await pool.query('SELECT consented_at FROM "user" WHERE email = lower($1)', [email])
+      const rows = await sql`SELECT consented_at FROM "user" WHERE email = lower(${email})`
       expect(rows[0].consented_at).toBeInstanceOf(Date)
     })
 
@@ -44,7 +44,7 @@ describe("authentication flow", () => {
       const res = await signInWithCode(refused, { name: "" })
       expect(res.status).toBe(400)
       expect((await res.json()).code).toBe("CONSENT_REQUIRED")
-      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [refused])
+      const { length: rowCount } = await sql`SELECT 1 FROM "user" WHERE email = lower(${refused})`
       expect(rowCount).toBe(0)
     })
 
@@ -56,7 +56,7 @@ describe("authentication flow", () => {
         body: JSON.stringify({ email: passwordEmail, password: "P4$sword", name: "", consent: true })
       })
       expect(res.ok).toBeFalse()
-      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [passwordEmail])
+      const { length: rowCount } = await sql`SELECT 1 FROM "user" WHERE email = lower(${passwordEmail})`
       expect(rowCount).toBe(0)
     })
   })
@@ -143,11 +143,11 @@ describe("authentication flow", () => {
 
       // The emailed code is stored hashed, so a fresh one replaces it
       const identifier = `change-email-otp-${current}-${next}`
-      await pool.query("DELETE FROM verification WHERE identifier = $1", [identifier])
+      await sql`DELETE FROM verification WHERE identifier = ${identifier}`
       const confirm = await emailCode(`${current}-${next}`, "change-email")
       expect((await post("/auth/email-otp/change-email", { newEmail: next, otp: confirm }, token)).status).toBe(200)
 
-      const { rows } = await pool.query('SELECT email, email_verified FROM "user" WHERE email = $1', [next])
+      const rows = await sql`SELECT email, email_verified FROM "user" WHERE email = ${next}`
       expect(rows).toEqual([{ email: next, email_verified: true }])
     })
 
@@ -157,7 +157,7 @@ describe("authentication flow", () => {
       const token = await signUpAndSignIn(current, "")
       expect((await post("/auth/email-otp/request-email-change", { newEmail: next }, token)).status).toBe(400)
       expect((await post("/auth/email-otp/change-email", { newEmail: next, otp: "123456" }, token)).status).toBe(400)
-      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = $1', [current])
+      const { length: rowCount } = await sql`SELECT 1 FROM "user" WHERE email = ${current}`
       expect(rowCount).toBe(1)
     })
   })
@@ -166,7 +166,7 @@ describe("authentication flow", () => {
     test("a freshly signed-in user can delete their own account", async () => {
       const doomed = faker.internet.email().toLowerCase()
       const token = await signUpAndSignIn(doomed, "")
-      const { rows } = await pool.query('SELECT id FROM "user" WHERE email = $1', [doomed])
+      const rows = await sql`SELECT id FROM "user" WHERE email = ${doomed}`
       // Their images in object storage go with them: a session's, and its description beside it
       const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${userImagePrefix(rows[0].id)}/session/abc.json`]
       for (const key of keys) await objects.put(key, new Uint8Array([1]), "image/png")
@@ -176,7 +176,7 @@ describe("authentication flow", () => {
         body: JSON.stringify({})
       })
       expect(res.status).toBe(200)
-      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = $1', [doomed])
+      const { length: rowCount } = await sql`SELECT 1 FROM "user" WHERE email = ${doomed}`
       expect(rowCount).toBe(0)
       for (const key of keys) expect(await objects.exists(key)).toBe(false)
     })

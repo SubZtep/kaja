@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 import type { WidgetConfig, WidgetKey } from "@kaja/schema/api"
 import { widgetConfigSchema } from "@kaja/schema/api"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 
 const KEY_PREFIX = "kwk_"
 
@@ -21,9 +21,9 @@ function hashKey(rawKey: string): string {
 }
 
 export class WidgetService {
-  readonly #db: Pool
+  readonly #db: SQL
 
-  constructor(db: Pool) {
+  constructor(db: SQL) {
     this.#db = db
   }
 
@@ -35,19 +35,16 @@ export class WidgetService {
     config?: WidgetConfig
   ): Promise<WidgetKey & { rawKey: string }> {
     const rawKey = `${KEY_PREFIX}${randomBytes(24).toString("base64url")}`
-    const result = await this.#db.query(
-      `
+    const [row] = await this.#db<WidgetRow[]>`
       INSERT INTO widget (user_id, label, key_prefix, key_hash, allowed_origins, config)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-      `,
-      [userId, label, rawKey.slice(0, 12), hashKey(rawKey), allowedOrigins, JSON.stringify(config ?? {})]
-    )
-    return { ...this.#rowToWidgetKey(result.rows[0]), rawKey }
+      VALUES (${userId}, ${label}, ${rawKey.slice(0, 12)}, ${hashKey(rawKey)}, ${allowedOrigins},
+              ${this.#db.json(config ?? {})})
+      RETURNING *`
+    return { ...this.#rowToWidgetKey(row!), rawKey }
   }
 
   async listKeys(userId: string): Promise<WidgetKey[]> {
-    const { rows } = await this.#db.query(`SELECT * FROM widget WHERE user_id = $1 ORDER BY created_at`, [userId])
+    const rows = await this.#db<WidgetRow[]>`SELECT * FROM widget WHERE user_id = ${userId} ORDER BY created_at`
     return rows.map(row => this.#rowToWidgetKey(row))
   }
 
@@ -57,27 +54,20 @@ export class WidgetService {
     id: string,
     patch: { label?: string; allowedOrigins?: string[]; config?: WidgetConfig }
   ): Promise<WidgetKey | null> {
-    const columns: Record<string, unknown> = {}
-    if (patch.label !== undefined) columns.label = patch.label
-    if (patch.allowedOrigins !== undefined) columns.allowed_origins = patch.allowedOrigins
-    if (patch.config !== undefined) columns.config = JSON.stringify(patch.config)
-    const entries = Object.entries(columns)
-    if (entries.length === 0) return (await this.listKeys(userId)).find(key => key.id === id) ?? null
-
-    const assignments = entries.map(([column], index) => `${column} = $${index + 3}`).join(", ")
-    const { rows } = await this.#db.query(
-      `UPDATE widget SET ${assignments} WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, userId, ...entries.map(([, value]) => value)]
-    )
-    return rows[0] ? this.#rowToWidgetKey(rows[0]) : null
+    // A field left out keeps its value
+    const [row] = await this.#db<WidgetRow[]>`
+      UPDATE widget SET
+        label = COALESCE(${patch.label ?? null}, label),
+        allowed_origins = COALESCE(${patch.allowedOrigins ?? null}, allowed_origins),
+        config = COALESCE(${patch.config === undefined ? null : this.#db.json(patch.config)}, config)
+      WHERE id = ${id} AND user_id = ${userId}
+      RETURNING *`
+    return row ? this.#rowToWidgetKey(row) : null
   }
 
   async revokeKey(userId: string, id: string): Promise<boolean> {
-    const result = await this.#db.query(`UPDATE widget SET enabled = false WHERE id = $1 AND user_id = $2`, [
-      id,
-      userId
-    ])
-    return result.rowCount !== null && result.rowCount > 0
+    const result = await this.#db`UPDATE widget SET enabled = false WHERE id = ${id} AND user_id = ${userId}`
+    return result.affectedRows > 0
   }
 
   /**
@@ -87,11 +77,8 @@ export class WidgetService {
   async resolveByRawKey(
     rawKey: string
   ): Promise<{ id: string; userId: string; allowedOrigins: string[]; config: WidgetConfig } | null> {
-    const { rows } = await this.#db.query(
-      `SELECT id, user_id, allowed_origins, config FROM widget WHERE key_hash = $1 AND enabled`,
-      [hashKey(rawKey)]
-    )
-    const row = rows[0]
+    const [row] = await this.#db<{ id: string; user_id: string; allowed_origins: string[]; config: unknown }[]>`
+      SELECT id, user_id, allowed_origins, config FROM widget WHERE key_hash = ${hashKey(rawKey)} AND enabled`
     if (!row) return null
     return {
       id: row.id,
@@ -102,7 +89,7 @@ export class WidgetService {
   }
 
   async touchLastUsed(id: string): Promise<void> {
-    await this.#db.query(`UPDATE widget SET last_used_at = NOW() WHERE id = $1`, [id])
+    await this.#db`UPDATE widget SET last_used_at = NOW() WHERE id = ${id}`
   }
 
   #rowToWidgetKey(row: WidgetRow): WidgetKey {

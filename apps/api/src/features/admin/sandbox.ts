@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { type AdminSandboxEntry, adminSandboxResponseSchema, sandboxSamplesResponseSchema } from "@kaja/schema/api"
-import { pool } from "../../core/db"
+import { sql } from "../../core/db"
 import { sandboxService } from "../../services"
 import type { RouteRegProps } from "../../types"
 import { tunnelFor, userForPseudonym } from "../sandbox"
@@ -68,10 +68,8 @@ export function registerAdminSandbox(app: RouteRegProps) {
       if (entry.sandbox.ownerId) ids.add(entry.sandbox.ownerId)
       for (const server of entry.stats?.servers ?? []) ids.add(server.user)
     }
-    const { rows } = await pool.query<{ id: string; email: string }>(
-      'SELECT id::text, email FROM "user" WHERE id::text = ANY($1::text[])',
-      [[...ids]]
-    )
+    const rows = await sql<{ id: string; email: string }[]>`
+      SELECT id::text, email FROM "user" WHERE id::text = ANY(${[...ids]}::text[])`
     return c.json({ sandboxes: entries, emails: Object.fromEntries(rows.map(row => [row.id, row.email])) }, 200)
   })
 }

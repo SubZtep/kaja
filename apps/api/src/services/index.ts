@@ -1,4 +1,4 @@
-import { pool } from "../core/db"
+import { sql } from "../core/db"
 import { env } from "../core/env"
 import { AbilityService } from "./ability"
 import { ImageService } from "./image"
@@ -10,12 +10,12 @@ import { StatsService } from "./stats"
 import { TelegramLinkService } from "./telegram-link"
 import { WidgetService } from "./widget"
 
-export const marketplaceService = new MarketplaceService(pool, { repo: env.MARKETPLACE_REPO, ref: env.MARKETPLACE_REF })
-export const modelService = new ModelService(pool)
-export const secretService = new SecretService(pool, env.USER_SECRET_KEY)
-export const abilityService = new AbilityService(pool, secretService)
-export const imageService = new ImageService(pool)
-export const sandboxService = new SandboxService(pool)
-export const statsService = new StatsService(pool)
-export const telegramLinkService = new TelegramLinkService(pool)
-export const widgetService = new WidgetService(pool)
+export const marketplaceService = new MarketplaceService(sql, { repo: env.MARKETPLACE_REPO, ref: env.MARKETPLACE_REF })
+export const modelService = new ModelService(sql)
+export const secretService = new SecretService(sql, env.USER_SECRET_KEY)
+export const abilityService = new AbilityService(sql, secretService)
+export const imageService = new ImageService(sql)
+export const sandboxService = new SandboxService(sql)
+export const statsService = new StatsService(sql)
+export const telegramLinkService = new TelegramLinkService(sql)
+export const widgetService = new WidgetService(sql)

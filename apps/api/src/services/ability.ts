@@ -14,7 +14,7 @@ import {
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
 import { type AbilityKey, type AbilityKeyNeed, DEFAULT_PERSONA } from "@kaja/schema/api"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
 import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
 import type { SecretService } from "./secret"
@@ -49,8 +49,6 @@ export function cloudMcpProblem(ability: McpAbility): string | undefined {
 /** What a stdio ability's catalog entry names as where its calls go: whichever MCP sandbox the user's turn runs in. */
 export const SANDBOX_DOMAIN = "sandbox"
 
-// Offered in the cloud: still in the marketplace, and nothing that needs a shell.
-const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
 
 /**
@@ -111,12 +109,17 @@ function domainOf(keyed: KeyedAbility): string {
 }
 
 export class AbilityService {
-  readonly #db: Pool
+  readonly #db: SQL
   readonly #secrets: SecretService
 
-  constructor(db: Pool, secrets: SecretService) {
+  constructor(db: SQL, secrets: SecretService) {
     this.#db = db
     this.#secrets = secrets
+  }
+
+  // Offered in the cloud: still in the marketplace, and nothing that needs a shell
+  get #available() {
+    return this.#db`p.removed_at IS NULL AND NOT p.has_scripts`
   }
 
   /**
@@ -133,9 +136,9 @@ export class AbilityService {
    */
   async listServiceKeys(): Promise<AbilityKey[]> {
     const saved = await this.#serviceKeyNames()
-    const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.description, p.files FROM ability p WHERE ${AVAILABLE} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
-    )
+    const rows = await this.#db<(ManifestRow & { description: string })[]>`
+      SELECT p.type, p.name, p.description, p.files FROM ability p
+      WHERE ${this.#available} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
     const keys = new Map<string, AbilityKey>()
     for (const row of rows) {
       const keyed = keys.has(row.name) ? undefined : this.#usable(row)
@@ -154,9 +157,9 @@ export class AbilityService {
 
   /** Every available skill, with its files: a persona's `abilities` decides which of them a turn uses. */
   async skills(): Promise<CloudSkill[]> {
-    const { rows } = await this.#db.query(
-      `SELECT p.name, p.description, p.files FROM ability p WHERE p.type = 'skill' AND ${AVAILABLE} ORDER BY p.name`
-    )
+    const rows = await this.#db<{ name: string; description: string; files: Record<string, string> }[]>`
+      SELECT p.name, p.description, p.files FROM ability p
+      WHERE p.type = 'skill' AND ${this.#available} ORDER BY p.name`
     return rows.map(row => ({
       name: row.name,
       description: row.description,
@@ -167,9 +170,8 @@ export class AbilityService {
 
   /** Every persona in the catalog, `default` first (the built-in one until a sync brings it): every user's roster. */
   async personaCatalog(): Promise<Persona[]> {
-    const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = 'persona' AND ${AVAILABLE} ORDER BY p.name`
-    )
+    const rows = await this.#db<ManifestRow[]>`
+      SELECT p.type, p.name, p.files FROM ability p WHERE p.type = 'persona' AND ${this.#available} ORDER BY p.name`
     return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
   }
 
@@ -178,9 +180,8 @@ export class AbilityService {
    * warning.
    */
   async datasets(): Promise<Map<string, Dataset>> {
-    const { rows } = await this.#db.query(
-      `SELECT p.name, p.files FROM ability p WHERE p.type = 'dataset' AND ${AVAILABLE} ORDER BY p.name`
-    )
+    const rows = await this.#db<{ name: string; files: Record<string, string> }[]>`
+      SELECT p.name, p.files FROM ability p WHERE p.type = 'dataset' AND ${this.#available} ORDER BY p.name`
     const datasets = new Map<string, Dataset>()
     for (const row of rows) {
       try {
@@ -239,7 +240,7 @@ export class AbilityService {
   }
 
   async #isKeyedAbility(name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT 1 FROM ability WHERE type IN ('tool', 'mcp') AND name = $1", [name])
+    const rows = await this.#db`SELECT 1 FROM ability WHERE type IN ('tool', 'mcp') AND name = ${name}`
     return rows.length > 0
   }
 
@@ -254,19 +255,16 @@ export class AbilityService {
    * when it has none here.
    */
   async #keyedByName(name: string): Promise<KeyedAbility | undefined> {
-    const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type IN ('tool', 'mcp') AND p.name = $1 AND ${AVAILABLE} ORDER BY p.type DESC`,
-      [name]
-    )
+    const rows = await this.#db<ManifestRow[]>`
+      SELECT p.type, p.name, p.files FROM ability p
+      WHERE p.type IN ('tool', 'mcp') AND p.name = ${name} AND ${this.#available} ORDER BY p.type DESC`
     const parts = rows.flatMap(row => this.#usable(row) ?? [])
     return parts.find(part => part.ability.auth.type === "apiKey") ?? parts[0]
   }
 
   async #keyedOfType(type: "tool" | "mcp"): Promise<KeyedAbility[]> {
-    const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = $1 AND ${AVAILABLE} ORDER BY p.name`,
-      [type]
-    )
+    const rows = await this.#db<ManifestRow[]>`
+      SELECT p.type, p.name, p.files FROM ability p WHERE p.type = ${type} AND ${this.#available} ORDER BY p.name`
     return rows.flatMap(row => this.#usable(row) ?? [])
   }
 

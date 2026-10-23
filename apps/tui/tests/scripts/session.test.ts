@@ -28,24 +28,25 @@ function tempDir(): string {
 function insertSession(dbPath: string, id: string, owner: string | null, title: string, updatedAt: string) {
   const db = new Database(dbPath)
   db.query(
-    `INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner)
-     VALUES ($id, $createdAt, $updatedAt, 'kaja', 'stub-model', $title, $owner)`
+    `INSERT INTO nasi_session (id, user_id, created_at, updated_at, persona, model, title, owner, channel)
+     VALUES ($id, '00000000-0000-7000-8000-000000000001', $createdAt, $updatedAt, 'kaja', 'stub-model', $title, $owner,
+             'local')`
   ).run({ $id: id, $createdAt: updatedAt, $updatedAt: updatedAt, $title: title, $owner: owner })
   db.close()
 }
 
-test("openReadonly leaves a missing file missing and rejects writes", () => {
+test("openReadonly leaves a missing file missing and rejects writes", async () => {
   const dir = tempDir()
   const missing = join(dir, "missing.sqlite")
   expect(() => openReadonly(missing)).toThrow(`No database at ${missing}.`)
   expect(existsSync(missing)).toBe(false)
 
   const dbPath = join(dir, "memory.sqlite")
-  createSqliteStore(dbPath)
+  await createSqliteStore(dbPath)
   const db = openReadonly(dbPath)
   expect(() =>
     db.run(
-      "INSERT INTO notes (owner, key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount) VALUES ('', 'k', 'c', 'low', '[]', 0, '', '', 0)"
+      "INSERT INTO nasi_note (user_id, owner, key, content, importance, tags, sticky, created_at, last_used_at, use_count) VALUES ('u', '', 'k', 'c', 'low', '[]', 0, '', '', 0)"
     )
   ).toThrow()
   db.close()
@@ -54,7 +55,7 @@ test("openReadonly leaves a missing file missing and rejects writes", () => {
 test("list, prefix match, and dump cover the terminal session and leave secrets out", async () => {
   const dir = tempDir()
   const dbPath = join(dir, "memory.sqlite")
-  const store = createSqliteStore(dbPath)
+  const store = await createSqliteStore(dbPath)
   const id = await store.createSession({
     persona: "kaja",
     model: "test-model",
@@ -213,7 +214,7 @@ test("list, prefix match, and dump cover the terminal session and leave secrets 
 
 test("the meta table escapes backslashes and pipes, so a value can't break out of its cell", async () => {
   const dbPath = join(tempDir(), "memory.sqlite")
-  const store = createSqliteStore(dbPath)
+  const store = await createSqliteStore(dbPath)
   const id = await store.createSession({
     persona: "kaja",
     model: "a|b\\",

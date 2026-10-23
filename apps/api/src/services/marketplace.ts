@@ -15,7 +15,7 @@ import {
 } from "@kaja/nasi"
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import type { Pool } from "pg"
+import type { SQL } from "bun"
 import { withLock } from "../core/lock"
 import { reportError } from "../core/report"
 import { cloudMcpProblem } from "./ability"
@@ -31,19 +31,19 @@ export type MarketplaceSource = { repo: string; ref: string }
  * moved. Abilities are never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
 export class MarketplaceService {
-  readonly #db: Pool
+  readonly #db: SQL
   readonly #source: MarketplaceSource
   readonly #fetch: typeof fetch
 
-  constructor(db: Pool, source: MarketplaceSource, fetchImpl: typeof fetch = fetch) {
+  constructor(db: SQL, source: MarketplaceSource, fetchImpl: typeof fetch = fetch) {
     this.#db = db
     this.#source = source
     this.#fetch = fetchImpl
   }
 
   async status(): Promise<MarketplaceSyncStatus> {
-    const { rows } = await this.#db.query("SELECT commit, synced_at, error FROM marketplace_sync WHERE id = 1")
-    const row = rows[0]
+    const [row] = await this.#db<{ commit: string | null; synced_at: Date | null; error: string | null }[]>`
+      SELECT commit, synced_at, error FROM marketplace_sync WHERE id = 1`
     return {
       commit: row?.commit ?? null,
       syncedAt: row?.synced_at ? new Date(row.synced_at) : null,
@@ -75,10 +75,9 @@ export class MarketplaceService {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         reportError("Marketplace sync failed", error)
-        await this.#db.query(
-          `INSERT INTO marketplace_sync (id, error) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET error = EXCLUDED.error`,
-          [message]
-        )
+        await this.#db`
+          INSERT INTO marketplace_sync (id, error) VALUES (1, ${message})
+          ON CONFLICT (id) DO UPDATE SET error = EXCLUDED.error`
         throw error
       }
     })
@@ -107,13 +106,9 @@ export class MarketplaceService {
       ...(await readMcpAbilities(marketplaceDir))
     )
 
-    const client = await this.#db.connect()
-    try {
-      await client.query("BEGIN")
-      const { rows: existing } = await client.query(
-        "SELECT type, name, content_hash, removed_at FROM ability WHERE type = ANY($1)",
-        [SYNCED_TYPES]
-      )
+    return this.#db.begin(async tx => {
+      const existing = await tx<{ type: string; name: string; content_hash: string; removed_at: Date | null }[]>`
+        SELECT type, name, content_hash, removed_at FROM ability WHERE type = ANY(${SYNCED_TYPES}::text[])`
       const before = new Map(existing.map(row => [`${row.type}:${row.name}`, row]))
       const added: string[] = []
       const updated: string[] = []
@@ -124,10 +119,10 @@ export class MarketplaceService {
         if (!previous) added.push(reportName(bundle.type, bundle.name))
         else if (previous.content_hash !== hash || previous.removed_at)
           updated.push(reportName(bundle.type, bundle.name))
-        await client.query(
-          `
+        await tx`
           INSERT INTO ability (type, name, description, files, has_scripts, content_hash, commit)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          VALUES (${bundle.type}, ${bundle.name}, ${bundle.description}, ${tx.json(bundle.files)}, ${bundle.hasScripts},
+                  ${hash}, ${commit})
           ON CONFLICT (type, name) DO UPDATE SET
             description = EXCLUDED.description,
             files = EXCLUDED.files,
@@ -138,32 +133,20 @@ export class MarketplaceService {
             updated_at = CASE
               WHEN ability.content_hash <> EXCLUDED.content_hash OR ability.removed_at IS NOT NULL THEN NOW()
               ELSE ability.updated_at
-            END
-          `,
-          [bundle.type, bundle.name, bundle.description, JSON.stringify(bundle.files), bundle.hasScripts, hash, commit]
-        )
+            END`
       }
 
       const removed: string[] = []
       for (const type of SYNCED_TYPES) {
-        const { rows: gone } = await client.query(
-          `
+        const kept = bundles.filter(bundle => bundle.type === type).map(bundle => bundle.name)
+        const gone = await tx<{ name: string }[]>`
           UPDATE ability SET removed_at = NOW(), updated_at = NOW()
-          WHERE type = $1 AND removed_at IS NULL AND NOT (name = ANY($2))
-          RETURNING name
-          `,
-          [type, bundles.filter(bundle => bundle.type === type).map(bundle => bundle.name)]
-        )
-        removed.push(...gone.map(row => reportName(type, row.name as string)))
+          WHERE type = ${type} AND removed_at IS NULL AND NOT (name = ANY(${kept}::text[]))
+          RETURNING name`
+        removed.push(...gone.map(row => reportName(type, row.name)))
       }
-      await client.query("COMMIT")
       return { added, updated, removed }
-    } catch (error) {
-      await client.query("ROLLBACK")
-      throw error
-    } finally {
-      client.release()
-    }
+    })
   }
 
   /** The branch's head commit, via GitHub's sha-only response (one small, unauthenticated call). */
@@ -203,13 +186,9 @@ export class MarketplaceService {
   }
 
   async #recordSuccess(commit: string) {
-    await this.#db.query(
-      `
-      INSERT INTO marketplace_sync (id, commit, synced_at, error) VALUES (1, $1, NOW(), NULL)
-      ON CONFLICT (id) DO UPDATE SET commit = EXCLUDED.commit, synced_at = EXCLUDED.synced_at, error = NULL
-      `,
-      [commit]
-    )
+    await this.#db`
+      INSERT INTO marketplace_sync (id, commit, synced_at, error) VALUES (1, ${commit}, NOW(), NULL)
+      ON CONFLICT (id) DO UPDATE SET commit = EXCLUDED.commit, synced_at = EXCLUDED.synced_at, error = NULL`
   }
 }
 

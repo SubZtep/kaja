@@ -9,7 +9,7 @@ import {
   startHttpMcpFixture
 } from "../../../../packages/nasi/tests/fixtures/mcp-http-server"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
+import { sql } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiDescriberResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
@@ -152,7 +152,7 @@ describe("MCP servers in the cloud", () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-mcp-test-"))
     token = await signUpAndSignIn(faker.internet.email(), "Mcp")
     adminToken = await signUpAndSignIn(adminEmail, "Mcp Admin")
-    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
+    await sql`UPDATE "user" SET role = 'admin' WHERE email = ${adminEmail}`
     secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
     // With a sender set the guard leaves DNS to it; this one is the faked fetch, which hands the fake host to the local fixture.
@@ -167,12 +167,12 @@ describe("MCP servers in the cloud", () => {
     setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
     for (const name of [things, `stdio-keyed-${tag}`]) await secretService.deleteService(`ability:${name}`)
-    await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
-    await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    await sql`DELETE FROM "user" WHERE email = ${adminEmail}`
+    await sql`DELETE FROM ability WHERE name LIKE ${`%-${tag}`}`
     // The fixture's default persona too, so later files get the built-in one again.
-    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
+    await sql`DELETE FROM ability WHERE type = 'persona' AND name = 'default'`
     // The sync below marked the real marketplace's abilities removed; forget the stored commit so the next real sync re-applies it.
-    await pool.query("DELETE FROM marketplace_sync")
+    await sql`DELETE FROM marketplace_sync`
     rmSync(base, { recursive: true, force: true })
   })
 

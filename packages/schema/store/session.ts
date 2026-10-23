@@ -69,7 +69,7 @@ export const PersistedSessionSchema = z.object({
   // Owner: null = terminal (also legacy rows); telegram:<user id> = one Telegram user's sessions.
   owner: z.string().nullable().default(null),
   session: StoredConversationSchema,
-  /** Empty when the store keeps no timeline (the cloud's Postgres store never reads one back). */
+  /** The rendered timeline, in order; empty for a session saved without one (the memory store's, say). */
   events: z.array(z.looseObject({ type: z.string() }))
 })
 
