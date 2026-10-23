@@ -63,5 +63,5 @@ export const SandboxEnvSchema = z.object({
     .describe(
       "HTTP proxy the checked traffic (the browsers' and cloud tool requests') goes out through (CONNECT to the checked IP, any port); unset connects directly"
     )
-    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" })
+    .meta({ secret: true })
 })

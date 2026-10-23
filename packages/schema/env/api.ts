@@ -1,19 +1,23 @@
 import * as z from "zod"
 import { bool, positiveInt, trimmed, url } from "./helpers"
 
+const devAuthSecret = "dev_better_auth_secret_not_for_production"
+
 const apiEnvFields = z.object({
   NODE_ENV: trimmed
     .optional()
     .describe('Node environment; "development" enables API docs and Better Auth\'s OpenAPI plugin'),
   PORT: positiveInt.default(3001).describe("Port the API server listens on"),
-  CORS_ORIGIN: url.describe(
-    "Origin allowed for browser requests (also Better Auth's trusted origin and email callback base)"
-  ),
-  DATABASE_URL: url.describe("PostgreSQL connection string"),
+  CORS_ORIGIN: url
+    .describe("Origin allowed for browser requests (also Better Auth's trusted origin and email callback base)")
+    .meta({ example: "http://localhost:3000" }),
+  DATABASE_URL: url
+    .describe("PostgreSQL connection string")
+    .meta({ example: "postgresql://testuser:testpass@localhost:5433/kaja" }),
   BETTER_AUTH_SECRET: trimmed
     .min(32)
     .describe("Better Auth signing secret")
-    .meta({ secret: true, section: "Security" }),
+    .meta({ secret: true, example: devAuthSecret, section: "Security" }),
   SSR_SECRET: trimmed
     .min(32)
     .optional()
@@ -53,7 +57,7 @@ const apiEnvFields = z.object({
 
   SMTP_HOST: trimmed.optional().describe("SMTP server hostname"),
   SMTP_PORT: positiveInt.optional().describe("SMTP server port").meta({ example: "1025" }),
-  SMTP_SECURE: bool.optional().describe("Use TLS for the SMTP connection"),
+  SMTP_SECURE: bool.default(false).describe("Use TLS for the SMTP connection"),
   SMTP_USER: trimmed.optional().describe("SMTP auth username"),
   SMTP_PASS: trimmed.optional().describe("SMTP auth password").meta({ secret: true }),
   CI: trimmed.optional().describe("Set by the CI runner; skips SMTP verification on boot when present"),
@@ -69,7 +73,7 @@ const apiEnvFields = z.object({
     .optional()
     .describe("Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile"),
   RATE_LIMIT_ENABLED: bool
-    .optional()
+    .default(true)
     .describe("Set false to disable global + auth + nasi/widget turn rate limiters")
     .meta({ section: "Rate Limiting" }),
   RATE_LIMIT_WINDOW_MS: positiveInt
@@ -196,4 +200,6 @@ export const ApiEnvSchema = apiEnvFields.superRefine((env, ctx) => {
     ctx.addIssue({ code: "custom", path: ["USER_SECRET_KEY"], message: "required in production" })
   if (env.CONFIG_API_TOKEN === "kaja")
     ctx.addIssue({ code: "custom", path: ["CONFIG_API_TOKEN"], message: "still the .env.example placeholder" })
+  if (env.BETTER_AUTH_SECRET === devAuthSecret)
+    ctx.addIssue({ code: "custom", path: ["BETTER_AUTH_SECRET"], message: "still the .env.example placeholder" })
 })

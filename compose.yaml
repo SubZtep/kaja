@@ -70,8 +70,6 @@ services:
       SMTP_HOST: mail
       STORAGE_ENDPOINT: http://storage:9000
       STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
-      CORS_ORIGIN: http://localhost:3000
-      BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production
       SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production
       NODE_ENV: development
     networks:

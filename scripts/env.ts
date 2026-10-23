@@ -5,53 +5,39 @@ import { type FieldInfo, inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
 
-function renderLine(field: FieldInfo): string {
+/** Required fields are active, optional ones commented out; an optional field with no value to show is left out. */
+function renderLine(field: FieldInfo): string | undefined {
   const comment = field.description ? `   # ${field.description}` : ""
 
-  if (field.devDefault && field.example !== undefined) {
+  if (!field.isOptional) {
+    if (field.example === undefined) throw new Error(`${field.key} is required but has no example`)
     return `${field.key}=${field.example}${comment}`
   }
 
-  if (field.secret) {
-    // An example shows the value's shape (a proxy URL, say), so it isn't a random key to generate.
-    if (field.example !== undefined) return `# ${field.key}=${field.example}${comment}`
-    const hint = comment
-      ? `${comment} (generate with: openssl rand -base64 32)`
-      : " # generate with: openssl rand -base64 32"
-    return `# ${field.key}=${hint}`
-  }
+  // A devDefault is optional but needed by a fresh checkout's dev, tests and CI.
+  if (field.devDefault && field.example !== undefined) return `${field.key}=${field.example}${comment}`
 
-  if (field.defaultValue !== undefined) {
-    return `# ${field.key}=${field.defaultValue}${comment}`
-  }
-
-  if (field.isOptional) {
-    const value = field.example ?? ""
-    return `# ${field.key}=${value}${comment}`
-  }
-
-  if (field.example !== undefined) {
-    return `${field.key}=${field.example}${comment}`
-  }
-
-  return `${field.key}=${comment} (required)`
+  const value = field.defaultValue ?? field.example
+  if (value !== undefined) return `# ${field.key}=${value}${comment}`
 }
 
 function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>): string {
   const fields = inspectFields(schema)
-  const sections = new Map<string | undefined, FieldInfo[]>()
+  const sections = new Map<string | undefined, string[]>()
   for (const field of fields) {
+    const line = renderLine(field)
+    if (line === undefined) continue
     const bucket = sections.get(field.section) ?? []
-    bucket.push(field)
+    bucket.push(line)
     sections.set(field.section, bucket)
   }
 
   const blocks: string[] = []
   const unsectioned = sections.get(undefined)
-  if (unsectioned) blocks.push(unsectioned.map(renderLine).join("\n"))
-  for (const [section, sectionFields] of sections) {
+  if (unsectioned) blocks.push(unsectioned.join("\n"))
+  for (const [section, sectionLines] of sections) {
     if (section === undefined) continue
-    blocks.push(`# ${section}\n${sectionFields.map(renderLine).join("\n")}`)
+    blocks.push(`# ${section}\n${sectionLines.join("\n")}`)
   }
 
   return `${blocks.join("\n\n")}\n`
