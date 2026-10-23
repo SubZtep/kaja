@@ -1,4 +1,5 @@
 import {
+  ASK_USER_OPTIONS_INSTRUCTION,
   ASK_USER_TOOL,
   createGuardedFetch,
   createOpenAIClient,
@@ -155,7 +156,7 @@ const CLOUD_ASK_USER_INSTRUCTION =
   `means no courtesy closers like "Would you like...?" or "Let me know ` +
   `if..." — the conversation is over the moment you send plain text, so ` +
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
-  `just state the result and stop.`
+  `just state the result and stop. ${ASK_USER_OPTIONS_INSTRUCTION}`
 
 /** Points dataset_info and the "About the user" section at the marketplace's datasets in the ability table. */
 export function registerAbilityDatasets() {

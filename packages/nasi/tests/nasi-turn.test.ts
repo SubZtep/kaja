@@ -71,6 +71,51 @@ test("ask_user tool yields needs_input and the next message binds as a tool resu
   expect(second.message).toBe("Noted, blue.")
 })
 
+test("ask_user's options reach the client with the question", async () => {
+  const nasi = await open([
+    {
+      content: null,
+      tool_calls: [
+        {
+          id: "call_1",
+          type: "function",
+          function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+        }
+      ]
+    }
+  ])
+
+  const first = await nasi.turnBuffered({ message: "hi" })
+  expect(first.status).toBe("needs_input")
+  expect(first.steps).toContainEqual({ type: "ask_user", question: "Proceed?", options: ["Yes", "No"], fromTool: true })
+})
+
+test("options that don't fit are sent back to the model to fix instead of pausing the turn", async () => {
+  const sent: SentMessage[][] = []
+  const nasi = await open(
+    [
+      {
+        content: null,
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes"] }) }
+          }
+        ]
+      },
+      { content: "Fixed." }
+    ],
+    undefined,
+    sent
+  )
+
+  const first = await nasi.turnBuffered({ message: "hi" })
+  expect(first.status).toBe("completed")
+  expect(sent[1]!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_1" })
+  expect(String(sent[1]!.at(-1)!.content)).toContain("Invalid arguments for ask_user")
+})
+
 test("personaId on the request re-resolves the active persona every turn, including on a resumed session", async () => {
   const personaA = { id: "a", label: "A", instructions: "You are A" }
   const personaB = { id: "b", label: "B", instructions: "You are B" }

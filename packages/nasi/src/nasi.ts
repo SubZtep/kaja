@@ -107,7 +107,12 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
     case "tool_call":
       return { type: "tool_call", name: event.name, arguments: event.arguments }
     case "ask_user":
-      return { type: "ask_user", question: event.question, ...(event.fromTool ? { fromTool: true } : {}) }
+      return {
+        type: "ask_user",
+        question: event.question,
+        ...(event.options ? { options: event.options } : {}),
+        ...(event.fromTool ? { fromTool: true } : {})
+      }
     case "persona_switch":
       return { type: "persona_switch", personaId: event.personaId, label: event.label }
     case "confirm_command":

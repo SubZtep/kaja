@@ -102,6 +102,7 @@ export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export {
   applyPersonaToMessages,
+  ASK_USER_OPTIONS_INSTRUCTION,
   buildSystemPrompt,
   replyLanguageInstructionFor,
   TELEGRAM_CHANNEL_INSTRUCTION

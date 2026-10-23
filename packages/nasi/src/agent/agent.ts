@@ -162,6 +162,16 @@ export const askUserTool = tool({
         "Optional short reaction to their previous answer, shown separately from " +
           "the question (e.g. 'Not alive — got it.'). Never repeat or preview the " +
           "question itself here."
+      ),
+    options: z
+      .array(z.string().min(1).max(100))
+      .min(2)
+      .max(6)
+      .optional()
+      .describe(
+        "Optional short answers to offer as shortcuts when the reply is one of a few choices " +
+          "(e.g. ['Yes', 'No']). The human may still type anything else, and the question must " +
+          "make sense without them: some screens don't show them."
       )
   }),
   execute: async () => {
@@ -339,7 +349,7 @@ export type AgentEvent =
    * `fromTool` is set when the model called the ask_user tool; a plain reply ending in "?" arrives as ask_user too,
    * without it.
    */
-  | { type: "ask_user"; question: string; note?: string; fromTool?: true }
+  | { type: "ask_user"; question: string; note?: string; options?: string[]; fromTool?: true }
   | { type: "confirm_command"; command: string; description: string }
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
