@@ -1,6 +1,6 @@
-Thin bell ding 2 by Khrinx -- https://freesound.org/s/333695/ -- License: Creative Commons 0
-IseMagic.mp3 by GMLH -- https://freesound.org/people/GMLH/sounds/628548/ -- License: Attribution NonCommercial 4.0
-Whoosh away by jriches1 -- https://freesound.org/people/jriches1/sounds/817959/ -- License: Creative Commons 0
-Sadiquecat MKE600 - Laughing - Nervous laugh Hehe by Sadiquecat -- https://freesound.org/people/Sadiquecat/sounds/818171/ -- License: Creative Commons 0
-Interface Error 7.wav by F.M.Audio -- https://freesound.org/people/F.M.Audio/sounds/662346/ -- License: Attribution 4.0
-Hitting the enter key on a keyboard by pfranzen -- https://freesound.org/people/pfranzen/sounds/391310/ -- License: Attribution 4.0
+Thin bell ding 2 by Khrinx -- https://freesound.org/s/333695/ -- License: Creative Commons 0 -- bell.wav (converted to mono 22.05 kHz 16-bit WAV)
+IseMagic.mp3 by GMLH -- https://freesound.org/people/GMLH/sounds/628548/ -- License: Attribution NonCommercial 4.0 -- magic.wav (converted to mono 22.05 kHz 16-bit WAV)
+Whoosh away by jriches1 -- https://freesound.org/people/jriches1/sounds/817959/ -- License: Creative Commons 0 -- wind.wav (converted to mono 22.05 kHz 16-bit WAV)
+Sadiquecat MKE600 - Laughing - Nervous laugh Hehe by Sadiquecat -- https://freesound.org/people/Sadiquecat/sounds/818171/ -- License: Creative Commons 0 -- hehe.wav (converted to mono 22.05 kHz 16-bit WAV)
+Interface Error 7.wav by F.M.Audio -- https://freesound.org/people/F.M.Audio/sounds/662346/ -- License: Attribution 4.0 -- error.wav (converted to mono 22.05 kHz 16-bit WAV)
+Hitting the enter key on a keyboard by pfranzen -- https://freesound.org/people/pfranzen/sounds/391310/ -- License: Attribution 4.0 -- keyboard.wav (converted to mono 22.05 kHz 16-bit WAV)
