@@ -102,3 +102,28 @@ export function fakeChatClient(
     }
   }
 }
+
+/** A chat client whose only round asks the user "Proceed?" with the options Yes and No. */
+export function askUserChatClient() {
+  const message = {
+    role: "assistant",
+    content: null,
+    tool_calls: [
+      {
+        id: "call_1",
+        type: "function",
+        function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+      }
+    ]
+  }
+  return {
+    chat: {
+      completions: {
+        stream: () => ({
+          async *[Symbol.asyncIterator]() {},
+          finalChatCompletion: async () => ({ choices: [{ message }] })
+        })
+      }
+    }
+  }
+}

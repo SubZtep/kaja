@@ -6,6 +6,13 @@ export function createVisitorId(): string {
   return randomUUIDv7()
 }
 
+/** The shortcuts the agent offers with the question this turn ended on; none when it asked without any or didn't ask. */
+export function offeredOptions(turn: NasiTurnResponse): string[] {
+  if (turn.status !== "needs_input") return []
+  const question = turn.steps.findLast(step => step.type === "ask_user")
+  return question?.type === "ask_user" ? (question.options ?? []) : []
+}
+
 export class WidgetTurnRateLimitError extends Error {}
 
 /** POSTs one turn to `/widget/turn`. Throws {@link WidgetTurnRateLimitError} on 429, otherwise a plain `Error`. */

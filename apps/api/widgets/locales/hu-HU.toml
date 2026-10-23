@@ -1,6 +1,7 @@
 openChat          = "Csevegés megnyitása"
 askPlaceholder    = "Kérdezz valamit…"
 answerPlaceholder = "Az válaszod…"
+suggestedAnswers  = "[hu-HU] lorem ipsum"
 send              = "Küldés"
 error             = "Valami hiba történt. Próbáld újra."
 rateLimited       = "Túl sok üzenet — kérlek, várj egy kicsit."

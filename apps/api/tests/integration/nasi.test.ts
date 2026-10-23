@@ -2,7 +2,14 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
+import {
+  askUserChatClient,
+  cleanupModel,
+  expectUnauthenticated,
+  fakeChatClient,
+  seedModel,
+  signUpAndSignIn
+} from "./helpers"
 
 const turnRequestInit = {
   method: "POST",
@@ -64,31 +71,6 @@ function fetchUrlToolCallChatClient(onMessages: (messages: unknown[]) => void = 
             finalChatCompletion: async () => ({ choices: [{ message }] })
           }
         }
-      }
-    }
-  }
-}
-
-/** A resolver whose only round asks the user a question with answer options. */
-function askUserChatClient() {
-  const message = {
-    role: "assistant",
-    content: null,
-    tool_calls: [
-      {
-        id: "call_1",
-        type: "function",
-        function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
-      }
-    ]
-  }
-  return {
-    chat: {
-      completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {},
-          finalChatCompletion: async () => ({ choices: [{ message }] })
-        })
       }
     }
   }

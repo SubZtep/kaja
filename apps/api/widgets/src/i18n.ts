@@ -9,6 +9,7 @@ const KEYS = [
   "openChat",
   "askPlaceholder",
   "answerPlaceholder",
+  "suggestedAnswers",
   "send",
   "error",
   "rateLimited",
