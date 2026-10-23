@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { z } from "zod"
 import { answerClientCalls } from "../../src/abilities/client"
 import { Agent, createSession, tool } from "../../src/agent/agent"
+import { relabeledParts } from "../../src/agent/describe"
 import { run } from "../../src/agent/run"
 import { createMemoryStore, IMAGE_REF_PREFIX, imageId, type ImageSource, type NasiStore } from "../../src/store"
 import { setToolDeps } from "../../src/tools/deps"
@@ -93,8 +94,11 @@ test("a tool's image arrives with the source the tool gave it", async () => {
     }
   }
   const agent = new Agent({ model: "m", client: calls as never, tools: [shot], store })
-  for await (const _ of run(agent, "take one", createSession()));
+  const events: { type: string; source?: unknown }[] = []
+  for await (const event of run(agent, "take one", createSession())) events.push(event)
   expect(sources).toEqual([{ url: "https://img.example/b.png" }])
+  // Hosts show it beside the image
+  expect(events.find(event => event.type === "tool_image")?.source).toEqual({ url: "https://img.example/b.png" })
 })
 
 test("a prompt's images keep their sources: a sent file's name, an approved tool's file", async () => {
@@ -119,4 +123,19 @@ test("a computer's tool result passes on its image file's name", async () => {
     }
   ])
   expect(sources).toEqual([{ fileName: "a.png" }])
+})
+
+test("a late description replaces only its own image's label in saved parts", () => {
+  const other = `${IMAGE_REF_PREFIX}fedcba9876543210`
+  const parts = [
+    { type: "text", text: `[Image ${LINK} (1×1): an image the user sent]` },
+    { type: "image_url", image_url: { url: LINK } },
+    { type: "text", text: `[Image ${other} (1×1): another]` }
+  ]
+  expect(relabeledParts(parts, LINK, { width: 1, height: 1 }, "A dot.")).toEqual([
+    { type: "text", text: `[Image ${LINK} (1×1): A dot.]` },
+    parts[1],
+    parts[2]
+  ])
+  expect(relabeledParts([parts[2]], LINK, { width: 1, height: 1 }, "A dot.")).toBeUndefined()
 })

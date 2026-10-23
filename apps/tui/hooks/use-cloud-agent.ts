@@ -44,6 +44,7 @@ export type CloudTimelineEvent =
       ref?: string
       alt?: string
       description?: string
+      source?: { url?: string; fileName?: string }
     }
   /** A shell command a call on this computer waits to run (only with the opted-in shell). */
   | { type: "confirm_command"; command: string; description: string }
@@ -212,7 +213,8 @@ export function useCloudAgent({
           pushEvent({
             type: "tool_image",
             path: `data:${image.mimeType};base64,${image.data}`,
-            mimeType: image.mimeType
+            mimeType: image.mimeType,
+            ...(image.fileName ? { source: { fileName: image.fileName } } : {})
           })
         return result
       }
@@ -298,7 +300,8 @@ export function useCloudAgent({
             path: event.url,
             mimeType: event.mimeType,
             ...(event.ref ? { ref: event.ref } : {}),
-            ...(event.alt ? { alt: event.alt } : {})
+            ...(event.alt ? { alt: event.alt } : {}),
+            ...(event.source ? { source: event.source } : {})
           })
         else if (event.type === "image_described") {
           eventsRef.current = withDescription(eventsRef.current, event.ref, event.description)

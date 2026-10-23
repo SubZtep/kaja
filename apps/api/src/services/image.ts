@@ -5,6 +5,7 @@ import {
   imageDataUrl,
   imageKey,
   imageLabel,
+  relabeledParts,
   sessionImagePrefix
 } from "@kaja/nasi"
 import type {
@@ -292,22 +293,17 @@ export class ImageService {
   // The image's label in its saved messages, with `description` in place of what it said before (its alt text)
   async #relabel(sessionId: string, id: string, size: { width: number; height: number }, description: string) {
     const ref = `${IMAGE_REF_PREFIX}${id}`
-    const start = imageLabel(ref, undefined, "").slice(0, -3)
-    const label = imageLabel(ref, size, description)
     const { rows } = await this.#db.query<{ id: string; parts: unknown[] }>(
       "SELECT id, parts FROM nasi_message WHERE session_id = $1 AND parts::text LIKE $2",
-      [sessionId, `%${start}%`]
+      [sessionId, `%${imageLabel(ref, undefined, "").slice(0, -3)}%`]
     )
     for (const message of rows) {
-      const parts = message.parts.map(part => {
-        const text =
-          (part as { type?: string; text?: unknown }).type === "text" ? (part as { text?: unknown }).text : undefined
-        return typeof text === "string" && text.startsWith(start) ? { ...(part as object), text: label } : part
-      })
-      await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
-        message.id,
-        JSON.stringify(parts)
-      ])
+      const parts = relabeledParts(message.parts, ref, size, description)
+      if (parts)
+        await this.#db.query("UPDATE nasi_message SET parts = $2::jsonb WHERE id = $1", [
+          message.id,
+          JSON.stringify(parts)
+        ])
     }
   }
 

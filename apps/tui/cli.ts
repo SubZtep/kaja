@@ -8,6 +8,7 @@ import { log } from "./lib/logger"
 import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
+import { runImagesSubcommand } from "./subcommands/images"
 import { runLoginSubcommand } from "./subcommands/login"
 import { runLogoutSubcommand } from "./subcommands/logout"
 import { runSubcommand } from "./subcommands/run"
@@ -72,6 +73,11 @@ try {
   }
 
   const mode = await resolveMode(args.flags)
+
+  // The local store's images, or in cloud mode the account's: reads what's there, never starts a login.
+  if (args.input[0] === "images") {
+    await runImagesSubcommand(args, mode)
+  }
   // The API only supports the latest TUI, so an outdated one is offered the update first (cloud mode won't start without it).
   const { checkForUpdate } = await import("./lib/cli/update-check")
   await checkForUpdate(mode, args.flags.headless)

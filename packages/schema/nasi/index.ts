@@ -192,14 +192,15 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("final"), content: z.string().nullable() }),
   /**
    * An image a tool returned (a screenshot, say), as its public (or data) URL; `alt` its text until `image_described`
-   * replaces it.
+   * replaces it, `source` where it came from (a URL, a file's name) as far as the tool knew.
    */
   z.object({
     type: z.literal("tool_image"),
     mimeType: z.string(),
     url: z.string(),
     ref: z.string().optional(),
-    alt: z.string().optional()
+    alt: z.string().optional(),
+    source: z.object({ url: z.string().optional(), fileName: z.string().optional() }).optional()
   }),
   /** The image `ref` (a `tool_image`'s) has its description now. */
   z.object({ type: z.literal("image_described"), ref: z.string(), description: z.string() })

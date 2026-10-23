@@ -2,7 +2,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { ImageError, normalizeImage } from "../images/normalize"
 import { dataUrlBytes, imageDataUrl } from "../images/parts"
 import { fetchPublicHttp } from "../security/ssrf"
-import { imageRefId, type ImageSource, inlineImages, type SessionImages } from "../store/images"
+import { boundedSource, imageRefId, type ImageSource, inlineImages, type SessionImages } from "../store/images"
 import { getToolDeps } from "../tools/deps"
 import { warn } from "../warn"
 import type { Agent, Session } from "./agent"
@@ -36,6 +36,8 @@ export type ArrivedImage = {
   mimeType: string
   width: number
   height: number
+  /** Where it came from, as this arrival knew: the URL and file name a host shows beside it. */
+  source?: { url?: string; fileName?: string }
 }
 
 /**
@@ -92,7 +94,9 @@ export async function storeImage(
       { type: "text", text: imageLabel(stored.ref, size, alt) },
       { type: "image_url", image_url: { url: stored.ref } }
     ]
-    return { ...stored, mimeType: image.mimeType, ...size, parts }
+    const { url, fileName } = boundedSource(source) ?? {}
+    const shown = url || fileName ? { source: { ...(url ? { url } : {}), ...(fileName ? { fileName } : {}) } } : {}
+    return { ...stored, mimeType: image.mimeType, ...size, ...shown, parts }
   } catch (error) {
     if (error instanceof ImageError) return { error: error.message }
     throw error

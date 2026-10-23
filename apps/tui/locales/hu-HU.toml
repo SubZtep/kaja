@@ -54,29 +54,31 @@ temp           = "ideiglenes"
 
 [args]
 help        = """
-Kaja parancssori eszköz • v{version} • https://kaja.io
+[hu-HU] lorem ipsum dolor sit amet consectetur {version}
 
-HASZNÁLAT
-  $ kaja [OPCIÓK] [PARANCS]
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit
 
-PARANCSOK
-  config <wizard|fetch|diff|paths>
-                       Interaktív beállítás vagy a konfigurációs fájlok kezelése
-  doctor               Kiírja a beállított modelleket, MCP szervereket és eszközöket, és ellenőrzi a kapcsolatokat
-  telegram [--pair]    Elindítja a Telegram botodat; a --pair kódot mutat még egy személy párosításához
-  abilities [update]   Kiválaszthatod, mely készségek töltődjenek be, vagy letöltheted a marketplace-t
-  sessions             Kilistázza a mentett helyi munkameneteket az azonosítóikkal
-  login                Bejelentkezés a felhőfiókba csevegés indítása nélkül
-  logout               Kijelentkezés a felhőfiókból, a tárolt hitelesítő adat törlésével
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit amet
+                       [hu-HU] lorem ipsum dolor sit amet consectetur
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [hu-HU] lorem ipsum dolor sit amet consectetur
+                       [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-OPCIÓK
-  --local         A helyi ágensciklust a saját szolgáltatódon futtatja felhős bejelentkezés helyett
-  --cloud         Felhős bejelentkezés akkor is, ha van helyi konfiguráció (alapértelmezett)
-  --continue, -c  A legutóbbi munkamenet folytatása (csak --local)
-  --headless      Terminálos felület nélkül; az ezt támogató alparancsokhoz (pl. telegram)
-  --session, -s   Munkamenet folytatása azonosító alapján (csak --local; lásd: kaja sessions)
-  --help          Kiírja ezt a súgót
-  --version       Kiírja a verziót
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet
+  [hu-HU] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
@@ -455,6 +457,36 @@ checkModelFailed       = "a(z) {model} nem válaszolt ({error})"
 checkTimeout           = "nem jött válasz 15 másodpercen belül"
 stats                  = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
 yolo                   = "a yolo be van kapcsolva itt: {path}: minden parancs és eszközhívás kérdés nélkül fut"
+
+
+[images]
+empty             = "[hu-HU] lorem ipsum dolor"
+totals            = "[hu-HU] lorem {count} {size}"
+descriptions      = "[hu-HU] lorem ipsum dolor sit amet {described} {undescribed}"
+added             = "[hu-HU] lorem ipsum dolor sit {count} {days} {size}"
+sitesTitle        = "[hu-HU] lorem ipsum dolor"
+sessionsTitle     = "[hu-HU] lorem ipsum dolor"
+sessionLine       = "[hu-HU] lorem {images} {size} {title}"
+describeHint      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+unknownAction     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {action}"
+localOnly         = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+signInFirst       = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+cloudFailed       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+noVision          = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+nothingToDescribe = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+describing        = "[hu-HU] lorem ipsum dolor {count} {model}"
+noDescription     = "[hu-HU] lorem ipsum dolor sit"
+described         = "[hu-HU] lorem ipsum {described} {total}"
+nothingToClean    = "[hu-HU] lorem ipsum"
+removeAsk         = "[hu-HU] lorem ipsum"
+removed           = "[hu-HU] lorem {count}"
+removeHint        = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+
+
+  [images.orphans]
+  files   = "[hu-HU] lorem ipsum dolor {count} {size}"
+  rows    = "[hu-HU] lorem ipsum dolor sit {count} {size}"
+  unsaved = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {count} {size}"
 
 
 [session]

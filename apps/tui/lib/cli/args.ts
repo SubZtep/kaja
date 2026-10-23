@@ -31,6 +31,14 @@ const options = {
   offline: {
     type: "boolean"
   },
+  /** `images describe`: also retry the images given up on after three tries. */
+  retry: {
+    type: "boolean"
+  },
+  /** `images clean`: remove every kind found without asking. */
+  yes: {
+    type: "boolean"
+  },
   /** `config fetch`: limit it to one file, "models" or "secrets". */
   only: {
     type: "string"

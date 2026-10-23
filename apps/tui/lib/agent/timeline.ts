@@ -7,7 +7,7 @@ export function timelineEvent(
   event: Exclude<FinalizedAgentEvent, { type: "usage" | "image_described" }>
 ): TimelineEvent {
   if (event.type !== "tool_image") return event
-  const { ref, key, mimeType, alt } = event
+  const { ref, key, mimeType, alt, source } = event
   const path = (key && storedImagePath(key)) || ref
   return {
     type: "tool_image",
@@ -15,6 +15,7 @@ export function timelineEvent(
     path,
     ref,
     alt,
-    ...(key ? { key } : {})
+    ...(key ? { key } : {}),
+    ...(source ? { source } : {})
   }
 }

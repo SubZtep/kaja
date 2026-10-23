@@ -95,7 +95,7 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
     case "tool_image":
-      return <ImageRow path={item.path} text={item.description ?? item.alt} />
+      return <ImageRow path={item.path} text={item.description ?? item.alt} source={item.source} />
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":

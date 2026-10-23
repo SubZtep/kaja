@@ -198,10 +198,21 @@ function createSchema(db: Database) {
       description      TEXT,
       descriptionModel TEXT,
       describedAt      TEXT,
+      describeAttempts INTEGER NOT NULL DEFAULT 0,
+      describeTriedAt  TEXT,
       createdAt        TEXT NOT NULL,
       PRIMARY KEY (sessionId, id)
     )
   `)
+  migrateImageAttemptColumns(db)
+}
+
+// images from before `kaja images describe` counted its tries lack these; add them in place, keeping the rows.
+function migrateImageAttemptColumns(db: Database) {
+  const columns = db.query("PRAGMA table_info(images)").all() as { name: string }[]
+  if (columns.some(c => c.name === "describeAttempts")) return
+  db.run("ALTER TABLE images ADD COLUMN describeAttempts INTEGER NOT NULL DEFAULT 0")
+  db.run("ALTER TABLE images ADD COLUMN describeTriedAt TEXT")
 }
 
 type ImageDbRow = Omit<ImageRow, "source"> & {
@@ -282,7 +293,8 @@ function imageRows(db: Database, sessionId: string): ImageRows {
   }
 }
 
-function openDb(dbPath: string): Database {
+/** The store's SQLite file, opened with its schema in place (created or brought up to date). */
+export function openDb(dbPath: string): Database {
   mkdirSync(dirname(dbPath), { recursive: true })
   const db = new Database(dbPath, { create: true })
   db.run("PRAGMA journal_mode = WAL")

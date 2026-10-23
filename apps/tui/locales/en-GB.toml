@@ -66,6 +66,8 @@ COMMANDS
   telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
   abilities [update]   Pick which skills load, or fetch the marketplace
   sessions             List saved local sessions with their ids
+  images [describe [--retry] | clean [--yes]]
+                       Show stored images; describe the ones without a description, or remove leftovers (--local)
   login                Sign in to the cloud account without starting a chat
   logout               Log out of the cloud account, clearing its stored credential
 
@@ -455,6 +457,36 @@ checkModelFailed       = "{model} didn't answer ({error})"
 checkTimeout           = "no answer in 15 seconds"
 stats                  = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
 yolo                   = "yolo is on in {path}: every command and tool call runs without asking"
+
+
+[images]
+empty             = "No images stored yet."
+totals            = "{count} images, {size}"
+descriptions      = "{described} described, {undescribed} without a description"
+added             = "{count} added in the last {days} days ({size})"
+sitesTitle        = "Where they came from:"
+sessionsTitle     = "Sessions with the most:"
+sessionLine       = "{images} images, {size}  {title}"
+describeHint      = "Describe the rest with `kaja --local images describe`."
+unknownAction     = "Unknown `kaja images {action}`. Use `describe` or `clean`."
+localOnly         = "`kaja images describe` and `clean` work on the local store only (`kaja --local images …`)."
+signInFirst       = "Not signed in. Run `kaja login` first."
+cloudFailed       = "Couldn't load your images from the cloud (HTTP {status})."
+noVision          = "No vision model in models.toml: add one with `vision` in its tasks to describe images."
+nothingToDescribe = "Every image has a description (images tried three times are skipped; add --retry for them)."
+describing        = "Describing {count} images with {model}…"
+noDescription     = "the model gave no description"
+described         = "Described {described} of {total}."
+nothingToClean    = "Nothing to clean."
+removeAsk         = "Remove them? [y/N]"
+removed           = "Removed {count}."
+removeHint        = "Run it in a terminal to be asked, or add --yes to remove them all."
+
+
+  [images.orphans]
+  files   = "{count} files without a row ({size}):"
+  rows    = "{count} rows whose file is gone ({size}):"
+  unsaved = "{count} images of sessions never saved, over a day old ({size}):"
 
 
 [session]

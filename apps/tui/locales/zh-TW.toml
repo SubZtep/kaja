@@ -54,29 +54,31 @@ temp           = "暫存"
 
 [args]
 help        = """
-Kaja 命令列工具 • v{version} • https://kaja.io
+[zh-TW] lorem ipsum dolor sit amet consectetur {version}
 
-用法
-  $ kaja [選項] [指令]
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit
 
-指令
-  config <wizard|fetch|diff|paths>
-                       互動式設定，或管理設定檔
-  doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
-  telegram [--pair]    執行你的 Telegram 機器人；--pair 會顯示配對碼，讓多一個人配對
-  abilities [update]   選擇要載入哪些技能，或抓取 marketplace
-  sessions             列出已儲存的本機工作階段及其 id
-  login                登入雲端帳號，但不開始對話
-  logout               登出雲端帳號，並清除已儲存的憑證
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit amet
+                       [zh-TW] lorem ipsum dolor sit amet consectetur
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [zh-TW] lorem ipsum dolor sit amet consectetur
+                       [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-選項
-  --local         以你自己的供應商執行本機代理迴圈，而不是登入雲端
-  --cloud         即使有本機設定也強制登入雲端（預設）
-  --continue, -c  繼續最近的工作階段（僅限 --local）
-  --headless      不使用終端介面；用於支援此模式的子指令（例如 telegram）
-  --session, -s   依 id 繼續工作階段（僅限 --local；見：kaja sessions）
-  --help          顯示此說明
-  --version       顯示版本
+[zh-TW] lorem
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [zh-TW] lorem ipsum dolor sit amet
+  [zh-TW] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}。執行 `kaja --help` 查看可用的選項。"
 
@@ -455,6 +457,36 @@ checkModelFailed       = "{model} 沒有回應（{error}）"
 checkTimeout           = "15 秒內沒有回應"
 stats                  = "對話：{sessionCount} · 記憶筆記：{memoryNoteCount}"
 yolo                   = "{path} 已開啟 yolo：所有指令與工具呼叫都會直接執行，不經詢問"
+
+
+[images]
+empty             = "[zh-TW] lorem ipsum dolor"
+totals            = "[zh-TW] lorem {count} {size}"
+descriptions      = "[zh-TW] lorem ipsum dolor sit amet {described} {undescribed}"
+added             = "[zh-TW] lorem ipsum dolor sit {count} {days} {size}"
+sitesTitle        = "[zh-TW] lorem ipsum dolor"
+sessionsTitle     = "[zh-TW] lorem ipsum dolor"
+sessionLine       = "[zh-TW] lorem {images} {size} {title}"
+describeHint      = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+unknownAction     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing {action}"
+localOnly         = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+signInFirst       = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+cloudFailed       = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+noVision          = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+nothingToDescribe = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+describing        = "[zh-TW] lorem ipsum dolor {count} {model}"
+noDescription     = "[zh-TW] lorem ipsum dolor sit"
+described         = "[zh-TW] lorem ipsum {described} {total}"
+nothingToClean    = "[zh-TW] lorem ipsum"
+removeAsk         = "[zh-TW] lorem ipsum"
+removed           = "[zh-TW] lorem {count}"
+removeHint        = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+
+
+  [images.orphans]
+  files   = "[zh-TW] lorem ipsum dolor {count} {size}"
+  rows    = "[zh-TW] lorem ipsum dolor sit {count} {size}"
+  unsaved = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing {count} {size}"
 
 
 [session]

@@ -54,29 +54,31 @@ temp           = "臨時檔"
 
 [args]
 help        = """
-Kaja 命令列工具 • v{version} • https://kaja.io
+[nan-TW] lorem ipsum dolor sit amet consectetur {version}
 
-用法
-  $ kaja [選項] [指令]
+[nan-TW] lorem
+  [nan-TW] lorem ipsum dolor
 
-指令
-  config <wizard|fetch|diff|paths>
-                       一步一步設定，抑是管理設定檔
-  doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
-  telegram [--pair]    行你个 Telegram 機器人；--pair 會顯示一个代碼，予閣一个人配對
-  abilities [update]   揀欲載入佗一寡技能，抑是提 marketplace
-  sessions             列出存起來个本機工作階段佮怹个 id
-  login                登入雲端帳號，毋免開始開講
-  logout               登出雲端帳號，清掉存起來个憑證
+[nan-TW] lorem
+  [nan-TW] lorem ipsum dolor sit amet
+                       [nan-TW] lorem ipsum dolor sit amet consectetur
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [nan-TW] lorem ipsum dolor sit amet consectetur
+                       [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
 
-選項
-  --local         用你家己个供應商行本機代理迴圈，毋是登入雲端
-  --cloud         就算有本機設定嘛強制登入雲端（預設）
-  --continue, -c  接續上尾个工作階段（干焦 --local）
-  --headless      無終端介面；予有支援个子指令用（親像 telegram）
-  --session, -s   照 id 接續工作階段（干焦 --local；看：kaja sessions）
-  --help          顯示這个說明
-  --version       印出版本
+[nan-TW] lorem
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [nan-TW] lorem ipsum dolor sit
+  [nan-TW] lorem ipsum dolor sit amet
 """
 unknownFlag = "{message}。執行 `kaja --help` 看有啥物選項通用。"
 
@@ -455,6 +457,36 @@ checkModelFailed       = "{model} 無應（{error}）"
 checkTimeout           = "15 秒內無回應"
 stats                  = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
 yolo                   = "{path} 內底 yolo 有開：逐个指令佮工具呼叫攏無問就執行"
+
+
+[images]
+empty             = "[nan-TW] lorem ipsum dolor"
+totals            = "[nan-TW] lorem {count} {size}"
+descriptions      = "[nan-TW] lorem ipsum dolor sit amet {described} {undescribed}"
+added             = "[nan-TW] lorem ipsum dolor sit {count} {days} {size}"
+sitesTitle        = "[nan-TW] lorem ipsum dolor"
+sessionsTitle     = "[nan-TW] lorem ipsum dolor"
+sessionLine       = "[nan-TW] lorem {images} {size} {title}"
+describeHint      = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+unknownAction     = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing {action}"
+localOnly         = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+signInFirst       = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+cloudFailed       = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+noVision          = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+nothingToDescribe = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+describing        = "[nan-TW] lorem ipsum dolor {count} {model}"
+noDescription     = "[nan-TW] lorem ipsum dolor sit"
+described         = "[nan-TW] lorem ipsum {described} {total}"
+nothingToClean    = "[nan-TW] lorem ipsum"
+removeAsk         = "[nan-TW] lorem ipsum"
+removed           = "[nan-TW] lorem {count}"
+removeHint        = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+
+
+  [images.orphans]
+  files   = "[nan-TW] lorem ipsum dolor {count} {size}"
+  rows    = "[nan-TW] lorem ipsum dolor sit {count} {size}"
+  unsaved = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing {count} {size}"
 
 
 [session]

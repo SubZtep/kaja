@@ -28,6 +28,27 @@ export function imageLabel(ref: string, size: { width: number; height: number } 
   return `[Image${link}${dims}: ${text}]`
 }
 
+/**
+ * A saved message's parts with image `ref`'s label saying `description` in place of what it said before (its alt text),
+ * for a description written after the turn; undefined when no part is that image's label.
+ */
+export function relabeledParts(
+  parts: unknown[],
+  ref: string,
+  size: { width: number; height: number },
+  description: string
+): unknown[] | undefined {
+  const start = imageLabel(ref, undefined, "").slice(0, -3)
+  let changed = false
+  const next = parts.map(part => {
+    const { type, text } = part as { type?: unknown; text?: unknown }
+    if (type !== "text" || typeof text !== "string" || !text.startsWith(start)) return part
+    changed = true
+    return { ...(part as object), text: imageLabel(ref, size, description) }
+  })
+  return changed ? next : undefined
+}
+
 // An image being described: its ref (its label starts with it), its size, and the description once it's in.
 type Pending = { ref: string; size?: { width: number; height: number }; done: Promise<void>; text?: string }
 
