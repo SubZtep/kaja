@@ -59,18 +59,20 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 
 ### Sending and editing
 
-| Key                                                    | Action                                                                                                                                |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `Enter`                                                | Send the prompt                                                                                                                       |
-| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | New line                                                                                                                              |
-| `←` / `→`                                              | Move one character                                                                                                                    |
-| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`)                  | Move one word                                                                                                                         |
-| `Home` / `End`                                         | Start/end of the line                                                                                                                 |
-| `Backspace` / `Delete`                                 | Delete before/after the cursor                                                                                                        |
-| `↑` / `↓`                                              | Previous/next prompt from history (on the first/last line), otherwise move between lines                                              |
-| `Ctrl+T`                                               | Toggle mic [dictation](/use/voice)                                                                                                    |
-| `Esc`                                                  | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
-| `Ctrl+C`                                               | Interrupt / exit                                                                                                                      |
+| Key                                   | Action                                                                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter`                               | Send the prompt                                                                                                                       |
+| `Shift+Enter`                         | New line                                                                                                                              |
+| `←` / `→`                             | Move one character                                                                                                                    |
+| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word                                                                                                                         |
+| `Home` / `End`                        | Start/end of the line                                                                                                                 |
+| `Backspace` / `Delete`                | Delete before/after the cursor                                                                                                        |
+| `↑` / `↓`                             | Previous/next prompt from history (on the first/last line), otherwise move between lines                                              |
+| `Ctrl+T`                              | Toggle mic [dictation](/use/voice)                                                                                                    |
+| `Esc`                                 | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
+| `Ctrl+C`                              | Interrupt / exit                                                                                                                      |
+
+`Shift+Enter` needs a terminal with the kitty keyboard protocol (kitty, Ghostty, WezTerm, foot and others); in any other terminal it sends the prompt, like `Enter`.
 
 Prompt history spans all past sessions, newest first.
 

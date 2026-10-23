@@ -65,7 +65,7 @@ const isHeld = (modifier: HotkeyModifier, bits: number) => parts(modifier).every
  * Fires the matching handler on `<modifier>+<letter>`. No modifier is universal in a terminal, so which one to use is
  * user-configurable (`preferences.hotkeyModifier` in settings.toml, defaulting to "alt"): Alt (Ink's `key.meta`) can
  * type special characters instead of acting as a modifier on some macOS terminals (Terminal.app/iTerm2 without "Option
- * as Meta" enabled) — this app's own Alt+Enter (newline) already relies on it working, so it's a reasonable default.
+ * as Meta" enabled), so it's a reasonable default.
  * Ctrl (`key.ctrl`) is the safer pick there, but can instead collide with host-app global shortcuts (e.g. VS Code's
  * integrated terminal reserves several Ctrl+<letter> combos regardless of which panel has focus). Meta (the Super key,
  * `key.super`) needs a terminal with the kitty keyboard protocol. Two keys at once ("ctrl+meta", …) dodge the

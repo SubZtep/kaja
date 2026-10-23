@@ -285,7 +285,7 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "Alt+Enter newline"
+placeholder = "Type something..."
 
 
 [header]
