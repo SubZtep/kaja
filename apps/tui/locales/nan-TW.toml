@@ -307,6 +307,7 @@ quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
 close     = "關掉"
+clear     = "清掉"
 command   = "指令"
 
 

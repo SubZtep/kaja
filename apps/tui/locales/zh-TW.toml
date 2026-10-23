@@ -307,6 +307,7 @@ quitAgain = "仍在執行：再按一次 Esc 離開"
 cancel    = "取消"
 decline   = "拒絕"
 close     = "關閉"
+clear     = "清除"
 command   = "指令"
 
 

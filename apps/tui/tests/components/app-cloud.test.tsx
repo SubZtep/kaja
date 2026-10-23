@@ -372,7 +372,9 @@ test("writing instead of answering declines the call here and shows what was wri
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
 
+  expect(t.lastFrame()).toContain("Esc Decline")
   await t.press("use hostnamectl")
+  expect(t.lastFrame()).toContain("Esc Clear")
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
   expect(ran).toEqual([{ name: "read_file", answer: { feedback: "use hostnamectl" } }])
@@ -461,10 +463,13 @@ test("Esc beside a question's options empties the typed text without quitting, a
   const { t } = mountQuestionWithOptions()
   await askWithOptions(t)
 
+  expect(t.lastFrame()).toContain("Esc Quit")
   await t.press("only")
+  expect(t.lastFrame()).toContain("Esc Clear")
   await t.press("\x1b")
   expect(t.lastFrame()).not.toContain("only")
   expect(t.lastFrame()).toContain("Yes") // still here: nothing quit
+  expect(t.lastFrame()).toContain("Esc Quit")
 
   t.unmount()
   await t.waitUntilExit()

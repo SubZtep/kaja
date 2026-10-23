@@ -307,6 +307,7 @@ quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
 close     = "Close"
+clear     = "Clear"
 command   = "Command"
 
 

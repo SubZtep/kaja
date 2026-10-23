@@ -307,6 +307,7 @@ quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
 close     = "Bezárás"
+clear     = "Törlés"
 command   = "Parancs"
 
 

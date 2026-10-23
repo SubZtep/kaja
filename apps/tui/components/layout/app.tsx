@@ -70,9 +70,12 @@ const isQuittable = (key: BottomChromeKey) => key === "input" || key === "runnin
 function escKeyBarItem(
   bottomChromeKey: BottomChromeKey,
   quittable: boolean,
+  clearing: boolean,
   quitArmed: boolean,
   pressQuit: () => void
 ): KeyBarEntry | undefined {
+  // Text typed in a prompt: Esc empties it first, whatever it would do otherwise
+  if (clearing) return { key: "Esc", label: t("keybar.clear") }
   const quit = quitArmed ? t("keybar.quitAgain") : t("keybar.quit")
   const labels: Partial<Record<BottomChromeKey, string>> = {
     modal: t("keybar.close"),
@@ -204,9 +207,10 @@ function Chrome({
   const showConfirm = Boolean(pendingCommand && resolvePending)
   const showChoices = !showConfirm && Boolean(choices?.length)
   const [mic, setMic] = useState(false)
-  const [choiceDraft, setChoiceDraft] = useState("")
-  // While text is typed beside a question's options Esc only empties the field, it doesn't quit
-  const quittable = isQuittable(bottomChromeKey) && !(showChoices && choiceDraft)
+  const [promptDraft, setPromptDraft] = useState("")
+  // While text is typed in a prompt (an approval, a question's options) Esc only empties the field
+  const clearing = (showConfirm || showChoices) && promptDraft !== ""
+  const quittable = isQuittable(bottomChromeKey) && !clearing
   const { armed: quitArmed, press: pressQuit } = useQuitGuard(quittable, pending || runningCommand)
   // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
   // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
@@ -250,7 +254,7 @@ function Chrome({
     hotkeyModifier,
     modifierHeld,
     bindings,
-    escKeyBarItem(bottomChromeKey, quittable, quitArmed, pressQuit)
+    escKeyBarItem(bottomChromeKey, quittable, clearing, quitArmed, pressQuit)
   )
 
   return (
@@ -288,6 +292,7 @@ function Chrome({
                 running={runningCommand}
                 speaking={speaking}
                 personaModels={personaModels}
+                onDraft={setPromptDraft}
                 onResolve={(approved, feedback) => resolvePending(approved, feedback)}
               />
             )}
@@ -303,7 +308,7 @@ function Chrome({
                 history={history}
                 mic={mic}
                 onMicChange={setMic}
-                onDraft={setChoiceDraft}
+                onDraft={setPromptDraft}
                 onResolve={result => void send(result.kind === "text" ? result.text : choices[Number(result.id)]!)}
               />
             )}

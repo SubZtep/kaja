@@ -20,6 +20,7 @@ export function ConfirmCommand({
   running,
   speaking,
   personaModels,
+  onDraft,
   onResolve
 }: Readonly<{
   /** The shell command, or for `kind: "tool"` the request summary; only used to judge the risk. */
@@ -29,6 +30,8 @@ export function ConfirmCommand({
   running: boolean
   speaking?: boolean
   personaModels?: PersonaModels
+  /** Called with the text typed beside the answers as it changes. */
+  onDraft?: (draft: string) => void
   /** `feedback` is what the user wrote instead of answering, with `approved` false. */
   onResolve: (approved: boolean, feedback?: string) => void
 }>) {
@@ -50,6 +53,7 @@ export function ConfirmCommand({
       busy={running ? t("confirmCommand.running") : undefined}
       speaking={speaking}
       personaModels={personaModels}
+      onDraft={onDraft}
       onResolve={result => (result.kind === "text" ? onResolve(false, result.text) : onResolve(result.id === "yes"))}
       onDismiss={() => onResolve(false)}
     />
