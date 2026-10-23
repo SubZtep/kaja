@@ -59,18 +59,18 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 
 ### Sending and editing
 
-| Key                                   | Action                                                                                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `Enter`                               | Send the prompt                                                                                                                       |
-| `Shift+Enter`                         | New line                                                                                                                              |
-| `←` / `→`                             | Move one character                                                                                                                    |
-| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word                                                                                                                         |
-| `Home` / `End`                        | Start/end of the line                                                                                                                 |
-| `Backspace` / `Delete`                | Delete before/after the cursor                                                                                                        |
-| `↑` / `↓`                             | Previous/next prompt from history (on the first/last line), otherwise move between lines                                              |
-| `Ctrl+T`                              | Toggle mic [dictation](/use/voice)                                                                                                    |
-| `Esc`                                 | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
-| `Ctrl+C`                              | Interrupt / exit                                                                                                                      |
+| Key                                   | Action                                                                                                                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter`                               | Send the prompt                                                                                                                                                                     |
+| `Shift+Enter`                         | New line                                                                                                                                                                            |
+| `←` / `→`                             | Move one character                                                                                                                                                                  |
+| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word                                                                                                                                                                       |
+| `Home` / `End`                        | Start/end of the line                                                                                                                                                               |
+| `Backspace` / `Delete`                | Delete before/after the cursor                                                                                                                                                      |
+| `↑` / `↓`                             | Previous/next prompt from history (on the first/last line), otherwise move between lines                                                                                            |
+| `Ctrl+T`                              | Toggle mic [dictation](/use/voice)                                                                                                                                                  |
+| `Esc`                                 | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open; first empties any text you typed in a prompt |
+| `Ctrl+C`                              | Interrupt / exit                                                                                                                                                                    |
 
 `Shift+Enter` needs a terminal with the kitty keyboard protocol (kitty, Ghostty, WezTerm, foot and others); in any other terminal it sends the prompt, like `Enter`.
 
@@ -92,12 +92,13 @@ Every entry but Cancel and Decline is also a button you can click, handy when yo
 the hotkey. Quit needs the same double press while something runs. Expand shows only while some code on
 screen is longer than `codePreviewLines`.
 
-| Key            | Action                                                                                                                           |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `<modifier>+L` | Open these docs in your browser                                                                                                  |
-| `<modifier>+P` | Open the persona picker (hidden while a turn runs)                                                                               |
-| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                                                               |
-| `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
+| Key            | Action                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| `<modifier>+L` | Open these docs in your browser                                                                |
+| `<modifier>+P` | Open the persona picker (hidden while a turn runs)                                             |
+| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                             |
+| `<modifier>+E` | Show every line of long code blocks (they show `codePreviewLines`, 5 by default, otherwise)    |
+| `<modifier>+O` | Read the command or request waiting for your approval in a window (shown only while one waits) |
 
 `<modifier>` is `Alt` by default. Set `preferences.hotkeyModifier` in [`settings.toml`](/config/settings) to
 `"ctrl"`, `"meta"` (the Super key; needs a terminal with the kitty keyboard protocol) or two at once:
@@ -115,7 +116,18 @@ When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `min
 row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
 `corner` shows the current call in the header's top-right corner and nothing in the chat.
 
-In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat.
+## Approvals and questions
+
+A shell command, or a tool call that changes something, waits for you before it runs. The prompt describes it,
+lists **Yes** and **No**, and keeps the input field under them. Move with `↑`/`↓`, answer with `Enter`, or press
+`Esc` to decline. The command itself stays out of the chat, since it can be long: press `<modifier>+O` to read it
+first.
+
+You can also just type. Writing something instead of answering declines the call and tells the agent why ("use
+`trash` instead"), so it can try again. Typed text takes the keys from the list until you delete it or press `Esc`.
+
+When the agent asks you something that has a few likely answers, they are listed the same way: pick one, or type
+your own. The mic ([dictation](/use/voice)) stays on across all of this.
 
 Thinking, tool display, code preview length and voice have no in-app toggle. Set them in
 [`settings.toml`](/config/settings#preferences) and restart.
