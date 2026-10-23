@@ -29,6 +29,30 @@ export const statsQuerySchema = z.object({
 export const statsChannelSchema = z.enum(["web", "telegram", "widget"])
 
 /**
+ * A user's stored images: `count` and `bytes` are everything kept now, `added`/`addedBytes` only the images that
+ * arrived in the range. `sites` are the hosts most images came from, `sessions` the chats holding the most image bytes
+ * (5 each, most first).
+ */
+export const imageStatsSchema = z.object({
+  count: z.number().int(),
+  bytes: z.number().int(),
+  described: z.number().int(),
+  undescribed: z.number().int(),
+  added: z.number().int(),
+  addedBytes: z.number().int(),
+  sites: z.array(z.object({ host: z.string(), images: z.number().int() })),
+  sessions: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      channel: statsChannelSchema,
+      images: z.number().int(),
+      bytes: z.number().int()
+    })
+  )
+})
+
+/**
  * The signed-in user's activity over the last `days` days. Only sessions last active in that range count (all their
  * messages), and days are the viewer's calendar days in `timeZone`. Tokens, times and per-reply numbers only exist for
  * replies saved since they were recorded.
@@ -78,9 +102,11 @@ export const usageStatsResponseSchema = z.object({
       promptTokens: z.number().int(),
       completionTokens: z.number().int()
     })
-  )
+  ),
+  images: imageStatsSchema
 })
 
 export type StatsQuery = z.infer<typeof statsQuerySchema>
 export type StatsChannel = z.infer<typeof statsChannelSchema>
 export type UsageStatsResponse = z.infer<typeof usageStatsResponseSchema>
+export type ImageStats = z.infer<typeof imageStatsSchema>

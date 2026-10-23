@@ -1,4 +1,4 @@
-import type { StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
+import type { UsageStatsResponse } from "@kaja/schema/api"
 import { usageStatsResponseSchema } from "@kaja/schema/api"
 import { cn } from "@kaja/shared/ui"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
@@ -9,6 +9,9 @@ import { Button } from "../form/primitives/Button"
 import { Loader } from "../ui/Loader"
 import { Section } from "../ui/Section"
 import { ValueBox } from "../ui/ValueBox"
+import { BarList } from "./BarList"
+import { CHANNEL_LABELS } from "./channels"
+import { ImagesCard } from "./ImagesCard"
 
 const RANGES = [7, 30, 90] as const
 
@@ -28,12 +31,6 @@ function toolNote(tool: UsageStatsResponse["tools"][number]): string | undefined
     tool.avgDurationMs !== null ? m.stats_tool_duration({ duration: formatDuration(tool.avgDurationMs) }) : ""
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(" · ") : undefined
-}
-
-const CHANNEL_LABELS: Record<StatsChannel, () => string> = {
-  web: () => m.stats_channel_web(),
-  telegram: () => m.stats_channel_telegram(),
-  widget: () => m.stats_channel_widget()
 }
 
 /** The signed-in user's own activity numbers for the last `days` days, cut into the viewer's own calendar days. */
@@ -64,41 +61,6 @@ function PerDayChart({ perDay }: Readonly<{ perDay: UsageStatsResponse["perDay"]
         />
       ))}
     </div>
-  )
-}
-
-/** A ranked list with a bar behind each row, scaled to the biggest value. */
-function BarList({
-  title,
-  rows,
-  empty
-}: Readonly<{
-  title: string
-  rows: { key: string; label: string; value: number; note?: string }[]
-  empty?: string
-}>) {
-  const max = Math.max(1, ...rows.map(row => row.value))
-  return (
-    <Section title={title}>
-      {rows.length === 0 ? (
-        <p className="text-muted m-0 text-sm">{empty}</p>
-      ) : (
-        <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-          {rows.map(row => (
-            <li key={row.key}>
-              <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="text-fg min-w-0 truncate font-mono">{row.label}</span>
-                <span className="text-muted shrink-0 font-mono">{row.value}</span>
-              </div>
-              <div className="bg-border/60 mt-1 h-1.5 rounded-full">
-                <div className="bg-neon/80 h-full rounded-full" style={{ width: `${(row.value / max) * 100}%` }} />
-              </div>
-              {row.note && <p className="text-muted m-0 mt-0.5 text-[12px]">{row.note}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
   )
 }
 
@@ -217,6 +179,12 @@ export function UsageStats() {
             </div>
           </div>
         ))}
+      {/* Stored images are counted all-time, so they show even in a range without chats */}
+      {data && (
+        <div className={cn("mt-4", stats.isPlaceholderData && "opacity-60")}>
+          <ImagesCard images={data.images} days={days} />
+        </div>
+      )}
     </section>
   )
 }
