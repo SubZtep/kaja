@@ -62,13 +62,14 @@ Needed just to run Kaja from source, as shown in the [next section](#run-from-th
 - [Bun](https://bun.com/docs/installation#canary-builds) (canary)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Git](https://git-scm.com/install/)
+- [RustFS CLI](https://docs.rustfs.com/en/operations/rc) (`rc`; AUR: `rustfs-cli-bin`): creates the dev storage bucket
 
 ### For development
 
 On top of the essentials above, if you plan to contribute code:
 
-- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
 - [Lefthook](https://lefthook.dev/install/): runs the Git hooks — run `lefthook install` once after cloning
+- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
 
 ### Optional
 
@@ -93,6 +94,9 @@ bun i
 
 # Start all the services
 docker compose up -d
+
+# Create the storage bucket (once)
+scripts/storage_init.sh
 
 # Configure local API endpoint
 cp apps/tui/.env.example apps/tui/.env

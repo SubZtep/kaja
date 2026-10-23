@@ -95,7 +95,10 @@ declare module "bun" {
     GEO_API_URL?: string
     /** GEO_API_URL's X-API-Key; unset, sandboxes register without a location */
     GEO_API_KEY?: string
-    /** Object storage bucket for session images (images/ is public-read; the API sets the policy) */
+    /**
+     * Object storage bucket for session images (images/ is public-read: set by hand on Hetzner, by
+     * scripts/storage_init.sh on the dev RustFS)
+     */
     STORAGE_BUCKET?: string
     /** Hetzner Object Storage location (fsn1, nbg1, hel1) */
     STORAGE_REGION?: string

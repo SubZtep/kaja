@@ -10,7 +10,6 @@
     "start": "bun run dist/server.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1156.0",
     "@hono/bun": "^1.0.1",
     "@hono/zod-openapi": "^1.6.3",
     "@kaja/nasi": "workspace:*",

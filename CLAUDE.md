@@ -16,7 +16,7 @@ Kaja is a TypeScript monorepo built with Bun. There is no mobile app.
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built with the API and served at `/widget/<widget-key>.js` (the key resolves the persona/mode server-side)
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers for cloud turns (`subztep/kaja-sandbox`); anyone can run one. It dials the API's WebSocket (`/sandbox/connect`), so nothing connects in
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
-- **Images** are never in a database. Each is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)` over nasi's `ObjectStore`: the API uses Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, the TUI plain files in `files/` beside the SQLite file). Only the normalised copy is kept, with its description as `<id>.json`. Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
+- **Images** are never in a database. Each is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)` over nasi's `ObjectStore`: the API uses Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, the TUI plain files in `files/` beside the SQLite file). Only the normalised copy is kept, with its description as `<id>.json`. Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (set by hand on Hetzner; `scripts/storage_init.sh` sets it on the dev RustFS), so cloud clients and Telegram get plain URLs
 
 ## Key File Locations
 
@@ -33,6 +33,7 @@ Kaja is a TypeScript monorepo built with Bun. There is no mobile app.
 ```bash
 # PostgreSQL + MailDev + RustFS object storage (API/web optional via compose)
 docker compose up -d db mail storage
+scripts/storage_init.sh   # its bucket and public images/ rule, once per fresh volume (needs the `rc` CLI)
 
 bun dev                # API + web + widget (hot reload)
 bun dev:sandbox        # MCP sandbox for cloud stdio MCP abilities (needs Chromium; or `docker compose up -d sandbox`)
