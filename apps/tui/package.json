@@ -22,10 +22,8 @@
     "ink": "^8.0.0",
     "ink-gradient": "^4.0.1",
     "marked": "^18.1.1",
-    "node-notifier": "^11.0.0",
     "open": "^11.0.4",
     "openai": "^7.43.0",
-    "play-sound": "^1.1.6",
     "react": "^19.3.1",
     "supports-hyperlinks": "^4.6.0",
     "tinyclip": "^1.0.3",
@@ -33,7 +31,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node-notifier": "^8.0.5",
     "@types/react": "^19.3.0",
     "react-devtools-core": "^8.0.0"
   }

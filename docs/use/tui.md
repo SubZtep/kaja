@@ -9,9 +9,9 @@ icon: 🖵
 
 # Terminal UI
 
-A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/getting-started/modes)
+A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/start/modes)
 use it. Cloud mode has no model switching. It asks before a call on your computer the same way local mode does (see
-[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)).
+[Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)).
 
 A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
 their tool counts, and how many saved conversations and memory notes you have.
@@ -44,15 +44,16 @@ kaja telegram --pair      # print a one-time code to pair one more Telegram user
 
 # Config files and abilities
 kaja config paths | fetch | diff | wizard   # see Configuration
+kaja config hooks        # set up sounds, notifications and speech for chat events
 kaja abilities            # list the abilities, their keys, and the personas that use them
 kaja abilities update     # fetch the marketplace
 ```
 
 `config`, `abilities` and `sessions` only touch local files, so they never trigger a cloud login. See
-[Configuration](/configuration/commands) for `config` and [Abilities](/abilities) for `abilities`.
+[Configuration](/config/commands) for `config` and [Abilities](/abilities) for `abilities`.
 
 In the chat, `/compact` summarises the conversation so far to free up space, and you can add what to keep:
-`/compact keep the SQL decisions`. It also happens on its own ([details](/configuration/config#context)).
+`/compact keep the SQL decisions`. It also happens on its own ([details](/config/settings#context)).
 
 ## Keyboard shortcuts
 
@@ -67,7 +68,7 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 | `Home` / `End`                                         | Start/end of the line                                                                                                                 |
 | `Backspace` / `Delete`                                 | Delete before/after the cursor                                                                                                        |
 | `↑` / `↓`                                              | Previous/next prompt from history (on the first/last line), otherwise move between lines                                              |
-| `Ctrl+T`                                               | Toggle mic [dictation](/using/voice)                                                                                                  |
+| `Ctrl+T`                                               | Toggle mic [dictation](/use/voice)                                                                                                    |
 | `Esc`                                                  | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C`                                               | Interrupt / exit                                                                                                                      |
 
@@ -96,7 +97,7 @@ screen is longer than `codePreviewLines`.
 | `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
-[`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS Terminal.app
+[`settings.toml`](/config/settings). Use `Ctrl` if Alt types special characters (macOS Terminal.app
 and iTerm2 without "Option as Meta"), and keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
 terminal does).
 
@@ -111,8 +112,8 @@ row above the input and leaves a one-line summary of the turn's tools; `verbose`
 
 In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat.
 
-Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
-[`settings.toml`](/configuration/config#preferences) and restart.
+Thinking, tool display, code preview length and voice have no in-app toggle. Set them in
+[`settings.toml`](/config/settings#preferences) and restart.
 
 ## Colours
 
@@ -126,11 +127,11 @@ any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for 
 too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
 change the terminal's scheme, restart Kaja so the tints follow.
 
-To pick one, set `theme` in [`settings.toml`](/configuration/config#preferences) (`dark`, `light` or
+To pick one, set `theme` in [`settings.toml`](/config/settings#preferences) (`dark`, `light` or
 `terminal`) and restart; `theme = "auto"` goes back to following the terminal.
 
 ---
 
 Next:
 
-[Web app](/using/web-app){: .btn .btn-green .fs-5 }
+[Web app](/use/web){: .btn .btn-green .fs-5 }

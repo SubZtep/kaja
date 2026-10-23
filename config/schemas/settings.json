@@ -115,10 +115,6 @@
           "minimum": 1,
           "maximum": 200
         },
-        "sounds": {
-          "description": "Enable sound effects",
-          "type": "boolean"
-        },
         "voice": {
           "description": "Enable voice output (text-to-speech)",
           "type": "boolean"

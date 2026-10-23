@@ -15,7 +15,7 @@ const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({
 test("shows recent history and page-up reveals older lines", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={many} thinking={false} partial={null} pending={false} sounds={false} />
+      <ChatViewport events={many} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -49,7 +49,7 @@ test("the copy event copies the most recent message to the clipboard", async () 
   const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={false} sounds={false} />
+      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -70,7 +70,7 @@ test("copy takes the agent's latest words, not the user's message that came afte
   const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={true} sounds={false} />
+      <ChatViewport events={events} thinking={false} partial={null} pending={true} />
     </Box>
   )
   await t.tick()
@@ -92,7 +92,7 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   const parseSpy = spyOn(dedentModule, "dedent")
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={mdEvents} thinking={false} partial={null} pending={false} sounds={false} />
+      <ChatViewport events={mdEvents} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -132,7 +132,7 @@ test("blank lines around the user's messages and the agent's words; tool lines s
         thinking={false}
         partial={null}
         pending={false}
-        sounds={false}
+
         toolDisplay="verbose"
       />
     </Box>
@@ -170,13 +170,7 @@ test("a reply as wide as the terminal keeps its dot, gap and indent; streaming r
   const base: TimelineEvent[] = [{ type: "user", text: "hi" }]
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={20}>
-      <ChatViewport
-        events={base}
-        thinking={true}
-        partial={{ content: "Haha", reasoning: "hm" }}
-        pending={true}
-        sounds={false}
-      />
+      <ChatViewport events={base} thinking={true} partial={{ content: "Haha", reasoning: "hm" }} pending={true} />
     </Box>,
     { columns: 80 }
   )
@@ -194,7 +188,6 @@ test("a reply as wide as the terminal keeps its dot, gap and indent; streaming r
         thinking={true}
         partial={null}
         pending={false}
-        sounds={false}
       />
     </Box>
   )
@@ -217,7 +210,6 @@ test("a thinking line wider than the terminal keeps its spinner, gap and one row
         thinking={false}
         partial={{ content: "", reasoning: "x".repeat(40_000) }}
         pending={true}
-        sounds={false}
       />
     </Box>,
     { columns: 30 }

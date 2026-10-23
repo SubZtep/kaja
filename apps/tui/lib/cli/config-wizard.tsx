@@ -340,6 +340,9 @@ export async function runConfigWizard({
     setConsoleTheme(result.theme)
   }
   await applyResult(result, line => console.log(line))
+  // Cloud chat has the same hooks, so this comes before the mode split
+  const { offerHooks } = await import("../hooks/offer")
+  await offerHooks(line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await offerMarketplace(line => console.log(line))

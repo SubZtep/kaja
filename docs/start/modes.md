@@ -3,7 +3,7 @@ layout: page
 title: Cloud or local
 parent: Get started
 nav_order: 2
-summary: Cloud or local: where the agent runs and what that changes.
+summary: "Cloud or local: where the agent runs and what that changes."
 icon: ☁️
 ---
 
@@ -12,13 +12,13 @@ icon: ☁️
 Kaja is one agent with several front doors: the terminal, Telegram and a website widget. The two modes
 differ in _where the agent loop runs_, and so in which tools it can use.
 
-| Front door                                      | Loop runs on | Store    | Your files, shell and own MCP servers                          |
-| ----------------------------------------------- | ------------ | -------- | -------------------------------------------------------------- |
-| `kaja`, local mode                              | your machine | SQLite   | ✓                                                              |
-| `kaja telegram`                                 | your machine | SQLite   | ✓                                                              |
-| `kaja`, cloud mode                              | the API      | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
-| cloud [Telegram bot](/using/telegram#cloud-bot) | the API      | Postgres | ✗                                                              |
-| Website [widget](/using/widget)                 | the API      | Postgres | ✗                                                              |
+| Front door                                    | Loop runs on | Store    | Your files, shell and own MCP servers                          |
+| --------------------------------------------- | ------------ | -------- | -------------------------------------------------------------- |
+| `kaja`, local mode                            | your machine | SQLite   | ✓                                                              |
+| `kaja telegram`                               | your machine | SQLite   | ✓                                                              |
+| `kaja`, cloud mode                            | the API      | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
+| cloud [Telegram bot](/use/telegram#cloud-bot) | the API      | Postgres | ✗                                                              |
+| Website [widget](/use/widget)                 | the API      | Postgres | ✗                                                              |
 
 ## Which mode a launch uses
 
@@ -45,7 +45,7 @@ flowchart TD
     Local(["💻 Local: ~/.config/kaja,<br>loop in your process"])
 ```
 
-The [setup wizard](/getting-started/wizard) saves your choice as `preferences.mode`, even before a provider
+The [setup wizard](/start/wizard) saves your choice as `preferences.mode`, even before a provider
 works. A flag overrides it for one launch:
 
 ```sh
@@ -79,11 +79,11 @@ the cloud only their results:
 - your own abilities (the ones in your marketplace folder that no sync wrote), and local-only ones like
   `filesystem`, with the folders your personas give them;
 - any `stdio` [MCP ability](/abilities/mcp) you set to `computer` in
-  [`[tools.hosts]`](/configuration/config#toolshosts);
+  [`[tools.hosts]`](/config/settings#toolshosts);
 - `read_file`, `list_files` and `view_image`;
 - your shell (`run_command`), only once you allow it with `shell = "computer"` in `[tools.hosts]`.
 
-They ask first exactly as in local mode: a shell command unless [`commands.toml`](/configuration/commands)
+They ask first exactly as in local mode: a shell command unless [`commands.toml`](/config/commands)
 lists it as safe, an MCP or HTTP call that changes something. Your own personas, and local-only ones like
 `config-hyprland`, join the persona picker. Nothing of this is stored in the cloud beyond the conversation
 itself. The cloud Telegram bot and the widget have no computer behind them, so they never get these tools.
@@ -92,11 +92,11 @@ itself. The cloud Telegram bot and the widget have no computer behind them, so t
 
 The whole agent runs in your process:
 
-- config comes from `~/.config/kaja/` ([Configuration](/configuration/files));
+- config comes from `~/.config/kaja/` ([Configuration](/config/files));
 - models come from your `models.toml`. Without a chat model Kaja exits with an error; it never falls back
   to the cloud;
 - every tool works: files, shell, MCP servers, hosts on your own network;
-- sessions, memory and dataset answers live in a [SQLite file](/configuration/storage);
+- sessions, memory and dataset answers live in a [SQLite file](/config/storage);
 - `kaja -c` resumes the last session, `kaja -s <id>` a specific one, and `kaja sessions` lists them.
 
 ## How a turn runs
@@ -137,4 +137,4 @@ Two things hand control back to you:
 
 Next:
 
-[Setup wizard](/getting-started/wizard){: .btn .btn-green .fs-5 }
+[Setup wizard](/start/wizard){: .btn .btn-green .fs-5 }

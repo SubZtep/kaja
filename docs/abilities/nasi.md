@@ -25,7 +25,7 @@ you.
 
 On your machine in local mode (and `kaja telegram`), and on the Kaja API for cloud mode, the cloud Telegram
 bot and the widget. It's the same brain either way. The cloud one gets a smaller toolset because it serves
-many people, except what your terminal runs for it on your own computer. [Cloud or local](/getting-started/modes) has the full comparison.
+many people, except what your terminal runs for it on your own computer. [Cloud or local](/start/modes) has the full comparison.
 
 ## What it knows when a conversation starts
 
@@ -39,7 +39,7 @@ Nasi begins a conversation by writing itself a brief, the system prompt, from wh
 6. a [dataset](/abilities/memory#datasets) to collect, if the persona has one, and what you've already
    answered in your profile;
 7. your sticky [memory notes](/abilities/memory#notes);
-8. the language to reply in ([Voice & language](/using/voice#language)).
+8. the language to reply in ([Voice & language](/use/voice#language)).
 
 Anything that isn't set up is left out, so a cloud or widget conversation sees a subset of what a local one
 does. A change to a persona's abilities applies from your next message, even mid-conversation.
@@ -52,11 +52,11 @@ answer. Along the way it can stop and hand control back to you:
 - **a question** (`ask_user`): your next message is the answer;
 - **an approval**: a shell command, or an HTTP tool or MCP call that changes something, waits for your OK.
   Simple read-only shell commands on your
-  [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (listing files,
+  [safe list](/config/settings#commandstoml-commands-that-run-without-asking) (listing files,
   `git status`) run without asking.
 
 It can also [switch persona](/abilities/personas) mid-turn, which may switch the model too, and carry on.
-The diagram on [Cloud or local](/getting-started/modes#how-a-turn-runs) shows the whole loop.
+The diagram on [Cloud or local](/start/modes#how-a-turn-runs) shows the whole loop.
 
 ## When things go wrong
 
@@ -79,12 +79,12 @@ Models can only read so much at once, so Nasi keeps each request inside the mode
   stay as they are. Nothing is deleted: the log keeps every message.
 
 Type `/compact` to do it on demand. Which model writes the summaries, and when compaction kicks in, is in
-[Settings](/configuration/config#context).
+[Settings](/config/settings#context).
 
 ## What it keeps
 
 Conversations, memory notes and dataset answers live in a store the host provides: a
-[SQLite file](/configuration/storage) locally, Postgres in the cloud. Nasi reads no config file and opens no
+[SQLite file](/config/storage) locally, Postgres in the cloud. Nasi reads no config file and opens no
 database itself, which is why one brain fits every front door.
 
 Curious how it works under the hood? [Inside Nasi](/abilities/inside-nasi) tells the story.

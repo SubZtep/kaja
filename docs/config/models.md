@@ -3,7 +3,7 @@ layout: page
 title: Models
 parent: Configuration
 nav_order: 3
-summary: models.toml: providers and the model for each task.
+summary: "models.toml: providers and the model for each task."
 icon: 🤖
 ---
 
@@ -11,7 +11,7 @@ icon: 🤖
 
 `models.toml` declares providers and the models they serve, and the order of the models decides which one
 handles each task. A provider's
-`api_key` lives in [`secrets.toml`](/configuration/secrets) under the same `[providers.<name>]` table. This
+`api_key` lives in [`secrets.toml`](/config/secrets) under the same `[providers.<name>]` table. This
 file only holds `base_url` and the models.
 
 ```toml
@@ -41,7 +41,7 @@ The tasks:
 - `image-generation`
 - `tts` and `stt`
 - `rerank`
-- `summarize`: writes the summary a long conversation is [compacted](/configuration/config#context) into,
+- `summarize`: writes the summary a long conversation is [compacted](/config/settings#context) into,
   condenses oversized tool results and runs the `summarize` tool. The chat model does it when there's none.
 - `vision`: the first model listing it writes each arriving image's short description, in the background.
   With none, an image keeps its alt text (what the tool said about it, say).
@@ -59,7 +59,7 @@ The id is yours to choose. The wizard uses the last part of the model name, clea
 `qwen3-5-4b`, `accounts/fireworks/models/glm-5p3-flash` becomes `glm-5p3-flash`), and adds `-<provider>` when
 two providers serve the same name. A purely numeric id is refused, since it would lose its place in the order.
 The models further down stay in the file, for a [persona](/abilities/personas) to pin by id, or for
-[`kaja doctor`](/configuration/commands#checking-keys-and-models) to fall back to when the one in use stops
+[`kaja doctor`](/config/commands#checking-keys-and-models) to fall back to when the one in use stops
 answering. Falling back comments out the broken model, so the next one takes over.
 
 The header shows how full the chat model's context is (`12,345 / 32,768 tokens (38%)`). Without
@@ -102,4 +102,4 @@ the wizard also keeps the models it didn't pick, for pins and switching.
 
 Next:
 
-[Secrets](/configuration/secrets){: .btn .btn-green .fs-5 }
+[Secrets](/config/secrets){: .btn .btn-green .fs-5 }

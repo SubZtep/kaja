@@ -6,7 +6,6 @@ thinking = false
 # toolDisplay = "minimal"
 # Lines of a code block, or of a command awaiting approval, shown before "… N more lines".
 # codePreviewLines = 5
-sounds   = true
 voice    = false
 locale   = "en-GB"
 # Which backend `kaja` starts: "cloud" (the Kaja API) or "local" (the agent loop against

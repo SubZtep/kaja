@@ -22,7 +22,9 @@ preload = [
 
 
 [lint]
-typeAware = true
+maxWarnings = 0
+typeAware   = true
+typeCheck   = true
 
 
   [lint.rules]

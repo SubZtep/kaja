@@ -118,7 +118,7 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
 
 In local mode a `stdio` ability can run on a Kaja sandbox instead of your machine: handy when its runner
 (`uvx` for a Python package) or Chrome isn't installed here, or when you'd rather keep a browser off it. Set
-it in [`settings.toml`](/configuration/config#toolshosts):
+it in [`settings.toml`](/config/settings#toolshosts):
 
 ```toml
 [tools.hosts]
@@ -138,8 +138,8 @@ what a server can do is known up front, and it can't add tools later) and aren't
 
 A `stdio` ability, like `chrome-devtools`, runs in a **sandbox**, never on the API's host, and a remote one's
 requests go out through one too. In the terminal you can send one to your own computer instead
-(`computer` in [`[tools.hosts]`](/configuration/config#toolshosts)), and local-only ones always run there; see
-[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode). That can be:
+(`computer` in [`[tools.hosts]`](/config/settings#toolshosts)), and local-only ones always run there; see
+[Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode). That can be:
 
 - Kaja's own sandbox;
 - one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);

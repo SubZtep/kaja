@@ -16,7 +16,6 @@ export const KajaPreferencesSchema = z.object({
     .max(200)
     .optional()
     .describe("Lines of a code block or approval command shown before it is cut short (default: 5)"),
-  sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   locale: z.enum(locales).optional().describe("Language for the chat and application"),
   // Written by the setup wizard. Without it the mode is guessed from "is there a usable chat model?", which

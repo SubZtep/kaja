@@ -43,6 +43,7 @@ manual           = "Update by hand with {command}, or download it from {url}"
 settings       = "settings"
 memorySessions = "memory & sessions"
 images         = "session images"
+sounds         = "sound effects"
 backups        = "file backups"
 models         = "models"
 commands       = "safe commands"
@@ -88,6 +89,7 @@ Usage
   $ kaja config fetch   Download config files from the server (bundled templates if offline)
   $ kaja config diff    Show what fetch would change, without writing anything
   $ kaja config wizard  Interactive setup for language, provider, and persona
+  $ kaja config hooks   Set up sounds, notifications and speech for this computer
   $ kaja config paths   Print every path Kaja reads or writes
 """
 fetched              = "Wrote {path}"
@@ -99,6 +101,29 @@ fetchOfflineFallback = "Could not reach the server ({message}) — falling back 
 diffNew              = "{path}: new"
 diffUnchanged        = "{path}: unchanged"
 diffWouldUpdate      = "{path}: would update"
+
+
+[hooks]
+questionTitle      = "Kaja asks"
+confirmTitle       = "Kaja needs your approval"
+errorTitle         = "Kaja hit an error"
+yes                = "Yes"
+no                 = "No"
+kindPlayer         = "sound player"
+kindNotifier       = "notification tool"
+kindSpeaker        = "speech tool"
+found              = "Found a {what}: {program}"
+missing            = "No {what} found on this system."
+missingInstall     = "No {what} found. Install one with: {command}"
+missingProgram     = "No {what} found. Install {program} with your package manager."
+replaceTitle       = "{path} already exists. Replace it? The old file is kept as a backup."
+soundsTitle        = "Play sound effects when things happen in the chat?"
+notificationsTitle = "Show desktop notifications for questions, approvals and persona switches?"
+speechTitle        = "Read the assistant's messages aloud with {program}?"
+nothing            = "Nothing was switched on, so hooks.toml was left alone."
+soundsFailed       = "Could not download the sound effects. Run `kaja config hooks` again when you are online."
+needsTerminal      = "`kaja config hooks` asks questions, so it needs a terminal."
+done               = "Hooks are set up. Edit hooks.toml to add your own."
 
 
 [wizard]

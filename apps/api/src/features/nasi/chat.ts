@@ -157,11 +157,14 @@ const CLOUD_ASK_USER_INSTRUCTION =
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
   `just state the result and stop.`
 
-// dataset_info and the "About the user" section read the marketplace's datasets from the ability table.
-setDatasetLoaders({
-  loadDatasets: () => abilityService.datasets(),
-  loadDataset: async topic => (await abilityService.datasets()).get(topic)
-})
+/** Points dataset_info and the "About the user" section at the marketplace's datasets in the ability table. */
+export function registerAbilityDatasets() {
+  setDatasetLoaders({
+    loadDatasets: () => abilityService.datasets(),
+    loadDataset: async topic => (await abilityService.datasets()).get(topic)
+  })
+}
+registerAbilityDatasets()
 
 type Egress = (ability?: string) => FetchLike
 let egressOverride: ((userId: string) => Egress) | undefined

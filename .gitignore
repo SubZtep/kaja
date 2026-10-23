@@ -7,7 +7,7 @@
 .tsbuildinfo
 .tmp-test-xdg-config-*/
 apps/tui/assets/datasets/
-apps/api/public/
+apps/api/public/widget.js
 apps/api/.data/
 dist/
 node_modules/

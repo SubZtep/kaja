@@ -34,7 +34,7 @@ function slowArrivals() {
 function render(events: TimelineEvent[]) {
   return renderForTest(
     <Box flexDirection="column" width={120} height={30}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={false} sounds={false} />
+      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
     </Box>,
     { columns: 120, rows: 30 }
   )

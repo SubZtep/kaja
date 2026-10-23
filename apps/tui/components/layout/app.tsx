@@ -3,7 +3,6 @@ import type { PersonaModels } from "@kaja/schema/cli"
 import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
 import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
-import notifier from "node-notifier"
 import open from "open"
 import { useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
@@ -13,11 +12,11 @@ import { useHooks } from "../../hooks/use-hooks"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useQuitGuard } from "../../hooks/use-quit-guard"
-import { useSound } from "../../hooks/use-sound"
 import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
 import type { Computer } from "../../lib/cloud/computer"
+import { fireHook } from "../../lib/config/hooks"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, describer, summarizer } from "../../lib/models/openai"
@@ -168,14 +167,12 @@ function Chrome({
     thinking,
     toolDisplay,
     codePreviewLines,
-    sounds,
     voice,
     hotkeyModifier,
     yolo,
     theme: initialTheme
   } = usePreferences(initialPreferences)
   const theme = useTheme(initialTheme)
-  useSound(events, sounds)
   useHooks(events)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
@@ -238,7 +235,6 @@ function Chrome({
             thinking={thinking}
             partial={partial}
             pending={pending}
-            sounds={sounds}
             bottomChromeKey={bottomChromeKey}
             toolDisplay={toolDisplay}
             currentTool={currentTool}
@@ -349,9 +345,9 @@ function LocalApp({
     const target = personas.find(p => p.id === next.id)
     if (!target) return
     switchPersonaAgent(target)
-    notifier.notify({
+    fireHook("persona_switch", {
       title: t("cli.personaSwitchedTitle"),
-      message: t("cli.personaSwitchedMessage", { label: target.label })
+      text: t("cli.personaSwitchedMessage", { label: target.label })
     })
   }
 

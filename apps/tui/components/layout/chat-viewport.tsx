@@ -4,6 +4,7 @@ import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
+import { fireHook } from "../../lib/config/hooks"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
@@ -112,7 +113,6 @@ export function ChatViewport({
   thinking,
   partial,
   pending,
-  sounds,
   bottomChromeKey,
   startupPanel,
   toolDisplay = "minimal",
@@ -122,7 +122,6 @@ export function ChatViewport({
   thinking: boolean
   partial: PartialMessageData | null
   pending: boolean
-  sounds: boolean
   /**
    * Changes whenever the sibling below (input / confirm prompt) swaps to a differently-sized layout, so the viewport
    * remeasures even though none of the other props changed.
@@ -276,9 +275,7 @@ export function ChatViewport({
     const text = lastCopyableText(events)
     if (!text) return
     writeText(text)
-      .then(async () => {
-        if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
-      })
+      .then(() => fireHook("copy"))
       .catch(error => log.warn("Copy to clipboard failed", { error }))
   }
   // The key bar's Copy button asks through uiEvents; an effect event keeps the listener on the latest events

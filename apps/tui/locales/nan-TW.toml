@@ -43,6 +43,7 @@ manual           = "請用 {command} 家己更新，抑是對 {url} 下載"
 settings       = "設定"
 memorySessions = "記智佮工作階段"
 images         = "工作階段圖片"
+sounds         = "音效"
 backups        = "檔案備份"
 models         = "模型"
 commands       = "安全指令"
@@ -85,10 +86,11 @@ invalidAt            = "設定檔無效（{path}）：{message}"
 notExists            = "設定檔無存在：{path}"
 usage                = """
 用法
-  $ kaja config fetch   對伺服器下載設定檔（若離線就用內建範本）
-  $ kaja config diff    顯示 fetch 會改變啥物，毋寫入任何物件
-  $ kaja config wizard  互動式設定：語言、供應商、人設
-  $ kaja config paths   印出 Kaja 讀寫个所有路徑
+  $ kaja config fetch   對伺服器下載設定檔（離線就用內建範本）
+  $ kaja config diff    顯示 fetch 會改啥物，毋寫入任何檔案
+  $ kaja config wizard  互動式設定語言、提供者佮角色
+  $ kaja config hooks   為這台電腦設定音效、通知佮語音朗讀
+  $ kaja config paths   列出 Kaja 讀抑寫的所有路徑
 """
 fetched              = "已經寫入 {path}"
 fetchedWithBackup    = "已經寫入 {path}（早前个檔案已經備份去 {backup}）"
@@ -99,6 +101,29 @@ fetchOfflineFallback = "連袂著伺服器（{message}）— 改用內建範本"
 diffNew              = "{path}：新个"
 diffUnchanged        = "{path}：無變"
 diffWouldUpdate      = "{path}：會更新"
+
+
+[hooks]
+questionTitle      = "Kaja 問你"
+confirmTitle       = "Kaja 需要你的同意"
+errorTitle         = "Kaja 拄著錯誤"
+yes                = "是"
+no                 = "毋是"
+kindPlayer         = "音效播放器"
+kindNotifier       = "通知工具"
+kindSpeaker        = "語音朗讀工具"
+found              = "揣著 {what}：{program}"
+missing            = "這个系統頂揣無 {what}。"
+missingInstall     = "揣無 {what}。用這个指令安裝：{command}"
+missingProgram     = "揣無 {what}。請用你的套件管理員安裝 {program}。"
+replaceTitle       = "{path} 已經有矣。欲取代無？舊的檔案會留做備份。"
+soundsTitle        = "聊天內底有代誌發生的時，欲播音效無？"
+notificationsTitle = "有問題、需要同意抑是切換角色的時，欲顯示桌面通知無？"
+speechTitle        = "欲用 {program} 共助理的訊息唸出來無？"
+nothing            = "無開任何項目，所以 hooks.toml 無去動著。"
+soundsFailed       = "音效下載失敗。連線了後，請閣執行 `kaja config hooks`。"
+needsTerminal      = "`kaja config hooks` 會問問題，所以需要終端機。"
+done               = "Hooks 設定好矣。編輯 hooks.toml 就會當加入你家己的。"
 
 
 [wizard]

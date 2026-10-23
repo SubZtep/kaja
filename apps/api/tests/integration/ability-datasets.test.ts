@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { setNasiChatResolver } from "../../src/features/nasi/chat"
+import { registerAbilityDatasets, setNasiChatResolver } from "../../src/features/nasi/chat"
 import { marketplaceService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 
@@ -61,14 +61,19 @@ function scriptedChat(script: { content: string | null; tool_calls?: unknown[] }
 describe("datasets in the cloud", () => {
   let base: string
   let token: string
+  let synced: Awaited<ReturnType<typeof marketplaceService.syncFromDir>>
   const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
   const turn = (message: string) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify({ message }) })
   const systemPrompt = (sent: Sent) => String(sent.messages[0]!.content)
 
   beforeAll(async () => {
+    // The loaders are global: a run that also loads the TUI's tests would leave its own in place
+    registerAbilityDatasets()
     base = mkdtempSync(join(tmpdir(), "kaja-ability-datasets-test-"))
     token = await signUpAndSignIn(faker.internet.email().toLowerCase(), "Datasets")
+    // Here rather than in a test, so a single test can run on its own (an editor's "run test")
+    synced = await marketplaceService.syncFromDir(marketplace(base), "d1")
   })
 
   afterAll(async () => {
@@ -80,9 +85,8 @@ describe("datasets in the cloud", () => {
   })
 
   test("a sync adds datasets by their marketplace path, skipping broken ones", async () => {
-    const result = await marketplaceService.syncFromDir(marketplace(base), "d1")
-    expect(result.added).toContain(`datasets/${topic}`)
-    expect(result.added.join()).not.toContain(`broken-${tag}`)
+    expect(synced.added).toContain(`datasets/${topic}`)
+    expect(synced.added.join()).not.toContain(`broken-${tag}`)
   })
 
   test("a cloud turn asks for the name while it's unknown, records it, and the next conversation knows it", async () => {

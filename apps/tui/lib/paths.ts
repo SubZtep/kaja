@@ -16,6 +16,11 @@ export function getBackupDir() {
   return join(getPaths().data, "backups")
 }
 
+/** Where `syncSounds` keeps the sound effects hooks.toml plays (`$KAJA_SOUNDS` in a hook command). */
+export function getSoundsDir() {
+  return join(getPaths().data, "sounds")
+}
+
 /**
  * Every path the CLI reads/writes, for display (`config paths`, first-run screen). Duplicated as a flat list to avoid
  * importing modules with config side effects.
@@ -26,7 +31,8 @@ export function listPaths(all = false, configDir = getPaths().config) {
   const items = [
     { label: t("paths.settings"), path: join(configDir, "settings.toml") },
     { label: t("paths.memorySessions"), path: join(paths.data, "memory.sqlite") },
-    { label: t("paths.images"), path: join(paths.data, "files") }
+    { label: t("paths.images"), path: join(paths.data, "files") },
+    { label: t("paths.sounds"), path: getSoundsDir() }
   ]
 
   if (all) {

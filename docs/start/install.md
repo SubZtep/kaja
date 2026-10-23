@@ -29,7 +29,7 @@ The script picks the right binary for your system and puts it in `~/.local/bin` 
 
 ## First run
 
-Run `kaja`. The [setup wizard](/getting-started/wizard) asks a few questions, including whether to use
+Run `kaja`. The [setup wizard](/start/wizard) asks a few questions, including whether to use
 **Kaja Cloud** (nothing to set up, you just approve a code in the browser) or **your own providers**. Your
 answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides it for
 one launch.
@@ -41,7 +41,7 @@ Kaja checks for a newer version each time it starts and offers to install it. Cl
 To update by hand, run the install script again. Set `VERSION=v1.2.3` to pin a release.
 
 Your config files stay as they are. `kaja config diff` shows what
-[`kaja config fetch`](/configuration/commands) would change, and `kaja abilities update` refreshes the
+[`kaja config fetch`](/config/commands) would change, and `kaja abilities update` refreshes the
 [marketplace](/abilities).
 
 ## Uninstall
@@ -52,10 +52,10 @@ rm ~/.local/bin/kaja
 ```
 
 Config and data stay behind. To remove them too, delete `~/.config/kaja` and `~/.local/share/kaja` (the
-[local storage](/configuration/storage)). `kaja config paths` prints the exact locations.
+[local storage](/config/storage)). `kaja config paths` prints the exact locations.
 
 ---
 
 Next:
 
-[Cloud or local](/getting-started/modes){: .btn .btn-green .fs-5 }
+[Cloud or local](/start/modes){: .btn .btn-green .fs-5 }

@@ -43,6 +43,7 @@ manual           = "Frissíts kézzel ezzel: {command}, vagy töltsd le innen: {
 settings       = "beállítások"
 memorySessions = "memória és munkamenetek"
 images         = "munkamenet-képek"
+sounds         = "hangeffektek"
 backups        = "fájlmentések"
 models         = "modellek"
 commands       = "biztonságos parancsok"
@@ -85,10 +86,11 @@ invalidAt            = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists            = "Nem létezik a konfigurációs fájl: {path}"
 usage                = """
 Használat
-  $ kaja config fetch   Letölti a konfigurációs fájlokat a szerverről (offline: beépített sablonok)
+  $ kaja config fetch   Konfigurációs fájlok letöltése a szerverről (offline a beépített sablonok)
   $ kaja config diff    Megmutatja, mit változtatna a fetch, írás nélkül
-  $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató, perszóna
-  $ kaja config paths   Mutatja az összes elérési utat, amit a Kaja használ
+  $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató és persona
+  $ kaja config hooks   Hangok, értesítések és felolvasás beállítása ezen a gépen
+  $ kaja config paths   Kiírja az összes útvonalat, amelyet a Kaja olvas vagy ír
 """
 fetched              = "{path} elmentve"
 fetchedWithBackup    = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
@@ -99,6 +101,29 @@ fetchOfflineFallback = "Nem sikerült elérni a szervert ({message}) — beépí
 diffNew              = "{path}: új"
 diffUnchanged        = "{path}: változatlan"
 diffWouldUpdate      = "{path}: frissülne"
+
+
+[hooks]
+questionTitle      = "Kaja kérdez"
+confirmTitle       = "Kaja jóváhagyást kér"
+errorTitle         = "Kaja hibába ütközött"
+yes                = "Igen"
+no                 = "Nem"
+kindPlayer         = "hanglejátszó"
+kindNotifier       = "értesítő eszköz"
+kindSpeaker        = "felolvasó eszköz"
+found              = "Megtalálva ({what}): {program}"
+missing            = "Nem található {what} ezen a rendszeren."
+missingInstall     = "Nem található {what}. Telepíts egyet így: {command}"
+missingProgram     = "Nem található {what}. Telepítsd a(z) {program} programot a csomagkezelőddel."
+replaceTitle       = "A(z) {path} már létezik. Lecseréled? A régi fájl biztonsági másolatként megmarad."
+soundsTitle        = "Lejátszunk hangeffekteket, amikor történik valami a csevegésben?"
+notificationsTitle = "Megjelenjenek asztali értesítések kérdésekről, jóváhagyásokról és persona-váltásokról?"
+speechTitle        = "Felolvassa az asszisztens üzeneteit a(z) {program} programmal?"
+nothing            = "Semmi nem lett bekapcsolva, ezért a hooks.toml érintetlen maradt."
+soundsFailed       = "Nem sikerült letölteni a hangeffekteket. Futtasd újra a `kaja config hooks` parancsot, ha online vagy."
+needsTerminal      = "A `kaja config hooks` kérdéseket tesz fel, ezért terminál kell hozzá."
+done               = "A hookok be vannak állítva. A sajátjaidat a hooks.toml szerkesztésével adhatod hozzá."
 
 
 [wizard]

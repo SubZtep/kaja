@@ -3,13 +3,13 @@ layout: page
 title: Settings
 parent: Configuration
 nav_order: 2
-summary: settings.toml: preferences, voice, marketplace and storage.
+summary: "settings.toml: preferences, voice, marketplace and storage."
 icon: ⚙️
 ---
 
 # settings.toml
 
-Install-wide preferences. Which model handles each task lives in [`models.toml`](/configuration/models).
+Install-wide preferences. Which model handles each task lives in [`models.toml`](/config/models).
 
 ```toml
 [preferences]
@@ -18,7 +18,6 @@ locale = "en-GB"
 thinking = false
 # toolDisplay = "minimal"
 # codePreviewLines = 5
-sounds = true
 voice = false
 # hotkeyModifier = "alt"
 # theme = "auto"
@@ -51,15 +50,14 @@ voice = false
 
 | Field              | Purpose                                                                                                                                                                                                                                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`             | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses)                                                                                                                                                                                                                             |
-| `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language))                                                                                                                                                                                                                            |
+| `mode`             | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/start/modes#which-mode-a-launch-uses)                                                                                                                                                                                                                                       |
+| `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/use/voice#language))                                                                                                                                                                                                                              |
 | `thinking`         | show the model's reasoning while it generates                                                                                                                                                                                                                                                                                                     |
-| `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show                                                                                                                                                                                                                                                          |
+| `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/use/tui#tool-calls) show                                                                                                                                                                                                                                                            |
 | `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all                                                                                                                                                                                                                                           |
-| `sounds`           | play UI sounds                                                                                                                                                                                                                                                                                                                                    |
 | `voice`            | speak replies aloud (needs a model listing `tts` in `models.toml`)                                                                                                                                                                                                                                                                                |
-| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                           |
-| `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/using/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                            |
+| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/use/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                             |
+| `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/use/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                              |
 | `yolo`             | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
 
 ## `commands.toml`: commands that run without asking
@@ -79,18 +77,50 @@ pattern that isn't a valid regex is skipped with a warning. The list applies to 
 
 ## `hooks.toml`: commands that run on chat events
 
-Optional: Kaja never creates this file. Each hook is a shell one-liner that the terminal UI starts in the
-background (it never waits for it) when something happens in the chat, in local and cloud mode:
+Optional: Kaja works without it. `kaja config hooks` (also a step of the [setup wizard](/start/wizard))
+looks for a sound player, a notification tool and a speech tool on your computer, asks what to switch on, downloads
+the sound effects into Kaja's data folder and writes this file. Without it nothing makes a sound.
+
+Each `[[event]]` table starts one shell command in the background (Kaja never waits for it) when that happens in the
+chat, in local and cloud mode. Several tables of the same event run side by side:
 
 ```toml
-message  = "espeak-ng --stdin"                           # the assistant wrote in the chat: read it aloud
-question = 'notify-send "Kaja asks" "$KAJA_TEXT"'        # Kaja asks you a question: show a notification
+[[message]]                                              # the assistant wrote in the chat
+run = "espeak-ng --stdin"                                # read it aloud...
+cancel = "speech"                                        # ...cutting off the reply still being read
+
+[[message]]
+run = 'paplay "$KAJA_SOUNDS/hehe.wav"'                   # and play a sound
+
+[[question]]                                             # Kaja asks you a question
+run = 'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"'        # show a notification
 ```
 
-The text, without Markdown, is in `$KAJA_TEXT` and on the command's stdin; `$KAJA_HOOK` is `message` or
-`question`. `question` is for when Kaja stops to ask you something; a reply that merely ends in a question mark is a `message`. A hook that fails is only logged (see [Logs](/configuration/commands#logs)). Every reply starts its own
-process, so a slow command can overlap with the next one, and one still running when you quit carries on. A
-session you resume doesn't replay its old messages, and `kaja telegram` has no hooks.
+| Event            | When                                                                                   |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| `message`        | the assistant wrote in the chat (a reply that merely ends in a question mark counts)   |
+| `question`       | Kaja stops to ask you something                                                        |
+| `confirm`        | a shell command or tool call waits for your approval                                   |
+| `reasoning`      | the assistant is thinking                                                              |
+| `tool_call`      | the assistant calls a tool                                                             |
+| `notice`         | the chat shows a notice, like a condensed conversation                                 |
+| `persona_switch` | the persona changed                                                                    |
+| `error`          | something went wrong                                                                   |
+| `copy`           | a message was copied to the clipboard                                                  |
+| `login_code`     | the browser couldn't be opened for sign-in, so the code went to your clipboard instead |
+
+In the command, `$KAJA_TEXT` is what happened as plain text without Markdown (also on stdin), `$KAJA_TITLE` a short
+title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`bell.wav`, `magic.wav`, `wind.wav`, `hehe.wav`,
+`error.wav`, `keyboard.wav`; see `kaja config paths`) and `$KAJA_HOOK` the event's name.
+
+`cancel = true` stops a still-running earlier run of the same command before the new one starts; `cancel = "name"` does
+that for every command sharing the name, so two `espeak-ng` never talk over each other. A command that fails is only
+logged (see [Logs](/config/commands#logs)), and one still running when you quit carries on. A session you resume
+doesn't replay its old messages, and `kaja telegram` has no hooks.
+
+`kaja config hooks` knows `paplay`, `pw-play`, `ffplay`, `mpv`, `play` and `aplay` for sounds, `notify-send` and
+`kdialog` for notifications and `espeak-ng`, `espeak` and `spd-say` for speech on Linux, `afplay`, `osascript` and
+`say` on macOS, and PowerShell on Windows. When one is missing it prints the command that installs it.
 
 ## `[marketplace]`
 
@@ -110,16 +140,16 @@ Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode
   the Kaja API. It needs a cloud sign-in (`kaja login`); signed out, those abilities are off and the chat
   says so. Network tools (`fetch_url`, HTTP tools, remote MCP servers) always run here.
 - **Cloud mode**, `computer`: your terminal runs it for cloud chat
-  ([Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)). Local-only abilities
+  ([Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)). Local-only abilities
   and your own always run here anyway.
 - `shell = "computer"` lets cloud chat use your shell (`run_command`), asking first unless
-  [`commands.toml`](/configuration/commands) lists the command as safe. Off by default.
+  [`commands.toml`](/config/commands) lists the command as safe. Off by default.
 
 ## `[context]`
 
-| Field        | Purpose                                                                                                                                              |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
+| Field        | Purpose                                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compact_at` | how full the chat model's [context window](/config/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
 
 Past that point, the older messages are summarised, and the model carries on from the summary plus the most
 recent turns, word for word. The chat shows a line each time, like `Context compacted: 26,000 → 4,000
@@ -142,15 +172,15 @@ works well), or else the chat model. The `summarize` tool uses the same model.
 
 ## `[stt]` / `[tts]`
 
-The speech server's URL and options, see [Voice](/using/voice). The models themselves are in `models.toml`.
+The speech server's URL and options, see [Voice](/use/voice). The models themselves are in `models.toml`.
 
 ## `[memory]`
 
-`dbPath` overrides where the [SQLite file](/configuration/storage) lives. Leave it out for the XDG data
+`dbPath` overrides where the [SQLite file](/config/storage) lives. Leave it out for the XDG data
 folder.
 
 ---
 
 Next:
 
-[Models](/configuration/models){: .btn .btn-green .fs-5 }
+[Models](/config/models){: .btn .btn-green .fs-5 }

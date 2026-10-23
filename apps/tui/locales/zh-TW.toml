@@ -43,6 +43,7 @@ manual           = "請用 {command} 手動更新，或從 {url} 下載"
 settings       = "設定"
 memorySessions = "記憶與對話"
 images         = "對話圖片"
+sounds         = "音效"
 backups        = "檔案備份"
 models         = "模型"
 commands       = "安全指令"
@@ -87,7 +88,8 @@ usage                = """
 用法
   $ kaja config fetch   從伺服器下載設定檔（離線時使用內建範本）
   $ kaja config diff    顯示 fetch 會變更的內容，但不寫入任何檔案
-  $ kaja config wizard  以互動方式設定語言、供應商與角色
+  $ kaja config wizard  互動式設定語言、供應商與角色
+  $ kaja config hooks   為這台電腦設定音效、通知與語音朗讀
   $ kaja config paths   列出 Kaja 讀取或寫入的所有路徑
 """
 fetched              = "已寫入 {path}"
@@ -99,6 +101,29 @@ fetchOfflineFallback = "無法連上伺服器（{message}）— 改用內建範�
 diffNew              = "{path}：新增"
 diffUnchanged        = "{path}：無變更"
 diffWouldUpdate      = "{path}：將會更新"
+
+
+[hooks]
+questionTitle      = "Kaja 想問你"
+confirmTitle       = "Kaja 需要你的同意"
+errorTitle         = "Kaja 遇到錯誤"
+yes                = "是"
+no                 = "否"
+kindPlayer         = "音效播放器"
+kindNotifier       = "通知工具"
+kindSpeaker        = "語音朗讀工具"
+found              = "找到 {what}：{program}"
+missing            = "此系統上找不到 {what}。"
+missingInstall     = "找不到 {what}。請用以下指令安裝：{command}"
+missingProgram     = "找不到 {what}。請用套件管理員安裝 {program}。"
+replaceTitle       = "{path} 已存在。要取代嗎？舊檔案會保留為備份。"
+soundsTitle        = "聊天中有事情發生時，要播放音效嗎？"
+notificationsTitle = "有提問、需要核准或切換角色時，要顯示桌面通知嗎？"
+speechTitle        = "要用 {program} 朗讀助理的訊息嗎？"
+nothing            = "沒有開啟任何項目，所以 hooks.toml 維持原樣。"
+soundsFailed       = "無法下載音效。連上網路後請再執行 `kaja config hooks`。"
+needsTerminal      = "`kaja config hooks` 會提出問題，所以需要終端機。"
+done               = "Hooks 已設定完成。編輯 hooks.toml 即可加入你自己的設定。"
 
 
 [wizard]

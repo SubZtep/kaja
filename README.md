@@ -51,9 +51,37 @@ flowchart LR
 | [`packages/schema`](./packages/schema/) | Every Zod schema and type, in role-based subpaths                                                                 |
 | [`packages/shared`](./packages/shared/) | Small pure utilities, including the Telegram plumbing both bots share                                             |
 
+## Required packages
+
+Install these OS-level tools on your machine (none of them is an npm dependency).
+
+### Essentials
+
+Needed just to run Kaja from source, as shown in the [next section](#run-from-the-source):
+
+- [Bun](https://bun.com/docs/installation#canary-builds) (canary)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Git](https://git-scm.com/install/)
+
+### For development
+
+On top of the essentials above, if you plan to contribute code:
+
+- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
+- [Lefthook](https://lefthook.dev/install/): runs the Git hooks — run `lefthook install` once after cloning
+
+### Optional
+
+Only needed if you use the matching feature:
+
+- Chromium — for `bun dev:sandbox` (skip it if you run the sandbox through Docker Compose instead)
+- A Secret Service keyring, such as gnome-keyring on Linux — the terminal UI stores its login with `Bun.secrets`, and the tests need it too
+- [Claude Code](https://claude.com/claude-code) — the pre-push hook uses it to translate new locale keys
+- Ruby with Bundler — for `bun dev:docs`, the Jekyll docs site
+
 ## Run from the source
 
-Make sure [Bun](https://bun.com/docs/installation#canary-builds) (canary), [Docker Compose](https://docs.docker.com/compose/install/), and [Git](https://git-scm.com/install/) are installed. Run the commands below in sequence.
+Run the commands below in sequence:
 
 ```bash
 # Get the source
@@ -74,20 +102,6 @@ bun dev:tui
 ```
 
 The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider(s) and it writes `~/.config/kaja/` for you.
-
-## Development
-
-Besides Bun, Docker Compose and Git from above, install these on your machine; none of them is an npm dependency:
-
-- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
-- [Lefthook](https://lefthook.dev/install/): runs the Git hooks, so run `lefthook install` once after cloning
-
-Optional, for parts of the repo:
-
-- Chromium: `bun dev:sandbox`, unless you run the sandbox through Docker Compose
-- A Secret Service keyring such as gnome-keyring (Linux): the terminal UI stores its login with `Bun.secrets`, and the tests need it too
-- [Claude Code](https://claude.com/claude-code): the pre-push hook uses it to translate new locale keys
-- Ruby with Bundler: `bun dev:docs`, the Jekyll docs site
 
 ## Documentation
 
