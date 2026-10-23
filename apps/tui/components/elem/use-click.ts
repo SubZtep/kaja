@@ -1,5 +1,6 @@
 import { type DOMElement, measureElement } from "ink"
 import type { RefObject } from "react"
+import { useInputBlocked } from "../../hooks/use-input-blocked"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { parseMouse } from "../../lib/terminal-input"
 
@@ -40,6 +41,7 @@ export function useClick(
   onClick: () => void,
   onHover?: (hovering: boolean) => void
 ) {
+  const blocked = useInputBlocked()
   useTerminalReports(input => {
     const mouse = parseMouse(input)
     if (!mouse || !ref.current) return
@@ -48,5 +50,5 @@ export function useClick(
       !!rect && mouse.col >= rect.left && mouse.col < rect.right && mouse.row >= rect.top && mouse.row < rect.bottom
     if (mouse.kind === "press" && inside) onClick()
     else if (mouse.kind === "move") onHover?.(inside)
-  })
+  }, !blocked)
 }

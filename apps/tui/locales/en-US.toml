@@ -304,6 +304,7 @@ expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
+close     = "[en-US] lorem"
 
 
 [viewport]
@@ -328,6 +329,18 @@ placeholder = "key or token"
 [activity]
 thinking = "Thinking… {seconds}s elapsed, still reasoning"
 tokens   = " · ~{tokens} tokens generated so far"
+
+
+[help]
+title    = "[en-US] lorem"
+intro    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+persona  = "[en-US] lorem ipsum"
+copy     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+expand   = "[en-US] lorem ipsum dolor sit"
+help     = "[en-US] lorem ipsum"
+scroll   = "[en-US] lorem ipsum"
+newline  = "[en-US] lorem ipsum dolor"
+openDocs = "[en-US] lorem ipsum dolor"
 
 
 [persona]

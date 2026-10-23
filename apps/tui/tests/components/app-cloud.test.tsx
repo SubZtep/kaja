@@ -92,7 +92,7 @@ test("the key bar shows Esc, Help, Persona, and Copy", async () => {
   await t.waitUntilExit()
 })
 
-test("the key bar's Esc entry becomes Cancel while the persona picker is open", async () => {
+test("the key bar's Esc entry becomes Close while the persona picker is open", async () => {
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.tick()
@@ -100,8 +100,30 @@ test("the key bar's Esc entry becomes Cancel while the persona picker is open", 
 
   await t.press("\x1bp") // Alt+P opens the persona picker
   const frame = t.lastFrame()
-  expect(frame).toContain("Cancel")
+  expect(frame).toContain("Choose a persona")
+  expect(frame).toContain("Close")
   expect(frame).not.toContain("Quit")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("help opens a modal that blocks typing, and Esc closes it without quitting", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.tick()
+
+  await t.press("\x1bl") // Alt+L
+  expect(t.lastFrame()).toContain("Switch persona")
+
+  await t.press("zzz")
+  await t.press("\x1b")
+  expect(t.lastFrame()).not.toContain("Switch persona")
+  expect(t.lastFrame()).not.toContain("zzz")
+  expect(t.lastFrame()).toContain("Quit")
+
+  await t.press("abc")
+  expect(t.lastFrame()).toContain("abc")
 
   t.unmount()
   await t.waitUntilExit()

@@ -1,6 +1,7 @@
 import { Box, type Key, Text, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
+import { useInputBlocked } from "../../hooks/use-input-blocked"
 import { useKey } from "../../hooks/use-key"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
@@ -299,10 +300,11 @@ export function ChatViewport({
     const view = scrollRef.current
     if (view) handleKeyInput(view, key, view.getBottomOffset())
   })
+  const blocked = useInputBlocked()
   useTerminalReports(input => {
     const view = scrollRef.current
     if (view) handleWheelInput(view, input, view.getBottomOffset())
-  })
+  }, !blocked)
 
   const showAffordance = canScroll && !stuckToBottom
 

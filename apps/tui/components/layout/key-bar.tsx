@@ -1,5 +1,6 @@
 import { Box, type DOMElement, Text, useBoxMetrics } from "ink"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useInputBlocked } from "../../hooks/use-input-blocked"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { parseMouse } from "../../lib/terminal-input"
 import { useKajaTheme } from "../theme"
@@ -54,13 +55,14 @@ export function KeyBar({ items }: Readonly<{ items: KeyBarEntry[] }>) {
       )
     })
 
+  const blocked = useInputBlocked()
   useTerminalReports(input => {
     const mouse = parseMouse(input)
     if (!mouse) return
     const item = hit(mouse.col, mouse.row)
     if (mouse.kind === "move") setHovered(item?.key ?? null)
     else item?.onPress?.()
-  })
+  }, !blocked)
 
   return (
     <Box ref={barRef} flexShrink={0} width="100%" flexWrap="wrap">

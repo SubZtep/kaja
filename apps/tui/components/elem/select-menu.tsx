@@ -4,7 +4,7 @@ import { useKey } from "../../hooks/use-key"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
 
-const VISIBLE_COUNT = 5
+const VISIBLE_COUNT = 6 // TODO: make it configurable, also visible hiddens
 
 /**
  * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
@@ -44,7 +44,8 @@ export function SelectMenu({
   /** Called as the highlight moves, e.g. to preview the option under it. */
   onFocus?: (index: number) => void
   onSelect: (index: number) => void
-  onClose: () => void
+  /** Left out inside a Modal, which closes on Escape itself. */
+  onClose?: () => void
 }>) {
   const start = Math.min(Math.max(initialIndex ?? 0, 0), Math.max(items.length - 1, 0))
   // Scrolls only far enough to keep the focused option on screen, so opening deep in a long list still shows it.
@@ -73,7 +74,7 @@ export function SelectMenu({
 
   useKey((_input, key) => {
     if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
-      onClose()
+      onClose?.()
       return
     }
     if (key.downArrow) move(1)

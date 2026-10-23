@@ -304,6 +304,7 @@ expand    = "展開"
 quitAgain = "仍在執行：再按一次 Esc 離開"
 cancel    = "取消"
 decline   = "拒絕"
+close     = "[zh-TW] lorem"
 
 
 [viewport]
@@ -328,6 +329,18 @@ placeholder = "金鑰或權杖"
 [activity]
 thinking = "思考中… 已過 {seconds} 秒，仍在推理"
 tokens   = " · 目前已產生約 {tokens} 個 token"
+
+
+[help]
+title    = "[zh-TW] lorem"
+intro    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+persona  = "[zh-TW] lorem ipsum"
+copy     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+expand   = "[zh-TW] lorem ipsum dolor sit"
+help     = "[zh-TW] lorem ipsum"
+scroll   = "[zh-TW] lorem ipsum"
+newline  = "[zh-TW] lorem ipsum dolor"
+openDocs = "[zh-TW] lorem ipsum dolor"
 
 
 [persona]

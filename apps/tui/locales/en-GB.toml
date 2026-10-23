@@ -304,6 +304,7 @@ expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
+close     = "Close"
 
 
 [viewport]
@@ -328,6 +329,18 @@ placeholder = "key or token"
 [activity]
 thinking = "Thinking… {seconds}s elapsed, still reasoning"
 tokens   = " · ~{tokens} tokens generated so far"
+
+
+[help]
+title    = "Help"
+intro    = "Type a message and press Enter to send it. Esc quits."
+persona  = "Switch persona"
+copy     = "Copy the latest reply (or click any reply to copy it)"
+expand   = "Expand or collapse long code"
+help     = "Show this help"
+scroll   = "Scroll the chat"
+newline  = "New line in your message"
+openDocs = "Open the documentation"
 
 
 [persona]

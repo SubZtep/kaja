@@ -304,6 +304,7 @@ expand    = "展開"
 quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
+close     = "[nan-TW] lorem"
 
 
 [viewport]
@@ -328,6 +329,18 @@ placeholder = "鎖匙抑是權杖"
 [activity]
 thinking = "咧想… 已經過 {seconds} 秒矣，猶咧推理"
 tokens   = " · 這馬已經產生大約 {tokens} 个 token"
+
+
+[help]
+title    = "[nan-TW] lorem"
+intro    = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+persona  = "[nan-TW] lorem"
+copy     = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+expand   = "[nan-TW] lorem ipsum dolor sit"
+help     = "[nan-TW] lorem"
+scroll   = "[nan-TW] lorem ipsum"
+newline  = "[nan-TW] lorem ipsum dolor"
+openDocs = "[nan-TW] lorem ipsum dolor"
 
 
 [persona]

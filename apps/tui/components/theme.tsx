@@ -178,6 +178,8 @@ function kajaStyles(p: Palette) {
     /** The chat box border while a power command is typed. */
     powerBox: (): BoxProps => ({ borderColor: p.success }),
     frame: (): BoxProps => ({ borderColor: p.frame }),
+    /** A modal window: opaque, so the pale screen under it doesn't show through. */
+    modal: (): BoxProps => ({ backgroundColor: p.background, borderColor: p.frame }),
     reasoningBox: (): BoxProps => ({ borderColor: p.info }),
     accent: (): TextProps => ({ color: p.accent }),
     userText: (): TextProps => ({ color: p.user }),

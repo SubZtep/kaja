@@ -304,6 +304,7 @@ expand    = "Kibontás"
 quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
+close     = "[hu-HU] lorem"
 
 
 [viewport]
@@ -328,6 +329,18 @@ placeholder = "kulcs vagy token"
 [activity]
 thinking = "Gondolkodom… {seconds}s eltelt, még mindig gondolkodom"
 tokens   = " · ~{tokens} token eddig"
+
+
+[help]
+title    = "[hu-HU] lorem"
+intro    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+persona  = "[hu-HU] lorem ipsum"
+copy     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+expand   = "[hu-HU] lorem ipsum dolor sit"
+help     = "[hu-HU] lorem ipsum"
+scroll   = "[hu-HU] lorem ipsum"
+newline  = "[hu-HU] lorem ipsum dolor"
+openDocs = "[hu-HU] lorem ipsum dolor"
 
 
 [persona]
