@@ -53,7 +53,7 @@ flowchart LR
 
 ## Required packages
 
-Install these OS-level tools on your machine (none of them is an npm dependency).
+Install some OS-level dev tools directly on your machine instead of adding them as npm dependencies. This gives better performance and keeps the repository lighter.
 
 ### Essentials
 
@@ -92,7 +92,7 @@ cd kaja
 # Install dependencies
 bun i
 
-# Prepare local data folders (uses sudo for ownership fixes)
+# Prepare local Docker volume folders (uses sudo for ownership fixes)
 scripts/prepare_data_dirs.sh
 
 # Start all the services
