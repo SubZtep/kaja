@@ -104,6 +104,8 @@ function buildKeyBarItems(
         onPress: binding.run,
         lit: modifierHeld
       })),
+    { key: "PgUp", label: t("keybar.older"), onPress: () => uiEvents.emit("pageUp") },
+    { key: "PgDn", label: t("keybar.newer"), onPress: () => uiEvents.emit("pageDown") },
     ...(escItem ? [escItem] : [])
   ]
 }

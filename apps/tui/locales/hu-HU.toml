@@ -285,7 +285,7 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 
 [input]
-placeholder = "PgUp előzmények · Alt+Enter új sor"
+placeholder = "[hu-HU] lorem ipsum"
 
 
 [header]
@@ -297,6 +297,8 @@ cloud = "Felhő"
 help      = "Súgó"
 persona   = "Perszóna"
 copy      = "Másolás"
+older     = "[hu-HU] lorem"
+newer     = "[hu-HU] lorem"
 quit      = "Kilépés"
 expand    = "Kibontás"
 quitAgain = "Még fut: Esc újra a kilépéshez"
@@ -305,7 +307,7 @@ decline   = "Elutasítás"
 
 
 [viewport]
-older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
+scrolledBack = "[hu-HU] lorem ipsum {percent}"
 
 
 [confirmCommand]

@@ -285,7 +285,7 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "PgUp history · Alt+Enter newline"
+placeholder = "Alt+Enter newline"
 
 
 [header]
@@ -297,6 +297,8 @@ cloud = "Cloud"
 help      = "Help"
 persona   = "Persona"
 copy      = "Copy"
+older     = "Older"
+newer     = "Newer"
 quit      = "Quit"
 expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
@@ -305,7 +307,7 @@ decline   = "Decline"
 
 
 [viewport]
-older = "↑ older · PageDown or Ctrl+End to follow"
+scrolledBack = "↑ {percent}% of the history"
 
 
 [confirmCommand]

@@ -6,6 +6,7 @@ import { useKey } from "../../hooks/use-key"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
+import { uiEvents } from "../../lib/ui-events"
 import { TextInput } from "../elem/text-input"
 import { useKajaTheme } from "../theme"
 
@@ -64,6 +65,7 @@ export function UserInput({
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
     history.markEdited()
+    uiEvents.emit("follow")
     setInput(value)
   }
 
@@ -76,6 +78,7 @@ export function UserInput({
     mic && !speaking,
     text => {
       history.markEdited()
+      uiEvents.emit("follow")
       setInput(prev => (prev ? `${prev} ${text}` : text))
     },
     personaModels

@@ -76,12 +76,13 @@ Prompt history spans all past sessions, newest first.
 
 ### Scrolling
 
-| Key                              | Action                              |
-| -------------------------------- | ----------------------------------- |
-| `PageUp` / `PageDown`            | One page                            |
-| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | 3 lines                             |
-| `Ctrl+Home`                      | Top                                 |
-| `Ctrl+End`                       | Bottom, and follow new output again |
+| Key                              | Action   |
+| -------------------------------- | -------- |
+| `PageUp` / `PageDown`            | One page |
+| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | 3 lines  |
+| `Ctrl+Home`                      | Top      |
+
+While you're scrolled back, the top of the chat shows how far down the history you are. Scroll to the bottom or start typing to follow new output again.
 
 ### Key bar
 

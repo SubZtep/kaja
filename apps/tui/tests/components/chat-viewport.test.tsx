@@ -12,6 +12,32 @@ const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({
   text: `line-${i}-padding-to-force-wrap-and-height`
 }))
 
+test("the key bar's page-up request scrolls toward older lines", async () => {
+  const t = renderForTest(
+    <Box flexDirection="column" width={40} height={12}>
+      <ChatViewport events={many} thinking={false} partial={null} pending={false} />
+    </Box>
+  )
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("line-39")
+
+  uiEvents.emit("pageUp")
+  await t.tick()
+  expect(t.lastFrame()).not.toContain("line-39")
+  expect(t.lastFrame()).toContain("% of the history")
+
+  // The follow row costs a line of the page, so the way back takes a second press
+  uiEvents.emit("pageDown")
+  uiEvents.emit("pageDown")
+  await t.tick()
+  expect(t.lastFrame()).toContain("line-39")
+  expect(t.lastFrame()).not.toContain("% of the history")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("shows recent history and page-up reveals older lines", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
@@ -29,13 +55,13 @@ test("shows recent history and page-up reveals older lines", async () => {
   await t.press("\x1b[5~")
   await t.tick()
   expect(t.lastFrame()).not.toContain("line-39")
-  expect(t.lastFrame()).toContain("older")
+  expect(t.lastFrame()).toContain("% of the history")
 
-  // Ctrl+End returns to the bottom and clears the affordance.
-  await t.press("\x1b[1;5F")
+  // Typing asks the chat to follow again, which clears the affordance.
+  uiEvents.emit("follow")
   await t.tick()
   expect(t.lastFrame()).toContain("line-39")
-  expect(t.lastFrame()).not.toContain("older")
+  expect(t.lastFrame()).not.toContain("% of the history")
 
   t.unmount()
   await t.waitUntilExit()

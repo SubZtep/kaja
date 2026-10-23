@@ -5,6 +5,7 @@ import { Box } from "ink"
 import { ChatViewport } from "../../components/layout/chat-viewport"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import * as renderImage from "../../lib/image/render-terminal-image"
+import { uiEvents } from "../../lib/ui-events"
 import { png } from "../fixtures/images"
 import { renderForTest } from "../test-utils"
 
@@ -103,7 +104,7 @@ test("an image row that scrolls out of the window and back comes back with its p
   // Coming back mounts the row again. A picture kept only in the row's own state would come back blank, the row
   // would measure its alt text instead, and the chat would scroll it out of the window once more — the picture
   // flickering forever over a viewport that never settles.
-  await t.press("\x1b[1;5F") // ctrl+End
+  uiEvents.emit("follow")
   await settledAfter(t)
   expect(t.lastFrame()).toContain(PICTURE)
 

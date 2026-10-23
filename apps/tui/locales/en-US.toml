@@ -285,7 +285,7 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "PgUp history · Alt+Enter newline"
+placeholder = "[en-US] lorem ipsum"
 
 
 [header]
@@ -297,6 +297,8 @@ cloud = "Cloud"
 help      = "Help"
 persona   = "Persona"
 copy      = "Copy"
+older     = "[en-US] lorem"
+newer     = "[en-US] lorem"
 quit      = "Quit"
 expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
@@ -305,7 +307,7 @@ decline   = "Decline"
 
 
 [viewport]
-older = "↑ older · PageDown or Ctrl+End to follow"
+scrolledBack = "[en-US] lorem ipsum {percent}"
 
 
 [confirmCommand]

@@ -285,7 +285,7 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 
 
 [input]
-placeholder = "PgUp 歷史紀錄 · Alt+Enter 換行"
+placeholder = "[zh-TW] lorem ipsum"
 
 
 [header]
@@ -297,6 +297,8 @@ cloud = "雲端"
 help      = "說明"
 persona   = "角色"
 copy      = "複製"
+older     = "[zh-TW] lorem"
+newer     = "[zh-TW] lorem"
 quit      = "離開"
 expand    = "展開"
 quitAgain = "仍在執行：再按一次 Esc 離開"
@@ -305,7 +307,7 @@ decline   = "拒絕"
 
 
 [viewport]
-older = "↑ 較早的內容 · 按 PageDown 或 Ctrl+End 跟隨最新"
+scrolledBack = "[zh-TW] lorem ipsum {percent}"
 
 
 [confirmCommand]
