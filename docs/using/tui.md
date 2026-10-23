@@ -111,7 +111,7 @@ row above the input and leaves a one-line summary of the turn's tools; `verbose`
 
 In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat.
 
-Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
+Thinking, tool display, code preview length and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 
 ## Colours

@@ -1,7 +1,6 @@
 import { formatDeviceUserCode } from "@kaja/shared/text"
 import chalk from "chalk"
 import { render } from "ink"
-import notifier from "node-notifier"
 import open from "open"
 import { writeText } from "tinyclip"
 import { renderUnicodeCompact } from "uqr"
@@ -11,6 +10,7 @@ import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
 import { getApiBaseUrl } from "../lib/config/api-url"
 import { config } from "../lib/config/config"
+import { fireHook } from "../lib/config/hooks"
 import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { resolveTheme } from "../lib/terminal-background"
@@ -95,9 +95,7 @@ export async function resolveToken(apiUrl: string): Promise<string> {
       else {
         showLink()
         await writeText(code)
-        notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
-          if (error) log.warn("Device login notification failed", { error })
-        })
+        fireHook("login_code", { text: t("cli.deviceLoginCodeCopied") })
       }
       if (!process.stdin.isTTY || !process.stdout.isTTY || signedIn) return
       // Each key works once: its hint goes, and the hints line is redrawn under what it printed.

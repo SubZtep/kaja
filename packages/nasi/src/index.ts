@@ -97,7 +97,7 @@ export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotF
 export type { PromptImage } from "./agent/images"
 export { samplingOf } from "./agent/persona"
 export { activePersona, personaTools, syncPersonaTools } from "./agent/persona-tools"
-export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
+export { killTrackedProcesses, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export {

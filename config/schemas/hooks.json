@@ -3,12 +3,274 @@
   "type": "object",
   "properties": {
     "message": {
-      "description": "Shell one-liner run in the background whenever the assistant writes in the chat; the reply as plain text is in $KAJA_TEXT and on stdin",
-      "type": "string"
+      "description": "Commands started in parallel whenever the assistant writes in the chat",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
     },
     "question": {
-      "description": "Shell one-liner run in the background whenever Kaja asks you a question; the question as plain text is in $KAJA_TEXT and on stdin",
-      "type": "string"
+      "description": "Commands started in parallel whenever Kaja asks you a question with a tool",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "confirm": {
+      "description": "Commands started in parallel whenever Kaja needs your approval for a command or tool call",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "reasoning": {
+      "description": "Commands started in parallel whenever the assistant starts thinking",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "tool_call": {
+      "description": "Commands started in parallel whenever the assistant calls a tool",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "notice": {
+      "description": "Commands started in parallel whenever the chat shows a notice, like a condensed conversation",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "persona_switch": {
+      "description": "Commands started in parallel whenever the persona changes",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "error": {
+      "description": "Commands started in parallel whenever something goes wrong",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "copy": {
+      "description": "Commands started in parallel after a message was copied to the clipboard",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
+    },
+    "login_code": {
+      "description": "Commands started in parallel when the sign-in code was copied because the browser could not be opened",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shell one-liner run in the background; the event's plain text is in $KAJA_TEXT and on stdin, its title in $KAJA_TITLE, the downloaded sounds folder in $KAJA_SOUNDS"
+          },
+          "cancel": {
+            "description": "Stop the still-running previous run before starting this one: true cancels a run of this same command, a name cancels any command that has the same name (e.g. one \"speech\" for every espeak-ng)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "required": ["run"]
+      }
     }
   }
 }

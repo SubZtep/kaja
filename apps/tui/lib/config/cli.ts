@@ -109,6 +109,15 @@ async function runWizard({ headless }: ConfigFlags): Promise<{ code: number; tex
   return runConfigWizard({ headless })
 }
 
+async function runHooks({ headless }: ConfigFlags): Promise<{ code: number; text: string }> {
+  if (headless || !process.stdin.isTTY || !process.stdout.isTTY) return { code: 1, text: t("hooks.needsTerminal") }
+  const { resolveConsoleTheme } = await import("../terminal-background")
+  await resolveConsoleTheme()
+  const { offerHooks } = await import("../hooks/offer")
+  await offerHooks(line => console.log(line))
+  return { code: 0, text: t("hooks.done") }
+}
+
 /**
  * The parsed flags these subcommands read. They come from `lib/cli/args.ts`, not from the positionals: parseArgs strips
  * flags out of `input`, so scanning it here silently ignored every one of them.
@@ -116,7 +125,7 @@ async function runWizard({ headless }: ConfigFlags): Promise<{ code: number; tex
 export type ConfigFlags = { headless?: boolean; offline?: boolean; only?: string }
 
 /**
- * Handles `kaja config <fetch|paths|diff|wizard>`;
+ * Handles `kaja config <fetch|paths|diff|wizard|hooks>`;
  *
  * Returns `{ code, text }`
  */
@@ -127,6 +136,7 @@ export async function runConfigCli(argv: string[], flags: ConfigFlags = {}): Pro
   if (command === "paths") return runPaths()
   if (command === "diff") return runDiff(flags)
   if (command === "wizard") return runWizard(flags)
+  if (command === "hooks") return runHooks(flags)
 
   return { code: 1, text: t("config.usage") }
 }

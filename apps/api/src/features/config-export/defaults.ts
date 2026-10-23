@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto"
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi"
 import { configCatalogSchema } from "@kaja/schema/api"
+import { SoundsManifestSchema } from "@kaja/schema/config"
 import type { Context } from "hono"
 import { catalogBundle, defaultSchemas, defaultTemplates } from "../../services/config-defaults"
+import { soundFile, sounds } from "../../services/sounds"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
 
@@ -65,8 +67,38 @@ const schemaRoute = createRoute({
   }
 })
 
+const soundsRoute = createRoute({
+  method: "get",
+  path: "/sounds",
+  tags: ["Config"],
+  summary: "The sound effects hooks.toml can play: names, sizes and hashes, for the terminal to download what it lacks",
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: SoundsManifestSchema } } },
+    304: { description: "Not modified" }
+  }
+})
+
 /** Public, unauthenticated: the same defaults the CLI bundles, so it carries no keys. */
 export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
+  routes.openapi(soundsRoute, async c => {
+    const { manifest } = await sounds()
+    if (notModified(c, etagOf(JSON.stringify(manifest)))) return c.body(null, 304)
+    return c.json(manifest, 200)
+  })
+
+  // A plain route: the body is a file, which the OpenAPI response typing can't express
+  routes.get("/sounds/:file", async c => {
+    const name = c.req.param("file")
+    const file = await soundFile(name)
+    if (!file) return notFound(c, `Unknown sound "${name}"`)
+
+    const etag = etagOf(`${file.size}:${file.lastModified}`)
+    if (notModified(c, etag)) return c.body(null, 304)
+    return new Response(file, {
+      headers: { "Content-Type": file.type, "Cache-Control": "public, max-age=300", ETag: etag }
+    })
+  })
+
   routes.openapi(catalogRoute, c => {
     if (notModified(c, catalogEtag)) return c.body(null, 304)
     return c.json(catalogBundle, 200)

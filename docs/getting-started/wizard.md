@@ -83,6 +83,11 @@ flowchart TD
 
 ## After the last question
 
+Either way, Kaja first looks for a sound player, a notification tool and a speech tool on your computer and
+offers sound effects, desktop notifications and reading replies aloud
+([`hooks.toml`](/configuration/config#hookstoml-commands-that-run-on-chat-events)). What it can't find, it tells you
+how to install. `kaja config hooks` runs just this part again.
+
 With **Kaja Cloud** that's it. The first time, Kaja goes straight on to sign you in. After a later
 `kaja config wizard`, run `kaja` to sign in.
 

@@ -10,16 +10,16 @@ test("empty config validates — every field is optional", () => {
 
 test("config with preferences round-trips", () => {
   const parsed = KajaConfigSchema.parse({
-    preferences: { thinking: false, sounds: true }
+    preferences: { thinking: false, voice: true }
   })
-  expect(parsed.preferences).toEqual({ thinking: false, sounds: true })
+  expect(parsed.preferences).toEqual({ thinking: false, voice: true })
 })
 
 test("partial preferences are allowed", () => {
   const parsed = KajaConfigSchema.parse({
-    preferences: { sounds: false }
+    preferences: { voice: false }
   })
-  expect(parsed.preferences).toEqual({ sounds: false })
+  expect(parsed.preferences).toEqual({ voice: false })
 })
 
 test("preferences locale accepts the supported locales only", () => {

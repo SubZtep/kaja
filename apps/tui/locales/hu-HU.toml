@@ -43,6 +43,7 @@ manual           = "Frissíts kézzel ezzel: {command}, vagy töltsd le innen: {
 settings       = "beállítások"
 memorySessions = "memória és munkamenetek"
 images         = "munkamenet-képek"
+sounds         = "[hu-HU] lorem"
 backups        = "fájlmentések"
 models         = "modellek"
 commands       = "biztonságos parancsok"
@@ -84,11 +85,12 @@ unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opció
 invalidAt            = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists            = "Nem létezik a konfigurációs fájl: {path}"
 usage                = """
-Használat
-  $ kaja config fetch   Letölti a konfigurációs fájlokat a szerverről (offline: beépített sablonok)
-  $ kaja config diff    Megmutatja, mit változtatna a fetch, írás nélkül
-  $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató, perszóna
-  $ kaja config paths   Mutatja az összes elérési utat, amit a Kaja használ
+[hu-HU] lorem
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
 """
 fetched              = "{path} elmentve"
 fetchedWithBackup    = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
@@ -99,6 +101,29 @@ fetchOfflineFallback = "Nem sikerült elérni a szervert ({message}) — beépí
 diffNew              = "{path}: új"
 diffUnchanged        = "{path}: változatlan"
 diffWouldUpdate      = "{path}: frissülne"
+
+
+[hooks]
+questionTitle      = "[hu-HU] lorem"
+confirmTitle       = "[hu-HU] lorem ipsum dolor"
+errorTitle         = "[hu-HU] lorem ipsum"
+yes                = "[hu-HU] lorem"
+no                 = "[hu-HU] lorem"
+kindPlayer         = "[hu-HU] lorem"
+kindNotifier       = "[hu-HU] lorem ipsum"
+kindSpeaker        = "[hu-HU] lorem"
+found              = "[hu-HU] lorem {what} {program}"
+missing            = "[hu-HU] lorem ipsum dolor {what}"
+missingInstall     = "[hu-HU] lorem ipsum dolor sit {what} {command}"
+missingProgram     = "[hu-HU] lorem ipsum dolor sit amet consectetur {what} {program}"
+replaceTitle       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit {path}"
+soundsTitle        = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+notificationsTitle = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+speechTitle        = "[hu-HU] lorem ipsum dolor sit amet consectetur {program}"
+nothing            = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+soundsFailed       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+needsTerminal      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit"
+done               = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
 
 
 [wizard]

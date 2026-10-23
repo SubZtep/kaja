@@ -17,7 +17,7 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ settings.toml    # preferences, voice, marketplace, storage location
 ├─ models.toml      # providers and the model for each task
 ├─ secrets.toml     # every key and token, and nothing else
-├─ hooks.toml       # optional: commands to run on chat events
+├─ hooks.toml       # optional: commands to run on chat events (sounds, notifications, speech)
 └─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
