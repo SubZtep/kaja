@@ -22,6 +22,7 @@ export function PersonaPicker({
     <Modal title={t("persona.pickerTitle")} onClose={onCancel}>
       <SelectMenu
         items={personas.map(p => `${p.label}${p.id === currentPersonaId ? " ✓" : ""}`)}
+        visibleCount={5}
         accented={personas.map(p => Boolean(p.local))}
         onSelect={index => {
           const next = personas[index]
