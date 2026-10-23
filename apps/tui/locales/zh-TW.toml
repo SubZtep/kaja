@@ -285,7 +285,7 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 
 
 [input]
-placeholder = "[zh-TW] lorem ipsum"
+placeholder = "輸入點什麼..."
 
 
 [header]
@@ -297,18 +297,18 @@ cloud = "雲端"
 help      = "說明"
 persona   = "角色"
 copy      = "複製"
-older     = "[zh-TW] lorem"
-newer     = "[zh-TW] lorem"
+older     = "較舊"
+newer     = "較新"
 quit      = "離開"
 expand    = "展開"
 quitAgain = "仍在執行：再按一次 Esc 離開"
 cancel    = "取消"
 decline   = "拒絕"
-close     = "[zh-TW] lorem"
+close     = "關閉"
 
 
 [viewport]
-scrolledBack = "[zh-TW] lorem ipsum {percent}"
+scrolledBack = "↑ 歷史紀錄的 {percent}%"
 
 
 [confirmCommand]
@@ -332,15 +332,15 @@ tokens   = " · 目前已產生約 {tokens} 個 token"
 
 
 [help]
-title    = "[zh-TW] lorem"
-intro    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-persona  = "[zh-TW] lorem ipsum"
-copy     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-expand   = "[zh-TW] lorem ipsum dolor sit"
-help     = "[zh-TW] lorem ipsum"
-scroll   = "[zh-TW] lorem ipsum"
-newline  = "[zh-TW] lorem ipsum dolor"
-openDocs = "[zh-TW] lorem ipsum dolor"
+title    = "說明"
+intro    = "輸入訊息後按 Enter 送出。按 Esc 離開。"
+persona  = "切換角色"
+copy     = "複製最新回覆（或點選任一則回覆來複製）"
+expand   = "展開或收合長程式碼"
+help     = "顯示這份說明"
+scroll   = "捲動聊天"
+newline  = "在訊息中換行"
+openDocs = "開啟文件"
 
 
 [persona]

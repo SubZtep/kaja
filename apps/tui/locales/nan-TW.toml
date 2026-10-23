@@ -285,7 +285,7 @@ invalidAt = "secrets 檔無效（{path}）：{message}"
 
 
 [input]
-placeholder = "[nan-TW] lorem ipsum"
+placeholder = "拍字⋯⋯"
 
 
 [header]
@@ -297,18 +297,18 @@ cloud = "雲端"
 help      = "說明"
 persona   = "角色"
 copy      = "拷貝"
-older     = "[nan-TW] lorem"
-newer     = "[nan-TW] lorem"
+older     = "較舊"
+newer     = "較新"
 quit      = "退出"
 expand    = "展開"
 quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
-close     = "[nan-TW] lorem"
+close     = "關掉"
 
 
 [viewport]
-scrolledBack = "[nan-TW] lorem ipsum {percent}"
+scrolledBack = "↑ 歷史的 {percent}%"
 
 
 [confirmCommand]
@@ -332,15 +332,15 @@ tokens   = " · 這馬已經產生大約 {tokens} 个 token"
 
 
 [help]
-title    = "[nan-TW] lorem"
-intro    = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-persona  = "[nan-TW] lorem"
-copy     = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-expand   = "[nan-TW] lorem ipsum dolor sit"
-help     = "[nan-TW] lorem"
-scroll   = "[nan-TW] lorem ipsum"
-newline  = "[nan-TW] lorem ipsum dolor"
-openDocs = "[nan-TW] lorem ipsum dolor"
+title    = "說明"
+intro    = "拍一則訊息，按 Enter 就送出。按 Esc 就退出。"
+persona  = "切換角色"
+copy     = "拷貝上新的回覆（抑是點任何一則回覆來拷貝）"
+expand   = "展開抑是收起長的程式碼"
+help     = "顯示這个說明"
+scroll   = "捲動聊天"
+newline  = "訊息內底換行"
+openDocs = "拍開文件"
 
 
 [persona]

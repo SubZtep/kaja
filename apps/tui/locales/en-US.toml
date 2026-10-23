@@ -285,7 +285,7 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "[en-US] lorem ipsum"
+placeholder = "Type something..."
 
 
 [header]
@@ -297,18 +297,18 @@ cloud = "Cloud"
 help      = "Help"
 persona   = "Persona"
 copy      = "Copy"
-older     = "[en-US] lorem"
-newer     = "[en-US] lorem"
+older     = "Older"
+newer     = "Newer"
 quit      = "Quit"
 expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
-close     = "[en-US] lorem"
+close     = "Close"
 
 
 [viewport]
-scrolledBack = "[en-US] lorem ipsum {percent}"
+scrolledBack = "↑ {percent}% of the history"
 
 
 [confirmCommand]
@@ -332,15 +332,15 @@ tokens   = " · ~{tokens} tokens generated so far"
 
 
 [help]
-title    = "[en-US] lorem"
-intro    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
-persona  = "[en-US] lorem ipsum"
-copy     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
-expand   = "[en-US] lorem ipsum dolor sit"
-help     = "[en-US] lorem ipsum"
-scroll   = "[en-US] lorem ipsum"
-newline  = "[en-US] lorem ipsum dolor"
-openDocs = "[en-US] lorem ipsum dolor"
+title    = "Help"
+intro    = "Type a message and press Enter to send it. Esc quits."
+persona  = "Switch persona"
+copy     = "Copy the latest reply (or click any reply to copy it)"
+expand   = "Expand or collapse long code"
+help     = "Show this help"
+scroll   = "Scroll the chat"
+newline  = "New line in your message"
+openDocs = "Open the documentation"
 
 
 [persona]

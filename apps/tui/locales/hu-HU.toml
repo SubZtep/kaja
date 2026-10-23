@@ -285,7 +285,7 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 
 [input]
-placeholder = "[hu-HU] lorem ipsum"
+placeholder = "Írj valamit..."
 
 
 [header]
@@ -297,18 +297,18 @@ cloud = "Felhő"
 help      = "Súgó"
 persona   = "Perszóna"
 copy      = "Másolás"
-older     = "[hu-HU] lorem"
-newer     = "[hu-HU] lorem"
+older     = "Régebbi"
+newer     = "Újabb"
 quit      = "Kilépés"
 expand    = "Kibontás"
 quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
-close     = "[hu-HU] lorem"
+close     = "Bezárás"
 
 
 [viewport]
-scrolledBack = "[hu-HU] lorem ipsum {percent}"
+scrolledBack = "↑ az előzmények {percent}%-a"
 
 
 [confirmCommand]
@@ -332,15 +332,15 @@ tokens   = " · ~{tokens} token eddig"
 
 
 [help]
-title    = "[hu-HU] lorem"
-intro    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-persona  = "[hu-HU] lorem ipsum"
-copy     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-expand   = "[hu-HU] lorem ipsum dolor sit"
-help     = "[hu-HU] lorem ipsum"
-scroll   = "[hu-HU] lorem ipsum"
-newline  = "[hu-HU] lorem ipsum dolor"
-openDocs = "[hu-HU] lorem ipsum dolor"
+title    = "Súgó"
+intro    = "Írj üzenetet, és az Enterrel küldd el. Az Esc kilép."
+persona  = "Perszóna váltása"
+copy     = "Legutóbbi válasz másolása (vagy kattints bármelyik válaszra a másoláshoz)"
+expand   = "Hosszú kód kibontása vagy összecsukása"
+help     = "Ennek a súgónak a megjelenítése"
+scroll   = "Chat görgetése"
+newline  = "Új sor az üzenetben"
+openDocs = "Dokumentáció megnyitása"
 
 
 [persona]
