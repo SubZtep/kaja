@@ -303,6 +303,7 @@ function Chrome({
                   options: choices.map((label, index) => ({ kind: "choice", id: String(index), label })),
                   placeholder: t("input.askChoicesPlaceholder")
                 }}
+                asking
                 speaking={speaking}
                 personaModels={personaModels}
                 history={history}

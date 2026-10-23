@@ -435,6 +435,7 @@ test("a question with options lists them beside the field, and picking one sends
   expect(t.lastFrame()).toContain("Proceed?")
   expect(t.lastFrame()).toContain("Yes")
   expect(t.lastFrame()).toContain("Or type your own answer")
+  expect(t.lastFrame()).toContain("↓") // the power border marks it as an answer
 
   await t.press("\x1b[B") // down to "No"
   await t.press("\r")

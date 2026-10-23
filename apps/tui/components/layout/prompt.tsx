@@ -31,6 +31,7 @@ export type PromptResult = { kind: "option"; id: string } | { kind: "text"; text
 export function Prompt({
   spec,
   busy,
+  asking = false,
   speaking = false,
   personaModels,
   history,
@@ -42,6 +43,8 @@ export function Prompt({
 }: Readonly<{
   spec: PromptSpec
   busy?: string
+  /** The field's border marks it as an answer to the agent's question (the power border), not a reply to a gate. */
+  asking?: boolean
   speaking?: boolean
   personaModels?: PersonaModels
   /** Past prompts for the field's ↑/↓ recall. */
@@ -86,7 +89,7 @@ export function Prompt({
             key={generation}
             pending={false}
             speaking={speaking}
-            asking
+            asking={asking}
             send={text => Promise.resolve(onResolve({ kind: "text", text }))}
             personaModels={personaModels}
             history={history}

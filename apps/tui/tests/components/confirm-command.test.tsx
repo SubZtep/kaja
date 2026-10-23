@@ -23,6 +23,7 @@ test("shows the question, both answers and the field, but not the command", asyn
   expect(t.lastFrame()).toContain("No, cancel")
   expect(t.lastFrame()).toContain("Or type what to do instead")
   expect(t.lastFrame()).not.toContain("rm -rf")
+  expect(t.lastFrame()).not.toContain("↓") // a plain border: only a question's answer gets the arrows
   t.unmount()
   await t.waitUntilExit()
 })
