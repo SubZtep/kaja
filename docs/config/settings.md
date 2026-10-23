@@ -86,7 +86,7 @@ chat, in local and cloud mode. Several tables of the same event run side by side
 
 ```toml
 [[message]]                                              # the assistant wrote in the chat
-run = "espeak-ng --stdin"                                # read it aloud...
+run = 'espeak-ng -v "$KAJA_LOCALE" --stdin'               # read it aloud, in your language...
 cancel = "speech"                                        # ...cutting off the reply still being read
 
 [[message]]
@@ -111,7 +111,9 @@ run = 'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"'        # show a notification
 
 In the command, `$KAJA_TEXT` is what happened as plain text without Markdown (also on stdin), `$KAJA_TITLE` a short
 title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`bell.wav`, `magic.wav`, `wind.wav`, `hehe.wav`,
-`error.wav`, `keyboard.wav`; see `kaja config paths`) and `$KAJA_HOOK` the event's name.
+`error.wav`, `keyboard.wav`; see `kaja config paths`), `$KAJA_LOCALE` your language (the [`locale`](#preferences)
+preference, like `hu-HU`), which is why a speech command doesn't hard-code
+a voice and follows the setting when you change it, and `$KAJA_HOOK` the event's name.
 
 `cancel = true` stops a still-running earlier run of the same command before the new one starts; `cancel = "name"` does
 that for every command sharing the name, so two `espeak-ng` never talk over each other. A command that fails is only

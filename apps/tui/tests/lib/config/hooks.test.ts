@@ -7,6 +7,7 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-hooks`
 
 const { fireHook, getHooksPath, loadHooks, resetHooks, runHook } = await import("../../../lib/config/hooks")
 const { getConfigDir } = await import("../../../lib/config/config")
+const { getLanguage } = await import("../../../lib/i18n")
 const { write, file } = await import("bun")
 
 async function reset() {
@@ -67,18 +68,21 @@ test("a broken, old-style or wrongly typed file means no hooks", async () => {
   expect(loadHooks()).toEqual({})
 })
 
-test("a hook gets the text, title and sounds folder in the environment, the text on stdin, and runs without being awaited", async () => {
+test("a hook gets the text, title, sounds folder and locale in the environment, the text on stdin, and runs without being awaited", async () => {
   await reset()
   const env = join(getConfigDir(), "env.txt")
   const stdin = join(getConfigDir(), "stdin.txt")
   runHook(
     "question",
-    { run: `printf '%s|%s|%s|%s' "$KAJA_HOOK" "$KAJA_TEXT" "$KAJA_TITLE" "$KAJA_SOUNDS" > '${env}'; cat > '${stdin}'` },
+    {
+      run: `printf '%s|%s|%s|%s|%s' "$KAJA_HOOK" "$KAJA_TEXT" "$KAJA_TITLE" "$KAJA_SOUNDS" "$KAJA_LOCALE" > '${env}'; cat > '${stdin}'`
+    },
     { text: "Shall I go on?", title: "Kaja asks" }
   )
-  const [hook, text, title, sounds] = (await waitForText(env)).split("|")
+  const [hook, text, title, sounds, locale] = (await waitForText(env)).split("|")
   expect([hook, text, title]).toEqual(["question", "Shall I go on?", "Kaja asks"])
   expect(sounds).toEndWith("sounds")
+  expect(locale).toBe(getLanguage())
   expect(await waitForText(stdin)).toBe("Shall I go on?")
 })
 

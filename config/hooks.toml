@@ -7,6 +7,7 @@
 #   $KAJA_TITLE   a short title, for notifications
 #   $KAJA_SOUNDS  the folder of sound effects `kaja config hooks` downloads (bell.wav, magic.wav, wind.wav, hehe.wav,
 #                 error.wav, keyboard.wav)
+#   $KAJA_LOCALE  the language Kaja runs in (preferences.locale in settings.toml, e.g. hu-HU), for speech tools
 #   $KAJA_HOOK    the event's name
 #
 # Events: message, question, confirm, reasoning, tool_call, notice, persona_switch, error, copy, login_code.
@@ -16,7 +17,7 @@
 
 # The assistant wrote something in the chat. Read it aloud, cutting off the previous reply:
 # [[message]]
-# run = "espeak-ng --stdin"
+# run = 'espeak-ng -v "$KAJA_LOCALE" --stdin'
 # cancel = "speech"
 
 # A sound as well:

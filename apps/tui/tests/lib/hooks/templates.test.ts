@@ -14,33 +14,28 @@ test("sounds, notifications and speech each add their commands to the events", (
   const hooks = parse(buildHooksToml(linux, all))
   expect(hooks.message).toEqual([
     { run: 'paplay "$KAJA_SOUNDS/hehe.wav"' },
-    { run: "espeak-ng --stdin", cancel: "speech" }
+    { run: 'espeak-ng -v "$KAJA_LOCALE" --stdin', cancel: "speech" }
   ])
   expect(hooks.question?.map(command => command.run)).toEqual([
     'paplay "$KAJA_SOUNDS/bell.wav"',
     'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"',
-    "espeak-ng --stdin"
+    'espeak-ng -v "$KAJA_LOCALE" --stdin'
   ])
   expect(hooks.login_code).toEqual([{ run: 'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"' }])
   expect(hooks.copy).toEqual([{ run: 'paplay "$KAJA_SOUNDS/keyboard.wav"' }])
 })
 
-test("speech includes the active locale as espeak-ng's voice", () => {
-  const hooks = parse(buildHooksToml(linux, all, "hu-HU"))
-  expect(hooks.message?.map(command => command.run)).toContain("espeak-ng -v hu-HU --stdin")
-})
-
-test("macOS say looks up an installed voice for the language", () => {
+test("macOS say looks up an installed voice for the language of $KAJA_LOCALE", () => {
   const darwin = detectBackends("darwin", program => `/usr/bin/${program}`)
-  const hooks = parse(buildHooksToml(darwin, all, "hu-HU"))
+  const hooks = parse(buildHooksToml(darwin, all))
   const run = hooks.message?.map(command => command.run).find(text => text.includes("say"))
-  expect(run).toContain(`l="hu"`)
+  expect(run).toContain('"$KAJA_LOCALE"')
   expect(run).toContain('say ${v:+-v "$v"}')
 })
 
-test("Windows speech selects a voice by culture", () => {
-  const hooks = parse(buildHooksToml(windows, all, "hu-HU"))
-  expect(hooks.message?.[1]?.run).toContain("CultureInfo('hu-HU')")
+test("Windows speech selects a voice by the culture of $KAJA_LOCALE", () => {
+  const hooks = parse(buildHooksToml(windows, all))
+  expect(hooks.message?.[1]?.run).toContain("CultureInfo($env:KAJA_LOCALE)")
 })
 
 test("only what was asked for is written", () => {
