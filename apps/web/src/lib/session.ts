@@ -6,7 +6,20 @@ import type { Session } from "better-auth"
 import type { UserWithRole } from "better-auth/plugins"
 import { env } from "../env/server"
 
-export const getSession = createServerFn({ method: "GET" }).handler(async () => {
+export type SessionData = { session: Session; user: UserWithRole & { locale?: Locale | null } }
+
+// Client navigations and hover preloads all ask for the session; one lookup a minute is plenty
+const BROWSER_SESSION_TTL_MS = 60_000
+
+let cached: { at: number; data: Promise<SessionData | null> } | undefined
+
+async function readSession(res: Response): Promise<SessionData | null> {
+  if (res.status === 401 || res.status === 204) return null
+  if (!res.ok) throw new Error(`Failed to fetch session: ${res.status} ${res.statusText}`)
+  return res.json() as Promise<SessionData | null>
+}
+
+const getSessionOnServer = createServerFn({ method: "GET" }).handler(async () => {
   const apiUrl = env.API_URL || env.VITE_API_URL
 
   const headers = getRequestHeaders()
@@ -23,14 +36,26 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
     },
     credentials: "include"
   })
-
-  if (res.status === 401 || res.status === 204) {
-    return null
-  }
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch session: ${res.status} ${res.statusText}`)
-  }
-
-  return res.json() as Promise<{ session: Session; user: UserWithRole & { locale?: Locale | null } }>
+  return readSession(res)
 })
+
+/**
+ * The signed-in session, or null. On the server it goes through the API with the visitor's cookie; in the browser it
+ * asks the API directly (so the API sees the visitor's own IP) and reuses the answer for a minute.
+ */
+export function getSession(apiUrl: string): Promise<SessionData | null> {
+  if (import.meta.env.SSR) return getSessionOnServer()
+  if (cached && Date.now() - cached.at < BROWSER_SESSION_TTL_MS) return cached.data
+  const data = fetch(`${apiUrl}/auth/get-session`, { credentials: "include" }).then(readSession)
+  cached = { at: Date.now(), data }
+  // A failed lookup isn't kept, so the next navigation tries again
+  data.catch(() => {
+    if (cached?.data === data) cached = undefined
+  })
+  return data
+}
+
+/** Drops the browser's cached session; call it before `router.invalidate()` after the session or user changed. */
+export function forgetSession() {
+  cached = undefined
+}

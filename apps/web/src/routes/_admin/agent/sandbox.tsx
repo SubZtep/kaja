@@ -25,7 +25,7 @@ import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/agent/sandbox")({
   component: SandboxPage,
-  loader: () => userRequired(),
+  loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_sandbox() }) })
 })
 

@@ -12,6 +12,7 @@ import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { guestOnly } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
+import { forgetSession } from "../../lib/session"
 import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
@@ -21,7 +22,7 @@ import { PRIVACY_URL, TERMS_URL } from "./-components/footer"
 import { GoogleButton } from "./-components/google-button"
 
 export const Route = createFileRoute("/_public/signup")({
-  beforeLoad: () => guestOnly(),
+  beforeLoad: ({ context }) => guestOnly(context.session),
   component: SignUp,
   head: () => ({
     meta: seo({ title: m.nav_sign_up(), description: m.seo_signup_desc() })
@@ -81,6 +82,7 @@ function SignUp() {
     if (data?.user) {
       toast.success(m.signup_success())
       // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
+      forgetSession()
       await router.invalidate()
       navigate({ to: "/dashboard" })
     }

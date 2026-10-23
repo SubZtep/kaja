@@ -15,11 +15,12 @@ import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
+import { forgetSession } from "../../lib/session"
 import { m } from "../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/profile")({
   component: Profile,
-  loader: () => userRequired(),
+  loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_profile() }) })
 })
 
@@ -90,6 +91,8 @@ function EditUser({ user }: Readonly<{ user: User }>) {
         if (data?.status) {
           toast.success(m.profile_success_user_updated())
           form.reset(parsed.data)
+          // The next page load fetches the new name and picture rather than the cached session's
+          forgetSession()
         }
       } catch {
         toast.error(m.error_generic())
@@ -204,6 +207,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
     toast.success(m.profile_success_email_updated())
     setPending(undefined)
     form.reset()
+    forgetSession()
     await router.invalidate()
   }
 

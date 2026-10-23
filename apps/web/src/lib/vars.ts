@@ -10,6 +10,16 @@ export const getRootEnv = createServerFn().handler(() => {
   }
 })
 
+let browserRootEnv: ReturnType<typeof getRootEnv> | undefined
+
+/** {@link getRootEnv}, asked once per page in the browser since it never changes there. */
+export function loadRootEnv(): ReturnType<typeof getRootEnv> {
+  if (import.meta.env.SSR) return getRootEnv()
+  browserRootEnv ??= getRootEnv()
+  browserRootEnv.catch(() => (browserRootEnv = undefined))
+  return browserRootEnv
+}
+
 const isWin32 = () => typeof navigator !== "undefined" && navigator.userAgent.includes("Windows")
 
 /** One-line CLI installers, by platform. */

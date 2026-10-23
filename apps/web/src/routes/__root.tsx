@@ -14,8 +14,8 @@ import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
 import { captureError, loadSentry } from "../lib/sentry"
-import { getSession } from "../lib/session"
-import { getPageTitle, getRootEnv } from "../lib/vars"
+import { getSession, type SessionData } from "../lib/session"
+import { getPageTitle, loadRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
@@ -35,11 +35,13 @@ const OG_LOCALE: Record<Locale, string> = {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  loader: async ({ location }) => {
-    let session: Awaited<ReturnType<typeof getSession>> | null = null
+  // In beforeLoad, not the loader, so child routes' guards read it from context instead of fetching it again
+  beforeLoad: async ({ location }) => {
+    const rootEnv = await loadRootEnv()
+    let session: SessionData | null = null
     let sessionError = false
     try {
-      session = await getSession()
+      session = await getSession(rootEnv.apiUrl)
     } catch (err) {
       captureError(err)
       sessionError = true
@@ -48,7 +50,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const saved = session?.user.locale
     if (import.meta.env.SSR && saved && saved !== getLocale() && !keepsLinkLanguage(location.pathname))
       throw redirect({ href: localizeHref(location.href, { locale: saved }) })
-    const { apiUrl, barkochbaWidgetKey, chatWidgetKey, turnstileSiteKey } = await getRootEnv()
+    return { rootEnv, session, sessionError }
+  },
+  loader: ({ context: { rootEnv, session, sessionError } }) => {
+    const { apiUrl, barkochbaWidgetKey, chatWidgetKey, turnstileSiteKey } = rootEnv
     return {
       apiUrl,
       barkochbaWidgetKey,
