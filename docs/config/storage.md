@@ -176,10 +176,6 @@ erDiagram
   nasi_dataset_answer }o--|| nasi_dataset_version : "topic + owner + version"
 ```
 
-A file from an older Kaja, with tables named `sessions`, `messages` and so on, isn't converted. Kaja renames it
-to `memory.sqlite.legacy` (with its `-wal` and `-shm` files) and starts a fresh one. Nothing in the old file is
-deleted, but Kaja doesn't read it again.
-
 ## Deleting it
 
 Close Kaja (and the Telegram bot), then delete the file, any `-wal` and `-shm` files beside it, and the

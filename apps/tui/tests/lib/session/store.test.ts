@@ -1,5 +1,4 @@
 import { afterEach, expect, test } from "bun:test"
-import { existsSync } from "node:fs"
 import { readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
@@ -175,23 +174,4 @@ test("timestamps are UTC instants whatever timezone the machine is in, so newest
     if (originalTz === undefined) delete process.env.TZ
     else process.env.TZ = originalTz
   }
-})
-
-test("a database from before the nasi_* tables is set aside whole, and a fresh one opens in its place", async () => {
-  const { createSqliteStore } = await import("../../../lib/store/sqlite")
-  const path = `${tmpdir()}/kaja-legacy-${Bun.randomUUIDv7()}.sqlite`
-  const legacy = new SQL({ adapter: "sqlite", filename: path })
-  await legacy`CREATE TABLE sessions (id TEXT PRIMARY KEY, title TEXT)`
-  await legacy`INSERT INTO sessions VALUES ('old', 'kept')`
-  await legacy.close()
-
-  const store = await createSqliteStore(path)
-  expect(await store.listSessions()).toEqual([])
-  const id = await store.createSession({ ...row(), title: "new" })
-  expect((await store.loadSession(id))!.session.messages).toEqual(SESSION.messages)
-
-  expect(existsSync(`${path}.legacy`)).toBe(true)
-  const old = new SQL({ adapter: "sqlite", filename: `${path}.legacy`, readonly: true })
-  expect([...(await old`SELECT title FROM sessions`)]).toEqual([{ title: "kept" }])
-  await old.close()
 })

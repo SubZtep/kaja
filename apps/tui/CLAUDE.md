@@ -15,7 +15,7 @@ bun session dump <id>     # one session as markdown with a Mermaid sequenceDiagr
 
 `bun session` (`scripts/session.ts`, tested in `tests/scripts/session.test.ts`) is a read-only debugging dump of `memory.sqlite`: it never creates or migrates the database, and it only sees terminal sessions (empty owner), not cloud or Telegram ones. Redirect `dump` to a file and open it in a Mermaid-aware viewer.
 
-`memory.sqlite` is `@kaja/nasi`'s `createSqlStore` over a `Bun.SQL` SQLite client (`lib/store/sqlite.ts`'s `openLocalDb`: WAL, foreign keys on, `SQLITE_SCHEMA` applied): the cloud's `nasi_*` tables and columns, every row under `LOCAL_USER_ID`, sessions on the `local` channel. Every write goes through `sql.begin`, since on SQLite a plain query would run inside another save's open transaction. A file from before those tables (a `sessions` table, no `nasi_session`) is renamed to `<file>.legacy` with its `-wal`/`-shm`, never converted or deleted.
+`memory.sqlite` is `@kaja/nasi`'s `createSqlStore` over a `Bun.SQL` SQLite client (`lib/store/sqlite.ts`'s `openLocalDb`: WAL, foreign keys on, `SQLITE_SCHEMA` applied): the cloud's `nasi_*` tables and columns, every row under `LOCAL_USER_ID`, sessions on the `local` channel. Every write goes through `sql.begin`, since on SQLite a plain query would run inside another save's open transaction.
 
 `bun run --filter @kaja/tui start` runs through Bun's workspace script runner, which does not pass the TTY through: Ink sees `process.stdin.isTTY` as falsy (skips the setup wizard, and the main app crashes with "Raw mode is not supported"). Use `bun dev:tui` (or `cd apps/tui && bun run cli.ts`) for interactive use.
 

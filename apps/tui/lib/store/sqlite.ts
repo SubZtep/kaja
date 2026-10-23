@@ -1,4 +1,4 @@
-import { mkdirSync, renameSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { dirname, join } from "node:path"
 import {
   createSqlStore,
@@ -11,31 +11,10 @@ import {
 import { SQL } from "bun"
 import { log } from "../logger"
 
-const connect = (dbPath: string) => new SQL({ adapter: "sqlite", filename: dbPath, strict: true })
-
-// A file from before the nasi_* tables is set aside whole (with its WAL), never converted or deleted.
-async function setAsideLegacy(sql: SQL, dbPath: string): Promise<boolean> {
-  const tables = await sql<{ name: string }[]>`
-    SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('sessions', 'nasi_session')`
-  if (!tables.some(table => table.name === "sessions") || tables.some(table => table.name === "nasi_session"))
-    return false
-  await sql.close()
-  for (const suffix of ["", "-wal", "-shm"]) {
-    try {
-      renameSync(`${dbPath}${suffix}`, `${dbPath}.legacy${suffix}`)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
-    }
-  }
-  log.warn("Set aside a memory database from before the current schema", { dbPath, legacy: `${dbPath}.legacy` })
-  return true
-}
-
 /** The store's SQLite file, opened with foreign keys on and its schema in place. */
 export async function openLocalDb(dbPath: string): Promise<SQL> {
   mkdirSync(dirname(dbPath), { recursive: true })
-  let sql = connect(dbPath)
-  if (await setAsideLegacy(sql, dbPath)) sql = connect(dbPath)
+  const sql = new SQL({ adapter: "sqlite", filename: dbPath, strict: true })
   await sql`PRAGMA journal_mode = WAL`
   await sql`PRAGMA synchronous = NORMAL`
   await sql`PRAGMA busy_timeout = 5000`
