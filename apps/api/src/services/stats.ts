@@ -1,5 +1,6 @@
 import type { ImageStats, StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
 import type { Pool } from "pg"
+import { sourceHost } from "./image"
 
 const MAX_TOOLS = 50
 const MAX_IMAGE_SITES = 5
@@ -193,7 +194,7 @@ export class StatsService {
       this.#db.query(
         `
         SELECT host, COUNT(*)::int AS images FROM (
-          SELECT regexp_replace(lower(substring(source_url FROM '^https?://([^/:?#]+)')), '^www\\.', '') AS host
+          SELECT ${sourceHost("source_url")} AS host
           FROM nasi_image WHERE user_id = $1 AND source_url IS NOT NULL
         ) hosts
         WHERE host IS NOT NULL

@@ -7,7 +7,7 @@ export function BarList({
   empty
 }: Readonly<{
   title: string
-  rows: { key: string; label: string; value: number; note?: string }[]
+  rows: { key: string; label: React.ReactNode; value: number; note?: string }[]
   empty?: string
 }>) {
   const max = Math.max(1, ...rows.map(row => row.value))

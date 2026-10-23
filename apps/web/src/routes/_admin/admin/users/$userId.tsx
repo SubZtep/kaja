@@ -108,7 +108,16 @@ function UserImages({ userId }: Readonly<{ userId: string }>) {
   })
   if (images.isError) return <p className="m-0 text-sm text-red-400">{m.user_detail_images_error()}</p>
   if (!images.data) return <Loader slim />
-  return <ImagesCard images={images.data} days={IMAGE_DAYS} />
+  return (
+    <div className="flex flex-col gap-2">
+      <ImagesCard images={images.data} days={IMAGE_DAYS} adminUserId={userId} />
+      {images.data.count > 0 && (
+        <Link to="/admin/images" search={{ user: userId }} className="text-neon self-end text-sm underline">
+          {m.user_detail_images_see_all()}
+        </Link>
+      )}
+    </div>
+  )
 }
 
 function DetailRow({

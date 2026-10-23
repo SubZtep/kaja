@@ -48,6 +48,7 @@ export const objects: ObjectStore = {
     }
   },
   exists: key => bucket.exists(key),
+  delete: key => bucket.delete(key),
   deletePrefix: async prefix => {
     // A page at a time; deleting them doesn't move the listing, since each page starts after the last.
     let startAfter: string | undefined

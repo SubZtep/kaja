@@ -29,6 +29,7 @@ import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/i
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
 import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
 import { Route as AdminAdminDashboardIndexRouteImport } from './routes/_admin/admin/dashboard/index'
+import { Route as AdminAdminImagesIndexRouteImport } from './routes/_admin/admin/images/index'
 import { Route as AdminAdminModelsIndexRouteImport } from './routes/_admin/admin/models/index'
 import { Route as AdminAdminUsersIndexRouteImport } from './routes/_admin/admin/users/index'
 import { Route as AdminAdminUsersUserIdRouteImport } from './routes/_admin/admin/users/$userId'
@@ -132,6 +133,11 @@ const AdminAdminDashboardIndexRoute =
     path: '/dashboard/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminImagesIndexRoute = AdminAdminImagesIndexRouteImport.update({
+  id: '/images/',
+  path: '/images/',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminModelsIndexRoute = AdminAdminModelsIndexRouteImport.update({
   id: '/models/',
   path: '/models/',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/device/': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
+  '/admin/images/': typeof AdminAdminImagesIndexRoute
   '/admin/models/': typeof AdminAdminModelsIndexRoute
   '/admin/users/': typeof AdminAdminUsersIndexRoute
 }
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/device': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/admin/dashboard': typeof AdminAdminDashboardIndexRoute
+  '/admin/images': typeof AdminAdminImagesIndexRoute
   '/admin/models': typeof AdminAdminModelsIndexRoute
   '/admin/users': typeof AdminAdminUsersIndexRoute
 }
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/_public/device/': typeof PublicDeviceIndexRoute
   '/_admin/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/_admin/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
+  '/_admin/admin/images/': typeof AdminAdminImagesIndexRoute
   '/_admin/admin/models/': typeof AdminAdminModelsIndexRoute
   '/_admin/admin/users/': typeof AdminAdminUsersIndexRoute
 }
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/device/'
     | '/admin/users/$userId'
     | '/admin/dashboard/'
+    | '/admin/images/'
     | '/admin/models/'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/device'
     | '/admin/users/$userId'
     | '/admin/dashboard'
+    | '/admin/images'
     | '/admin/models'
     | '/admin/users'
   id:
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/_public/device/'
     | '/_admin/admin/users/$userId'
     | '/_admin/admin/dashboard/'
+    | '/_admin/admin/images/'
     | '/_admin/admin/models/'
     | '/_admin/admin/users/'
   fileRoutesById: FileRoutesById
@@ -433,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminDashboardIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/images/': {
+      id: '/_admin/admin/images/'
+      path: '/images'
+      fullPath: '/admin/images/'
+      preLoaderRoute: typeof AdminAdminImagesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/models/': {
       id: '/_admin/admin/models/'
       path: '/models'
@@ -461,6 +480,7 @@ interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminUsersUserIdRoute: typeof AdminAdminUsersUserIdRoute
   AdminAdminDashboardIndexRoute: typeof AdminAdminDashboardIndexRoute
+  AdminAdminImagesIndexRoute: typeof AdminAdminImagesIndexRoute
   AdminAdminModelsIndexRoute: typeof AdminAdminModelsIndexRoute
   AdminAdminUsersIndexRoute: typeof AdminAdminUsersIndexRoute
 }
@@ -469,6 +489,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminUsersUserIdRoute: AdminAdminUsersUserIdRoute,
   AdminAdminDashboardIndexRoute: AdminAdminDashboardIndexRoute,
+  AdminAdminImagesIndexRoute: AdminAdminImagesIndexRoute,
   AdminAdminModelsIndexRoute: AdminAdminModelsIndexRoute,
   AdminAdminUsersIndexRoute: AdminAdminUsersIndexRoute,
 }
