@@ -25,7 +25,7 @@ describe("withLock", () => {
     })
 
     // b must not start until a releases, even though a is still pending.
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await Bun.sleep(10)
     expect(order).toEqual(["a-start"])
 
     first.resolve()
@@ -79,7 +79,7 @@ describe("withLockGenerator", () => {
     })
 
     // b must not start even though genA already yielded and is now waiting on `first`.
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await Bun.sleep(10)
     expect(await nextA).toEqual({ value: "a-yield", done: false })
     expect(order).toEqual(["a-start"])
 

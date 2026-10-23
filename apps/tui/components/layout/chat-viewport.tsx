@@ -1,5 +1,5 @@
 import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
@@ -81,8 +81,8 @@ function lastCopyableText(events: TimelineEvent[]): string | null {
 }
 
 /**
- * Clamp to the real bottom offset (VirtualScroll clamps internally too;
- * kept here so the input handlers stay self-evidently safe).
+ * Clamp to the real bottom offset (VirtualScroll clamps internally too; kept here so the input handlers stay
+ * self-evidently safe).
  */
 function clampScrollTo(view: VirtualScrollRef, offset: number) {
   const bottom = view.getBottomOffset()
@@ -98,15 +98,12 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
 /**
  * Scrollable middle pane: finalized history + streaming partial + activity.
  *
- * Content is bottom-anchored (chat grows upward from the input). A dynamic
- * top spacer fills unused viewport rows when history is short, so you never
- * see a floating block at the top of an empty pane.
+ * Content is bottom-anchored (chat grows upward from the input). A dynamic top spacer fills unused viewport rows when
+ * history is short, so you never see a floating block at the top of an empty pane.
  *
- * Key ownership (chat vs text field):
- *   PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport
- *   ↑/↓, ←/→, Home/End (no ctrl), Ctrl+←/→ → TextInput cursor
- *   Ctrl+T → mic
- *   the copy button / <modifier>+R (app.tsx) → uiEvents "copy" → this viewport copies the latest message
+ * Key ownership (chat vs text field): PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport ↑/↓, ←/→,
+ * Home/End (no ctrl), Ctrl+←/→ → TextInput cursor Ctrl+T → mic the copy button / <modifier>+R (app.tsx) → uiEvents
+ * "copy" → this viewport copies the latest message
  *
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
@@ -126,9 +123,10 @@ export function ChatViewport({
   partial: PartialMessageData | null
   pending: boolean
   sounds: boolean
-  /** Changes whenever the sibling below (input / confirm prompt) swaps to a
-   * differently-sized layout, so the viewport remeasures even though none of
-   * the other props changed. */
+  /**
+   * Changes whenever the sibling below (input / confirm prompt) swaps to a differently-sized layout, so the viewport
+   * remeasures even though none of the other props changed.
+   */
   bottomChromeKey?: string | number
   /** Shown in place of the empty timeline before the first message. */
   startupPanel?: ReactNode
@@ -161,9 +159,8 @@ export function ChatViewport({
   }
 
   /**
-   * Keep messages bottom-aligned when they don't fill the viewport:
-   * topPad = max(0, viewport - messageHeight), with messageHeight excluding
-   * the spacer itself.
+   * Keep messages bottom-aligned when they don't fill the viewport: topPad = max(0, viewport - messageHeight), with
+   * messageHeight excluding the spacer itself.
    */
   const syncTopPad = () => {
     const view = scrollRef.current
@@ -202,13 +199,12 @@ export function ChatViewport({
   }
 
   // Parent layout / terminal resize: ScrollView needs an explicit remeasure after width *and* height change (footer/header row budget shifts).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `remeasure` only touches refs; the terminal size says when to run it
   useEffect(() => {
     const timer = setTimeout(remeasure, 0)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- remeasure is a fresh closure every render
   }, [columns, rows])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `remeasure` only touches refs, so the listener needn't be re-added each render
   useEffect(() => {
     if (!stdout) return
     const onResize = () => {
@@ -218,6 +214,7 @@ export function ChatViewport({
     return () => {
       stdout.off("resize", onResize)
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- onResize reads the latest remeasure through the closure of the mounted stdout
   }, [stdout])
 
   const followIfPinned = () => {
@@ -229,11 +226,11 @@ export function ChatViewport({
   }
 
   // New messages / streaming tokens: keep the tail in view when pinned.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `followIfPinned` only touches refs; the listed values are what should trigger a follow
   useEffect(() => {
     // Let ScrollView measure new children, then pad + follow.
     const timer = setTimeout(followIfPinned, 0)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- followIfPinned is a fresh closure every render
   }, [events, partial, pending, thinking, topPad, bottomChromeKey])
 
   // Un-stick, run a scroll action, then resync stick/affordance state. No-op when there's nothing to scroll, so it never creates empty overscroll.
@@ -284,11 +281,10 @@ export function ChatViewport({
       })
       .catch(error => log.warn("Copy to clipboard failed", { error }))
   }
-  // The key bar's Copy button asks through uiEvents; a ref keeps the listener on the latest events
-  const copyRef = useRef(copyLatest)
-  copyRef.current = copyLatest
+  // The key bar's Copy button asks through uiEvents; an effect event keeps the listener on the latest events
+  const copy = useEffectEvent(copyLatest)
   useEffect(() => {
-    const onCopy = () => copyRef.current()
+    const onCopy = () => copy()
     uiEvents.on("copy", onCopy)
     return () => {
       uiEvents.off("copy", onCopy)

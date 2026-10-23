@@ -11,7 +11,10 @@ function offlineBundle(): Record<string, string> {
   return { "models.toml": MODELS_TEMPLATE, "commands.toml": COMMANDS_TEMPLATE }
 }
 
-/** Reports what `kaja config fetch` would change: one line per bundle file (unchanged / new / would update), without writing anything. `offline` compares against the bundled templates instead of the server. */
+/**
+ * Reports what `kaja config fetch` would change: one line per bundle file (unchanged / new / would update), without
+ * writing anything. `offline` compares against the bundled templates instead of the server.
+ */
 export async function diffConfig(offline: boolean): Promise<string[]> {
   const bundle = offline ? offlineBundle() : await remoteOrOfflineBundle()
   // secrets.toml is never in the remote bundle (no user secrets on the server) — fetch always
@@ -33,7 +36,10 @@ export async function diffConfig(offline: boolean): Promise<string[]> {
   return lines
 }
 
-/** commands.toml's `safe` list is what a fetch replaces; the user's `custom` patterns are kept, so they never make it differ. */
+/**
+ * Commands.toml's `safe` list is what a fetch replaces; the user's `custom` patterns are kept, so they never make it
+ * differ.
+ */
 function sameDefaultCommands(existing: string, fetched: string): boolean {
   try {
     return deepEquals(

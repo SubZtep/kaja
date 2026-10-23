@@ -53,8 +53,8 @@ function fetchRemote(src: string): Promise<ArrayBuffer> {
 
 /**
  * Draws `src` (an http(s) or data URL, or a local file path) as ANSI half-block text (`halfBlocks`), at
- * `width`/`height` (a percentage of the terminal by default, the picture keeping its aspect ratio). Shares the work
- * and the result with every other row drawing the same picture at the same size (see {@link drawnTerminalImage}).
+ * `width`/`height` (a percentage of the terminal by default, the picture keeping its aspect ratio). Shares the work and
+ * the result with every other row drawing the same picture at the same size (see {@link drawnTerminalImage}).
  */
 export function renderTerminalImage(
   src: string,

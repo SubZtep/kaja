@@ -8,36 +8,25 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 
 ## Project Overview
 
-Kaja is a TypeScript monorepo built with Bun:
+Kaja is a TypeScript monorepo built with Bun. There is no mobile app.
+
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
-- **Images**: never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)`, nasi's `ObjectStore` under a per-session prefix: API Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, TUI plain files in `files/` beside the SQLite file; only the normalised copy is kept, with its description as `<id>.json`, and opening an image opens that copy). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
-- **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
-- **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
-- **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
-- **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`subztep/kaja-sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/CLAUDE.md`
+- **Web** (`apps/web`): TanStack Start frontend: public landing + admin portal
+- **TUI** (`apps/tui`): Ink TUI; talks to the cloud API (`/nasi/*`) by default, `--local` embeds `@kaja/nasi` and runs the agent loop against your own provider
+- **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built with the API and served at `/widget/<widget-key>.js` (the key resolves the persona/mode server-side)
+- **Sandbox** (`apps/sandbox`): runs stdio MCP servers for cloud turns (`subztep/kaja-sandbox`); anyone can run one. It dials the API's WebSocket (`/sandbox/connect`), so nothing connects in
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
-
-There is **no mobile app** in this monorepo.
-
-Device authorization still applies where relevant: Better Auth device flow for API-connected clients; CLI agent features are largely local (LLM config under `~/.config/kaja/`).
+- **Images** are never in a database. Each is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)` over nasi's `ObjectStore`: the API uses Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, the TUI plain files in `files/` beside the SQLite file). Only the normalised copy is kept, with its description as `<id>.json`. Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
 
 ## Key File Locations
 
-| What                     | Path                                                                                                                                                                                                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker Compose           | `compose.yaml`                                                                                                                                                                                                                                                                                            |
-| Biome config             | `.biome.json` at the root, plus `apps/{web,tui,api}/biome.json` that extend it (`"extends": "//"`; Biome only finds the dotted name at the root, so these keep the plain one)                                                                                                                             |
-| Root TS config           | `tsconfig.json`                                                                                                                                                                                                                                                                                           |
-| Lockfile                 | `bun.lock`                                                                                                                                                                                                                                                                                                |
-| API env examples         | `apps/api/.env.example`                                                                                                                                                                                                                                                                                   |
-| Web env examples         | `apps/web/.env.example`                                                                                                                                                                                                                                                                                   |
-| DB migrations            | `apps/api/migrations/*.sql`                                                                                                                                                                                                                                                                               |
-| Migration runner         | `apps/api/scripts/migrations.ts` (`applyMigrations`: files not yet in `schema_migrations`, each in a transaction; edited files re-applied only while the API is 0.x), used by `apps/api/migrate.ts` (deploy, CI, and `scripts/db_migration.sh` locally; then the config seed) and the test database build |
-| `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`)                                                                                                                                                                                                                                                   |
-| `env.d.ts` generator     | `scripts/env-types.ts` (`bun generate:env-types`)                                                                                                                                                                                                                                                         |
-| Model defaults           | `config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `config/models.*.toml`                                                                                     |
-| Test env preload         | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database)                                                                                                                                                                                          |
-| Docs / GitHub Pages      | `docs/` (user-facing site; the config templates live in `config/`)                                                                                                                                                                                                                                        |
+- Docker Compose: `compose.yaml`; lockfile: `bun.lock`; root TS config: `tsconfig.json`
+- Env examples: `apps/{api,web}/.env.example`
+- DB migrations: `apps/api/migrations/*.sql`, applied by `apps/api/scripts/migrations.ts` (`applyMigrations`), used by `apps/api/migrate.ts` (deploy, CI, `scripts/db_migration.sh` locally; then the config seed) and the test database build
+- `.env.example` generator: `scripts/env.ts` (`bun generate:env` / `bun check:env`); `env.d.ts` generator: `scripts/env-types.ts`
+- Model defaults: `config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `config/models.*.toml`
+- Test env preload: `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database)
+- Docs / GitHub Pages: `docs/` (user-facing site; the config templates live in `config/`)
 
 ## Development Commands
 
@@ -45,72 +34,34 @@ Device authorization still applies where relevant: Better Auth device flow for A
 # PostgreSQL + MailDev + RustFS object storage (API/web optional via compose)
 docker compose up -d db mail storage
 
-# API + web + widget (hot reload)
-bun dev
+bun dev                # API + web + widget (hot reload)
+bun dev:sandbox        # MCP sandbox for cloud stdio MCP abilities (needs Chromium; or `docker compose up -d sandbox`)
+bun dev:tui            # CLI (entry is apps/tui/cli.ts); `--filter @kaja/tui start` doesn't pass the TTY through (Ink: "Raw mode is not supported")
 
-# MCP sandbox for cloud stdio MCP abilities (needs Chromium; or `docker compose up -d sandbox`)
-bun dev:sandbox
-
-# CLI (entry is apps/tui/cli.ts — NOT apps/tui/src/...)
-bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--filter @kaja/tui start` doesn't pass the TTY through (Ink: "Raw mode is not supported")
-
-# Lint / types / tests
 bun lint
-bun lint:fix
+bun fmt
+tombi format && tombi lint   # TOML (Tombi, run directly)
 bun tailwind:fix       # rewrite apps/web classes to their canonical form (@tailwindcss/upgrade; needs a clean tree, also bumps Tailwind); CI fails if src/ would change
-bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
-bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
+bun typecheck          # apps/*, packages/*, .claude/skills and root scripts/ (with their tests/); incremental (gitignored .tsbuildinfo); fails on first error
+bun test               # every workspace's tests; run from the repo root (API integration tests need Postgres + RustFS)
 ```
 
-### Per-workspace
-
-```bash
-bun run --filter @kaja/api dev
-bun run --filter @kaja/api build
-
-bun run --filter @kaja/web dev
-bun run --filter @kaja/web build
-
-bun run --filter @kaja/tui test   # (run the TUI itself with `bun dev:tui`, see above)
-
-bun run --filter @kaja/sandbox dev
-bun run --filter @kaja/sandbox build
-```
+Per workspace: `bun run --filter @kaja/<name> dev|build|test`.
 
 ## Architecture
 
 ### Authentication
 
 - Better Auth, passwordless: emailed 6-digit sign-in codes (`emailOTP`; sign-up is a code sign-in with the page's `consent`), optional Google sign-in via `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, email change, admin roles, device authorization
-- CLI client id: `KAJA_TUI_CLIENT_ID` from `@kaja/schema` (`"kaja-tui"`)
-- Device approval UI: web `/device`
+- Device flow for API-connected clients: CLI client id `KAJA_TUI_CLIENT_ID` (`"kaja-tui"`, from `@kaja/schema`), approval UI at web `/device`
 - Session cookies prefixed with `kaja`
 
-### API (`apps/api/src/`)
+### Where things live
 
-- **Entry**: `core/server.ts` — Hono app, `CronService`
-- **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (the images bucket through `Bun.S3Client`: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set; public URLs, and the boot-time bucket setup through `@aws-sdk/client-s3`), `geo.ts` (IP geolocation for sandboxes), `lock.ts` (`withLock`: in-process per-key serialization, so the API runs as one instance), `env.ts` (parsed `ApiEnvSchema`)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
-- Raw SQL + private row→API mappers; UUIDv7 PKs
-
-### Web (`apps/web/src/`)
-
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with widget and sandbox tabs, profile, and the admin-only `/admin/*` layout)
-- auth client in `hooks/auth-client.ts`
-- Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
-
-### Sandbox (`apps/sandbox/`)
-
-- `src/cli.ts` bundle entry, `server.ts` startup; `tunnel.ts` dials the API (nothing connects in), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child, `egress.ts` the browsers' public-only forward proxy
-- Runs only the stdio `mcp.toml` manifests under its own `marketplace/abilities` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
-
-### CLI (`apps/tui/`)
-
-- Entry: `cli.ts` (Ink TUI)
-- Local host for `@kaja/nasi`'s agent loop (tools, MCP, personas, sessions, memory) plus the Telegram bot and optional STT/TTS; the cloud client for `/nasi/*`
-- Config templates import from monorepo-root `config/`
-- Detailed agent notes: `apps/tui/CLAUDE.md`
+- **API** (`apps/api/src/`): `core/server.ts` entry, `app.ts` middleware and route mounts, `features/*` one folder per URL mount, `services/` shared logic. Raw SQL + private row→API mappers; UUIDv7 PKs. The API runs as one instance (`core/lock.ts` serializes in-process; sandbox sockets live in memory). Details: `apps/api/CLAUDE.md`
+- **Web** (`apps/web/src/`): TanStack Router file routes, `_public` (landing, auth, device) and `_admin` (dashboard, agent, profile, admin-only `/admin/*`). `routeTree.gen.ts` is generated and ignored by `bun fmt`. Details: `apps/web/CLAUDE.md`
+- **Sandbox**: details in `apps/sandbox/CLAUDE.md`
+- **CLI** (`apps/tui/`): entry `cli.ts`; local host for `@kaja/nasi` plus the Telegram bot and optional STT/TTS, and the cloud client for `/nasi/*`. Config templates import from monorepo-root `config/`. Details: `apps/tui/CLAUDE.md`
 
 ### Packages
 
@@ -122,72 +73,40 @@ bun run --filter @kaja/sandbox build
 
 ### Type architecture
 
-- **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
-  - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml), plus the repo's model catalog (`config/catalog.toml`)
-  - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
-  - `@kaja/schema/abilities` — marketplace manifests (skill frontmatter, persona, dataset, HTTP tool, MCP server), shared by every host that loads abilities
-  - `@kaja/schema/cli` — re-exports the persona and dataset schemas so CLI code keeps one import
-  - `@kaja/schema/nasi` — cloud turn request/response
-  - `@kaja/schema/env` — per-app env var schemas (source of `.env.example` and `env.d.ts`); `@kaja/schema/tombi` — JSON Schema generation for the TOML files
-- **DB row types**: private to API services; map with private `#rowTo…` helpers
+- **All Zod schemas live in `@kaja/schema`**, in role-based subpaths (`api`, `config`, `store`, `abilities`, `cli`, `nasi`, `env`, `tombi`); no bare `@kaja/schema` import and no app keeps local schema files. Pick the subpath by what the schema describes; layout in `packages/schema/CLAUDE.md`
+- **DB row types** are private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas
-- See `packages/schema/CLAUDE.md` for the full layout and naming conventions
 
-### Database migrations (lexicographic order)
+### Database migrations
 
-1. `2026-03-01-uuidv7.sql` — UUIDv7() via pgcrypto
-2. `2026-03-03-better-auth.sql` — Better Auth tables
-3. `2026-08-01-config.sql` — `provider`, `model` tables
-4. `2026-08-31-widget.sql` — `widget` table
-5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
-6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-7. `2026-09-19-ability.sql` — `ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`; every user has every ability)
-8. `2026-09-19-user-secret.sql` — `service_secret` (admins' server-wide ability API keys every user shares, AES-256-GCM with `USER_SECRET_KEY`; users have no keys of their own)
-9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings), `sandbox_sample` (heartbeat load, kept 7 days)
-
-Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).
+Files in `apps/api/migrations/` apply in lexicographic order. Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).
 
 `migrate.ts` records each applied file and its checksum in `schema_migrations` and applies only new or (before v1.0) edited files, each in its own transaction; from v1.0 an edited file is refused and a change needs a new file. Compose also runs the raw files on first Postgres init (`docker-entrypoint-initdb.d`); an existing `pgdata` volume catches up with `scripts/db_migration.sh`.
 
 ## Code Style
 
-- Biome (`.biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
-- Biome rules: the root `.biome.json` holds the formatter and the repo-wide rules (test, import-graph and type-aware ones; those make a full lint scan the project, ~3-4 s); each package with its own needs has a `biome.json` that extends it with `"extends": "//"` (web: React, DOM and Tailwind rules, and the `routeTree.gen.ts` ignore; tui: React rules; api: React and DOM rules for `src/emails`). Root `overrides` and `files.includes` paths don't reach into a package that has its own config, so package rules go in that package's file, with paths relative to it; every `$schema` URL must name the same Biome version (`scripts/lib/tools.ts` fails the lint otherwise)
-- Biome and Tombi aren't dependencies: the lint scripts run the machine's `biome` and `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install a missing one and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins them (Biome's from `.biome.json`'s `$schema` URL), and CI installs those versions with `biomejs/setup-biome` and `tombi-toml/setup-tombi`
-- VS Code's Biome extension should use the system CLI via `biome.lsp.bin` in user settings (the path `which biome` prints); keep that machine-specific path out of `.vscode/settings.json`
-- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
-- TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
+- `bun lint` and `bun fmt`, both configured in the root `bunfig.toml` (`[lint]`, `[fmt]`): double quotes, no semicolons, no trailing commas; type-aware lint rules; suppress a rule with `// oxlint-disable-next-line <rule> -- why`
+- Tombi isn't a dependency: the TOML scripts, hooks and `scripts/models.ts` run the machine's `tombi` directly (CI installs it with `tombi-toml/setup-tombi`)
+- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`
+- TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`. Import packages by package name; `@kaja/nasi` exports its root `index.ts` (and `./client`), `@kaja/schema` and `@kaja/shared` only subpaths (e.g. `@kaja/schema/api`)
 - Prefer surgical diffs; do not drive-by refactor
-- Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values — VSCode surfaces these on hover; `// ...` for internal notes (locals, implementation asides)
+- Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values; `// ...` for internal notes
 
 ## Notes
 
-- Git hooks already run `bun lint:fix:safe` (safe fixes only, staged) and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
-- CLI config templates import from monorepo-root `config/` (not under `apps/tui/`).
-- model defaults: edit `config/catalog.toml`, run `bun generate:models`, never edit `config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`). The API serves the catalog (`GET /config/catalog`, versioned by `CATALOG_VERSION`) and the template files (`GET /config/templates/<file>`) publicly, embedded from `config/` at build time; the setup wizard prefers the API's catalog and falls back to the bundled one, so a catalog change takes effect on an API deploy.
-- env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit the api/web/sandbox `.env.example` by hand (tui's is hand-written) — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
+- Git hooks (lefthook) run `bun lint --fix --staged`, `bun fmt --staged` and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push). Don't run these proactively; commit/push will catch issues. Run them manually only when you need feedback before that point
+- Model defaults: edit `config/catalog.toml`, run `bun generate:models`, never edit `config/models.*.toml` by hand; pre-commit regenerates them and `bun check:models` (CI, and the catalog test) fails on drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`). The API serves the catalog (`GET /config/catalog`, versioned by `CATALOG_VERSION`) and the templates (`GET /config/templates/<file>`) publicly, embedded from `config/` at build time; the setup wizard prefers the API's catalog and falls back to the bundled one, so a catalog change takes effect on an API deploy
+- Env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env` (also `bun generate:env-types` for each workspace's `env.d.ts`), never edit the api/web/sandbox `.env.example` by hand (tui's is hand-written); `bun check:env` (pre-commit and CI) fails on drift
 
 ## Testing & CI
 
-- `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
+- `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts`
 - API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
-- CLI has a large unit suite under `apps/tui/tests/`
-- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
-- Separate workflow builds the CLI
-- Docker Scout (`.github/workflows/scout.yaml`) runs on every PR: it builds `apps/sandbox/Dockerfile` (repo root context, the same image the release pushes) into the runner's local image store and comments what the PR changes against the released `subztep/kaja-sandbox:latest` (`compare`, critical and high only, unchanged left out); the full quickview and critical/high CVEs go to the run summary only. Scout only reads images, never builds them, so that build is what the scan needs (`fs://` reads a directory as an SBOM with no base image, which `quickview` rejects). A fork's PR has no secrets and a read-only token, so there it only logs in anonymously and leaves the report in the summary
-
-## Import Aliases
-
-- Packages: import by package name; `@kaja/nasi` exports its root `index.ts` (and `./client`), while `@kaja/schema` and `@kaja/shared` only have subpaths (e.g. `@kaja/schema/api`)
-
-## Key Dependencies
-
-Bun (packageManager in root `package.json`), Hono, Better Auth, TanStack Start, Zod. Lockfile is `bun.lock`.
+- CI (`.github/workflows/ci.yaml`): lint (`bun lint` on Bun canary, which has the linter, after generating Paraglide since type-aware lint needs it; `bun fmt --check`; Tombi; canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile. A separate workflow builds the CLI
+- Docker Scout (`scout.yaml`) comments the sandbox image's CVE changes on PRs touching `apps/sandbox` or `packages`; see `apps/sandbox/CLAUDE.md`
 
 ## Agent Guidelines
 
-- Per-workspace details live in each package's `CLAUDE.md` (Claude Code loads it when working in that folder)
+- Per-workspace details live in each package's `CLAUDE.md` (loaded when working in that folder)
 - Do not commit secrets; use `.env` (gitignored) over examples
 - Ask before git mutations, large refactors, or new features
-- Prefer Context7 MCP for library docs when available

@@ -78,11 +78,7 @@
               "skill": {
                 "description": "The skill part: load (default, unless SKILL.md says sticky), sticky or off",
                 "type": "string",
-                "enum": [
-                  "load",
-                  "sticky",
-                  "off"
-                ]
+                "enum": ["load", "sticky", "off"]
               },
               "tools": {
                 "description": "Only these of the ability's tools (HTTP, MCP and code tools); unset means all of them",
@@ -118,17 +114,13 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "path"
-                      ]
+                      "required": ["path"]
                     }
                   ]
                 }
               }
             },
-            "required": [
-              "name"
-            ]
+            "required": ["name"]
           }
         ]
       }
@@ -173,7 +165,5 @@
       "maximum": 9007199254740991
     }
   },
-  "required": [
-    "label"
-  ]
+  "required": ["label"]
 }

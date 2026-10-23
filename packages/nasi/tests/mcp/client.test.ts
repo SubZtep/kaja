@@ -325,7 +325,7 @@ test("with reconnect, a call whose session is gone opens a new one and runs once
   let lose = false
   // Answers one tool call the way a server does for a session it no longer knows.
   const fetchOnce = (async (input: string | URL | Request, init?: RequestInit) => {
-    if (lose && String(init?.body ?? "").includes('"tools/call"')) {
+    if (lose && ((init?.body as string | undefined) ?? "").includes('"tools/call"')) {
       lose = false
       return new Response("session not found", { status: 404 })
     }

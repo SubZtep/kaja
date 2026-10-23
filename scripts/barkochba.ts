@@ -136,7 +136,10 @@ function makeThinkerMessages(): ChatMessage[] {
   ]
 }
 
-/** Only trust a "correct" claim when the thinker's own answer names the secret — a stray "correct" (e.g. confirming an unrelated guess) must not end the game. */
+/**
+ * Only trust a "correct" claim when the thinker's own answer names the secret — a stray "correct" (e.g. confirming an
+ * unrelated guess) must not end the game.
+ */
 function isConfirmedWin(answer: string): boolean {
   if (!/correct/i.test(answer)) return false
   return answer.toLowerCase().includes(SECRET.toLowerCase())
@@ -144,7 +147,7 @@ function isConfirmedWin(answer: string): boolean {
 
 /** Strips newlines/control chars from model-generated text before it's logged. */
 function forLog(text: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control chars, not matching content
+  // oxlint-disable-next-line no-control-regex -- stripping control chars, not matching content
   return text.replace(/[\x00-\x1f]+/g, " ").trim()
 }
 

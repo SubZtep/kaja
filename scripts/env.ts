@@ -65,7 +65,10 @@ const targets = [
 
 const knownKeys = new Set(targets.flatMap(t => Object.keys(t.schema.shape)))
 
-/** Only checks the `api`/`web`/`sandbox` services — `db`'s environment block configures the Postgres image, not our app schemas. */
+/**
+ * Only checks the `api`/`web`/`sandbox` services — `db`'s environment block configures the Postgres image, not our app
+ * schemas.
+ */
 async function extractComposeOverrideKeys(): Promise<string[]> {
   const content = await Bun.file(join(rootDir, "compose.yaml")).text()
   const lines = content.split("\n")

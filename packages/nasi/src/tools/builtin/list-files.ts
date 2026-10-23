@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
 /**

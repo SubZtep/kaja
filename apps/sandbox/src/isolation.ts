@@ -10,10 +10,10 @@ const FIRST_UID = 20_000
 const UID_COUNT = 10_000
 
 /**
- * Gives every user their own Linux uid (and a private group of the same number), so one user's server processes
- * can't read another's HOME, browser profile or temp files. Only possible while the sandbox runs as root (the image);
- * a uid is kept for its user while the sandbox runs, and only reused, least recently used first, once all are taken.
- * A uid `busy` reports as still holding a process is skipped, so a new user cannot inherit a live browser profile.
+ * Gives every user their own Linux uid (and a private group of the same number), so one user's server processes can't
+ * read another's HOME, browser profile or temp files. Only possible while the sandbox runs as root (the image); a uid
+ * is kept for its user while the sandbox runs, and only reused, least recently used first, once all are taken. A uid
+ * `busy` reports as still holding a process is skipped, so a new user cannot inherit a live browser profile.
  */
 export class UserIsolation {
   readonly #uids = new Map<string, number>()
@@ -97,8 +97,8 @@ const MAX_USER_PROCESSES = 512
 const MAX_OPEN_FILES = 4096
 
 /**
- * `command args` run as `runAs` through util-linux's `prlimit` and `setpriv`: capped processes and open files, that
- * uid and gid, the caches' group besides, every capability dropped for good, and umask 002 so what it writes into the
+ * `command args` run as `runAs` through util-linux's `prlimit` and `setpriv`: capped processes and open files, that uid
+ * and gid, the caches' group besides, every capability dropped for good, and umask 002 so what it writes into the
  * shared caches stays usable by the others. The process cap counts per uid, so it holds across a user's servers.
  */
 export function asUser(

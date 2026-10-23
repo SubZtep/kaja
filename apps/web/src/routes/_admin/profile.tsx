@@ -191,7 +191,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
     if (!pending) return
     const { error } = await authClient.emailOtp.requestEmailChange({ newEmail: pending.newEmail, otp })
     if (error) toast.error(authErrorMessage(error))
-    else setPending({ ...pending, confirming: true })
+    else setPending(current => current && { ...current, confirming: true })
   }
 
   const confirm = async (otp: string) => {

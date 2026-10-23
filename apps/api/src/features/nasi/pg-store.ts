@@ -6,9 +6,9 @@ import {
   type NasiStore,
   objectSessionImages,
   type PendingKind,
-  type SessionWrite,
   sessionIdOf,
   sessionImagePrefix,
+  type SessionWrite,
   splitConversation,
   storeInlineImages
 } from "@kaja/nasi"
@@ -43,7 +43,10 @@ type SessionRow = {
 const SESSION_COLUMNS =
   "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind, granted_tools"
 
-/** Rebuilds a session from its rows (images stay refs: a model request fetches the ones it sends). The cloud keeps no timeline, so `events` is always empty. */
+/**
+ * Rebuilds a session from its rows (images stay refs: a model request fetches the ones it sends). The cloud keeps no
+ * timeline, so `events` is always empty.
+ */
 async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | undefined> {
   const [messages, calls, summary] = await Promise.all([
     db.query(
@@ -370,7 +373,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
     },
 
     async latestDatasetVersion(topic, owner) {
-      const result = await db.query(
+      const result = await db.query<{ version: number | null }>(
         `SELECT MAX(version) AS version FROM (
            SELECT version FROM nasi_dataset_answer WHERE user_id = $1 AND topic = $2 AND owner = $3
            UNION ALL
@@ -388,9 +391,11 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
          ORDER BY answered_at ASC`,
         [userId, topic, ownerKey(owner), version]
       )
-      return result.rows.map(
-        (row): DatasetAnswer => ({ field: row.field, value: row.value, answeredAt: iso(row.answeredAt) })
-      )
+      return result.rows.map((row): DatasetAnswer => ({
+        field: row.field,
+        value: row.value,
+        answeredAt: iso(row.answeredAt)
+      }))
     },
 
     async saveDatasetAnswer(topic, owner, version, field, value) {

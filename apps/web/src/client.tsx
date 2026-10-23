@@ -1,5 +1,5 @@
 import { StartClient } from "@tanstack/react-start/client"
-import { StrictMode, startTransition } from "react"
+import { startTransition, StrictMode } from "react"
 import { hydrateRoot } from "react-dom/client"
 import { captureError, type ReactErrorKind } from "./lib/sentry"
 

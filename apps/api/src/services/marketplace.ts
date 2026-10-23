@@ -26,9 +26,9 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `ability` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP servers) of a GitHub repo. A sync asks
- * GitHub for the branch's commit first and only downloads the tarball when it moved. Abilities are
- * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
+ * Keeps the `ability` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP
+ * servers) of a GitHub repo. A sync asks GitHub for the branch's commit first and only downloads the tarball when it
+ * moved. Abilities are never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
 export class MarketplaceService {
   readonly #db: Pool
@@ -51,7 +51,10 @@ export class MarketplaceService {
     }
   }
 
-  /** Fetches and applies the marketplace when the branch moved (or always, with `force`). Errors are recorded in the status and rethrown. */
+  /**
+   * Fetches and applies the marketplace when the branch moved (or always, with `force`). Errors are recorded in the
+   * status and rethrown.
+   */
   sync(opts: { force?: boolean } = {}): Promise<MarketplaceSyncResult> {
     return withLock("marketplace-sync", async () => {
       try {
@@ -81,7 +84,10 @@ export class MarketplaceService {
     })
   }
 
-  /** Applies a marketplace folder already on disk: upserts every valid skill, persona, HTTP tool and MCP ability, marks the rest removed. No network — the sync and tests both use it. */
+  /**
+   * Applies a marketplace folder already on disk: upserts every valid skill, persona, HTTP tool and MCP ability, marks
+   * the rest removed. No network — the sync and tests both use it.
+   */
   async syncFromDir(
     marketplaceDir: string,
     commit: string
@@ -186,7 +192,7 @@ export class MarketplaceService {
 
     const archive = join(dir, "repo.tar.gz")
     await Bun.write(archive, tarball)
-    const tar = Bun.spawn(["tar", "-xzf", archive, "-C", dir], { stdout: "ignore", stderr: "pipe" })
+    const tar = Bun.spawn(["tar", "-xzf", archive, "-C", dir], { stdout: "ignore", stderr: "pipe", windowsHide: true })
     if ((await tar.exited) !== 0) {
       throw new Error(`Extracting ${repo}@${commit} failed: ${(await new Response(tar.stderr).text()).trim()}`)
     }
@@ -227,7 +233,10 @@ type AbilityBundle = {
   hasScripts: boolean
 }
 
-/** How an ability shows in a sync result: skills by name, personas and datasets by folder and id, an ability's tool and MCP parts by their file. */
+/**
+ * How an ability shows in a sync result: skills by name, personas and datasets by folder and id, an ability's tool and
+ * MCP parts by their file.
+ */
 function reportName(type: AbilityBundle["type"], name: string): string {
   if (type === "skill") return name
   if (type === "persona" || type === "dataset") return `${type}s/${name}`
@@ -305,9 +314,9 @@ async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
 }
 
 /**
- * Every ability `mcp.toml` the cloud could run. Skipped: ones without a `tools` allowlist, on a non-public host, or local-only (the
- * ability's other parts still sync). stdio servers are kept whether or not an MCP sandbox is configured right now;
- * offering them checks that.
+ * Every ability `mcp.toml` the cloud could run. Skipped: ones without a `tools` allowlist, on a non-public host, or
+ * local-only (the ability's other parts still sync). stdio servers are kept whether or not an MCP sandbox is configured
+ * right now; offering them checks that.
  */
 async function readMcpAbilities(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(

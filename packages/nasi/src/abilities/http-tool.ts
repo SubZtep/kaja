@@ -5,7 +5,10 @@ import { type FetchLike, fetchPublicHttp } from "../security/ssrf"
 
 const TIMEOUT_MS = 15_000
 const MAX_RESPONSE_BYTES = 1024 * 1024
-/** What the model gets of a body; the rest is cut with a note. JSON is passed through compact: pretty-printing big arrays would triple it. */
+/**
+ * What the model gets of a body; the rest is cut with a note. JSON is passed through compact: pretty-printing big
+ * arrays would triple it.
+ */
 const MAX_RESULT_CHARS = 32 * 1024
 const MAX_BODY_PREVIEW = 200
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH"])
@@ -23,9 +26,8 @@ function queryValue(value: unknown): string {
 }
 
 /**
- * Turns a tool call into a request: `{name}` placeholders in the path are filled
- * (URL-encoded, so they can't change the host or add path segments), the other
- * arguments go to the query string (GET/DELETE) or a JSON body (POST/PUT/PATCH),
+ * Turns a tool call into a request: `{name}` placeholders in the path are filled (URL-encoded, so they can't change the
+ * host or add path segments), the other arguments go to the query string (GET/DELETE) or a JSON body (POST/PUT/PATCH),
  * and the key goes where the ability's `auth` says. Throws on a missing path value.
  */
 export function buildHttpRequest(
@@ -96,7 +98,10 @@ async function formatResponse(res: Response): Promise<string> {
   return `${status}\n\n${text.slice(0, MAX_RESULT_CHARS)}\n\n[cut: ${text.length} characters in total]`
 }
 
-/** One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked (and left out when a keyless ability has none). */
+/**
+ * One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked
+ * (and left out when a keyless ability has none).
+ */
 export function approvalSummary(
   ability: HttpToolAbility,
   def: HttpTool,
@@ -116,9 +121,9 @@ export function approvalSummary(
 }
 
 /**
- * One agent tool per manifest tool. Requests, responses and errors all come back as
- * text so the model can react instead of the turn failing; the key never appears in
- * any of them. Anything but GET asks for approval first (see `Tool.approval`).
+ * One agent tool per manifest tool. Requests, responses and errors all come back as text so the model can react instead
+ * of the turn failing; the key never appears in any of them. Anything but GET asks for approval first (see
+ * `Tool.approval`).
  */
 export function createHttpTools(
   ability: HttpToolAbility,
@@ -166,7 +171,10 @@ export function createHttpTools(
 /** A key's live test: it works, or why not. */
 export type KeyCheckResult = { ok: true } | { ok: false; reason: string }
 
-/** Sends the manifest's `check` request with `apiKey` (2xx = it works); undefined when the manifest has no `check`. The key never appears in the reason. */
+/**
+ * Sends the manifest's `check` request with `apiKey` (2xx = it works); undefined when the manifest has no `check`. The
+ * key never appears in the reason.
+ */
 export async function checkHttpToolKey(
   ability: HttpToolAbility,
   apiKey: string,

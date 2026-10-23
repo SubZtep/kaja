@@ -16,7 +16,10 @@ import type { Persona } from "../personas/personas"
 import { createTelegramDriver, type InlineKeyboardLike } from "./driver"
 import { createPairing, generatePairingCode } from "./pairing"
 
-/** Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself is logged, never left an unhandled rejection. */
+/**
+ * Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself is logged, never left
+ * an unhandled rejection.
+ */
 function inBackground(work: Promise<unknown>) {
   work.catch(error => log.error("Telegram update handling crashed", { error }))
 }
@@ -39,7 +42,10 @@ function buildKeyboard(keyboard: InlineKeyboardLike | undefined) {
   return keyboard ? new InlineKeyboard(keyboard) : undefined
 }
 
-/** What grammy's sendPhoto takes: a tool's bytes, a file on this computer (a reply's Markdown image), or a URL it fetches. */
+/**
+ * What grammy's sendPhoto takes: a tool's bytes, a file on this computer (a reply's Markdown image), or a URL it
+ * fetches.
+ */
 function photoInput(photo: { data: Uint8Array } | { path: string } | { url: string }) {
   if ("data" in photo) return new InputFile(photo.data)
   if ("path" in photo) return new InputFile(photo.path)
@@ -47,10 +53,9 @@ function photoInput(photo: { data: Uint8Array } | { path: string } | { url: stri
 }
 
 /**
- * The only grammy-aware file: constructs the Bot, implements
- * lib/telegram-driver.ts's TelegramSender against bot.api, wires update
- * handlers to the driver, and owns startup validation (getMe preflight) and
- * shutdown (bot.stop()). lib/telegram-driver.ts itself never imports grammy.
+ * The only grammy-aware file: constructs the Bot, implements lib/telegram-driver.ts's TelegramSender against bot.api,
+ * wires update handlers to the driver, and owns startup validation (getMe preflight) and shutdown (bot.stop()).
+ * lib/telegram-driver.ts itself never imports grammy.
  */
 export function createTelegramBot(config: CreateTelegramBotConfig) {
   const bot = new Bot(config.botToken)

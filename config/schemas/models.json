@@ -16,9 +16,7 @@
             "format": "uri"
           }
         },
-        "required": [
-          "base_url"
-        ]
+        "required": ["base_url"]
       }
     },
     "models": {
@@ -43,16 +41,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "chat",
-                "tts",
-                "stt",
-                "embedding",
-                "image-generation",
-                "rerank",
-                "summarize",
-                "vision"
-              ]
+              "enum": ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize", "vision"]
             }
           },
           "context_window": {
@@ -64,11 +53,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "model",
-          "provider",
-          "tasks"
-        ]
+        "required": ["model", "provider", "tasks"]
       }
     }
   }

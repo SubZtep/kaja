@@ -78,5 +78,8 @@ export const HttpToolAbilitySchema = z
 export type HttpMethod = z.infer<typeof HttpMethodSchema>
 export type HttpToolAuth = z.infer<typeof HttpToolAuthSchema>
 export type HttpTool = z.infer<typeof HttpToolSchema>
-/** A loaded HTTP tool ability: its `tool.toml` plus the ability's name, which is its folder's (marketplace/abilities/<name>/). */
+/**
+ * A loaded HTTP tool ability: its `tool.toml` plus the ability's name, which is its folder's
+ * (marketplace/abilities/<name>/).
+ */
 export type HttpToolAbility = z.infer<typeof HttpToolAbilitySchema> & { name: string }

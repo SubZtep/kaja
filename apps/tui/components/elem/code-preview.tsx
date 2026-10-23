@@ -19,7 +19,10 @@ function safeHighlight(code: string, language: string, palette: Palette): string
 // A heredoc or `-c "` / `-e '` opener on the first line: what follows is a script in another language, not shell
 const SCRIPT_OPENER = /(<<-?\s*['"]?\w+['"]?|\s-[ce]\s+["'])\s*$/
 
-/** A shell command in colour; the body of a heredoc or `python -c "…"` is coloured as its own language when it can be guessed. */
+/**
+ * A shell command in colour; the body of a heredoc or `python -c "…"` is coloured as its own language when it can be
+ * guessed.
+ */
 function highlightCommand(command: string, palette: Palette): string {
   const newline = command.indexOf("\n")
   if (newline !== -1 && SCRIPT_OPENER.test(command.slice(0, newline))) {
@@ -32,8 +35,9 @@ function highlightCommand(command: string, palette: Palette): string {
 }
 
 /**
- * The command (or request summary) an approval is about: cut to the code-preview line count with "… N more lines" until expanded, shell-highlighted
- * for a command. `tone` colours it when it can't be highlighted (colour off) and the `$`/`→` marker.
+ * The command (or request summary) an approval is about: cut to the code-preview line count with "… N more lines" until
+ * expanded, shell-highlighted for a command. `tone` colours it when it can't be highlighted (colour off) and the
+ * `$`/`→` marker.
  */
 export function CodePreview({
   command,

@@ -15,7 +15,10 @@ export class TelegramLinkService {
     this.#db = db
   }
 
-  /** Returns the raw token — the only time it's ever available; only its hash is stored. Invalidates any earlier unused token for this user first, so at most one link is ever outstanding. */
+  /**
+   * Returns the raw token — the only time it's ever available; only its hash is stored. Invalidates any earlier unused
+   * token for this user first, so at most one link is ever outstanding.
+   */
   async createLinkToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
     const token = randomBytes(18).toString("base64url")
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS)
@@ -28,7 +31,10 @@ export class TelegramLinkService {
     return { token, expiresAt }
   }
 
-  /** Read-only lookup, so a link can be shown for confirmation before it's consumed. Returns undefined if unknown/expired. */
+  /**
+   * Read-only lookup, so a link can be shown for confirmation before it's consumed. Returns undefined if
+   * unknown/expired.
+   */
   async peekLinkToken(rawToken: string): Promise<{ userId: string; email: string; locale: string | null } | undefined> {
     const result = await this.#db.query(
       `SELECT t.user_id, u.email, u.locale FROM telegram_link_token t
@@ -40,13 +46,19 @@ export class TelegramLinkService {
     return row ? { userId: row.user_id, email: row.email, locale: row.locale } : undefined
   }
 
-  /** Deletes a link token by its raw value. Returns whether a row was actually removed, so a caller can detect a double-confirm race. */
+  /**
+   * Deletes a link token by its raw value. Returns whether a row was actually removed, so a caller can detect a
+   * double-confirm race.
+   */
   async deleteLinkToken(rawToken: string): Promise<boolean> {
     const result = await this.#db.query(`DELETE FROM telegram_link_token WHERE token_hash = $1`, [hashToken(rawToken)])
     return (result.rowCount ?? 0) > 0
   }
 
-  /** Links a Telegram account to a Kaja account. Returns false if that Telegram id is already linked to a *different* account. */
+  /**
+   * Links a Telegram account to a Kaja account. Returns false if that Telegram id is already linked to a _different_
+   * account.
+   */
   async link(telegramUserId: number, userId: string): Promise<boolean> {
     const existing = await this.resolveUserId(telegramUserId)
     if (existing && existing !== userId) return false
@@ -66,14 +78,20 @@ export class TelegramLinkService {
     return rows[0]?.linked_at ? new Date(rows[0].linked_at) : null
   }
 
-  /** Disconnects every Telegram account linked to the Kaja account (and drops an unused link token); false when none was linked. */
+  /**
+   * Disconnects every Telegram account linked to the Kaja account (and drops an unused link token); false when none was
+   * linked.
+   */
   async unlink(userId: string): Promise<boolean> {
     await this.#db.query("DELETE FROM telegram_link_token WHERE user_id = $1", [userId])
     const result = await this.#db.query("DELETE FROM telegram_link WHERE user_id = $1", [userId])
     return (result.rowCount ?? 0) > 0
   }
 
-  /** The Kaja account a Telegram user is linked to, with its saved language (null until a client sets one), or undefined if unlinked. */
+  /**
+   * The Kaja account a Telegram user is linked to, with its saved language (null until a client sets one), or undefined
+   * if unlinked.
+   */
   async resolveUser(telegramUserId: number): Promise<{ userId: string; locale: string | null } | undefined> {
     const result = await this.#db.query(
       `SELECT l.user_id, u.locale FROM telegram_link l JOIN "user" u ON u.id = l.user_id WHERE l.telegram_user_id = $1`,
@@ -84,9 +102,10 @@ export class TelegramLinkService {
   }
 
   async resolveUserId(telegramUserId: number): Promise<string | undefined> {
-    const result = await this.#db.query(`SELECT user_id FROM telegram_link WHERE telegram_user_id = $1`, [
-      telegramUserId
-    ])
+    const result = await this.#db.query<{ user_id: string }>(
+      `SELECT user_id FROM telegram_link WHERE telegram_user_id = $1`,
+      [telegramUserId]
+    )
     return result.rows[0]?.user_id
   }
 }

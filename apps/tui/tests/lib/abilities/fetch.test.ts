@@ -13,7 +13,7 @@ const { runAbilityUpdate, UPDATE_STEPS } = await import("../../../lib/abilities/
 const { getMarketplaceDir } = await import("../../../lib/abilities/abilities-file")
 
 function git(cwd: string, ...args: string[]) {
-  const proc = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd })
+  const proc = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd, windowsHide: true })
   if (proc.exitCode !== 0) throw new Error(proc.stderr.toString())
   return proc.stdout.toString().trim()
 }
@@ -119,8 +119,8 @@ test("reads the version out of git's own wording, vendor suffixes included", () 
 test("a git older than the sparse checkout needs is refused with the versions named", async () => {
   const old = await checkGit(async () => "git version 2.24.9")
   expect(old).toMatchObject({ ok: false })
-  expect(old.ok === false && old.reason).toContain("2.24.9")
-  expect(old.ok === false && old.reason).toContain(MIN_GIT_VERSION)
+  expect(!old.ok && old.reason).toContain("2.24.9")
+  expect(!old.ok && old.reason).toContain(MIN_GIT_VERSION)
   expect(await checkGit(async () => "git version 1.9.1")).toMatchObject({ ok: false })
 })
 

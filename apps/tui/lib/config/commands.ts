@@ -12,7 +12,11 @@ export function getCommandsPath() {
   return join(getConfigDir(), "commands.toml")
 }
 
-/** The compiled patterns from commands.toml (`safe` plus `custom`); a missing file is written from the template. A broken file or pattern never stops the app: it is logged and skipped, and a broken file falls back to the built-in list. */
+/**
+ * The compiled patterns from commands.toml (`safe` plus `custom`); a missing file is written from the template. A
+ * broken file or pattern never stops the app: it is logged and skipped, and a broken file falls back to the built-in
+ * list.
+ */
 export async function loadSafeCommands(): Promise<RegExp[]> {
   const path = getCommandsPath()
   const f = file(path)
@@ -31,7 +35,10 @@ export async function loadSafeCommands(): Promise<RegExp[]> {
   return patterns
 }
 
-/** Writes fresh defaults (`text`, from the bundle or the template) over commands.toml, keeping the user's `custom` patterns and backing the old file up like every other fetched file. */
+/**
+ * Writes fresh defaults (`text`, from the bundle or the template) over commands.toml, keeping the user's `custom`
+ * patterns and backing the old file up like every other fetched file.
+ */
 export async function fetchCommandsToml(text: string = TEMPLATE) {
   const path = getCommandsPath()
   const f = file(path)

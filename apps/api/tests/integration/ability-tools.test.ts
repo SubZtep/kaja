@@ -102,7 +102,12 @@ const createIssueCall = (id: string) => ({
 
 /** The stored tool call for a provider call id, with the approval it got and the text of its result message. */
 async function savedCall(callId: string) {
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<{
+    approval: string | null
+    status: string | null
+    timed: boolean
+    result: string | null
+  }>(
     `SELECT tc.approval, tc.status, tc.duration_ms IS NOT NULL AS timed, r.content AS result
      FROM nasi_tool_call tc LEFT JOIN nasi_message r ON r.id = tc.result_message_id
      WHERE tc.call_id = $1`,
@@ -129,7 +134,11 @@ describe("HTTP tools in the cloud", () => {
     })
   const removeKey = (name: string) =>
     app.request(`/admin/abilities/keys/${name}`, { method: "DELETE", headers: auth(adminToken) })
-  const keyList = async () => (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()
+  const keyList = async () =>
+    (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json() as Promise<{
+      keysEnabled: boolean
+      abilities: { name: string; saved: boolean }[]
+    }>
   const listed = async (name: string) =>
     (await keyList()).abilities.find((ability: { name: string }) => ability.name === name)
   const turn = (body: object) =>
@@ -153,7 +162,7 @@ describe("HTTP tools in the cloud", () => {
     // With a sender set, the SSRF guard leaves DNS to it, so the fake hosts below are reachable through the faked fetch.
     setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-      const url = new URL(String(input))
+      const url = new URL(input instanceof Request ? input.url : String(input))
       if (!url.hostname.endsWith(".test")) return realFetch(input, init)
       const authorization = new Headers(init?.headers).get("authorization")
       requests.push({ url: url.toString(), method: init?.method ?? "GET", authorization, body: init?.body as string })
@@ -476,7 +485,7 @@ describe("HTTP tools in the cloud", () => {
     await driver.handleMessage(1001, 55, "/new")
     await driver.handleMessage(1001, 55, "weather?")
     const placeholder = messages.find(message => message.text === "…")!
-    expect(edits.filter(edit => edit.id === placeholder.id).at(-1)!.text).toBe("Let me check.")
+    expect(edits.findLast(edit => edit.id === placeholder.id)!.text).toBe("Let me check.")
     expect(messages.at(-1)!.text).toBe("Sunny.")
     expect(edits.some(edit => edit.text.includes("Let me check.Sunny."))).toBe(false)
   })

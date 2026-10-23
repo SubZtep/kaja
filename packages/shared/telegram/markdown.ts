@@ -1,6 +1,9 @@
 import { Marked, type Token, type Tokens } from "marked"
 
-/** Renders assistant Markdown as Telegram HTML via a hand-rolled token walk on a fresh Marked instance — isolated from markdown.tsx's global ANSI renderer. */
+/**
+ * Renders assistant Markdown as Telegram HTML via a hand-rolled token walk on a fresh Marked instance — isolated from
+ * markdown.tsx's global ANSI renderer.
+ */
 const telegramMarked = new Marked()
 
 /** Telegram's HTML parse mode only requires escaping these three characters. */
@@ -131,7 +134,10 @@ export const TELEGRAM_MESSAGE_LIMIT = 4096
 /** Telegram's cap for a photo's caption. */
 export const TELEGRAM_CAPTION_LIMIT = 1024
 
-/** A Markdown image in a reply, sent after its text as a photo: `src` as written (a URL or a local path), `alt` as its caption. */
+/**
+ * A Markdown image in a reply, sent after its text as a photo: `src` as written (a URL or a local path), `alt` as its
+ * caption.
+ */
 export type TelegramImage = { src: string; alt: string }
 
 /** The `![alt](src)` images in a reply, in order and once each; the same syntax inside code stays code. */
@@ -187,8 +193,8 @@ function safeCut(html: string, at: number): number {
 }
 
 /**
- * Cuts `html` into a head of at most `limit` characters, at a blank line, else a line break, else anywhere past
- * `from`; the tags open at the cut are closed at the head's end and reopened at the rest's start, so both parse.
+ * Cuts `html` into a head of at most `limit` characters, at a blank line, else a line break, else anywhere past `from`;
+ * the tags open at the cut are closed at the head's end and reopened at the rest's start, so both parse.
  */
 function cutHtml(html: string, limit: number, from: number): { head: string; rest: string; reopened: number } {
   let budget = limit
@@ -216,11 +222,10 @@ function cutHtml(html: string, limit: number, from: number): { head: string; res
 }
 
 /**
- * Splits already-rendered Telegram HTML into <=`limit`-char chunks for
- * separate sendMessage calls, breaking on a blank line where possible and
- * closing and reopening any tag a break falls inside (a long code block),
- * so every chunk parses. Used only at final/flush time — editMessageText
- * always targets one existing message, so it can't be split this way.
+ * Splits already-rendered Telegram HTML into <=`limit`-char chunks for separate sendMessage calls, breaking on a blank
+ * line where possible and closing and reopening any tag a break falls inside (a long code block), so every chunk
+ * parses. Used only at final/flush time — editMessageText always targets one existing message, so it can't be split
+ * this way.
  */
 export function splitTelegramMessage(html: string, limit = TELEGRAM_MESSAGE_LIMIT): string[] {
   if (html.length <= limit) return [html]
@@ -239,10 +244,9 @@ export function splitTelegramMessage(html: string, limit = TELEGRAM_MESSAGE_LIMI
 }
 
 /**
- * Truncation for in-flight streaming edits that exceed the message limit:
- * cut like splitTelegramMessage (so the edit still parses), with an ellipsis.
- * Only ever transient — the next edit replaces it, and the final flush splits
- * the whole text over more messages.
+ * Truncation for in-flight streaming edits that exceed the message limit: cut like splitTelegramMessage (so the edit
+ * still parses), with an ellipsis. Only ever transient — the next edit replaces it, and the final flush splits the
+ * whole text over more messages.
  */
 export function truncateForStreaming(html: string, limit = TELEGRAM_MESSAGE_LIMIT): string {
   if (html.length <= limit) return html

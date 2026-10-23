@@ -11,7 +11,10 @@ import { initReporting } from "./report"
 import { collectStats } from "./stats"
 import { connectTunnel } from "./tunnel"
 
-/** Starts the sandbox: its egress proxy and process pool, then the tunnel to the API (the bundle's entry, cli.ts, calls it unless asked for `health`). */
+/**
+ * Starts the sandbox: its egress proxy and process pool, then the tunnel to the API (the bundle's entry, cli.ts, calls
+ * it unless asked for `health`).
+ */
 export async function startSandbox(): Promise<void> {
   initReporting(env)
 

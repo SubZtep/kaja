@@ -22,7 +22,10 @@ function write(level: LogLevel, message: string, payload?: Record<string, unknow
   }
 }
 
-/** Opt-in JSON-lines log: silent unless KAJA_LOG_LEVEL and KAJA_LOG_FILE are set, and never writes to the terminal (Ink owns it). */
+/**
+ * Opt-in JSON-lines log: silent unless KAJA_LOG_LEVEL and KAJA_LOG_FILE are set, and never writes to the terminal (Ink
+ * owns it).
+ */
 export const log = Object.fromEntries(
   LEVELS.map(level => [level, (message: string, payload?: Record<string, unknown>) => write(level, message, payload)])
 ) as Record<LogLevel, (message: string, payload?: Record<string, unknown>) => void>

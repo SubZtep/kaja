@@ -4,10 +4,10 @@ import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
 
 /**
- * A checklist: every row has a box, `[✔]` ticked or `[ ]` not, so it reads as "pick any" at a glance. Up/down to
- * move, space to tick or untick, return to submit the ticked values (in option order), escape to dismiss. Drawn
- * like {@link SelectMenu} rather than through @inkjs/ui's `MultiSelect`, which marks only
- * the ticked rows and so looks like a single-choice list until something is ticked.
+ * A checklist: every row has a box, `[✔]` ticked or `[ ]` not, so it reads as "pick any" at a glance. Up/down to move,
+ * space to tick or untick, return to submit the ticked values (in option order), escape to dismiss. Drawn like
+ * {@link SelectMenu} rather than through @inkjs/ui's `MultiSelect`, which marks only the ticked rows and so looks like a
+ * single-choice list until something is ticked.
  */
 export function CheckMenu({
   options,

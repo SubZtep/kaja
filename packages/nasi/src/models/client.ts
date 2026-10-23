@@ -4,8 +4,8 @@ import OpenAI from "openai"
 export const KAJA_MODEL_HEADER = "x-kaja-model"
 
 /**
- * Last model id reported by a free-chat proxy via {@link KAJA_MODEL_HEADER}.
- * Filled as soon as response headers arrive (before the stream body).
+ * Last model id reported by a free-chat proxy via {@link KAJA_MODEL_HEADER}. Filled as soon as response headers arrive
+ * (before the stream body).
  */
 let lastServedModel: string | undefined
 
@@ -22,14 +22,17 @@ export function takeLastServedModel(): string | undefined {
 }
 
 /**
- * OpenAI client that records `x-kaja-model` from free-chat proxy responses.
- * Used for the default chat client and for mid-session model switches.
+ * OpenAI client that records `x-kaja-model` from free-chat proxy responses. Used for the default chat client and for
+ * mid-session model switches.
  */
 export function createOpenAIClient(opts: {
   baseURL: string
   apiKey: string
   headers?: Record<string, string>
-  /** Replaces global `fetch`. The cloud passes a guarded fetch; the TUI leaves this unset so a model on the local network still works. */
+  /**
+   * Replaces global `fetch`. The cloud passes a guarded fetch; the TUI leaves this unset so a model on the local
+   * network still works.
+   */
   fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 }): OpenAI {
   return new OpenAI({

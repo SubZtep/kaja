@@ -33,9 +33,9 @@ async function checkedAddress(hostname: string): Promise<Pin | undefined> {
 }
 
 /**
- * The request for a pinned hop: the checked address in the URL, the host kept in `Host` and in `tls.serverName`, so
- * SNI and the certificate check still name the host (Bun's documented way to connect to an address you resolved).
- * A name with several addresses gets no fallback to the others.
+ * The request for a pinned hop: the checked address in the URL, the host kept in `Host` and in `tls.serverName`, so SNI
+ * and the certificate check still name the host (Bun's documented way to connect to an address you resolved). A name
+ * with several addresses gets no fallback to the others.
  */
 function pinned(
   url: string,
@@ -61,17 +61,15 @@ async function fetchHop(
   request: HopRequest,
   pin: Pin | undefined
 ): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  const init = { method: request.method, body: request.body, redirect: "manual", signal: controller.signal } as const
-  try {
-    // biome-ignore lint/nursery/useAwaitThenable: FetchLike returns a Promise; Biome misses it
-    if (send) return await send(url, { ...init, headers: request.headers })
-    const hop = pinned(url, pin, request.headers)
-    return await fetch(hop.url, { ...hop.init, ...init })
-  } finally {
-    clearTimeout(timer)
-  }
+  const init = {
+    method: request.method,
+    body: request.body,
+    redirect: "manual",
+    signal: AbortSignal.timeout(timeoutMs)
+  } as const
+  if (send) return send(url, { ...init, headers: request.headers })
+  const hop = pinned(url, pin, request.headers)
+  return fetch(hop.url, { ...hop.init, ...init })
 }
 
 /** Reads the body, aborting as soon as it exceeds maxBytes so an oversized response is never buffered whole. */
@@ -165,9 +163,11 @@ export type FetchPublicHttpOptions = {
 }
 
 /**
- * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against {@link isPublicHttpUrl}.
+ * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against
+ * {@link isPublicHttpUrl}.
  *
- * @param opts.send - Sends every hop (redirects too) instead of a direct, DNS-pinned connection; never falls back to one.
+ * @param opts.send - Sends every hop (redirects too) instead of a direct, DNS-pinned connection; never falls back to
+ *   one.
  */
 export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -201,9 +201,9 @@ export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Respo
 
 /**
  * A `fetch` for long-lived clients such as the MCP SDK's transports: every hop gets the same checks as
- * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
- * followed here and only within the same origin (headers may carry the user's key), and the body is
- * streamed rather than buffered, so an SSE stream stays open. Sends every hop through `send` when set, never direct.
+ * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are followed here and only
+ * within the same origin (headers may carry the user's key), and the body is streamed rather than buffered, so an SSE
+ * stream stays open. Sends every hop through `send` when set, never direct.
  */
 export function createGuardedFetch(opts: { send?: FetchLike; maxRedirects?: number } = {}): FetchLike {
   const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS

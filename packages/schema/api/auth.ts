@@ -1,6 +1,9 @@
 import { z } from "zod"
 
-/** The form validation messages, named so a client can show its own translation of each (the web maps them in `lib/error-messages.ts`); everyone else gets the English. */
+/**
+ * The form validation messages, named so a client can show its own translation of each (the web maps them in
+ * `lib/error-messages.ts`); everyone else gets the English.
+ */
 export const AUTH_MESSAGES = {
   invalidEmail: "Invalid email address",
   invalidCode: "Enter the 6-digit code from the email",

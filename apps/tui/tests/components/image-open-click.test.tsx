@@ -36,7 +36,7 @@ test("a click on the open link of an image in the chat opens the image", async (
   await t.tick()
   await Bun.sleep(500)
   await t.tick()
-  const lines = t.lastFrame()!.split("\n")
+  const lines = t.lastFrame().split("\n")
   const row = lines.findIndex(line => line.includes("open"))
   expect(row).toBeGreaterThanOrEqual(0)
   const col = lines[row]!.indexOf("open")

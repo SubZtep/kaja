@@ -12,12 +12,12 @@ icon: 🧠
 Two kinds of remembering, kept in the same store: a [SQLite file](/configuration/storage) locally, Postgres
 in the cloud.
 
-| | **Notes** | **Datasets** |
-|---|---|---|
-| Shape | free-form facts | a fixed list of fields |
-| Written by | the agent, unprompted | the user, one answer at a time |
-| Read back | by search (`recall_memory`) | as a completed version |
-| Defined where | nowhere, it grows as you talk | `marketplace/datasets/*.json` |
+|               | **Notes**                     | **Datasets**                   |
+| ------------- | ----------------------------- | ------------------------------ |
+| Shape         | free-form facts               | a fixed list of fields         |
+| Written by    | the agent, unprompted         | the user, one answer at a time |
+| Read back     | by search (`recall_memory`)   | as a completed version         |
+| Defined where | nowhere, it grows as you talk | `marketplace/datasets/*.json`  |
 
 ## Notes
 
@@ -44,19 +44,19 @@ flowchart LR
     Boot --> A2
 ```
 
-| Tool | What it does |
-| --- | --- |
+| Tool            | What it does                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------ |
 | `remember_note` | write or update a fact. It **upserts by key**, so the same key overwrites instead of duplicating |
-| `recall_memory` | search notes, filtered by tags, minimum importance or sticky-only |
-| `list_notes` | list what's stored |
-| `forget_note` | delete one note by key, or every note with a tag |
+| `recall_memory` | search notes, filtered by tags, minimum importance or sticky-only                                |
+| `list_notes`    | list what's stored                                                                               |
+| `forget_note`   | delete one note by key, or every note with a tag                                                 |
 
 **Sticky** notes skip search and go into the system prompt at the start of every session. Use them for the
 few things that should always be in context, and leave the rest non-sticky so they're recalled only when
 relevant.
 
-You can ask for any of this in plain words: *"what do you remember about me?"*, *"forget the note about my
-old job"*.
+You can ask for any of this in plain words: _"what do you remember about me?"_, _"forget the note about my
+old job"_.
 
 ## Datasets
 
@@ -71,19 +71,23 @@ the folder loads, but does nothing until a persona names it or it's a profile.
   "revalidateAfterDays": 7,
   "fields": [
     { "name": "mood", "prompt": "How has your week felt overall?" },
-    { "name": "energy", "prompt": "How's your energy been?", "accepted": ["low", "okay", "high"] }
+    {
+      "name": "energy",
+      "prompt": "How's your energy been?",
+      "accepted": ["low", "okay", "high"]
+    }
   ]
 }
 ```
 
-| Field | Purpose |
-| --- | --- |
-| `label` | display name (required) |
-| `fields[].name` | the stored key (required) |
-| `fields[].prompt` | what to ask. The agent rephrases it naturally instead of reading it out |
-| `fields[].accepted` | a fixed answer list. Anything else is rejected (case-insensitively) and asked again |
-| `revalidateAfterDays` | how long a completed set stays fresh before a new version starts |
-| `profile` | it's about the user, so every persona sees the answers (see below) |
+| Field                 | Purpose                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `label`               | display name (required)                                                             |
+| `fields[].name`       | the stored key (required)                                                           |
+| `fields[].prompt`     | what to ask. The agent rephrases it naturally instead of reading it out             |
+| `fields[].accepted`   | a fixed answer list. Anything else is rejected (case-insensitively) and asked again |
+| `revalidateAfterDays` | how long a completed set stays fresh before a new version starts                    |
+| `profile`             | it's about the user, so every persona sees the answers (see below)                  |
 
 ### The onboarding profile
 

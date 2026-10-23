@@ -12,7 +12,10 @@ const SLOT = "flex min-w-0 flex-col gap-2"
 
 let chatWidget: Promise<void> | undefined
 
-/** The standalone chat widget's script, fetched on the first tap of the Chat card rather than with the page; it builds its bubble as soon as it runs. */
+/**
+ * The standalone chat widget's script, fetched on the first tap of the Chat card rather than with the page; it builds
+ * its bubble as soon as it runs.
+ */
 function loadChatWidget(src: string) {
   chatWidget ??= new Promise((resolve, reject) => {
     const script = document.createElement("script")

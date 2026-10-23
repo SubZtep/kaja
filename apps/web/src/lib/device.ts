@@ -22,7 +22,10 @@ const SYSTEMS: [RegExp, string][] = [
   [/Linux/, "Linux"]
 ]
 
-/** "Chrome on Linux", "Kaja terminal 0.29.4" (the CLI sends `kaja-tui/<version>`; older logins only Bun's own agent), or "Unknown device". */
+/**
+ * "Chrome on Linux", "Kaja terminal 0.29.4" (the CLI sends `kaja-tui/<version>`; older logins only Bun's own agent), or
+ * "Unknown device".
+ */
 export function describeUserAgent(ua: string): DeviceInfo {
   const terminal = /^kaja-tui\/(\S+)/.exec(ua)
   if (terminal) return { label: m.devices_terminal_version({ version: terminal[1]! }), icon: SquareTerminal }

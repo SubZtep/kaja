@@ -11,7 +11,10 @@ export function getHooksPath() {
   return join(getConfigDir(), "hooks.toml")
 }
 
-/** The hooks from hooks.toml. The file is optional and never written; a missing or broken one means no hooks (a broken one is logged). */
+/**
+ * The hooks from hooks.toml. The file is optional and never written; a missing or broken one means no hooks (a broken
+ * one is logged).
+ */
 export function loadHooks(): KajaHooksFile {
   const path = getHooksPath()
   let text: string
@@ -30,7 +33,10 @@ export function loadHooks(): KajaHooksFile {
   }
 }
 
-/** Starts a hook's command in the background without waiting for it; `text` is in `$KAJA_TEXT` and on stdin. A failure is logged, never thrown. */
+/**
+ * Starts a hook's command in the background without waiting for it; `text` is in `$KAJA_TEXT` and on stdin. A failure
+ * is logged, never thrown.
+ */
 export function runHook(name: HookName, command: string, text: string) {
   const shell = process.platform === "win32" ? ["cmd", "/c", command] : ["sh", "-c", command]
   try {

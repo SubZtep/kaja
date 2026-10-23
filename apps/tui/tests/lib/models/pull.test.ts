@@ -13,12 +13,12 @@ const server = Bun.serve({
       return Response.json({ models: [{ name: "installed:latest" }] })
     }
     if (url.pathname === "/api/pull") {
-      const { model } = (await req.json()) as { model: string }
-      if (model === "missing-upstream") {
+      const { model: name } = (await req.json()) as { model: string }
+      if (name === "missing-upstream") {
         return Response.json({ error: "pull model manifest: file does not exist" }, { status: 404 })
       }
       const events =
-        model === "breaks-halfway"
+        name === "breaks-halfway"
           ? ['{"status":"pulling manifest"}', '{"error":"max retries exceeded"}']
           : [
               '{"status":"pulling manifest"}',

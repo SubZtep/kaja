@@ -31,7 +31,11 @@ async function writeCachedEtag(etag: string) {
 
 export type RemoteBundle = { files: Record<string, string> } | { unchanged: true }
 
-/** Downloads the admin-managed defaults bundle from `GET {apiBaseUrl}/config/export`, honouring the cached ETag (returns `{ unchanged: true }` on a 304) unless `useEtagCache` is false. Throws on a network error or non-2xx/304 response — callers fall back to the bundled templates. */
+/**
+ * Downloads the admin-managed defaults bundle from `GET {apiBaseUrl}/config/export`, honouring the cached ETag (returns
+ * `{ unchanged: true }` on a 304) unless `useEtagCache` is false. Throws on a network error or non-2xx/304 response —
+ * callers fall back to the bundled templates.
+ */
 export async function fetchRemoteConfigBundle(useEtagCache = true): Promise<RemoteBundle> {
   const apiBaseUrl = getApiBaseUrl()
   const cachedEtag = useEtagCache ? await readCachedEtag() : undefined

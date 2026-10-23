@@ -5,105 +5,68 @@ Hono REST API for Kaja: Better Auth, the cloud agent (`/nasi`), abilities, sandb
 ## Commands
 
 ```bash
-# From monorepo root
+# From the monorepo root
 bun run --filter @kaja/api dev      # hot reload: src/core/server.ts (widget bundle built lazily on first request, see widgets/CLAUDE.md)
 bun run --filter @kaja/api build    # dist/server.js (bun target) + widget bundle into public/widget.js
-bun run --filter @kaja/api start
-
-# Tests run from the monorepo root (needs Postgres + RustFS; uses its own <db>_test database)
-bun test
+bun test                            # needs Postgres + RustFS; uses its own <db>_test database
 ```
 
-Local secrets helper: `../../scripts/create_local_secrets.sh`  
-Manual migrations: `../../scripts/db_migration.sh`  
-DB migration builder for Docker/Disco (stays here — path-coupled to `./migrations` and the Dockerfile build step): `migrate.ts`, running `scripts/migrations.ts` (`schema_migrations` tracking, one transaction per file)
+Local secrets: `scripts/create_local_secrets.sh`; manual migrations: `scripts/db_migration.sh`. `migrate.ts` (stays here, path-coupled to `./migrations` and the Dockerfile build step) runs `scripts/migrations.ts`.
 
 ## Layout
 
 ```
 src/
   app.ts                 # OpenAPIHono app, CORS, route mounts
-  core/                  # process infrastructure only
-    server.ts            # process entry: cron, startup marketplace sync, export default
-    env.ts               # parsed ApiEnvSchema
-    db.ts                # pg Pool
-    report.ts            # reportError: console.error + Sentry for failures the code handles itself
-    rate-limit.ts        # global + auth + nasi turn limiters (off under bun test)
-    csrf.ts              # cookie-session writes must come from CORS_ORIGIN (bearer/cookieless pass)
-    cron.ts              # Bun.cron jobs: hourly marketplace sync
-    ssr-client-ip.ts     # trusts the web SSR's visitor IP via SSR_SECRET
-    i18n.ts              # per-call translator over locales/*.toml (emails, Telegram bot)
-    files.ts             # the images bucket via Bun.S3Client (Hetzner, or the compose RustFS); public-read images/, URLs
-    geo.ts               # IP geolocation (sandboxes)
-    lock.ts              # withLock: in-process per-key serialization (single instance)
+  core/                  # process infrastructure only (server entry, env, db, report, rate-limit, csrf, cron, ssr-client-ip, i18n, files, geo, lock)
   features/              # one folder per URL mount prefix
-    auth/                # Better Auth config + routes + middleware
-    admin/               # /admin — providers, models, abilities/sync and server-wide ability keys, sandbox
-    config/              # /config — resolve model (CONFIG_API_TOKEN)
-    config-export/       # /config/export — the admin-managed models bundle `kaja config fetch|diff` reads; also the public defaults, /config/catalog, /config/templates/<file> and /config/schemas/<file>.json (the JSON Schemas for the TOML files, from `@kaja/schema/tombi`; `defaults.ts`, embedded from the repo's `config/` by `services/config-defaults.ts`)
-    nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
-    sandbox/             # /sandbox — sandboxes' WebSocket (/sandbox/connect), routing, users' sandbox keys and settings, the --local relay (relay.ts)
-    stats/               # /stats — a user's own activity numbers
-    telegram/            # the cloud Telegram bot (not a route)
-    telegram-admin/      # /telegram/admin — Telegram account linking
-    widget/              # /widget — the embed script and POST /widget/turn
-    widget-admin/        # /widget/admin — widget key CRUD
-    health/              # /health (liveness), /health/ready (database + storage probe; the Docker HEALTHCHECK)
-    reference/           # /reference (dev OpenAPI UI)
+    auth/ admin/ config/ config-export/ nasi/ sandbox/ stats/ telegram/ telegram-admin/ widget/ widget-admin/ health/ reference/
   services/              # shared domain logic (ability, marketplace sync, model, sandbox, secret, stats, widget, …)
   emails/                # React Email templates
   types.ts / types/      # Hono env types, error helpers
 migrations/              # raw SQL, applied by migrate.ts (and on first Postgres boot via compose)
 tests/integration/       # route and service tests against the test database
-tests/unit/              # pure helpers (env, i18n, lock, client IP, …)
+tests/unit/              # pure helpers
 widgets/                 # embeddable browser widget bundle source, own tsconfig (see widgets/CLAUDE.md)
 ```
 
-### Adding an endpoint
+Non-obvious features:
 
-1. Add a route file under the matching `features/<prefix>/` (or create a new feature + `app.route(...)`).
-2. Register it from that feature’s `index.ts`.
-3. Put shared DB/business logic in `services/`.
+- `config/` is `/config`: resolve model (`CONFIG_API_TOKEN`). `config-export/` is `/config/export` (the admin-managed models bundle `kaja config fetch|diff` reads) plus the public defaults: `/config/catalog`, `/config/templates/<file>`, `/config/schemas/<file>.json` (from `@kaja/schema/tombi`); `defaults.ts` is embedded from the repo's `config/` by `services/config-defaults.ts`
+- `telegram/` is the cloud bot (not a route); `telegram-admin/` is `/telegram/admin` account linking
+- `health/`: `/health` (liveness) and `/health/ready` (database + storage probe; the Docker HEALTHCHECK); `reference/`: the dev OpenAPI UI
+- `core/`: `report.ts` is `reportError` (console.error + Sentry), `rate-limit.ts` global + auth + nasi turn limiters (off under `bun test`), `csrf.ts` cookie-session writes must come from `CORS_ORIGIN` (bearer/cookieless pass), `files.ts` the images bucket via `Bun.S3Client` (Hetzner, or the compose RustFS), `lock.ts` `withLock` (in-process per-key serialization, hence one instance)
+
+Adding an endpoint: a route file under the matching `features/<prefix>/` (or a new feature + `app.route(...)`), registered from that feature's `index.ts`, with shared DB/business logic in `services/`.
 
 ## Conventions
 
-- **Routes**: `@hono/zod-openapi` + schemas from `@kaja/schema`
-- **DB**: raw SQL with parameterized queries via `pg` Pool — never string-interpolate user input
-- **Types**: API contracts from `@kaja/schema`; row types stay private in services; map with `#rowTo…` helpers
+- **Routes**: `@hono/zod-openapi` + schemas from `@kaja/schema`; API contracts come from there only
+- **DB**: raw SQL with parameterized queries via the `pg` Pool, never string-interpolated user input; Better Auth uses the same Pool (no ORM adapter, do not reintroduce ORM layers). Row types stay private in services; map with `#rowTo…` helpers
 - **Auth**: `authMiddleware` on all routes sets `user` from the bearer token, else the session cookie (no lookup when the request carries neither); routes behind `requireAuthMiddleware` read it with `sessionUser(c)` (401 if missing). No session `cookieCache`: a ban or sign-out must apply at once
-- **Logging**: no logger package. A failure the code handles itself (so Sentry's Hono middleware never sees it) goes through `core/report.ts`'s `reportError`; a recoverable problem is a `console.warn`; `@kaja/nasi`'s warnings arrive via `setWarnHandler` in `core/server.ts`
-- **Errors**: helpers in `types/errors.ts` (cast responses for Hono typing); `knownTurnError` maps `@kaja/nasi`'s typed turn errors (`SessionNotFoundError` 404, `NothingToApproveError` 409, `ModelUnavailableError` 502, `NoModelError` 503). `app.onError` answers anything a route lets escape as `{ error }` JSON (logged only: the Sentry middleware already reports thrown errors), and `app.notFound` too
+- **Logging**: no logger package. A failure the code handles itself (so Sentry's Hono middleware never sees it) goes through `reportError`; a recoverable problem is a `console.warn`; `@kaja/nasi`'s warnings arrive via `setWarnHandler` in `core/server.ts`
+- **Errors**: helpers in `types/errors.ts` (cast responses for Hono typing); `knownTurnError` maps `@kaja/nasi`'s typed turn errors (`SessionNotFoundError` 404, `NothingToApproveError` 409, `ModelUnavailableError` 502, `NoModelError` 503). `app.onError` answers anything a route lets escape as `{ error }` JSON (logged only: Sentry already reports thrown errors), and `app.notFound` too
+- Prefer surgical changes. Migrations stay lexicographically ordered; until v1.0 a schema change is edited into the file that creates the table (see the root CLAUDE.md)
 
 ## Important behaviors
 
-- `/config/*` is fail-closed: requires non-empty `CONFIG_API_TOKEN` Bearer match (leaks provider API keys otherwise)
-- OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
-- Rate limit middleware is mounted (global + `/auth/*` + `/nasi/turn(/stream)`, the last keyed by user id not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
-- `/admin/*` requires a signed-in non-banned user; `providers`/`models`/`abilities`/`sandbox` routes require Better Auth `admin` role
+- `/config/*` is fail-closed: it requires a non-empty `CONFIG_API_TOKEN` Bearer match (it leaks provider API keys otherwise)
+- OpenAPI UI (`/reference`) only when `NODE_ENV === "development"`
+- Rate limits: global, `/auth/*` and `/nasi/turn(/stream)` (the last keyed by user id, not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
+- `/admin/*` requires a signed-in non-banned user; `providers`/`models`/`abilities`/`sandbox` routes also require the Better Auth `admin` role
+- `/nasi/turn*` take 16 MB bodies (images), every other route 1 MB
 
 ## Marketplace abilities
 
-`services/marketplace.ts` keeps the `ability` table in step with `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (default SubZtep/kaja@main): at startup, hourly, and on `POST /admin/abilities/sync`. It asks GitHub for the branch's commit and only downloads the tarball (extracted with the image's `tar`) when it moved. Rows are never deleted — an ability that leaves the marketplace gets `removed_at`. Each ability folder (`abilities/<name>/`) is stored as one typed row per part the cloud can run: a skill (never one with a `scripts/` folder), its `tool.toml` (skipped when the `baseUrl` isn't public) and its `mcp.toml` (only with a `tools` allowlist, http/sse on a public host or stdio for the MCP sandbox — `cloudMcpProblem`). There are no per-user switches: every user has every available ability, every persona in the catalog is in every roster (`personaCatalog`), and the turn's persona picks what it uses. Cloud turns load all of it through `features/nasi/pg-abilities.ts` (an `AbilityStore` over the table) with the server-wide keys, decrypted; every tool request goes out through a sandbox, never from the API (`features/sandbox/registry.ts`'s `egressFor`, nasi's `egress`: `fetch_url` through any sandbox the user may use, an ability's requests and keyed stdio servers wherever the key they carry may go: `keyTrust`, a server-wide key only to the official sandbox, a `--local` client's own key through the relay to their own or the official one); MCP abilities connect only when a persona that lists them is active (nasi's lazy MCP), so every caller of `openNasiFor` must `close()` the instance after the turn. A widget's source is skills only (`{ skillsOnly: true }`): its persona's skills, never tools or MCP.
-
-Ability keys are server-wide only (users have none of their own): an admin's key per ability in `service_secret` via `services/secret.ts`, AES-256-GCM with `USER_SECRET_KEY` and the name as associated data, write-only over the API (`/admin/abilities/keys`: list, `PUT` saves and tests it through the official sandbox only, an HTTP tool's `check` or connecting to the MCP server, `DELETE`). Every user's turns use them (`AbilityService.serviceKeys`). Without `USER_SECRET_KEY`, key routes answer 503 and abilities that require a key are hidden. A terminal's turn declares what it runs on the user's computer (`clientTools`, `clientSkills`, `clientPersonas`; `features/nasi/chat.ts`'s `clientOf` → `openNasiFor`'s `client`): its own personas join the catalog (`withOwnPersonas`, same id replaces), the prompt's environment says some tools run on their computer, and paused calls come back as `toolResults` (`/nasi/turn*` take 16 MB bodies for their images, every other route 1 MB). A tool that isn't GET pauses the turn (`confirm_tool` step, `needs_approval`); the next turn's `approval` (`approve`, `approve_session` or `decline`) makes Nasi run or skip the call the session saved; `approve_session` lives in `nasi_session.granted_tools`. The cloud Telegram bot answers it with inline buttons (`tool:approve|decline|approve_session:<hash of the call id>`), matched against the pressing user's latest session. Images reach clients by plain URL (`core/files.ts`'s `imageUrl`; `images/` is public-read): the SSE `tool_image` carries the image's, `image_described` its description, and `message`/`final` arrive with nasi's public URLs in place of their `kaja-image:` links (the bucket's `location`), on every route, the widget's included. The cloud Telegram bot captions a tool image's photo with its alt text, then its description (`editCaption`), and sends a reply's kaja-image: links by URL. Both bots answer in private chats only, reply "still working" to a message while a turn runs, take an album as one turn, and register a `/new` + `/compact` command menu on start (the local bot also has `/abilities`).
+- `services/marketplace.ts` keeps the `ability` table in step with `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (default SubZtep/kaja@main): at startup, hourly, and on `POST /admin/abilities/sync`. It asks GitHub for the branch's commit and downloads the tarball (extracted with the image's `tar`) only when it moved. Rows are never deleted: a removed ability gets `removed_at`.
+- Each ability folder is stored as one typed row per part the cloud can run: a skill (never one with a `scripts/` folder), its `tool.toml` (skipped when the `baseUrl` isn't public) and its `mcp.toml` (only with a `tools` allowlist; http/sse on a public host, or stdio for the MCP sandbox, see `cloudMcpProblem`). A widget's source is skills only (`{ skillsOnly: true }`): its persona's skills, never tools or MCP.
+- No per-user switches: every user has every available ability, every persona in the catalog is in every roster (`personaCatalog`), and the turn's persona picks what it uses. A terminal's turn declares what it runs on the user's computer (`clientTools`, `clientSkills`, `clientPersonas`; `features/nasi/chat.ts`'s `clientOf` → `openNasiFor`'s `client`): its own personas join the catalog (`withOwnPersonas`, same id replaces), the prompt says some tools run on their computer, and paused calls come back as `toolResults`.
+- Cloud turns load abilities through `features/nasi/pg-abilities.ts` (an `AbilityStore` over the table) with the server-wide keys, decrypted. Every tool request goes out through a sandbox, never from the API (`features/sandbox/registry.ts`'s `egressFor`, nasi's `egress`; routing rules in `apps/sandbox/CLAUDE.md`). MCP abilities connect only when a persona that lists them is active (nasi's lazy MCP), so **every caller of `openNasiFor` must `close()` the instance after the turn**.
+- **Ability keys are server-wide only** (users have none): an admin's key per ability in `service_secret` via `services/secret.ts`, AES-256-GCM with `USER_SECRET_KEY` and the name as associated data, write-only over the API (`/admin/abilities/keys`: list, `PUT` saves and tests it through the official sandbox only, `DELETE`). Every user's turns use them (`AbilityService.serviceKeys`). Without `USER_SECRET_KEY`, key routes answer 503 and abilities that require a key are hidden.
+- **Approvals**: a tool that isn't GET pauses the turn (`confirm_tool` step, `needs_approval`); the next turn's `approval` (`approve`, `approve_session` or `decline`) makes Nasi run or skip the call the session saved; `approve_session` lives in `nasi_session.granted_tools`. The cloud Telegram bot answers with inline buttons (`tool:approve|decline|approve_session:<hash of the call id>`), matched against the pressing user's latest session.
+- **Images** reach clients by plain URL (`core/files.ts`'s `imageUrl`; `images/` is public-read): the SSE `tool_image` carries the image's, `image_described` its description, and `message`/`final` arrive with public URLs in place of their `kaja-image:` links, on every route, the widget's included. The cloud Telegram bot captions a tool image's photo with its alt text, then its description (`editCaption`), and sends a reply's `kaja-image:` links by URL.
+- Both Telegram bots answer in private chats only, reply "still working" to a message while a turn runs, take an album as one turn, and register a `/new` + `/compact` command menu on start (the local bot also has `/abilities`).
 
 ## Env
 
-See `.env.example`.
-
-**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (at least 32 characters; generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`. With `NODE_ENV=production` the API also needs `USER_SECRET_KEY` and a `CONFIG_API_TOKEN` other than the `.env.example` placeholder.
-
-**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`, the widget limits, Google sign-in, Turnstile, `STORAGE_*`, `TELEGRAM_BOT_TOKEN`, `SANDBOX_SYSTEM_KEY`, `GEO_API_*`, `MARKETPLACE_*`. The full list is `packages/schema/env/api.ts`.
-
-**Production:** `NODE_ENV=production` (turns Sentry on), strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
-
-## Type rules (API layer)
-
-- Import request/response types from `@kaja/schema` only
-- Keep DB row shapes private inside services; map with `#rowTo…` helpers
-- Parameterized SQL only; Better Auth uses the same `pg` Pool (no ORM adapter)
-
-## Boundaries
-
-- Prefer surgical changes; do not reintroduce ORM layers
-- Migrations stay lexicographically ordered; until v1.0 a schema change is edited into the file that creates the table (no patch migrations, see the root CLAUDE.md)
+See `.env.example` (generated from `packages/schema/env/api.ts`, the full list). With `NODE_ENV=production` (turns Sentry on) the API also needs `USER_SECRET_KEY`, a `CONFIG_API_TOKEN` other than the `.env.example` placeholder, a strong `BETTER_AUTH_SECRET` (at least 32 characters: `openssl rand -base64 32`), real SMTP, and `CORS_ORIGIN` matching the public web origin.

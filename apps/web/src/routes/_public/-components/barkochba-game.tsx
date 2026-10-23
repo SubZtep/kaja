@@ -82,7 +82,7 @@ function loadState(): GameState {
   try {
     const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
     if (!raw) return IDLE_STATE
-    return { ...IDLE_STATE, ...JSON.parse(raw) }
+    return { ...IDLE_STATE, ...(JSON.parse(raw) as Partial<GameState>) }
   } catch {
     return IDLE_STATE
   }
@@ -91,7 +91,9 @@ function loadState(): GameState {
 function saveState(state: GameState) {
   try {
     sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked
+  }
 }
 
 /** A failed turn whose message is already in the visitor's language. */
@@ -107,13 +109,13 @@ async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTu
   if (res.status === 429) throw new GameError(m.barkochba_error_rate_limited())
   // The server's own reason is English and technical; the visitor gets the status in their language.
   if (!res.ok) throw new GameError(m.barkochba_error_request_failed({ status: res.status }))
-  return res.json()
+  return res.json() as Promise<NasiTurnResponse>
 }
 
 /**
- * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring
- * match, so it works for any language — then drops a short trailing label left behind by a
- * removal (e.g. "Question 2:"), identified purely by length/punctuation, not vocabulary.
+ * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring match, so it works
+ * for any language — then drops a short trailing label left behind by a removal (e.g. "Question 2:"), identified purely
+ * by length/punctuation, not vocabulary.
  */
 function withoutQuestion(content: string, question: string): string {
   if (!question) return content.trim()
@@ -164,7 +166,9 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
     if (!barkochbaWidgetKey) {
       try {
         sessionStorage.removeItem(STATE_STORAGE_KEY)
-      } catch {}
+      } catch {
+        // sessionStorage can be blocked
+      }
       setHydrated(true)
       return
     }
@@ -272,7 +276,6 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             <div className="mb-3 flex items-center justify-center gap-1">
               {Array.from({ length: MAX_QUESTIONS }, (_, i) => (
                 <span
-                  // biome-ignore lint/suspicious/noArrayIndexKey: one dot per question slot, so the index is its identity
                   key={`q-${i + 1}`}
                   className={`size-1.5 rounded-full ${i < questionCount ? "bg-neon" : "bg-border"}`}
                 />

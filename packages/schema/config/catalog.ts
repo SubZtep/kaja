@@ -25,7 +25,10 @@ const CatalogProviderSchema = z.object({
   models: z.array(CatalogModelSchema).min(1)
 })
 
-/** The catalog shape's version, sent with `GET /config/catalog`: a client that doesn't know it keeps its bundled catalog. Bump on a change an older client can't read. */
+/**
+ * The catalog shape's version, sent with `GET /config/catalog`: a client that doesn't know it keeps its bundled
+ * catalog. Bump on a change an older client can't read.
+ */
 export const CATALOG_VERSION = 1
 
 /** The generated example that `kaja config fetch --offline` writes and the cloud seed loads. */
@@ -40,7 +43,7 @@ const CatalogExampleSchema = z.object({
   pick: z.partialRecord(TaskSchema, z.string()).optional()
 })
 
-/** config/catalog.toml: the one source of model defaults, for the setup wizard and the generated examples. */
+/** Config/catalog.toml: the one source of model defaults, for the setup wizard and the generated examples. */
 export const CatalogFileSchema = z
   .object({
     providers: z.array(CatalogProviderSchema).min(1),

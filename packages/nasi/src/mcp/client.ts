@@ -2,18 +2,22 @@ import type { McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { capText } from "@kaja/shared/text"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+// oxlint-disable-next-line import/no-deprecated -- some servers only speak SSE
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { ListRootsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js"
-import { type Tool, type ToolResult, tool } from "../agent/tools"
+import { type Tool, tool, type ToolResult } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
 import type { McpRoot } from "./roots"
 
 const MAX_ARGS_PREVIEW = 200
 /** How long a roots-taking server gets to ask for its roots before calls go ahead anyway. */
 const ROOTS_ASK_WAIT_MS = 5_000
-/** After it asks, how long it gets to take them in: MCP has no reply for that, and the filesystem server checks each folder first. */
+/**
+ * After it asks, how long it gets to take them in: MCP has no reply for that, and the filesystem server checks each
+ * folder first.
+ */
 const ROOTS_SETTLE_MS = 250
 
 /** `promise`, or nothing once `ms` have passed. */
@@ -28,9 +32,15 @@ export type McpConnectOptions = {
   transport?: "http" | "sse"
   /** Only these of the server's tools (by MCP name) reach the model; unset means all. */
   allow?: string[]
-  /** When calls ask first (see `Tool.approval`): `writes` asks unless the tool is annotated readOnlyHint (or `readOnly` says so). Default never. */
+  /**
+   * When calls ask first (see `Tool.approval`): `writes` asks unless the tool is annotated readOnlyHint (or `readOnly`
+   * says so). Default never.
+   */
   approval?: "never" | "writes" | "always"
-  /** Tools to treat as read-only under `writes` when the server doesn't mark them, each unless one of its `unless` arguments is set. */
+  /**
+   * Tools to treat as read-only under `writes` when the server doesn't mark them, each unless one of its `unless`
+   * arguments is set.
+   */
   readOnly?: McpReadOnlyRule[]
   /** Leads the approval summary, e.g. `mcp:context7`. */
   label?: string
@@ -46,11 +56,17 @@ export type McpConnectOptions = {
   hideArgs?: string[]
   /** The folders the server may work in now, asked for on every `roots/list`; set, the client declares roots support. */
   roots?: () => McpRoot[]
-  /** Why a call that may write can't run (e.g. it targets a read-only folder), checked before asking and before running; undefined lets it through. */
+  /**
+   * Why a call that may write can't run (e.g. it targets a read-only folder), checked before asking and before running;
+   * undefined lets it through.
+   */
   refuse?: (args: Record<string, unknown>) => string | undefined
   /** Runs before a call that may write (after `refuse`), e.g. to back up the files it names; a throw stops the call. */
   beforeWrite?: (args: Record<string, unknown>) => Promise<void>
-  /** For a `url` server whose session can end under it (a sandboxed one, when its sandbox restarts): a call that fails in transport opens a new session and is tried once more. */
+  /**
+   * For a `url` server whose session can end under it (a sandboxed one, when its sandbox restarts): a call that fails
+   * in transport opens a new session and is tried once more.
+   */
   reconnect?: boolean
 }
 
@@ -68,7 +84,10 @@ function withoutArgs(schema: Record<string, unknown>, hide: string[] | undefined
   }
 }
 
-/** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
+/**
+ * Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is
+ * set.
+ */
 function readOnlyByRule(rule: McpReadOnlyRule | undefined, args: Record<string, unknown> | undefined): boolean {
   if (!rule) return false
   return !rule.unless.some(key => args?.[key] !== undefined && args[key] !== null && args[key] !== "")
@@ -92,7 +111,8 @@ function createTransport(server: McpServerEntry, opts: McpConnectOptions) {
   }
   const init = { requestInit: { headers: server.headers }, ...(opts.fetch ? { fetch: opts.fetch } : {}) }
   return opts.transport === "sse"
-    ? new SSEClientTransport(new URL(server.url), init)
+    ? // oxlint-disable-next-line @typescript-eslint/no-deprecated, import/no-deprecated -- some servers only speak SSE
+      new SSEClientTransport(new URL(server.url), init)
     : new StreamableHTTPClientTransport(new URL(server.url), init)
 }
 

@@ -10,8 +10,8 @@ import { useAbilityKeys, useRemoveAbilityKey } from "./queries"
 const linkButton = "cursor-pointer text-muted text-xs underline-offset-2 hover:text-fg hover:underline"
 
 /**
- * The abilities that take a key, each with Add, or Replace and Remove: the server-wide keys every user shares. A key
- * is stored encrypted and never shown again.
+ * The abilities that take a key, each with Add, or Replace and Remove: the server-wide keys every user shares. A key is
+ * stored encrypted and never shown again.
  */
 export function ApiKeys() {
   const { data, error, isLoading } = useAbilityKeys()

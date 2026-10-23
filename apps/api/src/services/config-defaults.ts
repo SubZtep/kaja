@@ -13,7 +13,10 @@ import MODELS_XAI_TOML from "../../../../config/models.xai.toml" with { type: "t
 /** The model catalog, parsed once at boot so a broken `config/catalog.toml` fails the deploy, not a request. */
 export const catalogBundle = { version: CATALOG_VERSION, catalog: CatalogFileSchema.parse(TOML.parse(CATALOG_TOML)) }
 
-/** Version-independent defaults served as text. settings.toml and secrets.toml stay out: they describe one CLI build's own options. */
+/**
+ * Version-independent defaults served as text. settings.toml and secrets.toml stay out: they describe one CLI build's
+ * own options.
+ */
 export const defaultTemplates: ReadonlyMap<string, string> = new Map([
   ["commands.toml", COMMANDS_TOML],
   ["hooks.toml", HOOKS_TOML],
@@ -24,5 +27,8 @@ export const defaultTemplates: ReadonlyMap<string, string> = new Map([
   ["models.xai.toml", MODELS_XAI_TOML]
 ])
 
-/** JSON Schemas for the TOML files (`settings.json`, `models.json`, ...), derived from the runtime validators, so they match this build. */
+/**
+ * JSON Schemas for the TOML files (`settings.json`, `models.json`, ...), derived from the runtime validators, so they
+ * match this build.
+ */
 export const defaultSchemas: ReadonlyMap<string, object> = new Map(Object.entries(tombiSchemas))

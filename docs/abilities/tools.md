@@ -14,22 +14,22 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 
 ## Built-ins
 
-| Tool | Purpose | Cloud |
-| --- | --- | :---: |
-| `ask_user` | ask a clarifying question mid-task | ✓ |
-| `switch_persona` | change [persona](/abilities/personas) mid-conversation | ✓ |
-| `load_skill` | read one of the persona's [skills](/abilities/skills) | ✓ |
-| `current_time` | current date and time | ✓ |
-| `fetch_url` | read a web page as Markdown (its images and links when asked), or bring an image into the chat | sandbox |
-| `summarize` | summarize long text | ✓ |
-| `rerank` | rerank passages against a query | ✓ |
-| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory) | ✓ |
-| `dataset_info` | collect answers for a persona's [dataset](/abilities/memory#datasets) | ✓ |
-| `generate_image` | text-to-image | ✓ |
-| `read_file` / `list_files` | read a file, list a directory | your computer |
-| `view_image` | look at an image file | ✓ for the chat's own images, your computer for a file path |
-| `edit_image` | resize, rotate (by 90°) or flip a chat image, make it brighter or darker, or turn it greyscale | ✓ |
-| `run_command` | run a shell command | your computer, opt-in |
+| Tool                                                             | Purpose                                                                                        |                           Cloud                            |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | :--------------------------------------------------------: |
+| `ask_user`                                                       | ask a clarifying question mid-task                                                             |                             ✓                              |
+| `switch_persona`                                                 | change [persona](/abilities/personas) mid-conversation                                         |                             ✓                              |
+| `load_skill`                                                     | read one of the persona's [skills](/abilities/skills)                                          |                             ✓                              |
+| `current_time`                                                   | current date and time                                                                          |                             ✓                              |
+| `fetch_url`                                                      | read a web page as Markdown (its images and links when asked), or bring an image into the chat |                          sandbox                           |
+| `summarize`                                                      | summarize long text                                                                            |                             ✓                              |
+| `rerank`                                                         | rerank passages against a query                                                                |                             ✓                              |
+| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory)                                                          |                             ✓                              |
+| `dataset_info`                                                   | collect answers for a persona's [dataset](/abilities/memory#datasets)                          |                             ✓                              |
+| `generate_image`                                                 | text-to-image                                                                                  |                             ✓                              |
+| `read_file` / `list_files`                                       | read a file, list a directory                                                                  |                       your computer                        |
+| `view_image`                                                     | look at an image file                                                                          | ✓ for the chat's own images, your computer for a file path |
+| `edit_image`                                                     | resize, rotate (by 90°) or flip a chat image, make it brighter or darker, or turn it greyscale |                             ✓                              |
+| `run_command`                                                    | run a shell command                                                                            |                   your computer, opt-in                    |
 
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
@@ -146,7 +146,8 @@ export const diceTool = {
       }
     }
   },
-  execute: async ({ sides }: { sides: number }) => String(1 + Math.floor(Math.random() * sides))
+  execute: async ({ sides }: { sides: number }) =>
+    String(1 + Math.floor(Math.random() * sides))
 }
 ```
 
@@ -157,9 +158,9 @@ that throws on import is logged and skipped.
 
 All tools share one list of names, and each is marked by where it comes from:
 
-| Origin | What |
-| --- | --- |
-| official | Kaja's built-ins |
+| Origin    | What                                                             |
+| --------- | ---------------------------------------------------------------- |
+| official  | Kaja's built-ins                                                 |
 | community | [abilities](/abilities), synced or your own, code tools included |
 
 Official names are reserved: an MCP or code tool called `read_file` is left out instead of replacing the

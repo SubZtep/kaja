@@ -7,11 +7,13 @@ This project is under active development. Only the latest version on the `main` 
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability, please report it responsibly:
+
 - Do NOT open a public issue
 - Use GitHub private vulnerability reporting (Security tab → "Report a vulnerability")
 - Or email: subztep@gmail.com
 
 Please include:
+
 - Description of the issue
 - Steps to reproduce
 - Potential impact
@@ -29,10 +31,12 @@ You can expect an initial response within 3–5 days.
 ## Scope
 
 In scope:
+
 - Core application code in this repository
 - API endpoints and authentication handling
 
 Out of scope:
+
 - Third-party service misconfiguration
 - Known dependency vulnerabilities unless directly exploitable through this project
 

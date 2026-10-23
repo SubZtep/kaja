@@ -29,7 +29,10 @@ export type NasiClientOptions = {
 export type { NasiStreamEvent }
 
 export class NasiStreamError extends Error {
-  /** The server's error category (e.g. "tool", "network"), when it sent one — absent for connection-level failures (bad response, dropped stream) that never reached the server's own error handling. */
+  /**
+   * The server's error category (e.g. "tool", "network"), when it sent one — absent for connection-level failures (bad
+   * response, dropped stream) that never reached the server's own error handling.
+   */
   readonly category?: string
 
   constructor(message: string, category?: string) {
@@ -46,7 +49,10 @@ function parseJson(data: string): unknown {
   }
 }
 
-/** One SSE event of a turn stream: a live event to yield, the closing `done`, or nothing (a heartbeat, or an event this client doesn't know, a newer server's). An `error` event throws. */
+/**
+ * One SSE event of a turn stream: a live event to yield, the closing `done`, or nothing (a heartbeat, or an event this
+ * client doesn't know, a newer server's). An `error` event throws.
+ */
 function readStreamEvent(
   event: string,
   data: string
@@ -80,10 +86,8 @@ function parseSseBlock(block: string): { event: string; data: string } | undefin
 }
 
 /**
- * Parses a `text/event-stream` body into `{ event, data }` pairs, one per
- * `\n\n`-delimited block. Buffers partial blocks split across chunk
- * boundaries — SSE framing has no length prefix, so a chunk can end
- * mid-block.
+ * Parses a `text/event-stream` body into `{ event, data }` pairs, one per `\n\n`-delimited block. Buffers partial
+ * blocks split across chunk boundaries — SSE framing has no length prefix, so a chunk can end mid-block.
  */
 async function* parseSseStream(body: ReadableStream<Uint8Array>): AsyncGenerator<{ event: string; data: string }> {
   const reader = body.getReader()
@@ -107,8 +111,8 @@ async function* parseSseStream(body: ReadableStream<Uint8Array>): AsyncGenerator
 }
 
 /**
- * HTTP client for cloud Nasi (`POST /nasi/turn`, `/nasi/turn/stream`). Used
- * by the lite CLI. This module must not import sqlite or the agent loop.
+ * HTTP client for cloud Nasi (`POST /nasi/turn`, `/nasi/turn/stream`). Used by the lite CLI. This module must not
+ * import sqlite or the agent loop.
  */
 export function createNasiClient(opts: NasiClientOptions) {
   async function headers(): Promise<HeadersInit> {
@@ -120,7 +124,10 @@ export function createNasiClient(opts: NasiClientOptions) {
   }
 
   return {
-    /** `GET /nasi/info` — resolved persona label, model, and available cloud tools, for display before/without a turn. Pass `session` to resolve that session's pinned model instead of a fresh one. */
+    /**
+     * `GET /nasi/info` — resolved persona label, model, and available cloud tools, for display before/without a turn.
+     * Pass `session` to resolve that session's pinned model instead of a fresh one.
+     */
     async info(session?: string): Promise<NasiInfoResponse> {
       const url = new URL("/nasi/info", opts.baseUrl)
       if (session) url.searchParams.set("session", session)
@@ -161,10 +168,9 @@ export function createNasiClient(opts: NasiClientOptions) {
     },
 
     /**
-     * Streams one turn. Yields {@link NasiStreamEvent}s as they arrive and
-     * returns `{ session, status }` once the server sends its closing `done`
-     * event. Throws {@link NasiStreamError} if the server sends an `error`
-     * event instead, or if the connection drops before either arrives.
+     * Streams one turn. Yields {@link NasiStreamEvent}s as they arrive and returns `{ session, status }` once the server
+     * sends its closing `done` event. Throws {@link NasiStreamError} if the server sends an `error` event instead, or if
+     * the connection drops before either arrives.
      */
     async *turn_stream(
       body: NasiTurnRequest

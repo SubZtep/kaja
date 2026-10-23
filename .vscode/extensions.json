@@ -1,14 +1,4 @@
 {
-  "recommendations": [
-    "biomejs.biome",
-    "bradlc.vscode-tailwindcss",
-    "editorconfig.editorconfig",
-    "oven.bun-vscode",
-    "redhat.vscode-yaml",
-    "tombi-toml.tombi"
-  ],
-  "unwantedRecommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode"
-  ]
+  "recommendations": ["bradlc.vscode-tailwindcss", "editorconfig.editorconfig", "oven.bun-vscode", "tombi-toml.tombi"],
+  "unwantedRecommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
 }

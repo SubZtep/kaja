@@ -1,7 +1,7 @@
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { z } from "zod"
-import { type Tool, type ToolContext, ToolError, type ToolResult, tool } from "../../agent/agent"
+import { type Tool, tool, type ToolContext, ToolError, type ToolResult } from "../../agent/agent"
 import { ImageError, normalizeImage } from "../../images/normalize"
 import { imageRefId } from "../../store/images"
 import { PathDeniedError, resolveWorkspacePath } from "../path-guard"
@@ -53,8 +53,8 @@ async function viewFile(path: string): Promise<string | ToolResult> {
 }
 
 /**
- * Lets the agent view an image: a file, or one of the conversation's by its link. Inside the folder Kaja runs in a
- * file is just looked at; anywhere else it asks first, since the image goes to the model's provider. Never reads
+ * Lets the agent view an image: a file, or one of the conversation's by its link. Inside the folder Kaja runs in a file
+ * is just looked at; anywhere else it asks first, since the image goes to the model's provider. Never reads
  * secrets.toml or the conversation store, and refuses a file that isn't an image.
  *
  * @param args.path - Path to the image file, or a `kaja-image:` link.
@@ -75,7 +75,7 @@ export const viewImageTool: Tool<{ path: string }> = {
   }
 }
 
-/** view_image where there are no files to read (a cloud turn): only the conversation's own images, by link. */
+/** View_image where there are no files to read (a cloud turn): only the conversation's own images, by link. */
 export const viewLinkedImageTool: Tool<{ path: string }> = tool({
   name: NAME,
   description: "View an image from this conversation by its kaja-image: link, so you can see its contents.",

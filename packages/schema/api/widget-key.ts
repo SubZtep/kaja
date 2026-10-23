@@ -3,7 +3,10 @@ import { z } from "zod"
 /** Which client-side UI the embed script renders — independent of persona (which LLM personality runs behind it). */
 export const widgetTypeSchema = z.enum(["chat", "barkochba"])
 
-/** An embedding site's origin exactly as browsers send it (`https://example.com`, `http://localhost:3000`): no path, no default port, lower case; never `null`. */
+/**
+ * An embedding site's origin exactly as browsers send it (`https://example.com`, `http://localhost:3000`): no path, no
+ * default port, lower case; never `null`.
+ */
 export const widgetOriginSchema = z
   .string()
   .max(256)

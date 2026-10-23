@@ -7,7 +7,7 @@ import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-lim
 import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
 import { badRequest, internalError, knownTurnErrorResponse, notFound } from "../../types/errors"
-import { type WidgetVariables, widgetKeyAuthMiddleware } from "./auth"
+import { widgetKeyAuthMiddleware, type WidgetVariables } from "./auth"
 import { runWidgetTurn } from "./chat"
 import { widgetCors } from "./cors"
 
@@ -23,6 +23,7 @@ widgetRoutes.use(String.raw`/:rawKey{[A-Za-z0-9_-]+\.js}`, widgetCors)
 // every request, uncached, so widget source edits show up without a restart; import.meta.dir (this
 // file's own dir) anchors that fallback since it only ever runs unbundled, where cwd may vary but
 // import.meta.dir is always apps/api/src/features/widget.
+// oxlint-disable-next-line bun/no-cwd-dependent-path -- the build writes public/widget.js under the API's working directory
 const widgetBundlePath = resolve("public/widget.js")
 const widgetEntrypoint = resolve(import.meta.dir, "../../../widgets/src/index.ts")
 

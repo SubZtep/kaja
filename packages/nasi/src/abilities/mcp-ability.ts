@@ -36,9 +36,9 @@ export type McpSandbox = { fetch: FetchLike; close?: () => Promise<void> }
 export const SANDBOX_ORIGIN = "https://sandbox.invalid"
 
 /**
- * The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth`
- * names. A stdio one starts through `resolveLaunch` (with `launch`, and `roots`' folders for a container to mount), so it
- * throws `McpRunnerMissingError` when this host has nothing that can run it.
+ * The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var
+ * `auth` names. A stdio one starts through `resolveLaunch` (with `launch`, and `roots`' folders for a container to
+ * mount), so it throws `McpRunnerMissingError` when this host has nothing that can run it.
  */
 export function mcpAbilityTarget(
   ability: McpAbility,
@@ -81,8 +81,9 @@ function targetRules(ability: McpAbility) {
 }
 
 /**
- * A stdio ability as a sandbox serves it: `<SANDBOX_ORIGIN>/mcp/<name>` over Streamable HTTP, through the sandbox's fetch.
- * The sandbox starts the command from its own copy of the manifest, so none of it is sent; nor is a key (not forwarded yet).
+ * A stdio ability as a sandbox serves it: `<SANDBOX_ORIGIN>/mcp/<name>` over Streamable HTTP, through the sandbox's
+ * fetch. The sandbox starts the command from its own copy of the manifest, so none of it is sent; nor is a key (not
+ * forwarded yet).
  */
 export function sandboxedMcpTarget(ability: McpAbility): McpAbilityTarget {
   const url = `${SANDBOX_ORIGIN}/mcp/${encodeURIComponent(ability.name)}`
@@ -96,8 +97,8 @@ export function sandboxedMcpTarget(ability: McpAbility): McpAbilityTarget {
 
 /**
  * Connects to the ability's server with `apiKey` and lists its tools, then disconnects: it works, or why not (the key
- * never appears in the reason). With `sandbox`, a stdio server starts there (the sandbox's fetch carries the key) instead
- * of on this host.
+ * never appears in the reason). With `sandbox`, a stdio server starts there (the sandbox's fetch carries the key)
+ * instead of on this host.
  */
 export async function checkMcpAbilityKey(
   ability: McpAbility,

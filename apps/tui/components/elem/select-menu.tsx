@@ -6,13 +6,11 @@ import { InputFrame } from "./rail"
 const VISIBLE_COUNT = 5
 
 /**
- * Keyboard-driven selection list: up/down to move, return to pick, escape
- * (or backspace/delete) to dismiss.
+ * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
  *
- * Rendered directly rather than through @inkjs/ui's `Select`, which can't open on a
- * given option: its `defaultValue` seeds the internal value but leaves the highlight on
- * the first option, so returning on it either never fires (the value never changed) or
- * reports whichever option is highlighted instead. Keys, the scroll window and the
+ * Rendered directly rather than through @inkjs/ui's `Select`, which can't open on a given option: its `defaultValue`
+ * seeds the internal value but leaves the highlight on the first option, so returning on it either never fires (the
+ * value never changed) or reports whichever option is highlighted instead. Keys, the scroll window and the
  * stop-at-either-end movement match what `Select` did, so the other callers behave as before.
  */
 export function SelectMenu({
@@ -35,7 +33,10 @@ export function SelectMenu({
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
-  /** The highlighted row in the theme's preview colours, a band across the menu: the theme step's, which previews itself. */
+  /**
+   * The highlighted row in the theme's preview colours, a band across the menu: the theme step's, which previews
+   * itself.
+   */
   preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean

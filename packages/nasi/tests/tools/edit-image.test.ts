@@ -23,7 +23,7 @@ async function pixels(data: Uint8Array): Promise<number[][][]> {
   const height = file.readUInt32BE(20)
   const bpp = file[25] === 6 ? 4 : 3
   const idat: Buffer[] = []
-  for (let at = 8; at < file.length; ) {
+  for (let at = 8; at < file.length;) {
     const length = file.readUInt32BE(at)
     if (file.toString("latin1", at + 4, at + 8) === "IDAT") idat.push(file.subarray(at + 8, at + 8 + length))
     at += 12 + length

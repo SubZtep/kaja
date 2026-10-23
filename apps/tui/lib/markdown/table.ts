@@ -42,8 +42,8 @@ function pad(text: string, width: number, align: Align): string {
 }
 
 /**
- * Draws a markdown table in rounded box characters, with a rule under the header, and between body rows only when a
- * row wraps; the header is left out when all its cells are empty. Columns follow the table's alignment and wrap to fit
+ * Draws a markdown table in rounded box characters, with a rule under the header, and between body rows only when a row
+ * wraps; the header is left out when all its cells are empty. Columns follow the table's alignment and wrap to fit
  * `maxWidth`.
  */
 export function renderTable({ head, rows, align, maxWidth, headStyle, borderStyle }: TableInput): string {

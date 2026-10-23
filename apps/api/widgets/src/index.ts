@@ -9,15 +9,19 @@ type StoredState = { visitorId: string; session?: string }
 function loadState(): StoredState {
   try {
     const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
+    if (raw) return JSON.parse(raw) as StoredState
+  } catch {
+    // sessionStorage can be blocked or hold bad JSON; start fresh
+  }
   return { visitorId: createVisitorId() }
 }
 
 function saveState(state: StoredState) {
   try {
     sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked; the chat still works without it
+  }
 }
 
 function injectStyles() {
@@ -73,9 +77,9 @@ function appendMessage(container: HTMLElement, text: string, role: "user" | "bot
 }
 
 /**
- * `document.currentScript` is only reliable for a classic parser-inserted <script> — it's null (or already
- * reset) for a <script> a framework injects into the DOM programmatically, e.g. React rendering it as JSX.
- * Fall back to finding any <script> tag whose src points at a widget bundle.
+ * `document.currentScript` is only reliable for a classic parser-inserted <script> — it's null (or already reset) for a
+ * <script> a framework injects into the DOM programmatically, e.g. React rendering it as JSX. Fall back to finding any
+ * <script> tag whose src points at a widget bundle.
  */
 function findEmbedScript(): HTMLScriptElement | null {
   const current = document.currentScript as HTMLScriptElement | null
@@ -184,7 +188,7 @@ function init() {
       button.type = "button"
       button.className = "kaja-barkochba-answer"
       button.textContent = t[answer.label]
-      button.addEventListener("click", () => sendMessage(answer.value))
+      button.addEventListener("click", () => void sendMessage(answer.value))
       buttons.append(button)
     }
     setControlsDisabled = disabled => {

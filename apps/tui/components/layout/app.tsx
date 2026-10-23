@@ -104,12 +104,10 @@ function buildKeyBarItems(hotkeyModifier: string | undefined, bindings: KeyBindi
 }
 
 /**
- * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand/PersonaPicker)
- * shared by both backends. {@link LocalApp} and {@link CloudApp} each drive
- * their own agent hook and normalize its output into these props, so
- * preferences, sound/voice, the confirm-command flow, and persona switching
- * are written once and behave identically regardless of which backend is
- * running.
+ * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand/PersonaPicker) shared by both backends. {@link LocalApp} and
+ * {@link CloudApp} each drive their own agent hook and normalize its output into these props, so preferences,
+ * sound/voice, the confirm-command flow, and persona switching are written once and behave identically regardless of
+ * which backend is running.
  */
 function Chrome({
   mode,
@@ -139,7 +137,10 @@ function Chrome({
   mode: "local" | "cloud"
   personaLabel: string
   model: string
-  /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved provider. */
+  /**
+   * Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved
+   * provider.
+   */
   provider?: string
   promptTokens: number | null
   contextWindow: number | null
@@ -488,11 +489,10 @@ type CloudAppProps = Readonly<{
 }>
 
 /**
- * The CLI's chat screen, backed by either the local {@link Agent} loop
- * (`mode: "local"`, full tools/persona catalog/run_command) or cloud Nasi
- * over SSE (`mode: "cloud"`, no MCP, no run_command — cloud never emits
- * those — but the user's HTTP tools may ask for approval). Both render the same chat chrome via {@link Chrome}, including
- * the configurable-modifier keybar (help / persona picker; see use-modifier-keys.ts).
+ * The CLI's chat screen, backed by either the local {@link Agent} loop (`mode: "local"`, full tools/persona
+ * catalog/run_command) or cloud Nasi over SSE (`mode: "cloud"`, no MCP, no run_command — cloud never emits those — but
+ * the user's HTTP tools may ask for approval). Both render the same chat chrome via {@link Chrome}, including the
+ * configurable-modifier keybar (help / persona picker; see use-modifier-keys.ts).
  */
 export default function App(props: LocalAppProps | CloudAppProps) {
   return props.mode === "local" ? <LocalApp {...props} /> : <CloudApp {...props} />

@@ -28,7 +28,8 @@ export function recordCall(session: Session, callId: string, stat: CallStat): vo
 
 /**
  * Records how the human's answer to a paused call went: declined, skipped (they typed instead), or approved and run
- * (`startedAt` is when it began, `status` how it ended). Call it before the answer reaches run(), which clears the pending id.
+ * (`startedAt` is when it began, `status` how it ended). Call it before the answer reaches run(), which clears the
+ * pending id.
  */
 export function recordPausedCall(
   session: Session,

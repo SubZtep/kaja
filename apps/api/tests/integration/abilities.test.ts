@@ -62,7 +62,7 @@ function capturingChatClient(calls: { tools: { function: { name: string } }[]; m
 
 /** The skills a user's cloud turn can load. */
 const servedSkills = async () =>
-  (await createPostgresAbilityStore({ userId: "any" }).listSkills()).map(skill => skill.name)
+  (await createPostgresAbilityStore({ userId: "any" }).listSkills()).map(item => item.name)
 
 describe("abilities", () => {
   let token: string
@@ -204,7 +204,7 @@ describe("marketplace sync from GitHub", () => {
     )
     put(join(root, `kaja-${sha}`), "apps/other.txt", "not part of the marketplace")
     const archive = join(root, "repo.tar.gz")
-    const tar = Bun.spawnSync(["tar", "-czf", archive, "-C", root, `kaja-${sha}`])
+    const tar = Bun.spawnSync(["tar", "-czf", archive, "-C", root, `kaja-${sha}`], { windowsHide: true })
     expect(tar.exitCode).toBe(0)
     tarball = new Uint8Array(await Bun.file(archive).arrayBuffer())
     rmSync(root, { recursive: true, force: true })
@@ -218,7 +218,7 @@ describe("marketplace sync from GitHub", () => {
 
   const fakeGitHub = (commit = sha) =>
     (async (input: string | URL | Request) => {
-      const url = String(input)
+      const url = input instanceof Request ? input.url : String(input)
       requests.push(url)
       if (url.startsWith("https://api.github.com/repos/owner/repo/commits/main")) return new Response(commit)
       if (url === `https://codeload.github.com/owner/repo/tar.gz/${sha}`) return new Response(tarball)

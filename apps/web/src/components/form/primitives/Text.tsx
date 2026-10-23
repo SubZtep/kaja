@@ -1,6 +1,6 @@
 import { Input as BaseInput } from "@base-ui/react/input"
 import { cn } from "@kaja/shared/ui"
-import { type ComponentProps, useEffect, useRef, useState } from "react"
+import { type ComponentProps, useEffect, useEffectEvent, useState } from "react"
 
 const VARIANTS = {
   "3d": "w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 data-invalid:border-red-500/70 text-base text-fg focus:outline-2 focus:-outline-offset-1 focus:outline-neon/50 disabled:cursor-not-allowed disabled:opacity-50",
@@ -28,8 +28,7 @@ export function DebouncedText({
 >) {
   const [value, setValue] = useState<string | number>(initialValue)
   // The latest handler, so a parent's inline function doesn't restart the debounce on every render
-  const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  const emitChange = useEffectEvent((next: string | number) => onChange?.(next))
 
   // Resyncs when the caller changes `value` from outside (e.g. a "clear filters" action) —
   // otherwise this input would keep showing stale text even after the real value changed.
@@ -39,7 +38,7 @@ export function DebouncedText({
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      onChangeRef.current?.(value)
+      emitChange(value)
     }, debounce)
 
     return () => clearTimeout(timeout)

@@ -14,7 +14,7 @@ function sseChunks(chunks: string[]): ReadableStream<Uint8Array> {
     async start(controller) {
       for (const chunk of chunks) {
         controller.enqueue(encoder.encode(chunk))
-        await new Promise(r => setTimeout(r, 0))
+        await Bun.sleep(0)
       }
       controller.close()
     }

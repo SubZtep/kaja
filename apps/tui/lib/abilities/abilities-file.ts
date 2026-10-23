@@ -5,7 +5,10 @@ import { $ } from "bun"
 import { getConfigDir, readConfigLoose } from "../config/config"
 import { syncedAbilityPaths } from "./sync"
 
-/** Where `kaja abilities update` fetches from unless settings.toml's `[marketplace]` says otherwise: this repo's marketplace/ folder on main. */
+/**
+ * Where `kaja abilities update` fetches from unless settings.toml's `[marketplace]` says otherwise: this repo's
+ * marketplace/ folder on main.
+ */
 export const DEFAULT_SOURCE = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
 
 // The checkout this CLI runs from (apps/tui/lib/abilities → the repo root); a compiled binary has none.
@@ -22,7 +25,10 @@ export async function devSource(root = REPO_ROOT): Promise<{ url: string; ref: s
   return ref && ref !== "HEAD" ? { url: pathToFileURL(root).href, ref } : undefined
 }
 
-/** Holds every ability and persona, synced from the marketplace or your own; all of them load, and personas pick the abilities a chat uses. */
+/**
+ * Holds every ability and persona, synced from the marketplace or your own; all of them load, and personas pick the
+ * abilities a chat uses.
+ */
 export function getMarketplaceDir() {
   return join(getConfigDir(), "marketplace")
 }
@@ -43,7 +49,10 @@ export async function ownAbilities(root = getMarketplaceDir()): Promise<{ abilit
   }
 }
 
-/** settings.toml's `[marketplace]`: both switches on unless turned off, and where to fetch from. Tolerant of a broken file, like the wizard prefill. */
+/**
+ * Settings.toml's `[marketplace]`: both switches on unless turned off, and where to fetch from. Tolerant of a broken
+ * file, like the wizard prefill.
+ */
 export async function marketplaceSettings(): Promise<{
   enabled: boolean
   autoFetch: boolean

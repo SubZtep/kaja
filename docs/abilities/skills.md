@@ -33,11 +33,11 @@ Run `scripts/df.sh` and summarize which filesystems are above 90%.
 For thresholds per filesystem type, read reference.md.
 ```
 
-| Field | Purpose |
-| --- | --- |
-| `name` | the folder's name again, as the [Agent Skills](https://agentskills.io/specification) format requires (editors that check SKILL.md files warn without it). Optional, but when it's there it must match the folder |
-| `description` | what the skill does and when to use it, up to 1024 characters. It's all the model sees before loading |
-| `sticky` | optional: `true` suggests keeping the instructions in the system prompt while a persona uses the ability |
+| Field         | Purpose                                                                                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | the folder's name again, as the [Agent Skills](https://agentskills.io/specification) format requires (editors that check SKILL.md files warn without it). Optional, but when it's there it must match the folder |
+| `description` | what the skill does and when to use it, up to 1024 characters. It's all the model sees before loading                                                                                                            |
+| `sticky`      | optional: `true` suggests keeping the instructions in the system prompt while a persona uses the ability                                                                                                         |
 
 The folder name is the skill's name (lowercase letters, digits and single hyphens, up to 64 characters), so a
 `name` is an identifier, not a title: put a readable title in the Markdown heading. A `name` that doesn't match

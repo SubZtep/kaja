@@ -35,9 +35,8 @@ provider = "default"
 const { invalidateConfigCache } = await import("../../../lib/config/config")
 const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../lib/agent/agents")
 const { peekStore } = await import("../../../lib/memory/store")
-const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } = await import(
-  "../../../lib/session/store"
-)
+const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } =
+  await import("../../../lib/session/store")
 const { telegramOwner } = await import("@kaja/schema/store")
 const { createTelegramDriver } = await import("../../../lib/telegram/driver")
 const { t } = await import("../../../lib/i18n")
@@ -281,7 +280,7 @@ test("a photo reaches the model with its caption; a model that refuses it gets a
 
   await driver.handleMessage(42, 100, "never mind")
   const images = requests[2]!
-    .flatMap(m => (Array.isArray(m.content) ? m.content : []))
+    .flatMap(m => (Array.isArray(m.content) ? (m.content as { type: string }[]) : []))
     .filter(p => p.type === "image_url")
   // Only the first photo, which the model did take, is still in the conversation
   expect(images).toHaveLength(1)
@@ -697,7 +696,7 @@ test("a tap while the turn that asked is still finishing waits for it instead of
   const { sender, sent, edited } = fakeSender()
   const driver = makeDriver([runCommandCall("call_8"), { content: "Done." }], sender)
   let tapped: Promise<void> | undefined
-  const send = sender.sendMessage
+  const send = sender.sendMessage.bind(sender)
   sender.sendMessage = async (chatId, text, opts) => {
     const result = await send(chatId, text, opts)
     // Tap the moment the prompt arrives: the turn is still running then
@@ -755,8 +754,8 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
     models: [],
     sender,
     createAgent: init =>
-      ({
-        ...fakeAgent(
+      Object.assign(
+        fakeAgent(
           [
             {
               content: null,
@@ -775,10 +774,8 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
           ],
           [switchPersonaTool]
         ),
-        personas: [kaja, grumpy],
-        models: [],
-        personaId: init.personaId
-      }) as unknown as Agent
+        { personas: [kaja, grumpy], models: [], personaId: init.personaId }
+      ) as unknown as Agent
   })
 
   await driver.handleMessage(42, 100, "be sassy")
@@ -855,8 +852,7 @@ test("a tool image goes out captioned with its alt text, and takes its descripti
     sender,
     createAgent: () =>
       // Blind, so the turn waits for the description before it ends
-      ({
-        ...fakeAgent(script, [imageTool]),
+      Object.assign(fakeAgent(script, [imageTool]), {
         store: createMemoryStore(),
         describer,
         defaultDescriber: describer,

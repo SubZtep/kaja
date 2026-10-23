@@ -23,7 +23,7 @@ function addModelEntry(modelsData: Record<string, ModelEntry>, model: Model, pro
   return id
 }
 
-/** models.toml — provider.api_key is never emitted; secrets live in the CLI's secrets.toml. */
+/** Models.toml — provider.api_key is never emitted; secrets live in the CLI's secrets.toml. */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
   // Per task, the first enabled+free model that serves it wins (created_at order already applied by the caller),
   // and only lists the tasks it wins, so the CLI's "first entry listing a task" picks the same one. The `free`

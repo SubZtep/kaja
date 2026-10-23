@@ -57,8 +57,8 @@ export function clientToolGroups(client: NasiClient): ToolGroup[] {
 
 /**
  * `store` with the client's abilities in place of its own copies: their tools and servers left out (the client runs
- * them), their skills listed from the client (a sticky one's body too, for the system prompt; load_skill asks the client
- * for the rest).
+ * them), their skills listed from the client (a sticky one's body too, for the system prompt; load_skill asks the
+ * client for the rest).
  */
 export function withClientAbilities(store: AbilityStore, client: NasiClient): AbilityStore {
   const theirs = clientAbilities(client)

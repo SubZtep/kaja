@@ -28,8 +28,8 @@ export function maxImageRows(terminalRows: number): number {
 }
 
 /**
- * The size an image is drawn at. The terminal alone gives a share of its width and its rows minus the chrome;
- * the real container width and viewport height, once measured (0 = unknown), can only shrink that.
+ * The size an image is drawn at. The terminal alone gives a share of its width and its rows minus the chrome; the real
+ * container width and viewport height, once measured (0 = unknown), can only shrink that.
  */
 export function imageBox(opts: {
   terminalColumns: number
@@ -46,9 +46,8 @@ export function imageBox(opts: {
 }
 
 /**
- * Renders an image inline as ANSI half-blocks. Shows the dim alt text while resolving, and
- * keeps showing it if rendering fails, followed by the reason (e.g. HTTP 404)
- * so a broken link doesn't look like a missing feature.
+ * Renders an image inline as ANSI half-blocks. Shows the dim alt text while resolving, and keeps showing it if
+ * rendering fails, followed by the reason (e.g. HTTP 404) so a broken link doesn't look like a missing feature.
  */
 export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
   const remeasure = useRemeasure()
@@ -65,19 +64,19 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   const renderedHref = useRef<string | null>(href)
 
   // The width this item really has (indentation, nesting), known once laid out.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- re-measures after every layout; the width guard stops the loop
   useLayoutEffect(() => {
     if (!boxRef.current) return
     const { width } = measureElement(boxRef.current)
     if (width > 0 && width !== containerWidth) setContainerWidth(width)
   })
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `target` is a new object every render; its size is what should restart the wait
   useEffect(() => {
     const timer = setTimeout(() => setSettled(target), RESIZE_SETTLE_MS)
     return () => clearTimeout(timer)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- target is rebuilt every render; its fields are the real inputs
   }, [target.columns, target.rows])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `size` is a new object every render; the measures in the deps are what a drawing changes with
   useEffect(() => {
     let cancelled = false
     // Another picture starts blank; a resize keeps the one on screen up until the resized one is ready.
@@ -89,6 +88,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
     return () => {
       cancelled = true
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- size is derived from settled
   }, [href, settled.columns, settled.rows])
 
   // The image arrives after the scroll view measured this item with only the alt text; its new height must reach it

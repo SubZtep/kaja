@@ -6,8 +6,9 @@ import { log } from "../logger"
 import { setCatalog } from "./catalog"
 
 /**
- * Asks the API for its model catalog (`GET /config/catalog`) and makes it the wizard's, so a changed default needs no CLI release.
- * Any failure (offline, a slow server, a bad or newer-than-known payload) keeps the bundled catalog; true when the API's is in use.
+ * Asks the API for its model catalog (`GET /config/catalog`) and makes it the wizard's, so a changed default needs no
+ * CLI release. Any failure (offline, a slow server, a bad or newer-than-known payload) keeps the bundled catalog; true
+ * when the API's is in use.
  */
 export async function refreshCatalog(timeoutMs = 2000): Promise<boolean> {
   try {

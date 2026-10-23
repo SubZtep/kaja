@@ -10,7 +10,10 @@ const turnRequestInit = {
   body: JSON.stringify({ message: "hi" })
 }
 
-/** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
+/**
+ * Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt
+ * content, while still replying normally.
+ */
 function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {
   return {
     chat: {
@@ -31,7 +34,10 @@ function capturingChatClient(reply: string, onMessages: (messages: unknown[]) =>
   }
 }
 
-/** A resolver whose first round calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url", …)`; `onMessages` sees what each round was sent, and the second round replies in text. */
+/**
+ * A resolver whose first round calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url",
+ * …)`; `onMessages` sees what each round was sent, and the second round replies in text.
+ */
 function fetchUrlToolCallChatClient(onMessages: (messages: unknown[]) => void = () => {}) {
   let round = 0
   return {

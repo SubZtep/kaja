@@ -1,9 +1,9 @@
 import type { args as Args } from "../lib/cli/args"
 
 /**
- * `kaja abilities` (a read-only list: each ability's parts, its key, and the personas that use it) and
- * `kaja abilities update` (fetch + sync the marketplace), for local mode; a cloud user only gets a hint.
- * Runs before the local/cloud branch like `config`: it never triggers cloud login.
+ * `kaja abilities` (a read-only list: each ability's parts, its key, and the personas that use it) and `kaja abilities
+ * update` (fetch + sync the marketplace), for local mode; a cloud user only gets a hint. Runs before the local/cloud
+ * branch like `config`: it never triggers cloud login.
  */
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")

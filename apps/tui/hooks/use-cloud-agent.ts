@@ -7,7 +7,12 @@ import { fitTurnBody } from "../lib/cloud/turn-body"
 import { getLanguage, t } from "../lib/i18n"
 import { withDescription } from "../lib/image/rows"
 
-/** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
+/**
+ * Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's
+ * the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs
+ * categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it
+ * would pull the openai ability into the lite bundle for nothing.
+ */
 export type CloudErrorCategory = "network" | "tool" | "agent" | "unknown"
 
 function isCloudErrorCategory(value: string | undefined): value is CloudErrorCategory {
@@ -23,7 +28,11 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
   return { category: "unknown", message: String(error) }
 }
 
-/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). A tool image's `path` is the data URL it came as. */
+/**
+ * Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no
+ * display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). A tool image's
+ * `path` is the data URL it came as.
+ */
 export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
@@ -58,14 +67,15 @@ export type CloudPartialMessage = { reasoning: string; content: string }
 
 const DELTA_INTERVAL_MS = 80
 
-/** Rounds in a row where every call on this computer failed before the terminal stops resuming, as `--local` stops its loop. */
+/**
+ * Rounds in a row where every call on this computer failed before the terminal stops resuming, as `--local` stops its
+ * loop.
+ */
 const MAX_FAILING_CLIENT_ROUNDS = 3
 
 /** What one turn request carries besides the session and the terminal's declarations. */
 type TurnRequest =
-  | { message: string; toolResults?: NasiToolResult[] }
-  | { approval: CloudApproval }
-  | { toolResults: NasiToolResult[] }
+  { message: string; toolResults?: NasiToolResult[] } | { approval: CloudApproval } | { toolResults: NasiToolResult[] }
 
 // A run's first request: a message also answers the calls the failure guard held back.
 function withHeldResults(first: TurnRequest, held: NasiToolResult[] | undefined): TurnRequest {
@@ -73,24 +83,24 @@ function withHeldResults(first: TurnRequest, held: NasiToolResult[] | undefined)
 }
 
 /**
- * Drives cloud Nasi over `/nasi/turn/stream` from React state — the lite
- * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
- * shape so `Header`/`ChatViewport`/`UserInput` render either backend
- * unmodified. Persona switching (like local) is destructive — it starts a
- * fresh session and pins `personaId` on every subsequent turn, which wins over
- * the persona Nasi keeps with the session; the model's own `switch_persona`
- * moves the pin along. Unlike the local agent, there is no model
- * switching and no run_command confirm flow: cloud never emits those. Tool
- * approvals (`confirm_tool`) are answered with `resolveToolApproval`.
+ * Drives cloud Nasi over `/nasi/turn/stream` from React state — the lite CLI's counterpart to `useAgent`, exposing the
+ * same event/partial/pending shape so `Header`/`ChatViewport`/`UserInput` render either backend unmodified. Persona
+ * switching (like local) is destructive — it starts a fresh session and pins `personaId` on every subsequent turn,
+ * which wins over the persona Nasi keeps with the session; the model's own `switch_persona` moves the pin along. Unlike
+ * the local agent, there is no model switching and no run_command confirm flow: cloud never emits those. Tool approvals
+ * (`confirm_tool`) are answered with `resolveToolApproval`.
  */
 export function useCloudAgent({
   yolo,
   computer,
   ...options
 }: NasiClientOptions & {
-  /** settings.toml's `yolo`: every `confirm_tool` is approved straight away instead of asking. */
+  /** Settings.toml's `yolo`: every `confirm_tool` is approved straight away instead of asking. */
   yolo?: boolean
-  /** This computer, when cloud turns may use it: its declarations go with every turn, and it runs their calls. The first turn waits for it to open. */
+  /**
+   * This computer, when cloud turns may use it: its declarations go with every turn, and it runs their calls. The first
+   * turn waits for it to open.
+   */
   computer?: Computer | Promise<Computer | undefined>
 }) {
   const [client] = useState(() => createNasiClient(options))
@@ -218,8 +228,8 @@ export function useCloudAgent({
   )
 
   /**
-   * Runs a paused round's calls here; their results resume the turn, unless every call failed too many rounds in a
-   * row: then there's no next request, and the results wait for the next message.
+   * Runs a paused round's calls here; their results resume the turn, unless every call failed too many rounds in a row:
+   * then there's no next request, and the results wait for the next message.
    */
   const resumeOnComputer = useCallback(
     async (calls: NasiClientCall[], failingRounds: number) => {
@@ -238,7 +248,10 @@ export function useCloudAgent({
     [runOnComputer, pushEvent]
   )
 
-  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server asks about and while it waits on this computer. */
+  /**
+   * Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server
+   * asks about and while it waits on this computer.
+   */
   const runTurns = useCallback(
     async (first: { message: string } | { approval: CloudApproval }) => {
       setPending(true)
@@ -378,7 +391,10 @@ export function useCloudAgent({
     [pushEvent, runTurns, compactNow]
   )
 
-  /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */
+  /**
+   * Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent
+   * back.
+   */
   const resolveToolApproval = useCallback(
     (approved: boolean, scope?: "session") => runTurns({ approval: approvalAnswer(approved, scope) }),
     [runTurns]

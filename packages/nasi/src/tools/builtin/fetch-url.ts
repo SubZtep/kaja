@@ -2,11 +2,14 @@ import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
 import TurndownService from "turndown"
 import { z } from "zod"
-import { ToolError, type ToolResult, tool } from "../../agent/agent"
+import { tool, ToolError, type ToolResult } from "../../agent/agent"
 import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
-/** Raised well above the ssrf default: heavy modern pages run past it, and the Markdown is a few KB before the model ever sees it. */
+/**
+ * Raised well above the ssrf default: heavy modern pages run past it, and the Markdown is a few KB before the model
+ * ever sees it.
+ */
 const MAX_PAGE_BYTES = 2 * 1024 * 1024
 /** An image is brought into the conversation, where it's shrunk to model size; a big photo is still a few MB. */
 const MAX_IMAGE_SOURCE_BYTES = 20 * 1024 * 1024
@@ -125,8 +128,9 @@ function absolute(href: string, base: string): string | undefined {
 }
 
 /**
- * Makes links and images absolute, and gives each image its real source (lazy-load attributes, a srcset's largest)
- * and an alt (title, the figure's caption, then the heading of the card it's in); icons, tracking pixels, SVGs and inline data are dropped.
+ * Makes links and images absolute, and gives each image its real source (lazy-load attributes, a srcset's largest) and
+ * an alt (title, the figure's caption, then the heading of the card it's in); icons, tracking pixels, SVGs and inline
+ * data are dropped.
  */
 function prepareDocument(document: Document, base: string) {
   for (const node of document.querySelectorAll("script, style, noscript, template, svg, iframe")) node.remove()

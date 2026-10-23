@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { type ToolContext, ToolError, type ToolResult, tool } from "../../agent/agent"
+import { tool, type ToolContext, ToolError, type ToolResult } from "../../agent/agent"
 import { MAX_IMAGE_EDGE } from "../../images/normalize"
 import { imageRefId } from "../../store/images"
 
@@ -51,14 +51,16 @@ export const editImageTool = tool({
       // Bun.Image runs its operations in a fixed order, so each step is its own pass to keep the model's order
       for (const [i, s] of args.steps.entries()) {
         const image = await applyStep(data, s)
-        data = await (i === args.steps.length - 1 && mimeType === "image/jpeg"
-          ? image.jpeg({ quality: 90 })
-          : image.png()
+        data = await (
+          i === args.steps.length - 1 && mimeType === "image/jpeg" ? image.jpeg({ quality: 90 }) : image.png()
         ).bytes()
       }
     } catch (error) {
       if (error instanceof ToolError) throw error
-      throw new ToolError(NAME, `Couldn't edit ${args.image}: ${error instanceof Error ? error.message : error}`)
+      throw new ToolError(
+        NAME,
+        `Couldn't edit ${args.image}: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
     const done = args.steps.map(s => s.op).join(", ")
     return { text: `Edited ${args.image} (${done})`, images: [{ data, mimeType }] }

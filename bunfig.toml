@@ -19,3 +19,132 @@ preload = [
   "./apps/tui/tests/isolate-temp-dir.ts",
   "./apps/api/tests/load-test-env.ts"
 ]
+
+
+[lint]
+typeAware = true
+
+
+  [lint.rules]
+  "bun/jsx-no-forbidden-nesting"                      = "error"
+  "bun/no-console-window-flash"                       = "error"
+  "bun/no-cwd-dependent-path"                         = "error"
+  "bun/no-negative-repeat-count"                      = "error"
+  "bun/no-unhandled-emitter-errors"                   = "error"
+  "bun/prefer-builtin-sleep"                          = "error"
+  "bun/prefer-timeout-signal"                         = "error"
+  "bun/react-no-latest-value-ref"                     = "error"
+  "bun/react-prefer-updater-function"                 = "error"
+  "bun:test/max-nested-describe"                      = "error"
+  "bun:test/no-duplicate-hooks"                       = "error"
+  "bun:test/no-identical-title"                       = "error"
+  "bun:test/prefer-hooks-in-order"                    = "error"
+  "eqeqeq"                                            = [
+    "error",
+    "smart"
+  ]
+  "import/no-cycle"                                   = "error"
+  "import/no-deprecated"                              = "warn"
+  "import/no-duplicates"                              = "error"
+  "import/no-extraneous-dependencies"                 = "error"
+  "import/no-self-import"                             = "error"
+  "no-else-return"                                    = "error"
+  "no-eval"                                           = "error"
+  "promise/catch-or-return"                           = [
+    "error",
+    {
+      allowThen    = true,
+      allowFinally = true
+    }
+  ]
+  "react/jsx-no-target-blank"                         = [
+    "error",
+    {
+      allowReferrer = true
+    }
+  ]
+  "typescript/await-thenable"                         = "error"
+  "typescript/no-base-to-string"                      = "error"
+  "typescript/no-deprecated"                          = "warn"
+  "typescript/no-floating-promises"                   = "off"
+  "typescript/no-import-type-side-effects"            = "error"
+  "typescript/no-meaningless-void-operator"           = "error"
+  "typescript/no-misused-spread"                      = "error"
+  "typescript/no-mixed-enums"                         = "error"
+  "typescript/no-shadow"                              = [
+    "error",
+    {
+      allow = [
+        "error",
+        "resolve",
+        "_"
+      ]
+    }
+  ]
+  "typescript/no-unnecessary-boolean-literal-compare" = "error"
+  "typescript/no-unnecessary-type-assertion"          = "off"
+  "typescript/no-unnecessary-type-conversion"         = "warn"
+  "typescript/no-unsafe-argument"                     = "off"
+  "typescript/no-unsafe-assignment"                   = "off"
+  "typescript/no-unsafe-call"                         = "off"
+  "typescript/no-unsafe-enum-comparison"              = "error"
+  "typescript/no-unsafe-member-access"                = "off"
+  "typescript/no-unsafe-return"                       = "error"
+  "typescript/only-throw-error"                       = [
+    "error",
+    {
+      allow = [
+        {
+          from    = "package",
+          package = "@tanstack/router-core",
+          name    = "Redirect"
+        }
+      ]
+    }
+  ]
+  "typescript/prefer-includes"                        = "warn"
+  "typescript/prefer-nullish-coalescing"              = [
+    "error",
+    {
+      ignorePrimitives = {
+        string  = true,
+        number  = true,
+        boolean = true
+      }
+    }
+  ]
+  "typescript/prefer-optional-chain"                  = "error"
+  "typescript/prefer-regexp-exec"                     = "error"
+  "typescript/prefer-string-starts-ends-with"         = "error"
+  "typescript/require-await"                          = "off"
+  "typescript/return-await"                           = "error"
+  "typescript/switch-exhaustiveness-check"            = [
+    "error",
+    {
+      considerDefaultExhaustiveForUnions = true
+    }
+  ]
+  "unicorn/prefer-array-find"                         = "warn"
+
+
+[fmt]
+arrowParens     = "avoid"
+ignorePatterns  = [
+  "**/*.toml",
+  "apps/web/src/routeTree.gen.ts"
+]
+semi            = false
+singleQuote     = false
+sortPackageJson = {
+  sortScripts = true
+}
+sortTailwindcss = true
+trailingComma   = "none"
+
+
+  [fmt.jsdoc]
+  lineWrappingStyle = "balance"
+
+
+  [fmt.sortImports]
+  newlinesBetween = false

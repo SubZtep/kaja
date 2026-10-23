@@ -16,8 +16,9 @@ function StepProgress({ label, value }: Readonly<{ label: string; value: number 
 }
 
 /**
- * Runs `task` under ink-ui's ProgressBar, advanced by one of `steps` each time the task calls its `onStep`. The bar stays
- * where it stopped (full, or at the step that failed) above what the caller prints next. Without a terminal it just runs the task.
+ * Runs `task` under ink-ui's ProgressBar, advanced by one of `steps` each time the task calls its `onStep`. The bar
+ * stays where it stopped (full, or at the step that failed) above what the caller prints next. Without a terminal it
+ * just runs the task.
  */
 export async function withStepProgress<T>(
   label: string,

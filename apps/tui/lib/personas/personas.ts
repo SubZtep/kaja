@@ -18,10 +18,10 @@ function builtinDefault(): Persona {
 }
 
 /**
- * The personas to offer, `default` first: marketplace/personas/default.toml when there is one, else the built-in
- * one. Then every other persona in marketplace/personas/, by id, your own (see {@link ownAbilities}) marked `local`;
- * broken files are skipped with a warning. A persona's models table isn't validated against models.toml here — an
- * unmatched model id soft-falls-back at resolution time (see resolveActiveModel).
+ * The personas to offer, `default` first: marketplace/personas/default.toml when there is one, else the built-in one.
+ * Then every other persona in marketplace/personas/, by id, your own (see {@link ownAbilities}) marked `local`; broken
+ * files are skipped with a warning. A persona's models table isn't validated against models.toml here — an unmatched
+ * model id soft-falls-back at resolution time (see resolveActiveModel).
  */
 export async function loadPersonas(): Promise<Persona[]> {
   const root = getMarketplaceDir()

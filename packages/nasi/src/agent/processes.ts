@@ -2,7 +2,10 @@ type Killable = { kill(): unknown }
 
 const tracked = new Set<Killable>()
 
-/** Registers a Bun child process so {@link killTrackedProcesses} can stop it on quit (with `kill`, when killing the process alone isn't enough); returns it unchanged. */
+/**
+ * Registers a Bun child process so {@link killTrackedProcesses} can stop it on quit (with `kill`, when killing the
+ * process alone isn't enough); returns it unchanged.
+ */
 export function trackProcess<T extends { kill(): unknown; exited: Promise<unknown> }>(
   proc: T,
   kill: () => unknown = () => proc.kill()

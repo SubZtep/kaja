@@ -40,8 +40,8 @@ export interface Stt {
 }
 
 /**
- * Where the server currently is with the user's speech: waiting for it,
- * hearing it, or turning a finished phrase into text.
+ * Where the server currently is with the user's speech: waiting for it, hearing it, or turning a finished phrase into
+ * text.
  */
 export type SttState = "listening" | "recording" | "transcribing"
 

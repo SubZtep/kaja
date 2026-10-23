@@ -46,8 +46,8 @@ function providersOf(file: CatalogFile): CatalogProvider[] {
 const BUNDLED = providersOf(catalogFile)
 
 /**
- * The providers the wizard offers: `config/catalog.toml`'s, the one source of model defaults, until `setCatalog` swaps in the API's.
- * Swapped in place, so every importer keeps the one array.
+ * The providers the wizard offers: `config/catalog.toml`'s, the one source of model defaults, until `setCatalog` swaps
+ * in the API's. Swapped in place, so every importer keeps the one array.
  */
 export const CATALOG: CatalogProvider[] = [...BUNDLED]
 
@@ -91,7 +91,10 @@ export type ModelsSelection = {
   pick?: Partial<Record<ModelTask, string>>
   /** Provider id to the address the user typed, replacing the catalog's default. */
   baseUrls?: Record<string, string>
-  /** Also write the candidates not picked, for pins and the doctor to switch to. Off for the examples, which show one model per task. */
+  /**
+   * Also write the candidates not picked, for pins and the doctor to switch to. Off for the examples, which show one
+   * model per task.
+   */
   alternatives?: boolean
 }
 
@@ -148,11 +151,10 @@ function addAlternatives(
 }
 
 /**
- * Builds models.toml text for the chosen providers: each task's picked model is the first entry listing it,
- * and every model written is keyed by the slug of its name (a model serving several tasks is one entry). The
- * other candidates are written after the picked ones, so a persona pin, or the doctor dropping a broken
- * model, can reach them.
- * Text is generated rather than edited, so the comments that explain the file are always there.
+ * Builds models.toml text for the chosen providers: each task's picked model is the first entry listing it, and every
+ * model written is keyed by the slug of its name (a model serving several tasks is one entry). The other candidates are
+ * written after the picked ones, so a persona pin, or the doctor dropping a broken model, can reach them. Text is
+ * generated rather than edited, so the comments that explain the file are always there.
  */
 export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternatives = true }: ModelsSelection): string {
   const providerTables = providers.map(provider => providerTable(provider, baseUrls[provider.id] ?? provider.baseUrl))

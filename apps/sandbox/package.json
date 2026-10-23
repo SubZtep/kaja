@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/cli.ts",
     "build": "bun build --target=bun --minify --outfile dist/sandbox.js src/cli.ts",
+    "dev": "bun run --hot src/cli.ts",
     "start": "bun dist/sandbox.js"
   },
   "dependencies": {
@@ -14,7 +14,6 @@
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@sentry/bun": "^11.8.0",
-    "hono": "^4.13.13",
     "zod": "^4.6.7"
   }
 }

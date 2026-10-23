@@ -5,9 +5,8 @@ import { TOML, write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config`
 
-const { getConfigDir, getConfigPath, readConfigLoose, setConfigDirOverride } = await import(
-  "../../../lib/config/config"
-)
+const { getConfigDir, getConfigPath, readConfigLoose, setConfigDirOverride } =
+  await import("../../../lib/config/config")
 
 afterEach(() => {
   setConfigDirOverride(undefined)

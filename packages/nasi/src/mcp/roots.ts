@@ -9,7 +9,10 @@ import { warn } from "../warn"
 /** One MCP root, as a server asks for them (`roots/list`). */
 export type McpRoot = { uri: string; name: string }
 
-/** A persona's root as a real folder (symlinks resolved), whether the server may only read there, and whether Kaja backs files up before it writes them. */
+/**
+ * A persona's root as a real folder (symlinks resolved), whether the server may only read there, and whether Kaja backs
+ * files up before it writes them.
+ */
 export type RootFolder = { folder: string; readOnly: boolean; backup?: boolean }
 
 // `~` and `~/…` under the home folder, as the filesystem server expands them too.
@@ -53,9 +56,9 @@ export function mcpRoots(roots: RootFolder[]): McpRoot[] {
 
 /**
  * Why a call that may write can't run with these roots, or undefined when it may: one of its `pathArgs` lands in a
- * read-only folder (the nearest root decides, so a writable folder inside a read-only one stays writable). Symlinks
- * are followed, a path that doesn't exist yet through its nearest existing folder. With any read-only or backed-up
- * root, a path must be absolute (or `~/…`): the server resolves relative ones against its folders in its own way.
+ * read-only folder (the nearest root decides, so a writable folder inside a read-only one stays writable). Symlinks are
+ * followed, a path that doesn't exist yet through its nearest existing folder. With any read-only or backed-up root, a
+ * path must be absolute (or `~/…`): the server resolves relative ones against its folders in its own way.
  */
 export function readOnlyRefusal(
   roots: RootFolder[],
@@ -73,7 +76,10 @@ export function readOnlyRefusal(
   return undefined
 }
 
-/** The existing files and folders a call that may write names in its `pathArgs` (real paths) whose nearest root is backed up. */
+/**
+ * The existing files and folders a call that may write names in its `pathArgs` (real paths) whose nearest root is
+ * backed up.
+ */
 export function backupPaths(roots: RootFolder[], pathArgs: string[], args: Record<string, unknown>): string[] {
   if (!roots.some(root => root.backup)) return []
   const found = new Set<string>()

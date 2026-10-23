@@ -117,7 +117,10 @@ async function personasByAbility(): Promise<Map<string, string[]>> {
   return usedBy
 }
 
-/** What to install so a stdio ability can start: one of its runners, and every program it drives, e.g. "uvx, pipx or docker and Chrome". */
+/**
+ * What to install so a stdio ability can start: one of its runners, and every program it drives, e.g. "uvx, pipx or
+ * docker and Chrome".
+ */
 export function missingPrograms(needs: string[] = [], requires: string[] = []): string {
   const parts = [...(needs.length ? [anyOf(needs)] : []), ...requires]
   return new Intl.ListFormat(getLanguage(), { type: "conjunction" }).format(parts)

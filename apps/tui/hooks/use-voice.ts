@@ -21,15 +21,13 @@ function speakableText(event: TimelineEvent): string | null {
 }
 
 /**
- * Speaks each newly arrived assistant reply ({@link speakableText}) through
- * the local speakers via the speaches TTS server. The sink and TTS client are
- * created lazily on the first spoken event, so nothing is spawned while the
- * setting is off. Utterances queue in arrival order (see createTts); a failed
- * synthesis (e.g. server down) is logged, never thrown. Events arriving while
- * disabled are marked as spoken, so enabling doesn't replay the backlog.
+ * Speaks each newly arrived assistant reply ({@link speakableText}) through the local speakers via the speaches TTS
+ * server. The sink and TTS client are created lazily on the first spoken event, so nothing is spawned while the setting
+ * is off. Utterances queue in arrival order (see createTts); a failed synthesis (e.g. server down) is logged, never
+ * thrown. Events arriving while disabled are marked as spoken, so enabling doesn't replay the backlog.
  *
- * Returns whether speech is audibly in flight, so the mic can be muted while
- * the agent talks (half-duplex — otherwise it transcribes its own voice).
+ * Returns whether speech is audibly in flight, so the mic can be muted while the agent talks (half-duplex — otherwise
+ * it transcribes its own voice).
  */
 export function useVoice(events: TimelineEvent[], enabled = false, personaModels?: PersonaModels): boolean {
   const spoken = useRef(0)
@@ -43,7 +41,6 @@ export function useVoice(events: TimelineEvent[], enabled = false, personaModels
     if (enabled) void warmupTts(personaModels)
   }, [enabled, personaModels])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `personaModels` picks the model when TTS first starts; new events are what should speak
   useEffect(() => {
     const pending = events.slice(spoken.current)
     spoken.current = events.length
@@ -65,6 +62,7 @@ export function useVoice(events: TimelineEvent[], enabled = false, personaModels
         })
         .finally(() => setInFlight(n => n - 1))
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- speaks each event once (spoken ref), so persona models changes must not re-run it
   }, [events, enabled])
 
   // Kill the ffplay child on unmount instead of leaving it to linger.

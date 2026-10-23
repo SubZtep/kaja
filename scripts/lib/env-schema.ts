@@ -6,7 +6,10 @@ export interface EnvFieldMeta {
   description?: string
   example?: string
   secret?: boolean
-  /** Ship `example` uncommented despite being optional — for a real, safe-to-commit working default (as opposed to a rotated secret). */
+  /**
+   * Ship `example` uncommented despite being optional — for a real, safe-to-commit working default (as opposed to a
+   * rotated secret).
+   */
   devDefault?: boolean
   section?: string
 }
@@ -22,13 +25,13 @@ export interface FieldInfo {
   defaultValue?: EnvDefault
 }
 
-function isZodDefault(schema: z.ZodTypeAny): boolean {
+function isZodDefault(schema: z.ZodType): boolean {
   return (schema as unknown as { _zod: { def: { type: string } } })._zod.def.type === "default"
 }
 
 // Env vars are flat .env-file values, so a schema's .default() is always a string/number/boolean —
 // this narrows away `unknown` so callers can safely interpolate it without risking "[object Object]".
-function defaultValueOf(schema: z.ZodTypeAny): string | number | boolean {
+function defaultValueOf(schema: z.ZodType): string | number | boolean {
   return (schema as unknown as { _zod: { def: { defaultValue: string | number | boolean } } })._zod.def.defaultValue
 }
 
@@ -43,7 +46,7 @@ export function inspectFields(schema: z.ZodObject<z.ZodRawShape>): FieldInfo[] {
       secret: meta?.secret,
       devDefault: meta?.devDefault,
       section: meta?.section,
-      isOptional: fieldSchema.isOptional(),
+      isOptional: fieldSchema.safeParse(undefined).success,
       defaultValue: isZodDefault(fieldSchema) ? defaultValueOf(fieldSchema) : undefined
     }
   })

@@ -18,10 +18,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "hosted",
-              "self-hosted"
-            ]
+            "enum": ["hosted", "self-hosted"]
           },
           "base_url": {
             "type": "string",
@@ -44,36 +41,18 @@
               "properties": {
                 "task": {
                   "type": "string",
-                  "enum": [
-                    "chat",
-                    "tts",
-                    "stt",
-                    "embedding",
-                    "image-generation",
-                    "rerank",
-                    "summarize",
-                    "vision"
-                  ]
+                  "enum": ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize", "vision"]
                 },
                 "model": {
                   "type": "string",
                   "minLength": 1
                 }
               },
-              "required": [
-                "task",
-                "model"
-              ]
+              "required": ["task", "model"]
             }
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "base_url",
-          "models"
-        ]
+        "required": ["id", "name", "kind", "base_url", "models"]
       }
     },
     "examples": {
@@ -97,30 +76,16 @@
             "type": "object",
             "propertyNames": {
               "type": "string",
-              "enum": [
-                "chat",
-                "tts",
-                "stt",
-                "embedding",
-                "image-generation",
-                "rerank",
-                "summarize",
-                "vision"
-              ]
+              "enum": ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize", "vision"]
             },
             "additionalProperties": {
               "type": "string"
             }
           }
         },
-        "required": [
-          "file",
-          "providers"
-        ]
+        "required": ["file", "providers"]
       }
     }
   },
-  "required": [
-    "providers"
-  ]
+  "required": ["providers"]
 }

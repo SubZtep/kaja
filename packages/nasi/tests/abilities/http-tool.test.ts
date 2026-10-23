@@ -179,7 +179,7 @@ test("a non-2xx response comes back as text instead of failing the turn", async 
 
 test("long bodies are cut and binary bodies are described", async () => {
   const [big] = createHttpTools(localAbility("/big"), { allowPrivate: true })
-  const text = String(await big!.execute({}))
+  const text = (await big!.execute({})) as string
   expect(text).toContain("[cut: 40000 characters in total]")
   expect(text.length).toBeLessThan(33 * 1024)
   const [image] = createHttpTools(localAbility("/image"), { allowPrivate: true })

@@ -57,8 +57,8 @@ export function Answered({ label, value }: Readonly<{ label: string; value: stri
 }
 
 /**
- * The panel an answer sits in: `width` columns wide inside and growing with longer content. A typed answer's panel
- * has the input box's background, so the field stands out from the question; `plain` drops it, for the menus (their
+ * The panel an answer sits in: `width` columns wide inside and growing with longer content. A typed answer's panel has
+ * the input box's background, so the field stands out from the question; `plain` drops it, for the menus (their
  * highlight band is colour enough).
  */
 export function InputFrame({

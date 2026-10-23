@@ -41,7 +41,10 @@ type Entry = {
   timer?: ReturnType<typeof setTimeout>
 }
 
-/** One warm server per (user, ability), started on first use and stopped once idle, or sooner when another user needs the room. */
+/**
+ * One warm server per (user, ability), started on first use and stopped once idle, or sooner when another user needs
+ * the room.
+ */
 export class ProcessPool {
   readonly #opts: PoolOptions
   readonly #entries = new Map<string, Entry>()
@@ -229,7 +232,10 @@ export class ProcessPool {
     this.#watch = setInterval(() => void this.checkMemory(), this.#opts.watchMs ?? WATCH_MS)
   }
 
-  /** Stops any server using more than its share of memory, even mid-call: one user's browser mustn't take the whole sandbox. */
+  /**
+   * Stops any server using more than its share of memory, even mid-call: one user's browser mustn't take the whole
+   * sandbox.
+   */
   async checkMemory(): Promise<void> {
     if (this.#entries.size === 0) {
       clearInterval(this.#watch)

@@ -71,7 +71,10 @@ async function seedModels(db: Queryable) {
   console.log(`Seeded ${used.size} providers, ${count} models`)
 }
 
-/** Seeds the admin-managed defaults onto an existing connection. Safe to re-run — every insert is a no-op once the row exists. */
+/**
+ * Seeds the admin-managed defaults onto an existing connection. Safe to re-run — every insert is a no-op once the row
+ * exists.
+ */
 export async function seedConfig(db: Queryable) {
   await seedModels(db)
 }

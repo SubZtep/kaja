@@ -53,7 +53,7 @@ flowchart LR
 
 ## Run from the source
 
-Make sure [Bun](https://bun.com/docs/installation), [Docker Compose](https://docs.docker.com/compose/install/), and [Git](https://git-scm.com/install/) are installed. Run the commands below in sequence.
+Make sure [Bun](https://bun.com/docs/installation#canary-builds) (canary), [Docker Compose](https://docs.docker.com/compose/install/), and [Git](https://git-scm.com/install/) are installed. Run the commands below in sequence.
 
 ```bash
 # Get the source
@@ -78,13 +78,12 @@ The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at
 ## Development
 
 Besides Bun, Docker Compose and Git from above, install these on your machine; none of them is an npm dependency:
-- [Biome](https://biomejs.dev/guides/manual-installation/): linter and formatter
-- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
-- [Lefthook](https://lefthook.dev/installation/): runs the Git hooks, so run `lefthook install` once after cloning
 
-`bun lint` warns when the installed Biome or Tombi differs from the version pinned in [`scripts/lib/tools.ts`](./scripts/lib/tools.ts) (Biome's comes from the `$schema` URL in `.biome.json`).
+- [Tombi](https://tombi-toml.github.io/tombi/docs/installation): TOML formatter and linter
+- [Lefthook](https://lefthook.dev/install/): runs the Git hooks, so run `lefthook install` once after cloning
 
 Optional, for parts of the repo:
+
 - Chromium: `bun dev:sandbox`, unless you run the sandbox through Docker Compose
 - A Secret Service keyring such as gnome-keyring (Linux): the terminal UI stores its login with `Bun.secrets`, and the tests need it too
 - [Claude Code](https://claude.com/claude-code): the pre-push hook uses it to translate new locale keys

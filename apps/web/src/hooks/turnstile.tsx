@@ -61,7 +61,10 @@ function loadTurnstile(): Promise<TurnstileApi> {
   return scriptPromise
 }
 
-/** A page's Turnstile state: its first check gates the page; after that each token-sending call gets a fresh token from a background check. */
+/**
+ * A page's Turnstile state: its first check gates the page; after that each token-sending call gets a fresh token from
+ * a background check.
+ */
 export type Captcha = {
   /** The first check has passed (or no site key is configured), and the last one didn't fail. */
   ready: boolean
@@ -69,13 +72,22 @@ export type Captcha = {
   checking: boolean
   /** The check errored, timed out, or can't run in this browser; `<CaptchaAlert>` says so and offers a retry. */
   failed: boolean
-  /** Better Auth `fetchOptions` with a token (spread into a client call): waits for a running check, and starts the next one, as each token is single-use. */
+  /**
+   * Better Auth `fetchOptions` with a token (spread into a client call): waits for a running check, and starts the next
+   * one, as each token is single-use.
+   */
   fetchOptions: () => Promise<{ headers: Record<string, string> } | undefined>
-  /** Renders the widget again from scratch (reloading Cloudflare's script if it failed); calls waiting for a token carry on once it passes. */
+  /**
+   * Renders the widget again from scratch (reloading Cloudflare's script if it failed); calls waiting for a token carry
+   * on once it passes.
+   */
   retry: () => void
 }
 
-/** One Turnstile widget per page, shared by every auth action on it, in its own element on `<body>`; show `<CaptchaAlert captcha={…}>` above the page's auth controls. */
+/**
+ * One Turnstile widget per page, shared by every auth action on it, in its own element on `<body>`; show `<CaptchaAlert
+ * captcha={…}>` above the page's auth controls.
+ */
 export function useTurnstile(): Captcha {
   const { turnstileSiteKey: siteKey } = useLoaderData({ from: "__root__" })
   const [token, setToken] = useState<string | null>(null)
@@ -98,7 +110,6 @@ export function useTurnstile(): Captcha {
     if (widgetId.current) window.turnstile?.reset(widgetId.current)
   }, [store])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` is the retry trigger, not an input
   useEffect(() => {
     if (!siteKey) return
     const host = document.createElement("div")
@@ -197,7 +208,10 @@ export function useTurnstile(): Captcha {
   }
 }
 
-/** Says when the page's Turnstile check failed, with a retry; renders nothing otherwise. Each auth button disables itself on `captcha.ready`, and fields stay open so password managers can fill them. */
+/**
+ * Says when the page's Turnstile check failed, with a retry; renders nothing otherwise. Each auth button disables
+ * itself on `captcha.ready`, and fields stay open so password managers can fill them.
+ */
 export function CaptchaAlert({ captcha }: Readonly<{ captcha: Captcha }>) {
   if (!captcha.failed) return null
   return (

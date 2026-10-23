@@ -14,7 +14,11 @@ async function postLocale(token: string, locale: Locale): Promise<void> {
   if (!res.ok) log.warn("Failed to save the account language", { status: res.status })
 }
 
-/** Saves a cloud user's language on their account, like the web's language picker, so the web, Telegram and emails follow it. Called from the wizard and right after a device login: the terminal a user logs in from is a choice of language. Signed out, it does nothing (and a failure only logs): the local setting still applies. */
+/**
+ * Saves a cloud user's language on their account, like the web's language picker, so the web, Telegram and emails
+ * follow it. Called from the wizard and right after a device login: the terminal a user logs in from is a choice of
+ * language. Signed out, it does nothing (and a failure only logs): the local setting still applies.
+ */
 export async function saveAccountLocale(locale: Locale): Promise<void> {
   try {
     const token = await loadToken()

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { websocket } from "hono/bun"
+import { websocket } from "@hono/bun"
 import { sandboxInfo, sandboxLoad } from "../../../sandbox/src/hardware"
 import { ProcessPool } from "../../../sandbox/src/pool"
 import { collectStats } from "../../../sandbox/src/stats"
@@ -25,7 +25,10 @@ export type TestSandbox = {
   close: () => Promise<void>
 }
 
-/** A real sandbox process pool running the counter fixture as `abilities`, connected to `apiUrl` with `key` (none: anonymous). */
+/**
+ * A real sandbox process pool running the counter fixture as `abilities`, connected to `apiUrl` with `key` (none:
+ * anonymous).
+ */
 export async function startSandbox(opts: {
   apiUrl: string
   abilities: string[]

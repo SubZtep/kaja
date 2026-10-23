@@ -8,15 +8,14 @@ import { useKajaTheme } from "../theme"
 export type ApprovalScope = "session"
 
 /**
- * Yes/No gate shown in place of the input field while a run_command call, or
- * an HTTP tool call that changes something (`kind: "tool"`), is awaiting approval. Mounted only while unresolved — selecting either option
- * hands off to the caller, which feeds the outcome back to the agent.
- * While `running` (approved and the command is executing) the menu is
- * replaced by a status line: the command can take a while and Menu would
- * otherwise sit there fully interactive with no sign anything happened.
+ * Yes/No gate shown in place of the input field while a run_command call, or an HTTP tool call that changes something
+ * (`kind: "tool"`), is awaiting approval. Mounted only while unresolved — selecting either option hands off to the
+ * caller, which feeds the outcome back to the agent. While `running` (approved and the command is executing) the menu
+ * is replaced by a status line: the command can take a while and Menu would otherwise sit there fully interactive with
+ * no sign anything happened.
  *
- * It doesn't repeat the command: that is the last row of the chat (a capped, highlighted preview, see CodePreview),
- * so a long generated script can't push the menu below the terminal's visible rows.
+ * It doesn't repeat the command: that is the last row of the chat (a capped, highlighted preview, see CodePreview), so
+ * a long generated script can't push the menu below the terminal's visible rows.
  */
 export function ConfirmCommand({
   command,

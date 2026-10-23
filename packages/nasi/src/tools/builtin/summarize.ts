@@ -4,11 +4,11 @@ import { summarize, TEXT_STYLE } from "../../agent/compaction"
 import { getToolDeps } from "../deps"
 
 /**
- * Summarizes a piece of text with the summarize model (else the chat model), in parts when it's too long for one request.
+ * Summarizes a piece of text with the summarize model (else the chat model), in parts when it's too long for one
+ * request.
  *
  * @param args.text - The text to summarize.
- * @param args.instructions - Optional extra guidance, e.g. "focus on
- * pricing" or "3 bullet points".
+ * @param args.instructions - Optional extra guidance, e.g. "focus on pricing" or "3 bullet points".
  * @returns The generated summary.
  */
 export const summarizeTool = tool({

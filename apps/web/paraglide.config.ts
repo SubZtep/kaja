@@ -1,7 +1,10 @@
 import type { CompilerOptions } from "@inlang/paraglide-js"
 import { baseLocale, locales } from "@kaja/shared/locale"
 
-/** Shared between `vite.config.ts` (dev/build) and `scripts/generate-paraglide.ts` (CI/standalone regeneration) so both produce identical output. */
+/**
+ * Shared between `vite.config.ts` (dev/build) and `scripts/generate-paraglide.ts` (CI/standalone regeneration) so both
+ * produce identical output.
+ */
 export const paraglideOptions: CompilerOptions = {
   project: "./project.inlang",
   outdir: "./src/paraglide",

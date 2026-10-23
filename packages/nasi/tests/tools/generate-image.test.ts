@@ -33,7 +33,7 @@ test("resolver's model for the given ctx.personaId is used to generate and downl
     const href = url instanceof Request ? url.url : url.toString()
     if (href.includes("/images/generations")) {
       capturedAuth = new Headers(init?.headers).get("authorization")
-      capturedModel = JSON.parse(String(init?.body)).model
+      capturedModel = JSON.parse(init?.body as string).model
       return new Response(JSON.stringify({ data: [{ url: "https://images.example.test/pic.png" }] }), {
         status: 200,
         headers: { "content-type": "application/json" }

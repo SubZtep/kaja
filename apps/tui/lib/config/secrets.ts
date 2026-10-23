@@ -12,10 +12,11 @@ export function getSecretsPath() {
 }
 
 /**
- * The `kaja config fetch` subcommand: writes the bundled config/secrets.toml template (all commented-out
- * placeholders) when there's no secrets.toml yet; one with no values already reads the same, so it's left as it is. A file
- * holding any value, or one that doesn't parse, is `kept` as it is: the template has no keys to offer, so replacing it only ever lost the user's own. Never
- * served by the API — admin-managed config has no user secrets to export — so this is the only source `fetch` has for it.
+ * The `kaja config fetch` subcommand: writes the bundled config/secrets.toml template (all commented-out placeholders)
+ * when there's no secrets.toml yet; one with no values already reads the same, so it's left as it is. A file holding
+ * any value, or one that doesn't parse, is `kept` as it is: the template has no keys to offer, so replacing it only
+ * ever lost the user's own. Never served by the API — admin-managed config has no user secrets to export — so this is
+ * the only source `fetch` has for it.
  */
 export async function fetchSecretsToml(): Promise<{
   path: string
@@ -44,11 +45,16 @@ export async function readSecretsLoose(): Promise<Partial<SecretsFile>> {
     if (!(await f.exists())) return {}
     const data = TOML.parse(await f.text())
     if (data && typeof data === "object") return data as Partial<SecretsFile>
-  } catch {}
+  } catch {
+    // unreadable secrets file: treated as empty
+  }
   return {}
 }
 
-/** Loads and parses secrets.toml. Missing file: writes the commented-out template and parses that (empty). Invalid file: prints the error and exits, same policy as {@link import("./config").config}. */
+/**
+ * Loads and parses secrets.toml. Missing file: writes the commented-out template and parses that (empty). Invalid file:
+ * prints the error and exits, same policy as {@link import("./config").config}.
+ */
 export async function loadSecretsFile(): Promise<SecretsFile> {
   const secretsPath = getSecretsPath()
   const f = file(secretsPath)
@@ -100,9 +106,9 @@ const PLACEHOLDER_KEY = /^\s*#\s*api_key\s*=\s*""\s*$/
 const NOTE = /^\s*#(.*)$/
 
 /**
- * The placeholders in secrets.toml text: a commented-out `[providers.<name>]` or `[abilities.<name>]` followed by
- * `# api_key = ""`, with the comment line above it as its note. The template's own commented examples hold a sample
- * value, so they never count.
+ * The placeholders in secrets.toml text: a commented-out `[providers.<name>]` or `[abilities.<name>]` followed by `#
+ * api_key = ""`, with the comment line above it as its note. The template's own commented examples hold a sample value,
+ * so they never count.
  */
 export function readSecretPlaceholders(text: string): SecretPlaceholder[] {
   const lines = text.split("\n")
@@ -121,7 +127,10 @@ export function readSecretPlaceholders(text: string): SecretPlaceholder[] {
   return found
 }
 
-/** secrets.toml's text: the values grouped like every TOML Kaja writes, with each placeholder commented out in its group. */
+/**
+ * Secrets.toml's text: the values grouped like every TOML Kaja writes, with each placeholder commented out in its
+ * group.
+ */
 export function secretsText(data: SecretsFile, placeholders: SecretPlaceholder[] = []): string {
   const { providers, abilities, ...rest } = data
   const blocks = [stringifyToml(rest).trimEnd()].filter(Boolean)

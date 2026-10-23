@@ -9,7 +9,10 @@ function pngChunk(type: string, data: Buffer): Buffer {
   return Buffer.concat([length, body, crc])
 }
 
-/** Fills `raw`'s scanlines with one colour each: flat, or `noise`'s per-pixel shade (an alpha one gets a fourth channel). */
+/**
+ * Fills `raw`'s scanlines with one colour each: flat, or `noise`'s per-pixel shade (an alpha one gets a fourth
+ * channel).
+ */
 function fillPixels(
   raw: Buffer,
   width: number,

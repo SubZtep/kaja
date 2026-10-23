@@ -3,8 +3,8 @@ import OpenAI from "openai"
 import { loadModelsFile, resolveActiveModel } from "./models"
 
 /**
- * Generates embeddings via models.toml's first model listing embedding (or the active persona's pin, if set).
- * Batches multiple inputs into one request.
+ * Generates embeddings via models.toml's first model listing embedding (or the active persona's pin, if set). Batches
+ * multiple inputs into one request.
  */
 export async function embed(input: string | string[], personaModels?: PersonaModels): Promise<number[][]> {
   const embedding = resolveActiveModel(await loadModelsFile(), "embedding", personaModels)

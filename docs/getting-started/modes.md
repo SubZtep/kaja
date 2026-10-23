@@ -10,15 +10,15 @@ icon: ☁️
 # Cloud or local
 
 Kaja is one agent with several front doors: the terminal, Telegram and a website widget. The two modes
-differ in *where the agent loop runs*, and so in which tools it can use.
+differ in _where the agent loop runs_, and so in which tools it can use.
 
-| Front door | Loop runs on | Store | Your files, shell and own MCP servers |
-|---|---|---|---|
-| `kaja`, local mode | your machine | SQLite | ✓ |
-| `kaja telegram` | your machine | SQLite | ✓ |
-| `kaja`, cloud mode | the API | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
-| cloud [Telegram bot](/using/telegram#cloud-bot) | the API | Postgres | ✗ |
-| Website [widget](/using/widget) | the API | Postgres | ✗ |
+| Front door                                      | Loop runs on | Store    | Your files, shell and own MCP servers                          |
+| ----------------------------------------------- | ------------ | -------- | -------------------------------------------------------------- |
+| `kaja`, local mode                              | your machine | SQLite   | ✓                                                              |
+| `kaja telegram`                                 | your machine | SQLite   | ✓                                                              |
+| `kaja`, cloud mode                              | the API      | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
+| cloud [Telegram bot](/using/telegram#cloud-bot) | the API      | Postgres | ✗                                                              |
+| Website [widget](/using/widget)                 | the API      | Postgres | ✗                                                              |
 
 ## Which mode a launch uses
 
@@ -61,7 +61,7 @@ disk. One account is signed in at a time: `kaja login` signs in without starting
 clears it.
 
 > Without a keychain, cloud mode stops and suggests `--local`. There is no plaintext fallback.
-{: .warning }
+> {: .warning }
 
 The server picks the model and keeps your sessions, memory and dataset answers. The agent can use:
 

@@ -12,14 +12,19 @@ import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } f
 /** Capture the cookie state before any hydration-triggered locale resolution can write it. */
 const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())
 
-/** setLocale reloads the page, so a pick's outcome waits here and is toasted, in the new language, once the page is back. */
+/**
+ * SetLocale reloads the page, so a pick's outcome waits here and is toasted, in the new language, once the page is
+ * back.
+ */
 const PICKED_KEY = "language-select-picked"
 type Picked = "saved" | "switched"
 
 function rememberPick(picked: Picked) {
   try {
     sessionStorage.setItem(PICKED_KEY, picked)
-  } catch {}
+  } catch {
+    // sessionStorage can be blocked
+  }
 }
 
 function takePick(): Picked | null {

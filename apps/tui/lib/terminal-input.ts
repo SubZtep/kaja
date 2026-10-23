@@ -19,10 +19,9 @@ export function splitTerminalReports(chunk: string): string[] {
 }
 
 /**
- * Some terminals/multiplexers mangle escape-sequence replies into their
- * decimal byte values instead of raw bytes, e.g. `27,91,63,48,117` for
- * `\x1b[?0u`. Any comma-separated byte list starting with 27 (ESC) is noise,
- * not something a human typed.
+ * Some terminals/multiplexers mangle escape-sequence replies into their decimal byte values instead of raw bytes, e.g.
+ * `27,91,63,48,117` for `\x1b[?0u`. Any comma-separated byte list starting with 27 (ESC) is noise, not something a
+ * human typed.
  */
 function isEscapeByteList(input: string): boolean {
   if (!input) return false
@@ -33,9 +32,8 @@ function isEscapeByteList(input: string): boolean {
 }
 
 /**
- * xterm focus-reporting event (DECSET 1004): `[I` on window focus-in, `[O` on
- * focus-out. Sent unprompted whenever the terminal window's OS focus changes,
- * once `FOCUS_REPORTING_ENABLE` has been written.
+ * Xterm focus-reporting event (DECSET 1004): `[I` on window focus-in, `[O` on focus-out. Sent unprompted whenever the
+ * terminal window's OS focus changes, once `FOCUS_REPORTING_ENABLE` has been written.
  */
 export function windowFocusReport(input: string): "in" | "out" | null {
   const s = stripEsc(input)
@@ -62,7 +60,10 @@ export function isIgnoredTerminalInput(input: string): boolean {
 
 export type MouseEvent = { kind: "press" | "move"; col: number; row: number }
 
-/** Decodes an SGR left-button press or a button-less move, with the 0-based cell it happened in; null for anything else (wheel, release, drag, other buttons). */
+/**
+ * Decodes an SGR left-button press or a button-less move, with the 0-based cell it happened in; null for anything else
+ * (wheel, release, drag, other buttons).
+ */
 export function parseMouse(input: string): MouseEvent | null {
   const sgr = /^\[<(\d+);(\d+);(\d+)([Mm])$/.exec(stripEsc(input))
   if (!sgr) return null
@@ -77,8 +78,8 @@ export function parseMouse(input: string): MouseEvent | null {
 export type WheelDirection = "up" | "down"
 
 /**
- * Decode a wheel tick from a mouse sequence. Returns null for clicks / unknown.
- * SGR wheel: button 64 = up, 65 = down (optionally + shift/meta bits).
+ * Decode a wheel tick from a mouse sequence. Returns null for clicks / unknown. SGR wheel: button 64 = up, 65 = down
+ * (optionally + shift/meta bits).
  */
 export function parseWheelDirection(input: string): WheelDirection | null {
   const s = stripEsc(input)

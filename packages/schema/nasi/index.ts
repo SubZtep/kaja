@@ -5,13 +5,22 @@ const turnFields = {
   session: z.uuidv7().optional(),
   message: z.string().min(1).max(32_768),
   includeThinking: z.boolean().optional(),
-  /** BCP-47-ish UI language code (e.g. "en-GB", "hu-HU") the caller wants replies in — passed through to the model as a reply-language instruction. */
+  /**
+   * BCP-47-ish UI language code (e.g. "en-GB", "hu-HU") the caller wants replies in — passed through to the model as a
+   * reply-language instruction.
+   */
   language: z.string().min(2).max(10).optional(),
-  /** Id of the persona to use for this turn — resolved fresh every turn (including resumed sessions), so a caller that keeps sending the same id keeps the session pinned to it. */
+  /**
+   * Id of the persona to use for this turn — resolved fresh every turn (including resumed sessions), so a caller that
+   * keeps sending the same id keeps the session pinned to it.
+   */
   personaId: z.string().max(128).optional()
 }
 
-/** A tool the client runs on the user's computer, declared each turn: what the model sees of it, and the ability it belongs to (none: a builtin). */
+/**
+ * A tool the client runs on the user's computer, declared each turn: what the model sees of it, and the ability it
+ * belongs to (none: a builtin).
+ */
 export const NasiClientToolSchema = z.object({
   name: z.string().min(1).max(128),
   description: z.string().max(4096),
@@ -39,7 +48,10 @@ export const TOOL_RESULTS_MAX = 32
 /** Largest `/nasi/turn` request body (a terminal's tool results with their images); every other route takes 1 MB. */
 export const TURN_BODY_MAX_BYTES = 16 * 1024 * 1024
 
-/** The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned (base64). */
+/**
+ * The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned
+ * (base64).
+ */
 export const NasiToolResultSchema = z.object({
   id: z.string().min(1).max(256),
   text: z.string().max(TOOL_RESULT_TEXT_MAX),
@@ -59,11 +71,18 @@ export const NasiTurnRequestSchema = z
   .object({
     ...turnFields,
     message: turnFields.message.optional(),
-    /** Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never supplies a tool result. `approve_session` also stops asking about that tool for the rest of the session, `approve_always` adds it to the user's allow list. */
+    /**
+     * Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never
+     * supplies a tool result. `approve_session` also stops asking about that tool for the rest of the session,
+     * `approve_always` adds it to the user's allow list.
+     */
     approval: z.enum(["approve", "approve_session", "decline"]).optional(),
     /** Answers the session's `client_tool_calls` step; a call left out is answered as if the computer went away. */
     toolResults: z.array(NasiToolResultSchema).max(TOOL_RESULTS_MAX).optional(),
-    /** The tools the client runs on the user's computer this turn; the cloud drops its own copy of any ability named here. */
+    /**
+     * The tools the client runs on the user's computer this turn; the cloud drops its own copy of any ability named
+     * here.
+     */
     clientTools: z.array(NasiClientToolSchema).max(256).optional(),
     /** Skills of the abilities the client runs (load_skill asks the client for them). */
     clientSkills: z.array(NasiClientSkillSchema).max(128).optional(),
@@ -78,7 +97,10 @@ export const NasiTurnRequestSchema = z
     path: ["message"]
   })
 
-/** Same turn contract (a message every time; widget turns never ask for approval), plus the widget's client-minted visitor id (resumption token, not a credential — the widget key already authenticates the request). */
+/**
+ * Same turn contract (a message every time; widget turns never ask for approval), plus the widget's client-minted
+ * visitor id (resumption token, not a credential — the widget key already authenticates the request).
+ */
 export const WidgetTurnRequestSchema = z.object({
   ...turnFields,
   visitorId: z.string().min(1).max(128)
@@ -101,7 +123,10 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("confirm_command"), command: z.string(), description: z.string() }),
-  /** A tool call waiting for the user's OK; answer with the next turn's `approval`. `summary` is the request in one line. */
+  /**
+   * A tool call waiting for the user's OK; answer with the next turn's `approval`. `summary` is the request in one
+   * line.
+   */
   z.object({ type: z.literal("confirm_tool"), name: z.string(), arguments: z.string(), summary: z.string() }),
   /** Calls for the client to run on the user's computer; answer them with the next turn's `toolResults`. */
   z.object({ type: z.literal("client_tool_calls"), calls: z.array(NasiClientCallSchema) })
@@ -125,7 +150,10 @@ export const NasiTurnResponseSchema = z.object({
   usage: NasiUsageSchema.optional()
 })
 
-/** One live event of `POST /nasi/turn/stream` (SSE event name = `type`); `done` and `error` end the stream and have their own schemas. */
+/**
+ * One live event of `POST /nasi/turn/stream` (SSE event name = `type`); `done` and `error` end the stream and have
+ * their own schemas.
+ */
 export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("delta"), channel: z.enum(["reasoning", "content"]), text: z.string() }),
   z.object({ type: z.literal("reasoning"), text: z.string() }),
@@ -156,7 +184,10 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("condensed"), tool: z.string(), beforeTokens: z.number(), afterTokens: z.number() }),
   z.object({ type: z.literal("usage"), ...NasiUsageSchema.shape }),
   z.object({ type: z.literal("final"), content: z.string().nullable() }),
-  /** An image a tool returned (a screenshot, say), as its public (or data) URL; `alt` its text until `image_described` replaces it. */
+  /**
+   * An image a tool returned (a screenshot, say), as its public (or data) URL; `alt` its text until `image_described`
+   * replaces it.
+   */
   z.object({
     type: z.literal("tool_image"),
     mimeType: z.string(),

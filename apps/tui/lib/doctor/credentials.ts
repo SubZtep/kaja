@@ -1,10 +1,10 @@
-import { createFolderAbilityStore, McpRunnerMissingError, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
+import { createFolderAbilityStore, mcpAbilityTarget, McpRunnerMissingError, personaAbilities } from "@kaja/nasi"
 import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
 import { getMarketplaceDir } from "../abilities/abilities-file"
-import { type SecretPlaceholder, saveSecrets, secrets, updateSecretPlaceholders } from "../config/secrets"
+import { saveSecrets, type SecretPlaceholder, secrets, updateSecretPlaceholders } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
-import { type CheckResult, checkAbilityKey, checkMcpServer, checkProvider, checkTelegramToken } from "./checks"
+import { checkAbilityKey, checkMcpServer, checkProvider, type CheckResult, checkTelegramToken } from "./checks"
 import { statusLine } from "./status"
 
 /** One key or token the current config depends on, with how to test and store it. */
@@ -18,9 +18,15 @@ export type CredentialItem = {
   present: boolean
   /** Missing only counts as a problem when required: a provider without a key may simply not need one (Ollama). */
   required: boolean
-  /** An ability's key: offered in a terminal when missing (Enter skips); without it the ability is "off", or still works when "keyless" (a key only lifts its limits). Not a to-do, unless a key typed for it fails. */
+  /**
+   * An ability's key: offered in a terminal when missing (Enter skips); without it the ability is "off", or still works
+   * when "keyless" (a key only lifts its limits). Not a to-do, unless a key typed for it fails.
+   */
   withoutKey?: "off" | "keyless"
-  /** Tests `value`, or the saved value when undefined. Absent, or resolving to undefined, when there's no way to test it. */
+  /**
+   * Tests `value`, or the saved value when undefined. Absent, or resolving to undefined, when there's no way to test
+   * it.
+   */
   check?: (value?: string) => Promise<CheckResult | undefined>
   save: (value: string) => Promise<void>
 }
@@ -36,10 +42,10 @@ export type CredentialOutcome =
     }
 
 /**
- * Values the caller collected before this pass ran, keyed by {@link CredentialItem.where}. A string
- * is tested and saved exactly as one typed at the prompt would be; `null` means the user was already
- * asked and declined, so it's reported instead of being asked for twice. The setup wizard fills this
- * from its own key steps — `kaja doctor` has nowhere to have asked, so it never passes one.
+ * Values the caller collected before this pass ran, keyed by {@link CredentialItem.where}. A string is tested and saved
+ * exactly as one typed at the prompt would be; `null` means the user was already asked and declined, so it's reported
+ * instead of being asked for twice. The setup wizard fills this from its own key steps — `kaja doctor` has nowhere to
+ * have asked, so it never passes one.
  */
 export type OfferedValues = Record<string, string | null>
 
@@ -65,7 +71,10 @@ function modelsByProvider(models: CliResolvedModel[]): Map<string, CliResolvedMo
   return byProvider
 }
 
-/** Every credential the current local config relies on: providers a configured model uses, the keyed abilities some persona uses, and the Telegram bot when a token is saved. */
+/**
+ * Every credential the current local config relies on: providers a configured model uses, the keyed abilities some
+ * persona uses, and the Telegram bot when a token is saved.
+ */
 export async function collectCredentials(): Promise<CredentialItem[]> {
   const creds = await secrets()
   const items: CredentialItem[] = []
@@ -179,9 +188,9 @@ function offerTitle(item: CredentialItem): string {
 type ProblemOutcome = Extract<CredentialOutcome, { reason: string }>
 
 /**
- * Tests each item and, when interactive, asks for anything missing or failing: the new value
- * is tested, then saved even when it fails (reported as such, to fix later). Calls `onOutcome`
- * as each item settles, so the doctor can print results as it goes.
+ * Tests each item and, when interactive, asks for anything missing or failing: the new value is tested, then saved even
+ * when it fails (reported as such, to fix later). Calls `onOutcome` as each item settles, so the doctor can print
+ * results as it goes.
  */
 export async function resolveCredentials(
   items: CredentialItem[],
@@ -250,7 +259,7 @@ async function testAndSave(item: CredentialItem, value: string): Promise<Credent
   return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
-/** One result line, e.g. "  ✔ github (ability): saved and working" or "  ✘ telegram bot: missing". */
+/** One result line, e.g. " ✔ github (ability): saved and working" or " ✘ telegram bot: missing". */
 export function outcomeLine(outcome: CredentialOutcome): string {
   const { label } = outcome.item
   switch (outcome.status) {
@@ -279,10 +288,10 @@ export function isUnresolved(outcome: CredentialOutcome): boolean {
 }
 
 /**
- * The keys-and-tokens pass, shared by `kaja doctor` and the setup wizard: tests every credential the
- * current config relies on and, in a terminal, asks for anything missing or failing (tested before
- * it's saved). Prints `header` only when there's actually something to check. Reads the config from
- * disk, so a caller that just wrote one must do so before calling this.
+ * The keys-and-tokens pass, shared by `kaja doctor` and the setup wizard: tests every credential the current config
+ * relies on and, in a terminal, asks for anything missing or failing (tested before it's saved). Prints `header` only
+ * when there's actually something to check. Reads the config from disk, so a caller that just wrote one must do so
+ * before calling this.
  *
  * `offered` carries values the caller has already collected — see {@link OfferedValues}.
  */
@@ -304,7 +313,7 @@ export async function runCredentialPass(
 
   const outcomes = await resolveCredentials(
     found,
-    { interactive: Boolean(process.stdin.isTTY), ask: askSecret },
+    { interactive: process.stdin.isTTY, ask: askSecret },
     outcome => print(outcomeLine(outcome)),
     offered
   )
@@ -315,9 +324,9 @@ export async function runCredentialPass(
 const SECRET_TABLE = /^\[(providers|abilities)\.(.+)\] api_key$/
 
 /**
- * The keys this pass left unset, as secrets.toml placeholders: an ability's (off, or keyless and working without
- * one), and a provider's that was asked for or refused. A provider that needs none (Ollama), or that couldn't be
- * reached, gets none.
+ * The keys this pass left unset, as secrets.toml placeholders: an ability's (off, or keyless and working without one),
+ * and a provider's that was asked for or refused. A provider that needs none (Ollama), or that couldn't be reached,
+ * gets none.
  */
 export function placeholdersFor(outcomes: CredentialOutcome[]): SecretPlaceholder[] {
   return outcomes.flatMap(outcome => {

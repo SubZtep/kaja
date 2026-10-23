@@ -15,7 +15,10 @@ const LoadSkillArgsSchema = z.object({
 })
 type LoadSkillArgs = z.output<typeof LoadSkillArgsSchema>
 
-/** The load_skill tool, carrying the skill catalog it serves (and a way to read a body) so the system prompt can list the same skills and inline the sticky ones. */
+/**
+ * The load_skill tool, carrying the skill catalog it serves (and a way to read a body) so the system prompt can list
+ * the same skills and inline the sticky ones.
+ */
 export type LoadSkillTool = Tool<LoadSkillArgs> & {
   skills: SkillSummary[]
   /** A skill's SKILL.md body, for a persona that keeps it in the system prompt. */

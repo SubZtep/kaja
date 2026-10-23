@@ -30,6 +30,7 @@ async function git(args: string[], cwd?: string): Promise<string> {
       cwd,
       stdout: "pipe",
       stderr: "pipe",
+      windowsHide: true,
       // Never hang on a credential prompt: a private or mistyped URL should fail, not wait for input.
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
     })
@@ -91,10 +92,10 @@ export async function checkGit(
 export const FETCH_STEPS = 3
 
 /**
- * Brings the cache up to date with `source` (cloning on first use, or when the URL changed)
- * and returns the fetched marketplace folder with the commit it came from. Only this touches the network: `kaja abilities`
- * and the throttled background pull at local startup (`auto-update.ts`). Calls `onStep` after each of its
- * {@link FETCH_STEPS} steps (git checked, downloaded, checked out), for a progress bar.
+ * Brings the cache up to date with `source` (cloning on first use, or when the URL changed) and returns the fetched
+ * marketplace folder with the commit it came from. Only this touches the network: `kaja abilities` and the throttled
+ * background pull at local startup (`auto-update.ts`). Calls `onStep` after each of its {@link FETCH_STEPS} steps (git
+ * checked, downloaded, checked out), for a progress bar.
  */
 export async function fetchMarketplace(
   source: { url: string; ref: string },

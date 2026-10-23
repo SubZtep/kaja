@@ -1,17 +1,17 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { createLocalSource } from "../lib/audio/audio"
 import { createStt, type Stt, type SttState } from "../lib/audio/stt"
+import { log } from "../lib/logger"
 
 /**
- * Dictation for the text input: while `listening`, spoken phrases are
- * transcribed (speaches realtime STT with server-side VAD) and delivered one
- * at a time through `onUtterance`. The mic capture and connection spin up
- * lazily on the first listen and are paused — not torn down — when listening
- * stops, so toggling back on is instant. Torn down for real on unmount.
+ * Dictation for the text input: while `listening`, spoken phrases are transcribed (speaches realtime STT with
+ * server-side VAD) and delivered one at a time through `onUtterance`. The mic capture and connection spin up lazily on
+ * the first listen and are paused — not torn down — when listening stops, so toggling back on is instant. Torn down for
+ * real on unmount.
  *
- * Returns the server's current {@link SttState} so the UI can show progress
- * (a slow model spends many seconds in "transcribing").
+ * Returns the server's current {@link SttState} so the UI can show progress (a slow model spends many seconds in
+ * "transcribing").
  */
 export function useDictation(
   listening: boolean,
@@ -20,10 +20,8 @@ export function useDictation(
 ): SttState {
   const [state, setState] = useState<SttState>("listening")
   const stt = useRef<Stt>(undefined)
-  const deliver = useRef(onUtterance)
-  deliver.current = onUtterance
+  const deliver = useEffectEvent(onUtterance)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `personaModels` picks the model when STT first starts; a change shouldn't pause or resume it
   useEffect(() => {
     if (!listening) {
       stt.current?.pause()
@@ -39,20 +37,25 @@ export function useDictation(
       source: createLocalSource(),
       onState: setState,
       personaModels
-    }).then(async instance => {
-      if (cancelled) {
-        instance.stop()
-        return
-      }
-      stt.current = instance
-      for await (const text of instance.utterances) deliver.current(text)
-      // The stream only ends when the stt stopped (server dropped the connection, or an error) — forget it so the next toggle starts fresh instead of resuming a dead instance.
-      if (stt.current === instance) stt.current = undefined
-      setState("listening")
     })
+      .then(async instance => {
+        if (cancelled) {
+          instance.stop()
+          return
+        }
+        stt.current = instance
+        for await (const text of instance.utterances) deliver(text)
+        // The stream only ends when the stt stopped (server dropped the connection, or an error) — forget it so the next toggle starts fresh instead of resuming a dead instance.
+        if (stt.current === instance) stt.current = undefined
+        setState("listening")
+      })
+      .catch(error => {
+        log.warn("dictation: couldn't start", { error })
+      })
     return () => {
       cancelled = true
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- one stt instance per toggle, not per persona models change
   }, [listening])
 
   useEffect(() => () => stt.current?.stop(), [])

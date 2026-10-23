@@ -5,8 +5,8 @@ export type KajaMode = "cloud" | "local"
 
 /**
  * Which backend a launch uses. Precedence: an explicit `--cloud`/`--local` flag, then settings.toml's
- * `preferences.mode` (written by the setup wizard), then the legacy guess for configs predating that
- * field — a usable chat model means local.
+ * `preferences.mode` (written by the setup wizard), then the legacy guess for configs predating that field — a usable
+ * chat model means local.
  */
 export async function resolveMode(flags: { local?: boolean; cloud?: boolean }): Promise<KajaMode> {
   if (flags.cloud) return "cloud"

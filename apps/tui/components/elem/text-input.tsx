@@ -1,11 +1,10 @@
 /**
- * Text field for Ink. Vendored from ink-text-input@6 (MIT) and extended with
- * multi-line navigation (↑/↓ with sticky column, Home/End per visual line),
- * Ctrl+←/→ word jumps, Shift+Enter newlines, mouse-sequence ignore, and a
- * soft-wrap display window so long drafts stay editable inside maxVisibleLines.
+ * Text field for Ink. Vendored from ink-text-input@6 (MIT) and extended with multi-line navigation (↑/↓ with sticky
+ * column, Home/End per visual line), Ctrl+←/→ word jumps, Shift+Enter newlines, mouse-sequence ignore, and a soft-wrap
+ * display window so long drafts stay editable inside maxVisibleLines.
  *
- * Multi-line paint is one <Text> with embedded \\n and chalk.inverse for the
- * cursor so every row shares the same origin (no sibling-Text skew).
+ * Multi-line paint is one <Text> with embedded \n and chalk.inverse for the cursor so every row shares the same origin
+ * (no sibling-Text skew).
  *
  * Ctrl+↑/↓ are left unhandled so the chat viewport can scroll.
  */
@@ -35,14 +34,13 @@ export type TextInputProps = {
   focus?: boolean
   showCursor?: boolean
   /**
-   * Rendering-only: paints the cursor inverse when true, plain when false —
-   * for a blink. Never gates movement/editing (unlike {@link showCursor}).
-   * Defaults to `showCursor` so callers that don't blink see no change.
+   * Rendering-only: paints the cursor inverse when true, plain when false — for a blink. Never gates movement/editing
+   * (unlike {@link showCursor}). Defaults to `showCursor` so callers that don't blink see no change.
    */
   cursorVisible?: boolean
   /**
-   * Blink the cursor internally at this interval (ms), so only this component re-renders per phase.
-   * It stays solid while the text or cursor moves. Overrides {@link cursorVisible}.
+   * Blink the cursor internally at this interval (ms), so only this component re-renders per phase. It stays solid
+   * while the text or cursor moves. Overrides {@link cursorVisible}.
    */
   blinkMs?: number
   /** With {@link blinkMs}: hide the cursor and stop the timer (e.g. window unfocused). */
@@ -52,18 +50,17 @@ export type TextInputProps = {
   columns?: number
   maxVisibleLines?: number
   /**
-   * First-line-only status mark (ASCII, fixed width). Continuation lines use
-   * `prefixCols` spaces so every row is the same length.
+   * First-line-only status mark (ASCII, fixed width). Continuation lines use `prefixCols` spaces so every row is the
+   * same length.
    */
   prefix?: string
   /** Column budget for prefix / hang-indent (must match prefix width). */
   prefixCols?: number
   /**
-   * Shell-style ↑/↓ prompt recall, consulted only where the cursor has no
-   * line to move to (see {@link historyDirection}). Returns the replacement
-   * text — which the parent must have applied to `value` itself — or null
-   * to leave the input alone. `onChange` is deliberately not called for
-   * recalls, so it stays a reliable "human edited" signal.
+   * Shell-style ↑/↓ prompt recall, consulted only where the cursor has no line to move to (see
+   * {@link historyDirection}). Returns the replacement text — which the parent must have applied to `value` itself — or
+   * null to leave the input alone. `onChange` is deliberately not called for recalls, so it stays a reliable "human
+   * edited" signal.
    */
   onHistory?: (dir: -1 | 1, current: string) => string | null
 }
@@ -72,19 +69,14 @@ export type TextEditState = {
   value: string
   cursorOffset: number
   cursorWidth: number
-  /**
-   * Sticky display column for ↑/↓. `null` means re-seed from the current
-   * position on the next vertical move.
-   */
+  /** Sticky display column for ↑/↓. `null` means re-seed from the current position on the next vertical move. */
   preferredColumn: number | null
 }
 
 /**
- * Whether an ↑/↓ press should recall history instead of moving the cursor:
- * exactly when {@link moveVertical} would refuse the move — ↑ with the
- * cursor already on the first visual line (`-1`), ↓ on the last (`1`).
- * A single-line or empty input is both, like a shell prompt. Ctrl/Meta
- * combos stay null — the chat viewport owns those for scrolling.
+ * Whether an ↑/↓ press should recall history instead of moving the cursor: exactly when {@link moveVertical} would
+ * refuse the move — ↑ with the cursor already on the first visual line (`-1`), ↓ on the last (`1`). A single-line or
+ * empty input is both, like a shell prompt. Ctrl/Meta combos stay null — the chat viewport owns those for scrolling.
  */
 export function historyDirection(
   value: string,
@@ -281,10 +273,9 @@ export function applyTextEdit(
 }
 
 /**
- * Where the cursor sits inside the component, in cells relative to its own
- * top-left. `lines` is the soft-wrapped layout (null for the single-line
- * renders); `windowStart` is the first visible line, so a scrolled draft
- * reports the on-screen row rather than the absolute one.
+ * Where the cursor sits inside the component, in cells relative to its own top-left. `lines` is the soft-wrapped layout
+ * (null for the single-line renders); `windowStart` is the first visible line, so a scrolled draft reports the
+ * on-screen row rather than the absolute one.
  */
 export function cursorCellOffset(opts: {
   lines: VisualLine[] | null
@@ -425,7 +416,10 @@ function renderStatic(display: string, placeholder: string, firstLead: string) {
   )
 }
 
-/** The wrap width, visible-line cap and continuation indent the props ask for; a missing or non-positive width or cap means none. */
+/**
+ * The wrap width, visible-line cap and continuation indent the props ask for; a missing or non-positive width or cap
+ * means none.
+ */
 function layoutOf(columns: number | undefined, maxVisibleLines: number | undefined, prefixCols: number) {
   return {
     contLead: " ".repeat(Math.max(0, prefixCols)),

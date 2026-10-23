@@ -23,7 +23,7 @@ beforeAll(() => {
 })
 
 afterAll(async () => {
-  for (const proxy of proxies) proxy.close()
+  for (const running of proxies) running.close()
   await upstream.stop(true)
 })
 
@@ -199,7 +199,7 @@ describe("egress proxy with an upstream proxy (WEB_PROXY)", () => {
       await proxy({ names: { "site.test": ["93.184.215.14"] }, upstream: `http://127.0.0.1:${recorder.port}` })
     )
     for (const scheme of ["http", "https"]) {
-      const error = await send(new Request(`${scheme}://site.test/search?key=secret`)).catch((error: Error) => error)
+      const error = await send(new Request(`${scheme}://site.test/search?key=secret`)).catch(error => error as Error)
       expect((error as Error).message).toBe("Couldn't connect to site.test: WEB_PROXY answered HTTP/1.1 403 Forbidden")
     }
     const closed = createServer()

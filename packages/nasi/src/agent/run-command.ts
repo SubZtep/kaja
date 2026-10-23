@@ -11,10 +11,9 @@ export type RunShellCommandOptions = {
 }
 
 /**
- * Runs a shell command and returns a plain-text summary (exit code plus any stdout/stderr).
- * Safe commands run this with no prompt; anything else only after the human approves.
- * Each stream is capped and the child is killed on timeout or when a stream passes the cap,
- * so a safe `cat` of an endless file cannot fill memory.
+ * Runs a shell command and returns a plain-text summary (exit code plus any stdout/stderr). Safe commands run this with
+ * no prompt; anything else only after the human approves. Each stream is capped and the child is killed on timeout or
+ * when a stream passes the cap, so a safe `cat` of an endless file cannot fill memory.
  */
 export async function runShellCommand(command: string, opts: RunShellCommandOptions = {}): Promise<string> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -23,7 +22,8 @@ export async function runShellCommand(command: string, opts: RunShellCommandOpti
   const proc = Bun.spawn(["sh", "-c", command], {
     stdout: "pipe",
     stderr: "pipe",
-    detached: true
+    detached: true,
+    windowsHide: true
   })
   const stop = () => {
     try {

@@ -19,7 +19,10 @@ function acquire(key: string): { wait: Promise<void>; release: () => void } {
   }
 }
 
-/** Serializes calls sharing the same key via an in-process promise chain — not distributed, fine for a single API instance. */
+/**
+ * Serializes calls sharing the same key via an in-process promise chain — not distributed, fine for a single API
+ * instance.
+ */
 export async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const { wait, release } = acquire(key)
   await wait
@@ -30,7 +33,10 @@ export async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T>
   }
 }
 
-/** Generator variant of {@link withLock}: holds the lock until the wrapped generator is fully drained (returned, thrown, or abandoned via `.return()`), not just until it's created. */
+/**
+ * Generator variant of {@link withLock}: holds the lock until the wrapped generator is fully drained (returned, thrown,
+ * or abandoned via `.return()`), not just until it's created.
+ */
 export async function* withLockGenerator<T, TReturn, TNext>(
   key: string,
   fn: () => AsyncGenerator<T, TReturn, TNext>

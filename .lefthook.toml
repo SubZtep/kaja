@@ -1,10 +1,8 @@
 [commit-msg]
-  [commit-msg.commands]
-    [commit-msg.commands.commitlint]
-    run = "bun commitlint --edit {1}"
+  [[commit-msg.jobs]]
+  run = "bun commitlint --edit {1}"
 
 
-# Generators run first and stage their own outputs (stage_fixed only re-adds staged files matching the glob), then lint and typecheck see the regenerated tree
 [pre-commit]
 piped = true
 
@@ -26,7 +24,6 @@ piped = true
       ]
 
 
-      # One job for both env generators: run in parallel, their two `git add`s raced for .git/index.lock
       [[pre-commit.jobs.group.jobs]]
       run  = "bun generate:env && bun generate:env-types && git add apps/api/.env.example apps/web/.env.example apps/sandbox/.env.example apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts apps/sandbox/src/env.d.ts"
       glob = [
@@ -46,7 +43,6 @@ piped = true
       ]
 
 
-      # Other languages follow en-GB: new or changed English becomes a lorem placeholder until someone translates it
       [[pre-commit.jobs.group.jobs]]
       run  = "bun sync:locales --stage"
       glob = [
@@ -75,23 +71,26 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      # Safe fixes only: an unsafe fix can change behaviour, so it waits for a manual `bun lint:fix` and a look at the diff
-      run         = "bun lint:fix:safe"
+      run         = "bun lint --fix --staged && bun fmt --staged"
+      stage_fixed = true
+
+
+      [[pre-commit.jobs.group.jobs]]
+      run         = "tombi format {staged_files} && tombi lint --error-on-warnings {staged_files}"
+      glob        = "*.toml"
       stage_fixed = true
 
 
       [[pre-commit.jobs.group.jobs]]
       run  = "bun typecheck"
-      glob = "*.{ts,tsx}"
+      glob = "{*.{ts,tsx},**/tsconfig.json}"
 
 
 [post-merge]
-  [post-merge.commands]
-    [post-merge.commands.lefthook-install]
-    run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || lefthook install"
+  [[post-merge.jobs]]
+  run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || lefthook install"
 
 
-# Checks run first; the locales job last, since it may commit translations and push them itself
 [pre-push]
 piped = true
 
@@ -105,12 +104,24 @@ piped = true
 
 
       [[pre-push.jobs.group.jobs]]
-      run = "bun lint"
+      run = "bun lint --max-warnings=0"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun fmt --check"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "tombi format --check && tombi lint --error-on-warnings"
 
 
       [[pre-push.jobs.group.jobs]]
       run  = "bun typecheck"
-      glob = "*.{ts,tsx}"
+      glob = "{*.{ts,tsx},**/tsconfig.json}"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun check:env && bun check:models && bun check:locales"
 
 
       [[pre-push.jobs.group.jobs]]

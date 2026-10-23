@@ -1,6 +1,6 @@
 import { createHmac, hkdfSync } from "node:crypto"
 import type { FetchLike, McpSandbox } from "@kaja/nasi"
-import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
+import { type Sandbox, SANDBOX_FULL_HEADER } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
 import { reportError } from "../../core/report"
@@ -86,10 +86,10 @@ export type SandboxPick = { tunnel: SandboxTunnel; borrowed: boolean }
 export type SandboxTrust = "any" | "trusted" | "official"
 
 /**
- * The sandbox a user's turn runs a stdio ability in (`ability`), or sends a tool request out through (`ability`
- * null): the last one while it's still usable, else their own (the least full), else, when they allow it and `trust`
- * is `any`, one another user shares (the nearest, then the least full), else the official box. `skip` leaves out
- * sandboxes that just answered they're full.
+ * The sandbox a user's turn runs a stdio ability in (`ability`), or sends a tool request out through (`ability` null):
+ * the last one while it's still usable, else their own (the least full), else, when they allow it and `trust` is `any`,
+ * one another user shares (the nearest, then the least full), else the official box. `skip` leaves out sandboxes that
+ * just answered they're full.
  */
 export async function pickSandbox(
   userId: string,
@@ -147,7 +147,10 @@ export type SandboxKeys = (ability: string) => AbilityKeyValue | undefined
 
 const TRUST_ORDER: SandboxTrust[] = ["any", "trusted", "official"]
 
-/** Where a call carrying `key` may go: anywhere without one, the user's own or the official sandbox with their own, only the official one with a server-wide key (an operator could log it). */
+/**
+ * Where a call carrying `key` may go: anywhere without one, the user's own or the official sandbox with their own, only
+ * the official one with a server-wide key (an operator could log it).
+ */
 export function keyTrust(key: AbilityKeyValue | undefined): SandboxTrust {
   if (!key) return "any"
   return key.own ? "trusted" : "official"
@@ -159,8 +162,8 @@ function strictest(a: SandboxTrust, b: SandboxTrust): SandboxTrust {
 
 /**
  * Whether an ability must stay on the user's own or the official sandbox (the manifest's trustedSandbox), looked up
- * once. If that can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on
- * a stranger's machine.
+ * once. If that can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on a
+ * stranger's machine.
  */
 function trustedAbilities(userId: string): (ability: string) => Promise<boolean> {
   let trusted: Promise<Set<string> | undefined> | undefined
@@ -180,8 +183,8 @@ function trustedAbilities(userId: string): (ability: string) => Promise<boolean>
 /**
  * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
  * full), and the turn's later ones go there too. A keyed server gets its key with every request, so it only runs where
- * that key may go ({@link keyTrust}). Closing it releases the user's servers on sandboxes they borrowed, so nothing
- * of the turn (a browser's logins) stays on someone else's machine.
+ * that key may go ({@link keyTrust}). Closing it releases the user's servers on sandboxes they borrowed, so nothing of
+ * the turn (a browser's logins) stays on someone else's machine.
  */
 export function mcpSandboxFor(userId: string, keys: SandboxKeys = () => undefined): McpSandbox {
   const picked = new Map<string, Promise<SandboxPick | undefined>>()
@@ -238,10 +241,11 @@ export class NoSandboxError extends Error {
 }
 
 /**
- * A turn's egress (nasi's `egress`): every tool request goes out through a sandbox, never from the API. `fetch_url`
- * (no ability) may use any sandbox the user may; an ability's requests go where the key they carry may go
+ * A turn's egress (nasi's `egress`): every tool request goes out through a sandbox, never from the API. `fetch_url` (no
+ * ability) may use any sandbox the user may; an ability's requests go where the key they carry may go
  * ({@link keyTrust}, by `keys`; without `keys`, only the official box), and a trustedSandbox one never to a borrowed
- * sandbox. Each trust level keeps the sandbox it first picked for the turn, picking again only when that one disconnects.
+ * sandbox. Each trust level keeps the sandbox it first picked for the turn, picking again only when that one
+ * disconnects.
  */
 export function egressFor(userId: string, keys?: SandboxKeys): (ability?: string) => FetchLike {
   const picked = new Map<SandboxTrust, Promise<SandboxPick | undefined>>()

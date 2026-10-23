@@ -23,9 +23,9 @@ const SERVICE_OWNER = "service"
 type SealedRow = { name: string; ciphertext: Buffer; iv: Buffer; tag: Buffer }
 
 /**
- * The server-wide secrets admins manage (ability API keys every user shares) in `service_secret`, AES-256-GCM
- * encrypted at rest. Values are decrypted only for turns and key checks; nothing here ever returns one to a client.
- * Without a key (USER_SECRET_KEY unset) nothing can be written, and reads find nothing.
+ * The server-wide secrets admins manage (ability API keys every user shares) in `service_secret`, AES-256-GCM encrypted
+ * at rest. Values are decrypted only for turns and key checks; nothing here ever returns one to a client. Without a key
+ * (USER_SECRET_KEY unset) nothing can be written, and reads find nothing.
  */
 export class SecretService {
   readonly #db: Pool
@@ -60,7 +60,10 @@ export class SecretService {
     )
   }
 
-  /** The server-wide secrets whose name starts with `prefix`, decrypted; ones that don't decrypt are left out with a warning. */
+  /**
+   * The server-wide secrets whose name starts with `prefix`, decrypted; ones that don't decrypt are left out with a
+   * warning.
+   */
   async getAllService(prefix: string): Promise<Map<string, string>> {
     const secrets = new Map<string, string>()
     if (!this.#key) return secrets
@@ -76,7 +79,10 @@ export class SecretService {
     return secrets
   }
 
-  /** Names (starting with `prefix`) that have a server-wide secret, without decrypting anything; none while secrets are off. */
+  /**
+   * Names (starting with `prefix`) that have a server-wide secret, without decrypting anything; none while secrets are
+   * off.
+   */
   async serviceNames(prefix: string): Promise<Set<string>> {
     if (!this.#key) return new Set()
     const { rows } = await this.#db.query("SELECT name FROM service_secret WHERE starts_with(name, $1)", [prefix])

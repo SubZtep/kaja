@@ -21,10 +21,9 @@ const eventSound = {
 } as const
 
 /**
- * Plays the matching sound for each newly arrived {@link TimelineEvent},
- * mirroring the CLI loop in agent.ts. The human's own messages are silent.
- * Events arriving while muted are still marked as played, so unmuting
- * doesn't replay the backlog.
+ * Plays the matching sound for each newly arrived {@link TimelineEvent}, mirroring the CLI loop in agent.ts. The human's
+ * own messages are silent. Events arriving while muted are still marked as played, so unmuting doesn't replay the
+ * backlog.
  */
 export function useSound(events: TimelineEvent[], enabled = true) {
   const played = useRef(0)

@@ -27,10 +27,9 @@ export const positiveInt = z.coerce.number().int().positive()
 export const url = trimmed.pipe(z.url())
 
 /**
- * Parses `source` (typically `process.env`) against `schema`, filtering out empty-string
- * values first so `FOO=` in a real `.env` file doesn't override a schema default. Returns the
- * Zod `safeParse` result unchanged — callers decide how to report failures (e.g. print issues
- * and exit) since this package stays free of process-level I/O.
+ * Parses `source` (typically `process.env`) against `schema`, filtering out empty-string values first so `FOO=` in a
+ * real `.env` file doesn't override a schema default. Returns the Zod `safeParse` result unchanged — callers decide how
+ * to report failures (e.g. print issues and exit) since this package stays free of process-level I/O.
  */
 export function parseEnv<Schema extends z.ZodType>(
   schema: Schema,

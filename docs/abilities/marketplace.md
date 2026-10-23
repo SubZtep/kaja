@@ -13,13 +13,13 @@ Abilities come from the **marketplace**, a curated
 [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace) folder in the Kaja repo, and in local
 mode also from files you write yourself.
 
-| Kind | What it gives the agent | Read more |
-| --- | --- | --- |
-| persona | a character with its own instructions, model and sampling | [Personas](/abilities/personas) |
-| skill | instructions it loads when a request matches | [Skills](/abilities/skills) |
-| HTTP tool | a web API described so the model can call it | [HTTP tools](/abilities/tools#http-tools) |
-| MCP server | the tools of a Model Context Protocol server | [MCP servers](/abilities/mcp) |
-| dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
+| Kind       | What it gives the agent                                   | Read more                                       |
+| ---------- | --------------------------------------------------------- | ----------------------------------------------- |
+| persona    | a character with its own instructions, model and sampling | [Personas](/abilities/personas)                 |
+| skill      | instructions it loads when a request matches              | [Skills](/abilities/skills)                     |
+| HTTP tool  | a web API described so the model can call it              | [HTTP tools](/abilities/tools#http-tools)       |
+| MCP server | the tools of a Model Context Protocol server              | [MCP servers](/abilities/mcp)                   |
+| dataset    | questions a persona collects answers to                   | [Memory & datasets](/abilities/memory#datasets) |
 
 Every ability is on, locally and in the cloud, and each [persona](/abilities/personas#abilities) decides
 which of them a chat uses. There's nothing to turn on; an ability that needs a key waits for yours.
@@ -79,10 +79,10 @@ running conversation from its next message.
 The cloud has no shell of its own and serves many people, so it offers less (cloud chat in the terminal can
 still use your computer for the rest, see [Cloud or local](/getting-started/modes#your-computer-in-cloud-mode)):
 
-| Kind | Not offered in the cloud when |
-| --- | --- |
-| skill | it has a `scripts/` folder |
-| HTTP tool | its `baseUrl` isn't a public address |
+| Kind       | Not offered in the cloud when                                                                                         |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| skill      | it has a `scripts/` folder                                                                                            |
+| HTTP tool  | its `baseUrl` isn't a public address                                                                                  |
 | MCP server | it has no `tools` allowlist, or isn't on a public host (`stdio` ones [run in a sandbox](/abilities/mcp#in-the-cloud)) |
 
 **Keys.** Kaja provides them, so there's nothing to set up: an admin saves each ability's key once, and

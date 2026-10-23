@@ -17,7 +17,10 @@ import { log } from "../logger"
 import { getBackupDir, getPaths } from "../paths"
 import { loadPersonas } from "../personas/personas"
 
-/** Builtins a cloud turn may run here: files always, the shell only when settings.toml's `[tools.hosts] shell = "computer"`. */
+/**
+ * Builtins a cloud turn may run here: files always, the shell only when settings.toml's `[tools.hosts] shell =
+ * "computer"`.
+ */
 const FILE_BUILTINS = ["read_file", "list_files", "view_image"]
 const SHELL = "run_command"
 
@@ -31,7 +34,10 @@ export type Computer = {
   tools: NasiClientTool[]
   skills: NasiClientSkill[]
   personas: Persona[]
-  /** Runs one call here, asking first where `--local` would; `personaId` (the turn's active persona) picks a roots-taking server's folders. */
+  /**
+   * Runs one call here, asking first where `--local` would; `personaId` (the turn's active persona) picks a
+   * roots-taking server's folders.
+   */
   run: (call: NasiClientCall, approve: Approve, personaId?: string) => Promise<NasiToolResult>
   close: () => Promise<void>
 }

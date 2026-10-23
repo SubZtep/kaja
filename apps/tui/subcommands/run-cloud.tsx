@@ -136,18 +136,17 @@ export async function resolveToken(apiUrl: string): Promise<string> {
   } catch (error) {
     if (error instanceof SecretsAccessError) {
       const reason = error.cause instanceof Error ? error.cause.message : String(error.cause)
-      throw new Error(`${t("cli.secretsUnavailable")} (${reason})`)
+      throw new Error(`${t("cli.secretsUnavailable")} (${reason})`, { cause: error })
     }
     throw error
   }
 }
 
 /**
- * Cloud path: reached via `--cloud`, or by default when no local config
- * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials, or device login), then renders App in cloud mode, against
- * cloud Nasi over SSE (`<apiUrl>/nasi/*`). No local agent loop or sqlite; this
- * computer's own tools (lib/cloud/computer.ts) run the calls cloud turns hand it.
+ * Cloud path: reached via `--cloud`, or by default when no local config exists yet (see cli.ts's useLocal check).
+ * Resolves an API token (stored credentials, or device login), then renders App in cloud mode, against cloud Nasi over
+ * SSE (`<apiUrl>/nasi/*`). No local agent loop or sqlite; this computer's own tools (lib/cloud/computer.ts) run the
+ * calls cloud turns hand it.
  */
 export async function runCloudSubcommand() {
   const apiUrl = getApiBaseUrl()

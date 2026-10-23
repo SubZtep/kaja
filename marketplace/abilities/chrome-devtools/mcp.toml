@@ -34,7 +34,7 @@ tools          = [
   "fill",
   "press_key",
   "list_console_messages",
-  "list_network_requests",
+  "list_network_requests"
 ]
 # The cloud can't hand back a file saved in its sandbox, so it hides filePath: screenshots come back inline instead.
 localOnlyArgs  = [

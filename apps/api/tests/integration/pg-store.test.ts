@@ -64,7 +64,10 @@ describe("postgres store", () => {
     const ids = await Promise.all(
       [null, "telegram:1", "widget:k:v"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
     )
-    const { rows } = await pool.query("SELECT channel FROM nasi_session WHERE id = ANY($1) ORDER BY channel", [ids])
+    const { rows } = await pool.query<{ channel: string }>(
+      "SELECT channel FROM nasi_session WHERE id = ANY($1) ORDER BY channel",
+      [ids]
+    )
     expect(rows.map(r => r.channel)).toEqual(["telegram", "web", "widget"])
   })
 

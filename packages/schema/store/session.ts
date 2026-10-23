@@ -11,7 +11,10 @@ const ToolCallSchema = z.object({
   function: z.object({ name: z.string(), arguments: z.string() })
 })
 
-/** One message of a stored conversation, in the OpenAI chat format the agent sends: only the shapes Kaja writes (text and image parts, function calls). */
+/**
+ * One message of a stored conversation, in the OpenAI chat format the agent sends: only the shapes Kaja writes (text
+ * and image parts, function calls).
+ */
 export const SessionMessageSchema = z.discriminatedUnion("role", [
   z.object({ role: z.literal("system"), content: z.union([z.string(), z.array(TextPartSchema)]) }),
   z.object({
@@ -49,7 +52,10 @@ export const StoredConversationSchema = z.object({
   toolSummaries: z.record(z.string(), z.string()).optional()
 })
 
-/** A persisted conversation: `session` is the replayable OpenAI-format history, `events` is the rendered timeline for exact resume repaint. */
+/**
+ * A persisted conversation: `session` is the replayable OpenAI-format history, `events` is the rendered timeline for
+ * exact resume repaint.
+ */
 export const PersistedSessionSchema = z.object({
   id: z.uuidv7(),
   createdAt: z.string(),

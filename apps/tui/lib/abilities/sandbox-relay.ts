@@ -6,7 +6,10 @@ import { getApiBaseUrl } from "../config/api-url"
 import { readConfigLoose } from "../config/config"
 import { log } from "../logger"
 
-/** Each ability's host from settings.toml's `[tools.hosts]`; one that isn't listed follows the mode. Tolerant: none before setup, or with a broken file. */
+/**
+ * Each ability's host from settings.toml's `[tools.hosts]`; one that isn't listed follows the mode. Tolerant: none
+ * before setup, or with a broken file.
+ */
 export async function toolHosts(): Promise<Record<string, ToolHost>> {
   return (await readConfigLoose()).tools?.hosts ?? {}
 }

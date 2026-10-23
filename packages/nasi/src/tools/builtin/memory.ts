@@ -12,11 +12,13 @@ const IMPORTANCE_WEIGHT: Record<MemoryImportance, number> = {
 /**
  * Writes or updates a durable fact, keyed for idempotent upserts.
  *
- * @param args.key - Stable identifier, e.g. "user:communication-style". Calling again with the same key overwrites in place instead of duplicating.
+ * @param args.key - Stable identifier, e.g. "user:communication-style". Calling again with the same key overwrites in
+ *   place instead of duplicating.
  * @param args.content - The fact itself.
  * @param args.importance - How much this should weigh in recall ranking.
  * @param args.tags - Optional labels to help future recall_memory queries match.
- * @param args.sticky - When true, this note is injected into every future session's system prompt instead of waiting for a recall_memory query.
+ * @param args.sticky - When true, this note is injected into every future session's system prompt instead of waiting
+ *   for a recall_memory query.
  */
 export const rememberNoteTool = tool({
   name: REMEMBER_NOTE_TOOL,
@@ -58,10 +60,10 @@ export const rememberNoteTool = tool({
 })
 
 /**
- * Searches stored notes by keyword, ranked by importance, with optional
- * metadata filters.
+ * Searches stored notes by keyword, ranked by importance, with optional metadata filters.
  *
- * @param args.query - Search terms, tokenized and matched against each note's content, tags, and key. May be empty when a filter is given.
+ * @param args.query - Search terms, tokenized and matched against each note's content, tags, and key. May be empty when
+ *   a filter is given.
  * @param args.limit - Max notes to return (default 5).
  * @param args.tags - Only notes carrying at least one of these tags.
  * @param args.stickyOnly - Only sticky notes.

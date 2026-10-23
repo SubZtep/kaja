@@ -1,12 +1,12 @@
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import type { ToolContext } from "../../agent/tools"
 import { fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /**
- * Reranks a list of documents by relevance to a query, using the model
- * configured at models.rerank (resolved through models.toml).
+ * Reranks a list of documents by relevance to a query, using the model configured at models.rerank (resolved through
+ * models.toml).
  *
  * @param args.query - The search query to rank documents against.
  * @param args.documents - The documents to rank, most relevant first in the result.

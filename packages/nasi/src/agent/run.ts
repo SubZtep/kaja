@@ -16,9 +16,9 @@ import {
   type CallStat,
   type ClientCall,
   RUN_COMMAND_TOOL,
+  seesImages,
   type Session,
-  SWITCH_PERSONA_TOOL,
-  seesImages
+  SWITCH_PERSONA_TOOL
 } from "./agent"
 import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
@@ -127,7 +127,10 @@ function toolCallFailed(
   record(call.id, { status: "error" })
 }
 
-/** A call's images as the turn's: an event and a user message each, so the session keeps them; the ones that couldn't be kept are noted in the call's text. */
+/**
+ * A call's images as the turn's: an event and a user message each, so the session keeps them; the ones that couldn't be
+ * kept are noted in the call's text.
+ */
 function* yieldStoredImages(
   stored: Awaited<ReturnType<typeof storeImage>>[],
   alt: string,
@@ -257,8 +260,7 @@ async function* streamRound(
     for await (const chunk of stream) {
       noteChunk(meta, chunk)
       const delta = chunk.choices[0]?.delta as
-        | { reasoning_content?: string; reasoning?: string; content?: string }
-        | undefined
+        { reasoning_content?: string; reasoning?: string; content?: string } | undefined
       const reasoning = delta?.reasoning_content ?? delta?.reasoning
       if (reasoning) {
         thinking += reasoning
@@ -524,7 +526,10 @@ function holdApproval(
   return held
 }
 
-/** The approval summary when `tool` wants the human to confirm this call first, else undefined. A tool the user allowed (always, or for this session: `allowLists`) never asks. */
+/**
+ * The approval summary when `tool` wants the human to confirm this call first, else undefined. A tool the user allowed
+ * (always, or for this session: `allowLists`) never asks.
+ */
 function approvalSummaryFor(
   tool: Tool | undefined,
   call: FunctionToolCall,
@@ -547,7 +552,10 @@ function stripLeakedToolTags(content: string): string {
   return result
 }
 
-/** Shown when the model still has nothing to say after exhausting empty-round retries — the app must never surface a blank reply. */
+/**
+ * Shown when the model still has nothing to say after exhausting empty-round retries — the app must never surface a
+ * blank reply.
+ */
 const STUCK_FALLBACK_MESSAGE =
   "I'm drawing a blank on that one — want to give me a hint, or should we start a new round?"
 
@@ -557,23 +565,28 @@ function finalEventFor(message: StreamedRound["message"]): AgentEvent {
   return content.trimEnd().endsWith("?") ? { type: "ask_user", question: content } : { type: "final", content }
 }
 
-/** True when a round produced neither a tool call nor any visible text — a dead end some models hit under pressure (e.g. near a persona's turn budget). */
+/**
+ * True when a round produced neither a tool call nor any visible text — a dead end some models hit under pressure (e.g.
+ * near a persona's turn budget).
+ */
 function isEmptyRound(message: StreamedRound["message"]): boolean {
   if (message.tool_calls?.length) return false
   const content = typeof message.content === "string" ? stripLeakedToolTags(message.content) : ""
   return content.trim().length === 0
 }
 
-/** Stops the run after this many rounds in a row where every tool call failed, so a model can't retry a broken tool forever. */
+/**
+ * Stops the run after this many rounds in a row where every tool call failed, so a model can't retry a broken tool
+ * forever.
+ */
 const MAX_FAILING_TOOL_ROUNDS = 3
 
 /** Retries an empty round this many times before giving up and yielding it as-is. */
 const MAX_EMPTY_ROUND_RETRIES = 5
 
 /**
- * The nudge pushed after a round came back with nothing. Escalates to a blunt
- * forced guess on the last attempt, since "ask or guess" alone isn't decisive
- * enough for a model that's genuinely stuck.
+ * The nudge pushed after a round came back with nothing. Escalates to a blunt forced guess on the last attempt, since
+ * "ask or guess" alone isn't decisive enough for a model that's genuinely stuck.
  */
 function emptyRoundNudge(retries: number): string {
   return retries < MAX_EMPTY_ROUND_RETRIES
@@ -678,7 +691,10 @@ async function ensureContextWindow(agent: Agent): Promise<void> {
   agent.contextWindow = (await resolveContextWindow(entry)).tokens
 }
 
-/** Compacts the session before a round when its estimate passes {@link Agent.compactAt} of the window, or always when `force`d. */
+/**
+ * Compacts the session before a round when its estimate passes {@link Agent.compactAt} of the window, or always when
+ * `force`d.
+ */
 async function* compactIfNeeded(
   agent: Agent,
   session: Session,
@@ -713,7 +729,7 @@ async function* streamRoundFitting(
   async function* sendable(): AsyncGenerator<AgentEvent, ChatCompletionMessageParam[], void> {
     yield* described(await applyDescriptions(session, !sees))
     const messages = contextMessages(session)
-    return sees ? await resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
+    return sees ? resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
   }
   try {
     return yield* streamRound(agent, yield* sendable(), definitions)
@@ -729,7 +745,10 @@ async function* streamRoundFitting(
   }
 }
 
-/** Compacts the session now (`/compact`), whatever its size, keeping only the latest turn; `focus` steers what the summary keeps. Undefined when there is nothing to summarise yet. */
+/**
+ * Compacts the session now (`/compact`), whatever its size, keeping only the latest turn; `focus` steers what the
+ * summary keeps. Undefined when there is nothing to summarise yet.
+ */
 export async function compact(agent: Agent, session: Session, focus?: string) {
   await ensureContextWindow(agent)
   const definitions = personaTools(agent).map(t => t.definition)
@@ -759,11 +778,10 @@ function countFailingRounds(session: Session, toolCalls: { id: string }[], previ
 }
 
 /**
- * Runs an {@link Agent} on a prompt to completion, looping through
- * tool calls until the model asks the user a question or returns a final message.
- * `images` (data URLs or bytes, normalised here) go to the model with the prompt, e.g. a photo sent to a bot or what an
- * approved tool returned. Without a prompt it carries on from
- * the session as it is, e.g. after the client's tool results were added (see `answerClientCalls`).
+ * Runs an {@link Agent} on a prompt to completion, looping through tool calls until the model asks the user a question
+ * or returns a final message. `images` (data URLs or bytes, normalised here) go to the model with the prompt, e.g. a
+ * photo sent to a bot or what an approved tool returned. Without a prompt it carries on from the session as it is, e.g.
+ * after the client's tool results were added (see `answerClientCalls`).
  */
 export async function* run(
   agent: Agent,
@@ -858,7 +876,7 @@ async function* runTurn(
       {
         session,
         record: (callId, stat) => recordCall(session, callId, stat),
-        onModelCall: usage => recordModelCall(session, { kind: "summarize", ...usage })
+        onModelCall: stats => recordModelCall(session, { kind: "summarize", ...stats })
       }
     )
 

@@ -3,10 +3,16 @@ import type { KajaPreferences } from "@kaja/schema/config"
 /** Whether the terminal's background is dark or light. */
 export type Brightness = "dark" | "light"
 
-/** A resolved theme: `auto` has been turned into dark or light before the UI renders; `terminal` paints with the terminal's own scheme. */
+/**
+ * A resolved theme: `auto` has been turned into dark or light before the UI renders; `terminal` paints with the
+ * terminal's own scheme.
+ */
 export type ThemeName = Brightness | "terminal"
 
-/** The terminal's colour scheme as `#rrggbb`: what it answered for its foreground, background and ANSI colours 0–15 (an unanswered one is missing). */
+/**
+ * The terminal's colour scheme as `#rrggbb`: what it answered for its foreground, background and ANSI colours 0–15 (an
+ * unanswered one is missing).
+ */
 export type TerminalColours = { foreground?: string; background?: string; ansi: (string | undefined)[] }
 
 // OSC 10/11 ask for the foreground and background colour, OSC 4 for each of the 16 ANSI colours; DA1 (CSI c) is
@@ -66,7 +72,10 @@ export function coloursFromReply(reply: string): TerminalColours | null {
   return found ? colours : null
 }
 
-/** Light or dark from `COLORFGBG` (`fg;bg` or `fg;default;bg`, set by rxvt, Konsole, iTerm2, …); null if unset or unclear. */
+/**
+ * Light or dark from `COLORFGBG` (`fg;bg` or `fg;default;bg`, set by rxvt, Konsole, iTerm2, …); null if unset or
+ * unclear.
+ */
 export function brightnessFromColorFgBg(value: string | undefined): Brightness | null {
   const bg = Number.parseInt(value?.split(";").at(-1) ?? "", 10)
   if (Number.isNaN(bg)) return null
@@ -119,7 +128,10 @@ export async function resolveTheme(preference: KajaPreferences["theme"]): Promis
   return setConsoleTheme(fixed ?? schemeBrightness)
 }
 
-/** {@link resolveTheme} for settings.toml's preference, read leniently (missing or broken means auto), for commands that print outside the chat screen. Call before Ink renders. */
+/**
+ * {@link resolveTheme} for settings.toml's preference, read leniently (missing or broken means auto), for commands that
+ * print outside the chat screen. Call before Ink renders.
+ */
 export async function resolveConsoleTheme(): Promise<ThemeName> {
   const { readConfigLoose } = await import("./config/config")
   return resolveTheme((await readConfigLoose()).preferences?.theme)
@@ -145,13 +157,19 @@ export function terminalBrightness(): Brightness {
   return schemeBrightness
 }
 
-/** Sets the theme for output printed outside the chat screen (doctor, abilities, sign-in); {@link resolveTheme} sets it too. */
+/**
+ * Sets the theme for output printed outside the chat screen (doctor, abilities, sign-in); {@link resolveTheme} sets it
+ * too.
+ */
 export function setConsoleTheme(theme: ThemeName): ThemeName {
   consoleThemeName = theme
   return theme
 }
 
-/** The theme for output printed outside the chat screen; undefined until {@link resolveTheme} or {@link setConsoleTheme} ran. */
+/**
+ * The theme for output printed outside the chat screen; undefined until {@link resolveTheme} or {@link setConsoleTheme}
+ * ran.
+ */
 export function consoleTheme(): ThemeName | undefined {
   return consoleThemeName
 }

@@ -1,7 +1,10 @@
 import * as Sentry from "@sentry/bun"
 import pkg from "../package.json" with { type: "json" }
 
-/** Starts Sentry in production for the sandbox's own failures only: no tracing, and no request headers (they carry the user's token). */
+/**
+ * Starts Sentry in production for the sandbox's own failures only: no tracing, and no request headers (they carry the
+ * user's token).
+ */
 export function initReporting(env: { NODE_ENV?: string }) {
   if (env.NODE_ENV !== "production") return
   Sentry.init({

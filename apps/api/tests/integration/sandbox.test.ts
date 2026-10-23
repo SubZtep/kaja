@@ -44,7 +44,7 @@ const initialize: RequestInit = {
 
 const as = (token: string) => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
 const newKey = async (token: string): Promise<string> =>
-  (await (await app.request("/sandbox/key", { method: "POST", headers: as(token) })).json()).key
+  ((await (await app.request("/sandbox/key", { method: "POST", headers: as(token) })).json()) as { key: string }).key
 const settings = (token: string, patch: object) =>
   app.request("/sandbox/settings", { method: "PATCH", headers: as(token), body: JSON.stringify(patch) })
 const rowOf = async (id: string) =>
@@ -347,8 +347,8 @@ describe("egress", () => {
       const url = `http://sandbox.invalid/mcp/${keyedAbility}`
       expect((await mcpSandboxFor(userA).fetch(url, initialize)).status).toBe(400)
       expect((await mcpSandboxFor(userA, () => ({ value: "k1", own: true })).fetch(url, initialize)).status).toBe(200)
-      const server = mcpSandboxFor(userA, () => ({ value: "k2", own: false }))
-      expect((await server.fetch(url, initialize)).status).toBe(503)
+      const rotated = mcpSandboxFor(userA, () => ({ value: "k2", own: false }))
+      expect((await rotated.fetch(url, initialize)).status).toBe(503)
     } finally {
       await own.close()
     }

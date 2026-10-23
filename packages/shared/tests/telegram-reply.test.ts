@@ -101,7 +101,7 @@ test("a round with no text leaves the placeholder for the next round", async () 
 test("a failed edit isn't counted as sent, so the same text goes out again", async () => {
   let failures = 1
   const { channel, texts, warnings } = fakeChannel()
-  const edit = channel.edit
+  const edit = channel.edit.bind(channel)
   channel.edit = async (messageId, text) => {
     if (failures-- > 0) throw new Error("network down")
     await edit(messageId, text)
@@ -116,7 +116,7 @@ test("a failed edit isn't counted as sent, so the same text goes out again", asy
 test("a finished reply waits out one rate limit before trying again", async () => {
   let limited = true
   const { channel, texts } = fakeChannel()
-  const edit = channel.edit
+  const edit = channel.edit.bind(channel)
   channel.edit = async (messageId, text) => {
     if (limited) {
       limited = false

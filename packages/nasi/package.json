@@ -1,12 +1,9 @@
 {
   "name": "@kaja/nasi",
   "version": "0.3.15",
-  "description": "Kaja agent core: tool loop, sessions, memory, built-in tools",
   "private": true,
+  "description": "Kaja agent core: tool loop, sessions, memory, built-in tools",
   "type": "module",
-  "scripts": {
-    "test": "bun test"
-  },
   "sideEffects": false,
   "exports": {
     ".": {
@@ -18,13 +15,16 @@
       "default": "./src/client/index.ts"
     }
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "dependencies": {
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@mozilla/readability": "^0.6.0",
     "linkedom": "^0.18.14",
-    "openai": "^7.42.0",
+    "openai": "^7.43.0",
     "turndown": "^7.2.4",
     "zod": "^4.6.7"
   },

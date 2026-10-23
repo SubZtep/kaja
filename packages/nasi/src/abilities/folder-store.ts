@@ -35,11 +35,17 @@ const MAX_FILE_BYTES = 256 * 1024
 const HIDDEN = /^\.|\.bak(\.\d+)?(\.[^.]+)?$/
 
 export type FolderAbilityStoreOptions = {
-  /** The marketplace folder; abilities live in `<root>/abilities/<name>/`, and every valid one loads (personas pick what a turn uses). */
+  /**
+   * The marketplace folder; abilities live in `<root>/abilities/<name>/`, and every valid one loads (personas pick what
+   * a turn uses).
+   */
   root: string
 }
 
-/** Every file under an ability folder except its part files (SKILL.md, tool.toml, mcp.toml, tool.ts) and hidden/backup files, relative with `/` separators, sorted and capped. */
+/**
+ * Every file under an ability folder except its part files (SKILL.md, tool.toml, mcp.toml, tool.ts) and hidden/backup
+ * files, relative with `/` separators, sorted and capped.
+ */
 async function listSkillFiles(dir: string): Promise<string[]> {
   const files: string[] = []
   const walk = async (rel: string) => {
@@ -83,7 +89,10 @@ async function readSkillFolder(abilitiesRoot: string, name: string): Promise<{ s
   }
 }
 
-/** Finds `file` inside `dir`, falling back to a case-insensitive match (skills often say REFERENCE.md for reference.md); part files other than SKILL.md aren't the skill's. */
+/**
+ * Finds `file` inside `dir`, falling back to a case-insensitive match (skills often say REFERENCE.md for reference.md);
+ * part files other than SKILL.md aren't the skill's.
+ */
 async function findSkillFile(dir: string, rel: string): Promise<string | undefined> {
   const wanted = rel.split(sep).join("/").toLowerCase()
   if (wanted !== SKILL_FILE.toLowerCase() && [...PART_FILES].some(part => part.toLowerCase() === wanted))
@@ -123,7 +132,7 @@ function parseToml<T>(text: string, schema: z.ZodType<T>): T {
   try {
     data = Bun.TOML.parse(text)
   } catch (error) {
-    throw new Error(`invalid TOML (${error instanceof Error ? error.message : String(error)})`)
+    throw new Error(`invalid TOML (${error instanceof Error ? error.message : String(error)})`, { cause: error })
   }
   // No manifest names itself: an ability's name is its folder's, a persona's id its file's.
   if (data && typeof data === "object" && "name" in data)
@@ -136,22 +145,34 @@ function parseToml<T>(text: string, schema: z.ZodType<T>): T {
   return parsed.data
 }
 
-/** Parses an ability part's TOML text against `schema` and gives it the ability's name; the file itself has none, the folder name is the ability's. */
+/**
+ * Parses an ability part's TOML text against `schema` and gives it the ability's name; the file itself has none, the
+ * folder name is the ability's.
+ */
 function parsePart<T>(text: string, name: string, schema: z.ZodType<T>): T & { name: string } {
   return { ...parseToml(text, schema), name }
 }
 
-/** An HTTP tool manifest (`tool.toml`) from its TOML text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
+/**
+ * An HTTP tool manifest (`tool.toml`) from its TOML text (the cloud keeps the text, not the file). Throws with the
+ * reason when it's invalid.
+ */
 export function parseHttpToolManifest(text: string, name: string): HttpToolAbility {
   return parsePart(text, name, HttpToolAbilitySchema)
 }
 
-/** An MCP ability manifest (`mcp.toml`) from its TOML text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
+/**
+ * An MCP ability manifest (`mcp.toml`) from its TOML text (the cloud keeps the text, not the file). Throws with the
+ * reason when it's invalid.
+ */
 export function parseMcpManifest(text: string, name: string): McpAbility {
   return parsePart(text, name, McpAbilitySchema)
 }
 
-/** A persona from its TOML text (the cloud keeps the text, not the file); personas have no `name`, the id is the file name. */
+/**
+ * A persona from its TOML text (the cloud keeps the text, not the file); personas have no `name`, the id is the file
+ * name.
+ */
 export function parsePersonaManifest(text: string, id: string): Persona {
   return { ...parseToml(text, PersonaSchema), id }
 }
@@ -188,7 +209,10 @@ async function readMcp(root: string, name: string): Promise<McpAbility> {
   return parseMcpManifest(await readPartText(root, name, MCP_FILE), name)
 }
 
-/** Ability folders under `<root>/abilities/` (hidden and backup ones skipped), sorted, each with the part files it has. Empty when the folder is missing. */
+/**
+ * Ability folders under `<root>/abilities/` (hidden and backup ones skipped), sorted, each with the part files it has.
+ * Empty when the folder is missing.
+ */
 async function abilityFolders(root: string): Promise<{ name: string; parts: Set<string> }[]> {
   const abilitiesRoot = join(resolve(root), ABILITIES_DIR)
   let entries
@@ -214,7 +238,10 @@ async function namesWith(root: string, part: string): Promise<string[]> {
   return (await abilityFolders(root)).filter(folder => folder.parts.has(part)).map(folder => folder.name)
 }
 
-/** Names of the `*<ext>` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is missing. */
+/**
+ * Names of the `*<ext>` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is
+ * missing.
+ */
 async function manifestNames(dir: string, ext = ".toml"): Promise<string[]> {
   let entries
   try {
@@ -257,7 +284,10 @@ export type HttpToolScanEntry = {
   error?: string
 }
 
-/** Every ability's `tool.toml` under `<root>/abilities/`, enabled or not, with its domain and auth or why it can't load. Sorted by name. */
+/**
+ * Every ability's `tool.toml` under `<root>/abilities/`, enabled or not, with its domain and auth or why it can't load.
+ * Sorted by name.
+ */
 export async function scanHttpTools(root: string): Promise<HttpToolScanEntry[]> {
   return Promise.all(
     (await namesWith(root, HTTP_FILE)).map(async name => {
@@ -301,7 +331,10 @@ export type McpScanEntry = {
   error?: string
 }
 
-/** Every ability's `mcp.toml` under `<root>/abilities/`, enabled or not, with where it connects (or what it runs) and its key need. Sorted by name. */
+/**
+ * Every ability's `mcp.toml` under `<root>/abilities/`, enabled or not, with where it connects (or what it runs) and
+ * its key need. Sorted by name.
+ */
 export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
   return Promise.all(
     (await namesWith(root, MCP_FILE)).map(async name => {
@@ -343,8 +376,9 @@ function stdioCommand(ability: McpAbility): Pick<McpScanEntry, "command" | "need
 export type SkillScanEntry = { name: string; description?: string; error?: string }
 
 /**
- * Every ability's SKILL.md under `<root>/abilities/`, enabled or not, with its description or why it can't load. A folder
- * with no part at all is listed too, as an error, so it doesn't vanish silently. Sorted by name; a missing root is an empty list.
+ * Every ability's SKILL.md under `<root>/abilities/`, enabled or not, with its description or why it can't load. A
+ * folder with no part at all is listed too, as an error, so it doesn't vanish silently. Sorted by name; a missing root
+ * is an empty list.
  */
 export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
   const abilitiesRoot = join(resolve(root), ABILITIES_DIR)
@@ -374,7 +408,7 @@ export function parseDatasetManifest(text: string): Dataset {
   try {
     data = JSON.parse(text)
   } catch (error) {
-    throw new Error(`invalid JSON (${error instanceof Error ? error.message : String(error)})`)
+    throw new Error(`invalid JSON (${error instanceof Error ? error.message : String(error)})`, { cause: error })
   }
   const parsed = DatasetSchema.safeParse(data)
   if (!parsed.success) {
@@ -387,7 +421,10 @@ export function parseDatasetManifest(text: string): Dataset {
 /** One dataset file found on disk, loadable or not. */
 export type DatasetScanEntry = { name: string; label?: string; error?: string }
 
-/** Every `<root>/datasets/*.json`, with its label or why it can't load. Sorted by topic; a missing folder is an empty list. */
+/**
+ * Every `<root>/datasets/*.json`, with its label or why it can't load. Sorted by topic; a missing folder is an empty
+ * list.
+ */
 export async function scanDatasets(root: string): Promise<DatasetScanEntry[]> {
   const dir = join(resolve(root), "datasets")
   return Promise.all(
@@ -453,7 +490,10 @@ export type SkillBundle = {
   hasScripts: boolean
 }
 
-/** Reads the skill part of `<root>/abilities/<name>/` (SKILL.md and the folder's other non-part files) into a {@link SkillBundle}. Throws when SKILL.md is missing or invalid. */
+/**
+ * Reads the skill part of `<root>/abilities/<name>/` (SKILL.md and the folder's other non-part files) into a
+ * {@link SkillBundle}. Throws when SKILL.md is missing or invalid.
+ */
 export async function readSkillBundle(root: string, name: string): Promise<SkillBundle> {
   const { summary } = await readSkillFolder(join(resolve(root), ABILITIES_DIR), name)
   const dir = summary.dir!
@@ -470,7 +510,10 @@ export async function readSkillBundle(root: string, name: string): Promise<Skill
   }
 }
 
-/** {@link AbilityStore} over a marketplace folder on disk — the CLI's store. Every valid ability in it loads; broken ones are skipped with a warning. */
+/**
+ * {@link AbilityStore} over a marketplace folder on disk — the CLI's store. Every valid ability in it loads; broken ones
+ * are skipped with a warning.
+ */
 export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): AbilityStore {
   const abilitiesRoot = join(resolve(opts.root), ABILITIES_DIR)
 

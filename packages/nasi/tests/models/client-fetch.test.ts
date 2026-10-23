@@ -11,7 +11,7 @@ test("createOpenAIClient sends the request through the fetch it is given", async
     headers: { "x-test-key": "present" },
     fetch: async (input, init) => {
       seen = new Headers(init?.headers).get("x-test-key") ?? undefined
-      expect(String(input)).toContain("127.0.0.1")
+      expect(input instanceof Request ? input.url : String(input)).toContain("127.0.0.1")
       return Response.json({ object: "list", data: [] })
     }
   })

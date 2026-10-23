@@ -1,6 +1,9 @@
 import { z } from "zod"
 
-/** One MCP server the sandbox runs for a user: `starting` until its process is up; `rss` is its whole process tree (a browser's too) in bytes, null where it can't be read. */
+/**
+ * One MCP server the sandbox runs for a user: `starting` until its process is up; `rss` is its whole process tree (a
+ * browser's too) in bytes, null where it can't be read.
+ */
 export const sandboxServerStatsSchema = z.object({
   user: z.string(),
   ability: z.string(),
@@ -49,7 +52,10 @@ export const sandboxStatsSchema = z.object({
     /** Stopped when the turn of a user borrowing the sandbox ended. */
     released: z.number().int()
   }),
-  /** The browsers' egress proxy: connections open now, and ones let through, refused (a private or unknown address, a bad request) and failed upstream. */
+  /**
+   * The browsers' egress proxy: connections open now, and ones let through, refused (a private or unknown address, a
+   * bad request) and failed upstream.
+   */
   egress: z.object({
     open: z.number().int(),
     allowed: z.number().int(),
@@ -106,7 +112,10 @@ export const sandboxFrameSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("stats"), id: frameId, stats: sandboxStatsSchema })
 ])
 
-/** Frames the API sends a sandbox: its identity, MCP requests to run and tool requests to send out (for an opaque `user`), cancels and stats requests. */
+/**
+ * Frames the API sends a sandbox: its identity, MCP requests to run and tool requests to send out (for an opaque
+ * `user`), cancels and stats requests.
+ */
 export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
   /** `secret` only when the API made a new row: the sandbox keeps it to come back as the same one. */
   z.object({ t: z.literal("welcome"), id: z.string(), secret: z.string().optional() }),
@@ -119,10 +128,16 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
     headers: z.array(z.tuple([z.string(), z.string()])),
     /** The request body, base64. */
     body: z.string().nullable(),
-    /** A keyed server's key (the user's own, or the server-wide one on the official sandbox), for the env var its manifest names. */
+    /**
+     * A keyed server's key (the user's own, or the server-wide one on the official sandbox), for the env var its
+     * manifest names.
+     */
     key: z.string().optional()
   }),
-  /** An outgoing request of a tool (`fetch_url`, an HTTP tool, a remote MCP server), sent out through the egress proxy; the answer comes back like a request's. */
+  /**
+   * An outgoing request of a tool (`fetch_url`, an HTTP tool, a remote MCP server), sent out through the egress proxy;
+   * the answer comes back like a request's.
+   */
   z.object({
     t: z.literal("fetch"),
     id: frameId,
@@ -135,11 +150,17 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
   }),
   z.object({ t: z.literal("cancel"), id: frameId }),
   z.object({ t: z.literal("stats"), id: frameId }),
-  /** The turn of a user borrowing the sandbox ended: stop their `ability` server, so nothing (a browser's logins) outlives it. */
+  /**
+   * The turn of a user borrowing the sandbox ended: stop their `ability` server, so nothing (a browser's logins)
+   * outlives it.
+   */
   z.object({ t: z.literal("release"), user: z.string(), ability: z.string() })
 ])
 
-/** Headers a sandbox connects with: the owner's sandbox key (none: anonymous) and the `<id>.<secret>` it was welcomed with before. */
+/**
+ * Headers a sandbox connects with: the owner's sandbox key (none: anonymous) and the `<id>.<secret>` it was welcomed
+ * with before.
+ */
 export const SANDBOX_KEY_HEADER = "x-kaja-sandbox-key"
 
 /** The header a `--local` client sends an ability's key in through the sandbox relay; it counts as the user's own. */
@@ -175,7 +196,10 @@ export const adminSandboxEntrySchema = z.object({
   error: z.string().nullable()
 })
 
-/** `GET /admin/sandbox`: every registered sandbox, online first, and the emails of the owners and of the users in their stats. */
+/**
+ * `GET /admin/sandbox`: every registered sandbox, online first, and the emails of the owners and of the users in their
+ * stats.
+ */
 export const adminSandboxResponseSchema = z.object({
   sandboxes: z.array(adminSandboxEntrySchema),
   emails: z.record(z.string(), z.string())
@@ -192,7 +216,10 @@ export const sandboxSampleSchema = z.object({
 /** `GET /admin/sandbox/{id}/samples`: its load over the last `hours`. */
 export const sandboxSamplesResponseSchema = z.object({ samples: z.array(sandboxSampleSchema) })
 
-/** A user's sandbox settings: others may use theirs (`share`), they may use others' (`useShared`), and whether they have a key yet. */
+/**
+ * A user's sandbox settings: others may use theirs (`share`), they may use others' (`useShared`), and whether they have
+ * a key yet.
+ */
 export const sandboxSettingsSchema = z.object({
   share: z.boolean(),
   useShared: z.boolean(),

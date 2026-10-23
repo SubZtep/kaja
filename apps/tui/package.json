@@ -1,13 +1,13 @@
 {
   "name": "@kaja/tui",
   "version": "0.30.16",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "bun run cli.ts",
-    "test": "bun test",
+    "clean:temp": "bun run scripts/clean-temp.ts",
     "gen-schema": "bun run scripts/gen-schema.ts",
-    "clean:temp": "bun run scripts/clean-temp.ts"
+    "start": "bun run cli.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
@@ -24,7 +24,7 @@
     "marked": "^18.1.1",
     "node-notifier": "^11.0.0",
     "open": "^11.0.4",
-    "openai": "^7.42.0",
+    "openai": "^7.43.0",
     "play-sound": "^1.1.6",
     "react": "^19.3.1",
     "supports-hyperlinks": "^4.6.0",

@@ -2,14 +2,13 @@ import { useMemo, useRef } from "react"
 import { commit, createPromptHistory, markEdited, type PromptHistory, recall } from "../lib/session/prompt-history"
 
 /**
- * Holds a {@link PromptHistory} in a ref — recall never re-renders by
- * itself; the recalled text flows back through the caller's own input
- * state. `initial` (prompts loaded from the session store, newest first)
- * only seeds the machine on mount.
+ * Holds a {@link PromptHistory} in a ref — recall never re-renders by itself; the recalled text flows back through the
+ * caller's own input state. `initial` (prompts loaded from the session store, newest first) only seeds the machine on
+ * mount.
  */
 export function usePromptHistory(initial: string[]) {
   const historyRef = useRef<PromptHistory>(undefined)
-  if (!historyRef.current) historyRef.current = createPromptHistory(initial)
+  historyRef.current ??= createPromptHistory(initial)
 
   return useMemo(
     () => ({

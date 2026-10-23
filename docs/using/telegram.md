@@ -69,12 +69,12 @@ owner_ids = [123456789]
 Both bots use [abilities](/abilities) the same way: the chat's [persona](/abilities/personas#abilities) lists
 which ones the model gets. Where they run, and where their keys come from, differs:
 
-| | Cloud bot | Your own bot |
-| --- | --- | --- |
-| Runs on | a [sandbox](/abilities/mcp#in-the-cloud), never your computer | your machine |
-| Available | the cloud [marketplace](/abilities/marketplace#in-the-cloud) subset: no skills with scripts, and no local-only personas or computer tools | everything, including your own abilities |
-| API keys | kaja.io provides them, nothing to set up | [`secrets.toml`](/configuration/secrets) `[abilities.<name>] api_key`, or `kaja doctor` |
-| After a change | the next message, within the hour for marketplace updates | restart the bot |
+|                | Cloud bot                                                                                                                                 | Your own bot                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Runs on        | a [sandbox](/abilities/mcp#in-the-cloud), never your computer                                                                             | your machine                                                                            |
+| Available      | the cloud [marketplace](/abilities/marketplace#in-the-cloud) subset: no skills with scripts, and no local-only personas or computer tools | everything, including your own abilities                                                |
+| API keys       | kaja.io provides them, nothing to set up                                                                                                  | [`secrets.toml`](/configuration/secrets) `[abilities.<name>] api_key`, or `kaja doctor` |
+| After a change | the next message, within the hour for marketplace updates                                                                                 | restart the bot                                                                         |
 
 Calls that could change something wait for your **Approve** or **Decline** button. **Approve for this chat**
 stops asking about that tool until you start a new conversation (on your own bot, until it restarts). If you write

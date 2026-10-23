@@ -4,53 +4,24 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 
 ## Layout
 
+Each directory is its own subpath export (`@kaja/schema/<dir>`); there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app consumes it.
+
 ```
-api/         # API contracts: shared by API, web, and CLI device auth
-  index.ts     # re-exports + KAJA_TUI_CLIENT_ID
-  auth.ts      # auth-related payloads
-  ability.ts     # ability catalog + server-wide ability keys
-  config-export.ts # /config/export bundle and the /config/catalog response
-  model.ts       # provider/model admin CRUD schemas
-  sandbox.ts     # sandbox tunnel frames, sandbox keys and settings
-  stats.ts       # a user's activity numbers
-  telegram-link.ts # Telegram account linking
-  widget-key.ts  # widget key admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml, commands.toml, hooks.toml); `mcp.ts` is only the MCP connection entry built from an ability's mcp.toml, plus config/catalog.toml (the model catalog)
+api/         # API contracts shared by API, web and CLI device auth (index.ts re-exports and holds KAJA_TUI_CLIENT_ID = "kaja-tui")
+config/      # CLI on-disk config files the user hand-edits (settings, models, secrets, commands, hooks), plus config/catalog.toml's schema; `mcp.ts` is only the MCP connection entry built from an ability's mcp.toml
 store/       # stored runtime state (sessions, memory notes) used by @kaja/nasi; `StoredConversationSchema` validates a loaded conversation and its type fits nasi's `Session`, so stores hand it over without a cast
 cli/         # re-exports abilities/dataset.ts and abilities/persona.ts
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
-abilities/    # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
-env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, SandboxEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/sandbox/tui/helpers
-  api.ts       # ApiEnvSchema — every var apps/api reads
-  web.ts       # WebEnvSchema — every var apps/web reads
-  sandbox.ts   # SandboxEnvSchema — every var apps/sandbox reads
-  tui.ts       # TuiEnvSchema — KAJA_API_URL, KAJA_LOG_LEVEL, KAJA_LOG_FILE (locale vars and a hyperlink-support workaround stay plain process.env reads)
-  helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
+abilities/   # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
+env/         # Per-app env schemas (api, web, sandbox, tui) + helpers (parseEnv, bool/url/positiveInt/trimmed); the source of `.env.example` and `env.d.ts`. tui's covers only KAJA_API_URL, KAJA_LOG_LEVEL, KAJA_LOG_FILE (locale vars and a hyperlink-support workaround stay plain process.env reads)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
-
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/abilities`, `@kaja/schema/env`, `@kaja/schema/tombi`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 
 - Zod **v4** only
-- Export both schemas and inferred types (`z.infer<typeof …>`) consistently with existing files
-- Date fields that cross JSON boundaries: prefer `z.coerce.date()`
-- UUIDs: `z.uuidv7()` where the API uses UUIDv7
-- Keep this package free of runtime I/O, React, and Hono — pure schemas only
-- Same-named-but-unrelated types across subpaths (e.g. `api`'s `ResolvedModel` vs `config`'s `CliResolvedModel`) are fine — that's exactly what the subpath split is for. Only rename when a name collision would otherwise be genuinely confusing to a reader who imports from two subpaths in the same file.
-
-## Consumers
-
-- `@kaja/api` — request validation / OpenAPI (`@kaja/schema/api`)
-- `@kaja/web` — form and type alignment (`@kaja/schema/api`)
-- `@kaja/tui` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`, `/abilities`, `/env`'s `TuiEnvSchema`)
-- `@kaja/nasi` — turn contract, store rows and ability manifests (`@kaja/schema/nasi`, `/store`, `/abilities`)
-- `@kaja/sandbox` — its env (`/env`'s `SandboxEnvSchema`) and MCP manifests (`/abilities`)
-- CLI device/client id constant: `KAJA_TUI_CLIENT_ID = "kaja-tui"` (in `api/index.ts`)
-
-## Boundaries
-
-- Do **not** put DB row types here (those stay private in API services)
-- Changing a schema is a breaking change for all consumers of that subpath — update every consumer + tests together
+- Export both schemas and inferred types (`z.infer<typeof …>`), consistently with existing files
+- Date fields that cross JSON boundaries: `z.coerce.date()`; UUIDs: `z.uuidv7()` where the API uses UUIDv7
+- Pure schemas only: no runtime I/O, React, or Hono, and no DB row types (those stay private in API services)
+- Same-named-but-unrelated types across subpaths (e.g. `api`'s `ResolvedModel` vs `config`'s `CliResolvedModel`) are fine, that's what the split is for. Rename only when a collision would genuinely confuse a reader importing from two subpaths in one file
+- Changing a schema is a breaking change for all consumers of that subpath: update every consumer and its tests together

@@ -1,5 +1,5 @@
 import { type Locale, matchLocale } from "@kaja/shared/locale"
-import { type Translate, toLocale, translator } from "../../core/i18n"
+import { toLocale, type Translate, translator } from "../../core/i18n"
 
 /** A reply's language: the locale for the agent's own replies, and the bot's strings in it. */
 export type BotLanguage = { locale: Locale; t: Translate }

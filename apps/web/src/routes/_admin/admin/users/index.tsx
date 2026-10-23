@@ -88,9 +88,9 @@ function UserList() {
   const { data, error, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      const { data, error } = await admin.listUsers({ query: {} })
-      if (error) throw new Error(error.message)
-      return data.users
+      const { data: listed, error: failure } = await admin.listUsers({ query: {} })
+      if (failure) throw new Error(failure.message)
+      return listed.users
     }
   })
 

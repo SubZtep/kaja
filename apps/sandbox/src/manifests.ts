@@ -9,7 +9,10 @@ export type SandboxServer = {
   command: string
   args: string[]
   env: Record<string, string>
-  /** A keyed server's key: the env var it goes in (after `prefix`), and whether it starts without one. A request only brings the value. */
+  /**
+   * A keyed server's key: the env var it goes in (after `prefix`), and whether it starts without one. A request only
+   * brings the value.
+   */
   key?: { env: string; prefix: string; keyless: boolean }
 }
 
@@ -39,11 +42,12 @@ export function proxyEnv(port: number): Record<string, string> {
 }
 
 /**
- * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list (a key, if it
- * takes one, comes with each request), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
- * (its cache can't be shared between uids, so npm packages go through npx). `overridesPath` swaps a server's command/args for
- * this host; `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
- * `egressPort` sends every server's own requests through the egress proxy (see {@link proxyEnv}).
+ * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list (a key,
+ * if it takes one, comes with each request), and not local-only (`localOnly`, or `roots`: the user's own folders), the
+ * same rule the API offers them by. A package runs through the first runner the image has, never bun's own (its cache
+ * can't be shared between uids, so npm packages go through npx). `overridesPath` swaps a server's command/args for this
+ * host; `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away. `egressPort`
+ * sends every server's own requests through the egress proxy (see {@link proxyEnv}).
  */
 export async function loadSandboxServers(
   marketplaceDir: string,

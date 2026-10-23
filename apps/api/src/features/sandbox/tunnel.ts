@@ -51,7 +51,10 @@ export class SandboxTunnel {
     return this.#pending.size
   }
 
-  /** Sends `<any origin>/mcp/<ability>` to the sandbox for the opaque `user`, with the key a keyed server starts with; its answer streams back. */
+  /**
+   * Sends `<any origin>/mcp/<ability>` to the sandbox for the opaque `user`, with the key a keyed server starts with;
+   * its answer streams back.
+   */
   async request(user: string, input: string | URL, init?: RequestInit, key?: string): Promise<Response> {
     const request = new Request(input, init)
     const match = /^\/mcp\/([^/]+)$/.exec(new URL(request.url).pathname)
@@ -69,7 +72,10 @@ export class SandboxTunnel {
     }))
   }
 
-  /** Has the sandbox send a tool's request (one hop, redirects not followed) out through its egress proxy for the opaque `user`; its answer streams back. */
+  /**
+   * Has the sandbox send a tool's request (one hop, redirects not followed) out through its egress proxy for the opaque
+   * `user`; its answer streams back.
+   */
   async fetch(user: string, input: string | URL, init?: RequestInit): Promise<Response> {
     const request = new Request(input, init)
     return this.#exchange(request, init?.signal, (id, body) => ({
@@ -168,6 +174,8 @@ export class SandboxTunnel {
         this.#pending.delete(frame.id)
         if (pending.body) pending.body.close()
         else if (!pending.headed) pending.reject(new Error("the sandbox sent no answer"))
+        return
+      case "stats":
         return
       case "error": {
         this.#pending.delete(frame.id)

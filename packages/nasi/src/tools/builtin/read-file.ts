@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
 /**
@@ -14,16 +14,16 @@ export const readFileTool = tool({
   schema: z.object({
     path: z.string().describe("Path to the file")
   }),
-  execute: async args => {
+  execute: args => {
     let safePath: string
     try {
       safePath = guardWorkspacePath(args.path)
     } catch (error) {
       if (error instanceof PathEscapeError || error instanceof PathDeniedError) {
-        throw new ToolError("read_file", error.message)
+        return Promise.reject(new ToolError("read_file", error.message))
       }
-      throw error
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)))
     }
-    return await Bun.file(safePath).text()
+    return Bun.file(safePath).text()
   }
 })

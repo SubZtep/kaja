@@ -10,12 +10,14 @@
 // below (see Renderer.prototype.text) instead of patching it externally afterwards.
 //
 // A code block with no language is not highlighted (upstream guesses one; see highlight()).
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-shadow -- vendored and untyped upstream */
 //
 // Trimmed from upstream: no :shortcode: emoji replacement (node-emoji), and Bun's
 // stripANSI and a local OSC 8 link helper stand in for ansi-regex and ansi-escapes.
 //
 // Tables are drawn by ./table instead of cli-table3: rounded, one rule under the header, aligned, fit to a width.
 
+/* oxlint-disable @typescript-eslint/no-explicit-any -- vendored untyped upstream code */
 import chalk from "chalk"
 import { highlight as highlightCli } from "cli-highlight"
 import supportsHyperlinks from "supports-hyperlinks"
@@ -273,6 +275,7 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   if (this.options.sanitize) {
     let prot: string
     try {
+      // oxlint-disable-next-line @typescript-eslint/no-deprecated -- vendored upstream behaviour
       prot = decodeURIComponent(unescape(href))
         .replace(/[^\w:]/g, "")
         .toLowerCase()
@@ -289,12 +292,7 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   let out = ""
 
   if (supportsHyperlinks.stdout) {
-    let link = ""
-    if (text) {
-      link = this.o.href(text)
-    } else {
-      link = this.o.href(href)
-    }
+    const link = text ? this.o.href(text) : this.o.href(href)
     out = terminalLink(
       link,
       // textLength breaks on '+' in URLs
@@ -418,7 +416,7 @@ function reflowSection(section: string, width: number, state: ReflowState) {
   // Split the section by escape codes so that we can
   // deal with them separately. RegExp constructor (not a literal) so the \x1b
   // escape stays a string escape sequence instead of a raw control character.
-  // biome-ignore lint/complexity/useRegexLiterals: literal form trips noControlCharactersInRegex on \x1b
+  // oxlint-disable-next-line no-control-regex -- matches SGR escape sequences
   const fragments = section.split(new RegExp("(\\x1b\\[(?:\\d{1,3})(?:;\\d{1,3})*m)", "g"))
   let lastWasEscapeChar = false
 
@@ -609,7 +607,7 @@ function identity(str: string) {
 function compose(...funcs: ((...args: any[]) => any)[]) {
   return function (this: any, ...args: any[]) {
     let result: any = args
-    for (let i = funcs.length; i-- > 0; ) {
+    for (let i = funcs.length; i-- > 0;) {
       result = [funcs[i]!.apply(this, result)]
     }
     return result[0]
@@ -625,7 +623,6 @@ function sanitizeTab(tab: string | number, fallbackTab: number) {
     return new Array(tab + 1).join(" ")
   } else if (typeof tab === "string" && isAllowedTabString(tab)) {
     return tab
-  } else {
-    return new Array(fallbackTab + 1).join(" ")
   }
+  return new Array(fallbackTab + 1).join(" ")
 }

@@ -39,7 +39,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
   const before = await store.loadMemory(null)
   const createdAt = before["user:name"]!.createdAt
 
-  await new Promise(r => setTimeout(r, 5))
+  await Bun.sleep(5)
   await rememberNoteTool.execute(
     {
       key: "user:name",

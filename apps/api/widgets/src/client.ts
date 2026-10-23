@@ -24,5 +24,5 @@ export async function sendWidgetTurn(
     const errorBody = await res.json().catch(() => undefined)
     throw new Error(typeof errorBody?.error === "string" ? errorBody.error : `Request failed: ${res.status}`)
   }
-  return res.json()
+  return res.json() as Promise<NasiTurnResponse>
 }

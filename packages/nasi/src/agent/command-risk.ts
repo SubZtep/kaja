@@ -1,8 +1,7 @@
 /**
- * Patterns that flag a proposed shell command as risky enough to warrant a
- * louder confirm prompt. Deliberately conservative — false negatives (a
- * dangerous command that slips through unflagged) are fine, this is an
- * advisory cue, not a sandbox.
+ * Patterns that flag a proposed shell command as risky enough to warrant a louder confirm prompt. Deliberately
+ * conservative — false negatives (a dangerous command that slips through unflagged) are fine, this is an advisory cue,
+ * not a sandbox.
  */
 const DANGEROUS_PATTERNS = [
   /\bgit\s+reset\s+--hard\b/i,
@@ -14,12 +13,15 @@ const DANGEROUS_PATTERNS = [
   /\bchmod\s+-R\s+\d*\/(\s|$)/
 ] as const
 
-/** Whether a `-...` flag cluster contains both of the given letters (in any order, possibly mixed with other flags), e.g. `-rf`, `-fr`, `-Rfv` for letters "r"/"f". */
+/**
+ * Whether a `-...` flag cluster contains both of the given letters (in any order, possibly mixed with other flags),
+ * e.g. `-rf`, `-fr`, `-Rfv` for letters "r"/"f".
+ */
 function hasComboFlag(command: string, letters: string): boolean {
   const match = /\brm\s+(-[a-z]+)\b/i.exec(command)
   if (!match) return false
   const flags = match[1]!.toLowerCase()
-  return [...letters].every(letter => flags.includes(letter))
+  return Array.from(letters).every(letter => flags.includes(letter))
 }
 
 function isDangerousRm(command: string): boolean {
@@ -42,7 +44,10 @@ export function isDangerousCommand(command: string): boolean {
   return isDangerousRm(command) || isForcePush(command) || isRecursiveChownOnRoot(command)
 }
 
-/** Regex sources for commands that run without asking; each must match the whole command. The built-in list, also `config/commands.toml`'s `safe`. */
+/**
+ * Regex sources for commands that run without asking; each must match the whole command. The built-in list, also
+ * `config/commands.toml`'s `safe`.
+ */
 export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
   String.raw`ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*`,
   String.raw`(cat|head|tail)(\s+-[a-zA-Z0-9]+)*(\s+[\w./~-]+)+`,
@@ -53,7 +58,10 @@ export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
   String.raw`git (status|diff|log)(?!.*--output)(\s+[\w./=:@^~-]+)*`
 ]
 
-/** Compiles regex sources into whole-command matchers; a source that isn't a valid regex is returned in `invalid` instead of throwing. */
+/**
+ * Compiles regex sources into whole-command matchers; a source that isn't a valid regex is returned in `invalid`
+ * instead of throwing.
+ */
 export function compileSafeCommands(sources: readonly string[]): { patterns: RegExp[]; invalid: string[] } {
   const patterns: RegExp[] = []
   const invalid: string[] = []
@@ -85,7 +93,10 @@ function readsCredentials(command: string): boolean {
   return false
 }
 
-/** Whether a command may run without asking: it matches a safe pattern, has no shell metacharacters, isn't dangerous, and doesn't read a credential path. */
+/**
+ * Whether a command may run without asking: it matches a safe pattern, has no shell metacharacters, isn't dangerous,
+ * and doesn't read a credential path.
+ */
 export function isSafeCommand(command: string, patterns: readonly RegExp[]): boolean {
   const trimmed = command.trim()
   if (SHELL_METACHARACTERS.test(trimmed) || isDangerousCommand(trimmed)) return false

@@ -38,7 +38,10 @@ export async function containerMemory(): Promise<{ current: number; max: number 
   return { current: Number(current), max: max === undefined || max.trim() === "max" ? null : Number(max) }
 }
 
-/** Resident memory in bytes of each pid with all its descendants (a browser's many processes), read from Linux's /proc; empty elsewhere. */
+/**
+ * Resident memory in bytes of each pid with all its descendants (a browser's many processes), read from Linux's /proc;
+ * empty elsewhere.
+ */
 export async function treeRss(pids: number[]): Promise<Map<number, number>> {
   const totals = new Map<number, number>()
   if (pids.length === 0) return totals

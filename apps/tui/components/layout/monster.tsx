@@ -75,7 +75,6 @@ export function MonsterMate() {
   // Stable, so Monster's animation doesn't restart on every render
   const done = useCallback(() => setEventName(null), [])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `eventName` isn't read; each change (an animation starting or ending) schedules the next one
   useEffect(() => {
     let timer: NodeJS.Timeout
 

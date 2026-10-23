@@ -79,6 +79,7 @@ test("pipelining: next synthesis starts before previous playback finishes", asyn
       const gate = doneGates[playCalls++]
       const consumed = (async () => {
         for await (const _ of pcm) {
+          // drain
         }
         played.push(fetched[played.length] ?? "?")
       })()

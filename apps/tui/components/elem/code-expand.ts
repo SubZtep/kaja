@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect } from "react"
 
-/** How code shows: `expanded` prints every line, otherwise `lines` of it (`preferences.codePreviewLines`). `register` lets a code block that is longer than the preview say so while it is mounted, and returns how to withdraw. */
+/**
+ * How code shows: `expanded` prints every line, otherwise `lines` of it (`preferences.codePreviewLines`). `register`
+ * lets a code block that is longer than the preview say so while it is mounted, and returns how to withdraw.
+ */
 export type CodeView = { expanded: boolean; lines: number; register?: () => () => void }
 
 export const DEFAULT_CODE_LINES = 5

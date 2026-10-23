@@ -14,7 +14,10 @@ export class StatsService {
     this.#db = db
   }
 
-  /** The user's activity over the last `days` calendar days in `timeZone` (today included). Only ever reads this user's rows. */
+  /**
+   * The user's activity over the last `days` calendar days in `timeZone` (today included). Only ever reads this user's
+   * rows.
+   */
   async usage(userId: string, days: number, timeZone = "UTC"): Promise<UsageStatsResponse> {
     // Midnight, in the viewer's zone, of the first day: a wall-clock day count keeps DST days whole.
     const { rows } = await this.#db.query(

@@ -36,11 +36,11 @@ export type EgressOptions = {
 }
 
 /**
- * A forward proxy on 127.0.0.1 that the sandbox's browsers must go through (`--proxyServer` in overrides.json):
- * it resolves each host itself and connects only when every address is public, to the address it checked, so neither
- * a private IP, a name pointing at one, nor DNS rebinding reaches the host's own network or the cloud metadata service.
- * HTTPS and WebSockets come as CONNECT tunnels; plain HTTP is forwarded one request per connection.
- * With `upstream`, every connection instead goes through that proxy as a CONNECT tunnel to the checked address.
+ * A forward proxy on 127.0.0.1 that the sandbox's browsers must go through (`--proxyServer` in overrides.json): it
+ * resolves each host itself and connects only when every address is public, to the address it checked, so neither a
+ * private IP, a name pointing at one, nor DNS rebinding reaches the host's own network or the cloud metadata service.
+ * HTTPS and WebSockets come as CONNECT tunnels; plain HTTP is forwarded one request per connection. With `upstream`,
+ * every connection instead goes through that proxy as a CONNECT tunnel to the checked address.
  */
 export function startEgressProxy(opts: EgressOptions): Promise<Server> {
   const allow = opts.allow ?? (address => !isPrivateAddress(address))
@@ -98,8 +98,12 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
   const end = () => {
     if (state === "open") client.destroy()
     else if (state === "connecting") {
-      const target = `${hostname}:${port}`
-      console.warn("Egress couldn't connect", { target, via: via ? "WEB_PROXY" : "direct", reason: failure })
+      const destination = `${hostname}:${port}`
+      console.warn("Egress couldn't connect", {
+        target: destination,
+        via: via ? "WEB_PROXY" : "direct",
+        reason: failure
+      })
       // Printable ASCII only, so a strange answer from WEB_PROXY can't break the head
       refuse(client, deps, 502, `${FAILED_REASON}${failure.replace(/[^\x20-\x7e]/g, "").slice(0, 200)}`)
     }
@@ -209,7 +213,7 @@ export function sendThroughEgress(port: number): (request: Request) => Promise<R
       response = await fetch(request, { proxy, redirect: "manual" })
     } catch (error) {
       // An https request's CONNECT the proxy refused (a private address) or couldn't open
-      if (error instanceof Error && /tunnel: 403/.test(error.message)) throw blocked()
+      if (error instanceof Error && error.message.includes("tunnel: 403")) throw blocked()
       const failed = error instanceof Error ? /tunnel: 502 (Bad Gateway: .*)/.exec(error.message) : null
       if (failed?.[1]) throw unreachable(failed[1])
       throw error

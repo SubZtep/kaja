@@ -11,11 +11,7 @@
       "default": "http",
       "description": "http (Streamable HTTP), sse, or stdio",
       "type": "string",
-      "enum": [
-        "http",
-        "sse",
-        "stdio"
-      ]
+      "enum": ["http", "sse", "stdio"]
     },
     "url": {
       "description": "Server URL (http and sse)",
@@ -62,9 +58,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": [
-          "chrome"
-        ]
+        "enum": ["chrome"]
       }
     },
     "env": {
@@ -102,9 +96,7 @@
               "const": "none"
             }
           },
-          "required": [
-            "type"
-          ]
+          "required": ["type"]
         },
         {
           "type": "object",
@@ -115,10 +107,7 @@
             },
             "in": {
               "type": "string",
-              "enum": [
-                "header",
-                "env"
-              ]
+              "enum": ["header", "env"]
             },
             "name": {
               "type": "string",
@@ -135,11 +124,7 @@
               "type": "boolean"
             }
           },
-          "required": [
-            "type",
-            "in",
-            "name"
-          ]
+          "required": ["type", "in", "name"]
         }
       ]
     },
@@ -147,11 +132,7 @@
       "default": "never",
       "description": "When tool calls ask first: writes = unless the tool is marked read-only",
       "type": "string",
-      "enum": [
-        "never",
-        "writes",
-        "always"
-      ]
+      "enum": ["never", "writes", "always"]
     },
     "tools": {
       "description": "Only these of the server's tools reach the model",
@@ -231,15 +212,11 @@
                 }
               }
             },
-            "required": [
-              "tool"
-            ]
+            "required": ["tool"]
           }
         ]
       }
     }
   },
-  "required": [
-    "description"
-  ]
+  "required": ["description"]
 }

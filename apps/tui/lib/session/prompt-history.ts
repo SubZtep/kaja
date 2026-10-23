@@ -1,8 +1,7 @@
 /**
- * Shell-style prompt history for the input field: ↑ walks toward older
- * prompts, ↓ back toward newer ones and finally the live draft. Pure and
- * immutable so the exact semantics are unit-testable; the React side is a
- * thin ref wrapper (hooks/use-prompt-history.ts).
+ * Shell-style prompt history for the input field: ↑ walks toward older prompts, ↓ back toward newer ones and finally
+ * the live draft. Pure and immutable so the exact semantics are unit-testable; the React side is a thin ref wrapper
+ * (hooks/use-prompt-history.ts).
  */
 
 export type PromptHistory = {
@@ -19,9 +18,8 @@ export function createPromptHistory(entries: string[]): PromptHistory {
 }
 
 /**
- * One ↑ (`-1`, older) or ↓ (`1`, newer) step. `value` is the text to show,
- * or null when there is nothing further in that direction (history stays
- * unchanged and the input keeps its current text).
+ * One ↑ (`-1`, older) or ↓ (`1`, newer) step. `value` is the text to show, or null when there is nothing further in
+ * that direction (history stays unchanged and the input keeps its current text).
  */
 export function recall(
   history: PromptHistory,
@@ -57,8 +55,8 @@ export function recall(
 }
 
 /**
- * A manual edit makes the current text the new live draft: the recall
- * position resets, so the next ↑ starts from the newest entry again.
+ * A manual edit makes the current text the new live draft: the recall position resets, so the next ↑ starts from the
+ * newest entry again.
  */
 export function markEdited(history: PromptHistory): PromptHistory {
   return history.position === -1 ? history : { ...history, position: -1 }

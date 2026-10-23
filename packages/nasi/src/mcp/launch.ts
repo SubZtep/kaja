@@ -11,7 +11,8 @@ export type LaunchOptions = {
   which?: (program: string) => string | null
   /**
    * Kaja's own executable, which runs npm packages as bunx (`BUN_BE_BUN=1`), with Node when it's installed and on
-   * itself otherwise. Default `process.execPath`; false skips it (the sandbox, whose bun cache can't be shared between uids).
+   * itself otherwise. Default `process.execPath`; false skips it (the sandbox, whose bun cache can't be shared between
+   * uids).
    */
   self?: string | false
   /** Where the browser a `chrome` requirement drives is (default {@link findChrome}); tests pass their own. */
@@ -84,9 +85,9 @@ const PYPI_RUNNERS: Runner[] = [
 ]
 
 /**
- * How to start a stdio ability here, with `env` (its static env vars and key) for the server: a manifest's
- * `command` as it is, or its `package` through the first runner this host has (npm, then PyPI, then Docker). `folders`
- * are the ones the server may work in (its roots): a container gets each mounted at the same path, read-only ones so. Throws
+ * How to start a stdio ability here, with `env` (its static env vars and key) for the server: a manifest's `command` as
+ * it is, or its `package` through the first runner this host has (npm, then PyPI, then Docker). `folders` are the ones
+ * the server may work in (its roots): a container gets each mounted at the same path, read-only ones so. Throws
  * {@link McpRunnerMissingError} when nothing installed can start it.
  */
 export function resolveLaunch(

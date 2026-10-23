@@ -7,7 +7,7 @@ import type { FetchLike } from "../security/ssrf"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
-import { type McpAbilityTarget, type McpSandbox, mcpAbilityTarget, sandboxedMcpTarget } from "./mcp-ability"
+import { type McpAbilityTarget, mcpAbilityTarget, type McpSandbox, sandboxedMcpTarget } from "./mcp-ability"
 import { OPT_IN_BUILTINS, personaAbilities } from "./persona-scope"
 import { createLoadSkillTool } from "./skills"
 import type { AbilityStore, SkillSummary } from "./types"
@@ -19,17 +19,26 @@ export type LoadedAbilities = {
   skills: SkillSummary[]
   /** Enabled HTTP tool abilities that loaded (their tools are in `groups`). */
   httpTools: HttpToolAbility[]
-  /** Enabled MCP abilities ready to connect — hand them to `createTools`' `mcpAbilities`, which connects them with the other servers. */
+  /**
+   * Enabled MCP abilities ready to connect — hand them to `createTools`' `mcpAbilities`, which connects them with the
+   * other servers.
+   */
   mcp: McpAbilityTarget[]
   /** Enabled abilities a persona uses (any, without personas) left out because their (required) key is missing. */
   missingKeys: string[]
-  /** Stdio MCP abilities a persona uses (any, without personas) left out because nothing here can start them, with the programs that would. */
+  /**
+   * Stdio MCP abilities a persona uses (any, without personas) left out because nothing here can start them, with the
+   * programs that would.
+   */
   missingRunners: MissingRunner[]
   /** MCP abilities that take roots, left out because no persona that lists them gives them a folder. */
   missingRoots: string[]
 }
 
-/** A stdio ability this host can't start: the runners that would do (any one; empty when one is here), and the programs it drives that are missing (all needed). */
+/**
+ * A stdio ability this host can't start: the runners that would do (any one; empty when one is here), and the programs
+ * it drives that are missing (all needed).
+ */
 export type MissingRunner = { name: string; needs: string[]; requires: string[] }
 
 export type LoadAbilitiesOptions = {
@@ -38,24 +47,36 @@ export type LoadAbilitiesOptions = {
   getApiKey?: (abilityName: string) => string | undefined
   /** Let HTTP tools reach private/loopback hosts. Local mode only. */
   allowPrivate?: boolean
-  /** The sender each HTTP tool's requests go through (the cloud: a sandbox, picked by the key it carries); unset connects directly. */
+  /**
+   * The sender each HTTP tool's requests go through (the cloud: a sandbox, picked by the key it carries); unset
+   * connects directly.
+   */
   send?: (abilityName: string) => FetchLike
-  /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
+  /**
+   * Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they
+   * are.
+   */
   mcpSandbox?: McpSandbox
-  /** With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability, never a local-only one); default every one. */
+  /**
+   * With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability, never a local-only one);
+   * default every one.
+   */
   sandboxed?: (abilityName: string) => boolean
   /** Skills the client serves (a cloud turn's own abilities): load_skill hands their calls to it. */
   clientSkills?: ReadonlySet<string>
   /** How stdio MCP abilities find a runner on this host (tests fake `which`). */
   launch?: LaunchOptions
-  /** Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is every ability the user has (the CLI), off where parts are left out on purpose (the cloud). */
+  /**
+   * Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is
+   * every ability the user has (the CLI), off where parts are left out on purpose (the cloud).
+   */
   warnUnknown?: boolean
 }
 
 /**
- * Turns a store's enabled abilities into agent tool groups, one handler per ability type
- * (skills, code tools, HTTP tools, MCP servers). A store that fails outright loads nothing, with a warning, so a broken
- * ability folder never stops the agent from starting.
+ * Turns a store's enabled abilities into agent tool groups, one handler per ability type (skills, code tools, HTTP
+ * tools, MCP servers). A store that fails outright loads nothing, with a warning, so a broken ability folder never
+ * stops the agent from starting.
  */
 export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOptions = {}): Promise<LoadedAbilities> {
   const skills = await listOrWarn(() => store.listSkills(), "skills")

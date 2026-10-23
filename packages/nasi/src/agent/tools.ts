@@ -5,7 +5,11 @@ import type { SessionImages } from "../store/images"
 import type { NasiStore } from "../store/types"
 import { altFrom, type PromptImage } from "./images"
 
-/** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
+/**
+ * Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a
+ * terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by
+ * {@link run}, never by the model.
+ */
 export type ToolContext = {
   owner: string | null
   personaId?: string
@@ -23,50 +27,46 @@ export type ModelCallUsage = { model: string; promptTokens?: number; completionT
 export const LOCAL_OWNER_CTX: ToolContext = { owner: LOCAL_OWNER }
 
 /**
- * A tool result that includes images alongside text — e.g. a browser
- * screenshot. Images can't travel in the `role: "tool"` message itself (the
- * OpenAI API restricts tool message content to text), so {@link run} sends
- * `text` as the tool response and follows up with a separate `role: "user"`
- * message carrying each image, so the model actually sees it. `images` are the
- * bytes as the tool got them: run() normalises and stores them.
+ * A tool result that includes images alongside text — e.g. a browser screenshot. Images can't travel in the `role:
+ * "tool"` message itself (the OpenAI API restricts tool message content to text), so {@link run} sends `text` as the
+ * tool response and follows up with a separate `role: "user"` message carrying each image, so the model actually sees
+ * it. `images` are the bytes as the tool got them: run() normalises and stores them.
  */
 export type ToolResult = {
   text: string
   images?: { data: Uint8Array; mimeType: string }[]
   /**
-   * A remote image to show next to the tool's result in the timeline —
-   * display-only, e.g. a search result thumbnail. Unlike {@link images},
-   * this never reaches the model: it's not fed back as vision content, just
-   * yielded as a `display_image` event for the UI.
+   * A remote image to show next to the tool's result in the timeline — display-only, e.g. a search result thumbnail.
+   * Unlike {@link images}, this never reaches the model: it's not fed back as vision content, just yielded as a
+   * `display_image` event for the UI.
    */
   displayImage?: { url: string; alt: string }
 }
 
 /**
- * Thrown by a tool's `execute()` on failure (e.g. a non-OK HTTP response),
- * carrying the tool's name so the UI can label the error by source instead
- * of showing one generic message for every kind of failure.
+ * Thrown by a tool's `execute()` on failure (e.g. a non-OK HTTP response), carrying the tool's name so the UI can label
+ * the error by source instead of showing one generic message for every kind of failure.
  */
 export class ToolError extends Error {
   readonly toolName: string
 
-  constructor(toolName: string, message: string) {
+  constructor(name: string, message: string) {
     super(message)
-    this.toolName = toolName
+    this.toolName = name
   }
 }
 
 /**
- * Who stands behind a tool: Kaja itself (`official`) or an ability in the marketplace folder,
- * synced or your own (`community`). Shown in doctor/ability, never to the model.
+ * Who stands behind a tool: Kaja itself (`official`) or an ability in the marketplace folder, synced or your own
+ * (`community`). Shown in doctor/ability, never to the model.
  */
 export type ToolOrigin = "official" | "community"
 
 /**
- * A tool an {@link Agent} can call, pairing the OpenAI function definition
- * with the local implementation that runs when the model calls it. A bare `Tool` is any tool, for the mixed lists hosts pass around.
+ * A tool an {@link Agent} can call, pairing the OpenAI function definition with the local implementation that runs when
+ * the model calls it. A bare `Tool` is any tool, for the mixed lists hosts pass around.
  */
-// biome-ignore lint/suspicious/noExplicitAny: a list holds tools with different arguments, and `execute`'s parameter rules out `unknown`
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any -- the default has to accept every tool's args
 export type Tool<Args = any> = {
   definition: ChatCompletionTool
   /**
@@ -78,8 +78,8 @@ export type Tool<Args = any> = {
   schema?: z.ZodType
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
   /**
-   * When set and it returns a summary for these arguments, run() pauses before executing and
-   * emits `confirm_tool` with it; the host runs the tool itself once the human approves.
+   * When set and it returns a summary for these arguments, run() pauses before executing and emits `confirm_tool` with
+   * it; the host runs the tool itself once the human approves.
    */
   approval?: (args: Args) => string | undefined
   /** An MCP tool that only reads (the server's readOnlyHint, or a manifest `readOnly` rule without `unless`). */
@@ -149,7 +149,10 @@ function jsonSchemaFor(schema: z.ZodType): FunctionParameters {
   return parameters
 }
 
-/** The model's arguments checked against the tool's schema (a tool without one takes them as they are), or the error to send back to the model instead of running it. */
+/**
+ * The model's arguments checked against the tool's schema (a tool without one takes them as they are), or the error to
+ * send back to the model instead of running it.
+ */
 export function checkToolArgs<Args>(
   t: Tool<Args>,
   args: unknown
@@ -169,9 +172,9 @@ export function toolName(t: Tool): string {
 export type ApprovedToolResult = { text: string; images: PromptImage[] }
 
 /**
- * Runs a tool call the human approved after a `confirm_tool` pause, returning what to feed back as its result.
- * Hosts call this with their own tool list; a missing tool, bad arguments or a failure come back as text so the model
- * can react, and `onStatus` hears which way it went.
+ * Runs a tool call the human approved after a `confirm_tool` pause, returning what to feed back as its result. Hosts
+ * call this with their own tool list; a missing tool, bad arguments or a failure come back as text so the model can
+ * react, and `onStatus` hears which way it went.
  */
 export async function runApprovedTool(
   tools: Tool[],

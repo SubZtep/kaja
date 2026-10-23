@@ -9,9 +9,8 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-abilities-file`
 
 const { createFolderAbilityStore, loadAbilities } = await import("@kaja/nasi")
 const { getConfigDir } = await import("../../../lib/config/config")
-const { devSource, getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } = await import(
-  "../../../lib/abilities/abilities-file"
-)
+const { devSource, getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } =
+  await import("../../../lib/abilities/abilities-file")
 
 afterEach(() => {
   rmSync(getConfigDir(), { recursive: true, force: true })

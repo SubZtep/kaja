@@ -245,7 +245,11 @@ test("yolo approves a cloud tool approval itself and carries on, without showing
   nextTurnResponse = () => (bodies.length === 1 ? approvalTurn() : sseResponse("issue filed"))
   const fetchWithBodies = globalThis.fetch
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    if (typeof init?.body === "string" && String(url).endsWith("/nasi/turn/stream")) bodies.push(JSON.parse(init.body))
+    if (
+      typeof init?.body === "string" &&
+      (url instanceof Request ? url.url : String(url)).endsWith("/nasi/turn/stream")
+    )
+      bodies.push(JSON.parse(init.body))
     return fetchWithBodies(url, init)
   }) as typeof fetch
 
@@ -285,7 +289,11 @@ test("a turn waiting on this computer runs the call here, asking first, and resu
   nextTurnResponse = () => (bodies.length === 1 ? pausedTurn() : sseResponse("your host is kaja"))
   const fetchWithBodies = globalThis.fetch
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    if (typeof init?.body === "string" && String(url).endsWith("/nasi/turn/stream")) bodies.push(JSON.parse(init.body))
+    if (
+      typeof init?.body === "string" &&
+      (url instanceof Request ? url.url : String(url)).endsWith("/nasi/turn/stream")
+    )
+      bodies.push(JSON.parse(init.body))
     return fetchWithBodies(url, init)
   }) as typeof fetch
 

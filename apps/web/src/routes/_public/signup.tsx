@@ -195,7 +195,7 @@ function LegalAgreement() {
           key={part}
           href={link.href}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           className="text-neon hover:text-neon-hi underline underline-offset-2"
         >
           {link.label}

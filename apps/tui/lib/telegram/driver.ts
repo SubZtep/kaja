@@ -12,9 +12,9 @@ import {
   imageRefId,
   isImageRejection,
   notApprovedPrompt,
-  type PromptImage,
   personaAbilities,
   photoLabel,
+  type PromptImage,
   recordPausedCall,
   runApprovedTool,
   samplingOf,
@@ -30,8 +30,8 @@ import {
   escapeHtml,
   isCommand,
   openReply,
-  type Reply,
-  renderTelegramHtml
+  renderTelegramHtml,
+  type Reply
 } from "@kaja/shared/telegram"
 import { sessionTitle } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"
@@ -47,7 +47,10 @@ import { storedImagePath } from "../memory/store"
 import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 
-/** The /abilities reply: the abilities each persona uses (its `abilities` list), and how to change them (on the computer: this bot reads the folder once, at start). */
+/**
+ * The /abilities reply: the abilities each persona uses (its `abilities` list), and how to change them (on the
+ * computer: this bot reads the folder once, at start).
+ */
 function abilitiesMessage(personas: Persona[]): string {
   const lines = personas.map(persona => {
     const names = [...personaAbilities(persona).keys()].map(name => escapeHtml(name))
@@ -67,7 +70,10 @@ const isStoredImage = (path: string) => {
   return root !== undefined && path.startsWith(`${root}/`)
 }
 
-/** Where a reply's `![alt](src)` photo comes from: a public URL, or an existing image file by absolute or `~/` path (nothing else, so a reply can't upload an arbitrary file). */
+/**
+ * Where a reply's `![alt](src)` photo comes from: a public URL, or an existing image file by absolute or `~/` path
+ * (nothing else, so a reply can't upload an arbitrary file).
+ */
 function photoSource(src: string): { url: string } | { path: string } | undefined {
   if (isPublicHttpUrl(src)) return { url: src }
   let path = src.replace(/^file:\/\//, "")
@@ -94,21 +100,26 @@ const MAX_COMMAND_LINES = 6
 /** The events after which the turn has nothing more to say. */
 const ENDS_TURN = new Set<AgentEvent["type"]>(["ask_user", "final", "confirm_command", "confirm_tool"])
 
-/** A failure as the chat shows it: the category in the user's language, like the cloud bot and the terminal, then the provider's own (technical) text, escaped for HTML. */
+/**
+ * A failure as the chat shows it: the category in the user's language, like the cloud bot and the terminal, then the
+ * provider's own (technical) text, escaped for HTML.
+ */
 function errorLine(error: unknown): string {
   const { category, message } = categorizeError(error)
   const label = t(`error.${category}`)
   return `⚠ ${label}: ${escapeHtml(message)}`
 }
 
-/** A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy dependency. */
+/**
+ * A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy
+ * dependency.
+ */
 export type InlineKeyboardLike = { text: string; callback_data: string }[][]
 
 /**
- * Abstraction over the actual Telegram API calls, so the driver is testable
- * without a live bot and has zero import of grammy itself. lib/telegram-bot.ts
- * implements this against the real bot.api, translating grammy's own errors
- * (429s, "message is not modified") at that boundary.
+ * Abstraction over the actual Telegram API calls, so the driver is testable without a live bot and has zero import of
+ * grammy itself. lib/telegram-bot.ts implements this against the real bot.api, translating grammy's own errors (429s,
+ * "message is not modified") at that boundary.
  */
 export type TelegramSender = {
   sendMessage(chatId: number, text: string, opts?: { replyMarkup?: InlineKeyboardLike }): Promise<{ messageId: number }>
@@ -120,7 +131,10 @@ export type TelegramSender = {
   ): Promise<void>
   deleteMessage(chatId: number, messageId: number): Promise<void>
   answerCallbackQuery(callbackQueryId: string, opts?: { text?: string }): Promise<void>
-  /** Sends a photo: a tool's stored image (bytes), a local file (a reply's Markdown image) or a remote URL (display_image events). */
+  /**
+   * Sends a photo: a tool's stored image (bytes), a local file (a reply's Markdown image) or a remote URL
+   * (display_image events).
+   */
   sendPhoto(
     chatId: number,
     photo: { data: Uint8Array } | { path: string } | { url: string },
@@ -136,18 +150,16 @@ export type TelegramDriverConfig = {
   personas: Persona[]
   models: CliResolvedModel[]
   /**
-   * Fallback persona for a user with no resumable session (including a
-   * fresh /new); defaults to personas[0]. A getter rather than a fixed
-   * Persona so /new can reflect a persona switched in the terminal *after*
-   * the bot process started, without needing a restart.
+   * Fallback persona for a user with no resumable session (including a fresh /new); defaults to personas[0]. A getter
+   * rather than a fixed Persona so /new can reflect a persona switched in the terminal _after_ the bot process started,
+   * without needing a restart.
    */
   getInitialPersona?: () => Persona | undefined | Promise<Persona | undefined>
   sender: TelegramSender
   /**
-   * Constructs the Agent for a newly-created UserState. Defaults to `new
-   * Agent(...)`; overridable so tests can substitute a fake OpenAI-shaped
-   * client the same way tests/lib/agents.test.ts does, without going through
-   * the real lib/openai.ts singleton Agent's constructor always pulls in.
+   * Constructs the Agent for a newly-created UserState. Defaults to `new Agent(...)`; overridable so tests can
+   * substitute a fake OpenAI-shaped client the same way tests/lib/agents.test.ts does, without going through the real
+   * lib/openai.ts singleton Agent's constructor always pulls in.
    */
   createAgent?: (init: {
     instructions?: string
@@ -170,7 +182,10 @@ type UserState = {
   events: TimelineEvent[]
   sessionRowId: string | undefined
   persona: Persona
-  /** Serializes saves the same way hooks/use-agent.ts's persistChainRef does, so a fast next turn can't race the row-id assignment into a duplicate INSERT. */
+  /**
+   * Serializes saves the same way hooks/use-agent.ts's persistChainRef does, so a fast next turn can't race the row-id
+   * assignment into a duplicate INSERT.
+   */
   persistChain: Promise<void>
   pendingCommand: PendingCommand | undefined
   busy: boolean
@@ -373,9 +388,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   }
 
   /**
-   * Handles one finalized (non-delta, non-usage) event within a turn's loop.
-   * Returns `true` once the event has ended the turn (confirm_command,
-   * ask_user, final) so {@link runTurn} knows to stop iterating.
+   * Handles one finalized (non-delta, non-usage) event within a turn's loop. Returns `true` once the event has ended
+   * the turn (confirm_command, ask_user, final) so {@link runTurn} knows to stop iterating.
    */
   async function handleFinalizedEvent(
     chatId: number,
@@ -544,8 +558,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   }
 
   /**
-   * A message instead of a tap on a waiting approval skips the call, like the cloud bot: the prompt says so, and
-   * the approval's buttons go. Also after a restart, when only the session remembers the call.
+   * A message instead of a tap on a waiting approval skips the call, like the cloud bot: the prompt says so, and the
+   * approval's buttons go. Also after a restart, when only the session remembers the call.
    */
   async function answerPendingWith(chatId: number, state: UserState, text: string): Promise<string> {
     const kind = state.session.pendingRunCommandId ? "run_command" : "tool_approval"
@@ -558,7 +572,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return notApprovedPrompt(text)
   }
 
-  /** `images` (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a command. */
+  /**
+   * `images` (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a
+   * command.
+   */
   async function handleMessage(userId: number, chatId: number, text: string, images: string[] = []) {
     if (images.length > 0) return handlePhoto(userId, chatId, text, images)
 

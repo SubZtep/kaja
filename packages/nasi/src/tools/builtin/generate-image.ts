@@ -1,16 +1,15 @@
 import OpenAI from "openai"
 import { z } from "zod"
-import { ToolError, tool } from "../../agent/agent"
+import { tool, ToolError } from "../../agent/agent"
 import { fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /**
- * Generates an image from a text prompt via an OpenAI-compatible Images API
- * (e.g. xAI's Grok Imagine).
+ * Generates an image from a text prompt via an OpenAI-compatible Images API (e.g. xAI's Grok Imagine).
  *
  * @param args.prompt - Description of the image to generate.
- * @returns A {@link ToolResult} carrying the image; run() stores it and injects it as
- * a vision content block in a follow-up user message.
+ * @returns A {@link ToolResult} carrying the image; run() stores it and injects it as a vision content block in a
+ *   follow-up user message.
  */
 export const generateImageTool = tool({
   name: "generate_image",

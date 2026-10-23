@@ -3,7 +3,7 @@ import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { checkAbilityKey, checkProvider, checkTelegramToken } from "../../../lib/doctor/checks"
 
-let fetchSpy: ReturnType<typeof spyOn> | undefined
+let fetchSpy: ReturnType<typeof spyOn>
 
 function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   fetchSpy = spyOn(globalThis, "fetch").mockImplementation((async (input: string | URL | Request, init?: RequestInit) =>

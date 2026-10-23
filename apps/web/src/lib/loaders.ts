@@ -13,7 +13,10 @@ export const userRequired = async (role?: "user" | "admin", redirectTo?: string)
   return session.user
 }
 
-/** For pages only a signed-out visitor needs (sign in, sign up): a signed-in user goes on to `redirectTo` (a path on this site) or the dashboard. */
+/**
+ * For pages only a signed-out visitor needs (sign in, sign up): a signed-in user goes on to `redirectTo` (a path on
+ * this site) or the dashboard.
+ */
 export const guestOnly = async (redirectTo?: string) => {
   const session = await getSession()
   if (!session?.user) return

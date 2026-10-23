@@ -11,7 +11,10 @@ async function savePairedOwner(user: { id: number }) {
   await saveSecrets({ telegram: { owner_ids: [...new Set([...saved, user.id])] } })
 }
 
-/** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
+/**
+ * Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once
+ * gracefully stopped (SIGINT/SIGTERM).
+ */
 export async function runTelegramCli(deps: {
   /** The bot token from secrets.toml's `[telegram]`; without one there is nothing to run. */
   botToken: string | undefined
@@ -24,11 +27,14 @@ export async function runTelegramCli(deps: {
   ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
-  /** settings.toml's `yolo`: the bot never asks to approve anything either. */
+  /** Settings.toml's `yolo`: the bot never asks to approve anything either. */
   yolo?: boolean
   personas: Persona[]
   models: CliResolvedModel[]
-  /** Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via installShutdownHandlers. */
+  /**
+   * Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via
+   * installShutdownHandlers.
+   */
   closeTools: () => Promise<void>
 }): Promise<number> {
   if (!deps.botToken) {

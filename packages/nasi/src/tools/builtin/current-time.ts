@@ -2,13 +2,11 @@ import { z } from "zod"
 import { tool } from "../../agent/agent"
 
 /**
- * Gets the current date and time in a given timezone, formatted as an
- * ISO 8601 string with UTC offset (e.g. `2026-07-14T15:04:05-04:00`).
+ * Gets the current date and time in a given timezone, formatted as an ISO 8601 string with UTC offset (e.g.
+ * `2026-07-14T15:04:05-04:00`).
  *
- * @param args.timezone - IANA timezone name (e.g. `America/New_York`).
- * Defaults to the host system's local timezone; the model should pass the
- * user's own timezone (if it knows it)
- * when it wants that instead.
+ * @param args.timezone - IANA timezone name (e.g. `America/New_York`). Defaults to the host system's local timezone;
+ *   the model should pass the user's own timezone (if it knows it) when it wants that instead.
  */
 export const currentTimeTool = tool({
   name: "current_time",

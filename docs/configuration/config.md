@@ -49,18 +49,18 @@ voice = false
 
 ## `[preferences]`
 
-| Field | Purpose |
-| --- | --- |
-| `mode` | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
-| `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language)) |
-| `thinking` | show the model's reasoning while it generates |
-| `toolDisplay` | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show |
-| `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all |
-| `sounds` | play UI sounds |
-| `voice` | speak replies aloud (needs a model listing `tts` in `models.toml`) |
-| `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
-| `theme` | `auto` (default), `dark`, `light` or `terminal`: the [colours](/using/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme |
-| `yolo` | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
+| Field              | Purpose                                                                                                                                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`             | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses)                                                                                                                                                                                                                             |
+| `locale`           | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language))                                                                                                                                                                                                                            |
+| `thinking`         | show the model's reasoning while it generates                                                                                                                                                                                                                                                                                                     |
+| `toolDisplay`      | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show                                                                                                                                                                                                                                                          |
+| `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all                                                                                                                                                                                                                                           |
+| `sounds`           | play UI sounds                                                                                                                                                                                                                                                                                                                                    |
+| `voice`            | speak replies aloud (needs a model listing `tts` in `models.toml`)                                                                                                                                                                                                                                                                                |
+| `hotkeyModifier`   | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier                                                                                                                                                                                                                                                                           |
+| `theme`            | `auto` (default), `dark`, `light` or `terminal`: the [colours](/using/tui#colours). `auto` picks dark or light to match the terminal; `terminal` uses the terminal's own colour scheme                                                                                                                                                            |
+| `yolo`             | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
 
 ## `commands.toml`: commands that run without asking
 
@@ -94,12 +94,12 @@ session you resume doesn't replay its old messages, and `kaja telegram` has no h
 
 ## `[marketplace]`
 
-| Field | Purpose |
-| --- | --- |
-| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true` |
+| Field       | Purpose                                                                                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`   | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true`    |
 | `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure. Changes apply on the next launch. Default `true` |
-| `url` | the git URL (or local path) of the repo whose `marketplace/` folder `kaja abilities update` fetches: a fork, or a checkout with your changes. Default the Kaja repo |
-| `ref` | the branch or tag to fetch. Default `main` |
+| `url`       | the git URL (or local path) of the repo whose `marketplace/` folder `kaja abilities update` fetches: a fork, or a checkout with your changes. Default the Kaja repo         |
+| `ref`       | the branch or tag to fetch. Default `main`                                                                                                                                  |
 
 ## `[tools.hosts]`
 
@@ -117,8 +117,8 @@ Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode
 
 ## `[context]`
 
-| Field | Purpose |
-| --- | --- |
+| Field        | Purpose                                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
 
 Past that point, the older messages are summarised, and the model carries on from the summary plus the most

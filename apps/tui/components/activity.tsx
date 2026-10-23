@@ -16,10 +16,9 @@ function estimateTokens(partial: PartialMessage | null) {
 }
 
 /**
- * Activity line shown while a run is in flight but nothing is visibly
- * streaming — i.e. before the first token, or while reasoning streams with
- * the thinking display off. A spinner plus elapsed time and a rough token
- * count, so the terminal never looks stuck.
+ * Activity line shown while a run is in flight but nothing is visibly streaming — i.e. before the first token, or while
+ * reasoning streams with the thinking display off. A spinner plus elapsed time and a rough token count, so the terminal
+ * never looks stuck.
  */
 export function Activity({
   pending,
@@ -39,7 +38,7 @@ export function Activity({
   useEffect(() => {
     if (!pending) return
     setTick(0)
-    const timer = setInterval(() => setTick(t => t + 1), TICK_MS)
+    const timer = setInterval(() => setTick(n => n + 1), TICK_MS)
     return () => clearInterval(timer)
   }, [pending])
 
@@ -64,8 +63,8 @@ export function Activity({
 }
 
 /**
- * ink-ui's Spinner, laid out so a long label can't squeeze the frame: the frame keeps its width, then a space, then
- * the label on one row; a one-column frame puts the label in the column the agent's messages start in.
+ * Ink-ui's Spinner, laid out so a long label can't squeeze the frame: the frame keeps its width, then a space, then the
+ * label on one row; a one-column frame puts the label in the column the agent's messages start in.
  */
 function SpinnerLine({
   type,

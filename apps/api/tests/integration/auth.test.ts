@@ -119,8 +119,8 @@ describe("authentication flow", () => {
   })
 
   describe("email change", () => {
-    const send = (email: string, token?: string) =>
-      post("/auth/email-otp/send-verification-otp", { email, type: "email-verification" }, token)
+    const send = (address: string, token?: string) =>
+      post("/auth/email-otp/send-verification-otp", { email: address, type: "email-verification" }, token)
 
     test("the current address's code goes only to a signed-in user's own address", async () => {
       const own = faker.internet.email().toLowerCase()

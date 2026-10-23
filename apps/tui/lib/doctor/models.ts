@@ -63,7 +63,7 @@ type Deps = {
 /** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
 export async function defaultModelIo(): Promise<ModelIo> {
   const { askPick } = await import("./prompt")
-  return { interactive: Boolean(process.stdin.isTTY), askPick }
+  return { interactive: process.stdin.isTTY, askPick }
 }
 
 type ProbeResult = { model: CliResolvedModel; result: Awaited<ReturnType<typeof probeModel>> }
@@ -106,11 +106,10 @@ function trimTrailingDots(text: string): string {
 }
 
 /**
- * Tests every configured model, task by task, and prints one line each with why it failed. `models` is in
- * file order, so a task's first model is its active one. When that fails while a later one of the same task
- * answered, and there is a terminal to ask in, offers to switch to the first that did: the broken models
- * ahead of it are commented out of models.toml, so it becomes the first. A model nothing else can stand in
- * for is only reported.
+ * Tests every configured model, task by task, and prints one line each with why it failed. `models` is in file order,
+ * so a task's first model is its active one. When that fails while a later one of the same task answered, and there is
+ * a terminal to ask in, offers to switch to the first that did: the broken models ahead of it are commented out of
+ * models.toml, so it becomes the first. A model nothing else can stand in for is only reported.
  */
 export async function runModelPass(
   models: CliResolvedModel[],

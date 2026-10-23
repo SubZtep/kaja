@@ -109,7 +109,10 @@ async function runWizard({ headless }: ConfigFlags): Promise<{ code: number; tex
   return runConfigWizard({ headless })
 }
 
-/** The parsed flags these subcommands read. They come from `lib/cli/args.ts`, not from the positionals: parseArgs strips flags out of `input`, so scanning it here silently ignored every one of them. */
+/**
+ * The parsed flags these subcommands read. They come from `lib/cli/args.ts`, not from the positionals: parseArgs strips
+ * flags out of `input`, so scanning it here silently ignored every one of them.
+ */
 export type ConfigFlags = { headless?: boolean; offline?: boolean; only?: string }
 
 /**

@@ -23,17 +23,17 @@ In cloud mode there's no local database: the same data lives in the server's Pos
 
 ## Tables
 
-| Table | Holds |
-| --- | --- |
-| `notes` | the agent's long-term [memory](/abilities/memory) about you |
-| `sessions` | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s` |
-| `messages` | the conversation itself, one row per message (assistant rows are its steps, with model, tokens and latency) |
-| `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took. A result too big for the context also keeps the condensed version the model was sent |
-| `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into. The messages themselves are never deleted |
-| `model_calls` | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time |
-| `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
-| `dataset_answers` | individual answers to a [dataset](/abilities/memory#datasets) field |
-| `dataset_versions` | marks a dataset as completed at a point in time |
+| Table               | Holds                                                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `notes`             | the agent's long-term [memory](/abilities/memory) about you                                                                                                                                   |
+| `sessions`          | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s`                                                                                                            |
+| `messages`          | the conversation itself, one row per message (assistant rows are its steps, with model, tokens and latency)                                                                                   |
+| `tool_calls`        | every tool call the assistant made, linked to its result message, with how it went and how long it took. A result too big for the context also keeps the condensed version the model was sent |
+| `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into. The messages themselves are never deleted                                                               |
+| `model_calls`       | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time                                                                                      |
+| `session_events`    | the terminal timeline (what the screen showed), replayed when you resume                                                                                                                      |
+| `dataset_answers`   | individual answers to a [dataset](/abilities/memory#datasets) field                                                                                                                           |
+| `dataset_versions`  | marks a dataset as completed at a point in time                                                                                                                                               |
 
 `owner` separates rows within one file: empty for the terminal (`null` in `sessions`), a namespaced id for a
 Telegram user or a widget visitor. Sessions belonging to another owner can't be resumed.

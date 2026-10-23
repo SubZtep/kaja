@@ -37,12 +37,12 @@ async function apiFetch<T = unknown>(
   })
 
   if (!response.ok) {
-    const body = await response.json().catch(() => undefined)
-    const message = typeof body?.error === "string" ? body.error : response.statusText
+    const errorBody = await response.json().catch(() => undefined)
+    const message = typeof errorBody?.error === "string" ? errorBody.error : response.statusText
     throw new Error(message)
   }
 
-  return response.json()
+  return response.json() as Promise<T>
 }
 
 /** Bound `apiFetch` using the current API base URL and Better Auth session token. */

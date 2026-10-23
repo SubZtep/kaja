@@ -44,7 +44,7 @@ name     = "Ollama"
 kind     = "self-hosted"
 base_url = "http://localhost:11434/v1"
 comment  = [
-  'Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.',
+  'Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.'
 ]
 
 

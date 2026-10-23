@@ -226,7 +226,7 @@ function fakeIssueTracker() {
   requests = []
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     requests.push({
-      url: String(input),
+      url: input instanceof Request ? input.url : String(input),
       method: init?.method,
       headers: new Headers(init?.headers),
       body: init?.body as string
@@ -406,7 +406,9 @@ test("a turn's images reach the model with its text, and history shows them as a
 test("an image is stored the moment it arrives: the session keeps its ref, the model gets its bytes", async () => {
   const sent: SentMessage[][] = []
   const store = createMemoryStore()
-  const done = await (await open([{ content: "A cat." }], { store }, sent)).turnBuffered({
+  const done = await (
+    await open([{ content: "A cat." }], { store }, sent)
+  ).turnBuffered({
     message: "what is this?",
     images: [PHOTO]
   })
@@ -444,7 +446,7 @@ test("only images still in the window are fetched for a request; older ones aren
 test("a new session whose first turn fails leaves no images behind", async () => {
   const objects = memoryObjects()
   const kept = new Set<string>()
-  const put = objects.put
+  const put = objects.put.bind(objects)
   objects.put = async (key, data, type) => {
     kept.add(key)
     await put(key, data, type)

@@ -79,6 +79,7 @@ So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrom
 ```
 
 What happens when Chrome opens `https://example.com`:
+
 1. **Chrome asks the proxy.** It doesn't connect itself; it sends `CONNECT example.com:443` ("open a tunnel for me"). A plain `http://` page comes as `GET http://example.com/path` instead.
 2. **The proxy resolves the name itself**, say to `93.184.215.14`.
 3. **Every address must be public.** Loopback, private ranges (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`, the metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses, and their IPv6 equivalents, are refused with `403`. Chrome shows an error page. The rule is `isPrivateAddress` from `@kaja/shared/net`, the same one the API's SSRF guard uses.
@@ -86,6 +87,7 @@ What happens when Chrome opens `https://example.com`:
 5. **Bytes are piped both ways.** HTTPS stays encrypted end to end; the proxy never sees inside it. Plain HTTP is rewritten to `GET /path`, and the connection closes after the answer, so the next request (maybe to another host) is checked again.
 
 Two more Chrome flags keep it from going around the proxy:
+
 - `--proxy-bypass-list=<-loopback>`: Chrome normally skips the proxy for `localhost`. That exception is exactly the hole we're closing, so this turns it off.
 - `--force-webrtc-ip-handling-policy=disable_non_proxied_udp`: WebRTC could otherwise open direct UDP connections.
 
@@ -139,6 +141,7 @@ Request    422  (application/json, 233 bytes)
 ```
 
 It doesn't follow redirects (tool requests don't either; the API checks each hop), so a site's bare root often shows a `301`; check the endpoint the tool calls instead. When `Request` fails:
+
 - `Blocked non-public URL`: the name resolves to a private address, or doesn't resolve at all (the `Resolve` line says which); the sandbox never connects to either.
 - `Couldn't connect to <host>: WEB_PROXY answered HTTP/1.1 407 …`: wrong or missing proxy credentials.
 - `Couldn't connect to <host>: WEB_PROXY answered …`, with the `CONNECT` lines showing the IP refused and the name `200`: the upstream won't `CONNECT` to IP addresses, which the egress proxy needs (see above).
