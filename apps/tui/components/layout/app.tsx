@@ -195,6 +195,7 @@ function Chrome({
   const [modal, setModal] = useState<ModalName | null>(null)
   const codeView = useCodeView(codePreviewLines)
 
+  const asking = isAsking(events, pending)
   const bottomChromeKey = getBottomChromeKey(modal !== null, pendingCommand, runningCommand)
   const showConfirm = Boolean(pendingCommand && resolvePending)
   const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
@@ -286,7 +287,8 @@ function Chrome({
                 key="user-input"
                 pending={pending}
                 speaking={speaking}
-                asking={isAsking(events, pending)}
+                asking={asking}
+                placeholder={asking ? t("input.askPlaceholder") : undefined}
                 send={send}
                 history={history}
                 personaModels={personaModels}

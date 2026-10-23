@@ -285,7 +285,8 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 
 
 [input]
-placeholder = "Type something..."
+placeholder    = "Type something..."
+askPlaceholder = "[en-US] lorem ipsum"
 
 
 [header]

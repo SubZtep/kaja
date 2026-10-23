@@ -123,3 +123,28 @@ test("the border turns to arrows only while an ask_user answer is awaited", asyn
   asking.unmount()
   await asking.waitUntilExit()
 })
+
+test("a given placeholder replaces the chat one, and the draft is reported as it changes", async () => {
+  const drafts: string[] = []
+  const t = renderForTest(
+    <UserInput
+      pending={false}
+      speaking={false}
+      send={async () => {}}
+      placeholder="Type your answer…"
+      onDraft={draft => drafts.push(draft)}
+    />
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("Type your answer")
+  expect(t.lastFrame()).not.toContain("Type something")
+
+  await t.press("hi")
+  expect(drafts.at(-1)).toBe("hi")
+  await t.press("\r")
+  await t.tick()
+  expect(drafts.at(-1)).toBe("")
+
+  t.unmount()
+  await t.waitUntilExit()
+})

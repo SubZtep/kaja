@@ -285,7 +285,8 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 
 [input]
-placeholder = "Írj valamit..."
+placeholder    = "Írj valamit..."
+askPlaceholder = "[hu-HU] lorem ipsum"
 
 
 [header]

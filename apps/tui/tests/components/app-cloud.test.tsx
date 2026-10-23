@@ -381,3 +381,21 @@ test("writing instead of answering declines the call here and shows what was wri
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("a question from the agent's ask_user tool changes the input's hint to an answer's", async () => {
+  const body =
+    'event: ask_user\ndata: {"type":"ask_user","question":"Which one?","fromTool":true}\n\n' +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_input"}\n\n'
+  nextTurnResponse = () => new Response(body, { headers: { "content-type": "text/event-stream" } })
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  expect(t.lastFrame()).toContain("Type something")
+  await t.press("pick one")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(t.lastFrame()).toContain("Which one?")
+  expect(t.lastFrame()).toContain("Type your answer")
+
+  t.unmount()
+  await t.waitUntilExit()
+})

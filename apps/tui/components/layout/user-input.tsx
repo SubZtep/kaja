@@ -64,7 +64,9 @@ export function UserInput({
   const [mic, setMic] = useState(false)
   const { columns } = useWindowSize()
   const history = usePromptHistory(initialHistory ?? [])
-  useEffect(() => onDraft?.(input), [input, onDraft])
+  useEffect(() => {
+    onDraft?.(input)
+  }, [input, onDraft])
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
     history.markEdited()
