@@ -4,7 +4,7 @@ import { useKey } from "../../hooks/use-key"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
 
-const VISIBLE_COUNT = 6 // TODO: make it configurable, also visible hiddens
+const VISIBLE_COUNT = 5 // TODO: make it configurable
 
 /**
  * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
@@ -84,6 +84,11 @@ export function SelectMenu({
 
   const { accent, previewRow, previewText } = useKajaTheme()
 
+  // A scrolling list reserves an arrow slot between the cursor and the label, so the menu stays VISIBLE_COUNT tall.
+  const scrolls = items.length > VISIBLE_COUNT
+  const hiddenAbove = from
+  const hiddenBelow = Math.max(0, items.length - from - VISIBLE_COUNT)
+
   return (
     // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only
     // `preview` paints it, in the theme's own colours).
@@ -93,6 +98,9 @@ export function SelectMenu({
         const isFocused = index === focused
         const hint = hints?.[index]
         const accentRow = !isFocused && accented?.[index]
+        let arrow = " "
+        if (offset === 0 && hiddenAbove > 0) arrow = "↑"
+        else if (offset === VISIBLE_COUNT - 1 && hiddenBelow > 0) arrow = "↓"
         return (
           <Box
             key={index}
@@ -110,6 +118,7 @@ export function SelectMenu({
                   ❯
                 </Text>
               )}
+              {scrolls && <Text dimColor>{arrow}</Text>}
               <Text bold={isFocused} {...(accentRow ? accent() : {})} {...(isFocused && preview ? previewText() : {})}>
                 {item}
               </Text>
