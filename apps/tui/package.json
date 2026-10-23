@@ -24,7 +24,7 @@
     "marked": "^18.1.1",
     "node-notifier": "^11.0.0",
     "open": "^11.0.4",
-    "openai": "^7.42.0",
+    "openai": "^7.43.0",
     "play-sound": "^1.1.6",
     "react": "^19.3.1",
     "supports-hyperlinks": "^4.6.0",
