@@ -48,7 +48,7 @@ function KeyBarItem({
   // A dropped or renamed entry must not stay clickable at its old spot
   useEffect(() => () => onGone(item.key), [item.key, onGone])
   return (
-    <Box ref={ref} marginRight={ITEM_GAP} flexShrink={0} columnGap={1}>
+    <Box ref={ref} flexShrink={0} columnGap={1}>
       <Text {...(item.lit ? keyCapHeld() : keyCap())}>{item.key}</Text>
       <Text bold={hovered || item.lit}>{item.label}</Text>
     </Box>
@@ -56,10 +56,10 @@ function KeyBarItem({
 }
 
 /**
- * Bottom-of-screen key bar, nano/Midnight-Commander style: a row of `<key> <label>` pairs, the key in reverse video. On
- * a narrow terminal (`width`) the keys shrink to their `short` form and the `droppable` entries disappear; failing that
- * the pairs wrap onto further rows whole, never split mid-label. An entry with `onPress` is also a button: it dims
- * under the mouse and a click runs it.
+ * Bottom-of-screen key bar, nano/Midnight-Commander style: a full-width row of `<key> <label>` pairs, the key in
+ * reverse video, the space between them growing to fill the row. On a narrow terminal (`width`) the keys shrink to
+ * their `short` form and the `droppable` entries disappear; failing that the pairs wrap onto further rows whole, never
+ * split mid-label. An entry with `onPress` is also a button: it dims under the mouse and a click runs it.
  */
 export function KeyBar({ items: allItems, width }: Readonly<{ items: KeyBarEntry[]; width?: number }>) {
   const items = width === undefined ? allItems : fitKeyBarItems(allItems, width)
@@ -98,7 +98,7 @@ export function KeyBar({ items: allItems, width }: Readonly<{ items: KeyBarEntry
   }, !blocked)
 
   return (
-    <Box ref={barRef} flexShrink={0} width="100%" flexWrap="wrap">
+    <Box ref={barRef} flexShrink={0} width="100%" flexWrap="wrap" justifyContent="space-between" columnGap={ITEM_GAP}>
       {items.map(item => (
         <KeyBarItem key={item.key} item={item} hovered={hovered === item.key} onRect={onRect} onGone={onGone} />
       ))}
