@@ -1,10 +1,10 @@
 import type { AdminImage, AdminImagesResponse, ImageOrigin } from "@kaja/schema/api"
-import { adminImagesResponseSchema } from "@kaja/schema/api"
+import { adminImagesResponseSchema, describeImageResponseSchema, describeImagesResponseSchema } from "@kaja/schema/api"
 import { getDateTime } from "@kaja/shared/date"
 import { cn } from "@kaja/shared/ui"
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ExternalLink, Trash2, X } from "lucide-react"
+import { ExternalLink, Sparkles, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../../../components/form/primitives/Button"
@@ -103,6 +103,7 @@ function ImagesPage() {
             image={selected}
             onClose={() => setSelected(undefined)}
             onRemoved={() => setSelected(undefined)}
+            onDescribed={description => setSelected(previous => previous && { ...previous, description })}
           />
         )}
         <div className="min-w-0 flex-1">
@@ -160,6 +161,20 @@ function Filters({
   onChange
 }: Readonly<{ filters: ImageFilters; onChange: (next: Partial<ImageFilters>) => void }>) {
   const { admin } = useAuthClient()
+  const apiFetch = useApiFetch()
+  const queryClient = useQueryClient()
+  const describeAll = useMutation({
+    mutationFn: () =>
+      apiFetch("/admin/images/describe", { user: filters.user, site: filters.site, origin: filters.origin }).then(r =>
+        describeImagesResponseSchema.parse(r)
+      ),
+    onSuccess: ({ queued }) => {
+      toast.success(m.admin_images_describe_all_queued({ count: queued }))
+      // They're written in the background; a later look picks them up
+      void queryClient.invalidateQueries({ queryKey: ["admin-images"] })
+    },
+    onError: (error: Error) => toast.error(error.message || m.admin_images_describe_failed())
+  })
   const users = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -214,6 +229,16 @@ function Filters({
             </Button>
           ))}
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={describeAll.isPending}
+          onClick={() => describeAll.mutate()}
+          className="ml-auto gap-1.5"
+        >
+          <Sparkles size={14} />
+          {m.admin_images_describe_all()}
+        </Button>
       </div>
     </Section>
   )
@@ -222,10 +247,31 @@ function Filters({
 function ImagePanel({
   image,
   onClose,
-  onRemoved
-}: Readonly<{ image: AdminImage; onClose: () => void; onRemoved: () => void }>) {
+  onRemoved,
+  onDescribed
+}: Readonly<{
+  image: AdminImage
+  onClose: () => void
+  onRemoved: () => void
+  onDescribed: (description: string) => void
+}>) {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
+  const describe = useMutation({
+    mutationFn: () =>
+      apiFetch(`/admin/images/${image.sessionId}/${image.id}/describe`, undefined, { method: "POST" }).then(r =>
+        describeImageResponseSchema.parse(r)
+      ),
+    onSuccess: ({ description }) => {
+      if (!description) {
+        toast.warn(m.admin_images_describe_empty())
+        return
+      }
+      onDescribed(description)
+      void queryClient.invalidateQueries({ queryKey: ["admin-images"] })
+    },
+    onError: (error: Error) => toast.error(error.message || m.admin_images_describe_failed())
+  })
   const remove = useMutation({
     mutationFn: () => apiFetch(`/admin/images/${image.sessionId}/${image.id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
@@ -301,7 +347,17 @@ function ImagePanel({
             </div>
           ))}
       </dl>
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex justify-end gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={describe.isPending}
+          onClick={() => describe.mutate()}
+          className="gap-1.5"
+        >
+          <Sparkles size={14} />
+          {m.admin_images_describe()}
+        </Button>
         <ConfirmDialog
           title={m.admin_images_remove_title()}
           description={m.admin_images_remove_description()}

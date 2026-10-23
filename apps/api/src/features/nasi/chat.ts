@@ -45,6 +45,11 @@ export function setNasiDescriberResolver(resolver: DescriberResolver | undefined
   describerResolver = resolver
 }
 
+/** The vision model images are described with (a test's stand-in when set), or undefined when there's none. */
+export function cloudDescriber() {
+  return describerResolver ? describerResolver() : resolveDescriber()
+}
+
 /**
  * Reuses an existing session's model so it doesn't change mid-conversation; falls back to a fresh random pick if that
  * model was since disabled/deleted (or there's no pinned model yet, i.e. a new session).
@@ -223,7 +228,7 @@ export async function openNasiFor(opts: {
   const [chat, summarizer, describer] = await Promise.all([
     chatResolver ? chatResolver() : defaultChatResolver(opts.pinnedModel),
     resolveSummarizer(),
-    describerResolver ? describerResolver() : resolveDescriber()
+    cloudDescriber()
   ])
   const source = opts.abilities ?? { userId: opts.userId }
   // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.

@@ -105,6 +105,9 @@ CREATE TABLE IF NOT EXISTS nasi_image (
   description text,
   description_model text,
   described_at timestamptz,
+  -- tries by the sweep and the admin's buttons (the sweep gives up at 3), and when the last one was
+  describe_attempts integer NOT NULL DEFAULT 0,
+  describe_tried_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (session_id, id)
 );

@@ -4,6 +4,7 @@ import { seo } from "../../../../lib/seo"
 import { m } from "../../../../paraglide/messages.js"
 import { MarketplaceSection, ServiceKeysSection } from "./-components/MarketplaceSection"
 import { SandboxSection } from "./-components/SandboxSection"
+import { StorageSection } from "./-components/StorageSection"
 
 export const Route = createFileRoute("/_admin/admin/dashboard/")({
   component: AdminDashboard,
@@ -17,6 +18,7 @@ function AdminDashboard() {
       <MarketplaceSection />
       <ServiceKeysSection />
       <SandboxSection />
+      <StorageSection />
     </>
   )
 }

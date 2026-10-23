@@ -92,6 +92,7 @@ export {
   isContextOverflow,
   summarize
 } from "./agent/compaction"
+export { type Describer, describeImage, imageLabel } from "./agent/describe"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 export type { PromptImage } from "./agent/images"

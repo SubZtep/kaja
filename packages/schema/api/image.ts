@@ -46,7 +46,44 @@ export const adminImagesResponseSchema = z.object({
   next: z.string().nullable()
 })
 
+/** What "describe all matching" covers: the images page's filters (only undescribed images are ever picked). */
+export const describeImagesRequestSchema = z.object({
+  user: z.uuid().optional(),
+  site: z.string().trim().toLowerCase().min(1).max(253).optional(),
+  origin: imageOriginSchema.optional()
+})
+
+/** The description the vision model wrote, or null when it gave none. */
+export const describeImageResponseSchema = z.object({ description: z.string().nullable() })
+
+/** How many images were queued for describing in the background. */
+export const describeImagesResponseSchema = z.object({ queued: z.number().int() })
+
+/**
+ * Orphan kinds: objects in the bucket with no row, rows whose object is gone, and images of sessions that were never
+ * saved (older than a day).
+ */
+export const imageOrphanKindSchema = z.enum(["objects", "rows", "unsaved"])
+
+const orphansOfKindSchema = z.object({
+  count: z.number().int(),
+  bytes: z.number().int(),
+  /** Up to 50 object keys. */
+  examples: z.array(z.string())
+})
+
+export const imageOrphansResponseSchema = z.object({
+  objects: orphansOfKindSchema,
+  rows: orphansOfKindSchema,
+  unsaved: orphansOfKindSchema
+})
+
+export const removeOrphansResponseSchema = z.object({ removed: z.number().int() })
+
 export type AdminImage = z.infer<typeof adminImageSchema>
 export type AdminImagesQuery = z.infer<typeof adminImagesQuerySchema>
 export type AdminImagesResponse = z.infer<typeof adminImagesResponseSchema>
 export type ImageOrigin = z.infer<typeof imageOriginSchema>
+export type DescribeImagesRequest = z.infer<typeof describeImagesRequestSchema>
+export type ImageOrphanKind = z.infer<typeof imageOrphanKindSchema>
+export type ImageOrphansResponse = z.infer<typeof imageOrphansResponseSchema>
