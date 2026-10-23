@@ -43,7 +43,7 @@ manual           = "Frissíts kézzel ezzel: {command}, vagy töltsd le innen: {
 settings       = "beállítások"
 memorySessions = "memória és munkamenetek"
 images         = "munkamenet-képek"
-sounds         = "[hu-HU] lorem"
+sounds         = "hangeffektek"
 backups        = "fájlmentések"
 models         = "modellek"
 commands       = "biztonságos parancsok"
@@ -85,12 +85,12 @@ unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opció
 invalidAt            = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists            = "Nem létezik a konfigurációs fájl: {path}"
 usage                = """
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
+Használat
+  $ kaja config fetch   Konfigurációs fájlok letöltése a szerverről (offline a beépített sablonok)
+  $ kaja config diff    Megmutatja, mit változtatna a fetch, írás nélkül
+  $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató és persona
+  $ kaja config hooks   Hangok, értesítések és felolvasás beállítása ezen a gépen
+  $ kaja config paths   Kiírja az összes útvonalat, amelyet a Kaja olvas vagy ír
 """
 fetched              = "{path} elmentve"
 fetchedWithBackup    = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
@@ -104,26 +104,26 @@ diffWouldUpdate      = "{path}: frissülne"
 
 
 [hooks]
-questionTitle      = "[hu-HU] lorem"
-confirmTitle       = "[hu-HU] lorem ipsum dolor"
-errorTitle         = "[hu-HU] lorem ipsum"
-yes                = "[hu-HU] lorem"
-no                 = "[hu-HU] lorem"
-kindPlayer         = "[hu-HU] lorem"
-kindNotifier       = "[hu-HU] lorem ipsum"
-kindSpeaker        = "[hu-HU] lorem"
-found              = "[hu-HU] lorem {what} {program}"
-missing            = "[hu-HU] lorem ipsum dolor {what}"
-missingInstall     = "[hu-HU] lorem ipsum dolor sit {what} {command}"
-missingProgram     = "[hu-HU] lorem ipsum dolor sit amet consectetur {what} {program}"
-replaceTitle       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit {path}"
-soundsTitle        = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-notificationsTitle = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-speechTitle        = "[hu-HU] lorem ipsum dolor sit amet consectetur {program}"
-nothing            = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-soundsFailed       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-needsTerminal      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit"
-done               = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+questionTitle      = "Kaja kérdez"
+confirmTitle       = "Kaja jóváhagyást kér"
+errorTitle         = "Kaja hibába ütközött"
+yes                = "Igen"
+no                 = "Nem"
+kindPlayer         = "hanglejátszó"
+kindNotifier       = "értesítő eszköz"
+kindSpeaker        = "felolvasó eszköz"
+found              = "Megtalálva ({what}): {program}"
+missing            = "Nem található {what} ezen a rendszeren."
+missingInstall     = "Nem található {what}. Telepíts egyet így: {command}"
+missingProgram     = "Nem található {what}. Telepítsd a(z) {program} programot a csomagkezelőddel."
+replaceTitle       = "A(z) {path} már létezik. Lecseréled? A régi fájl biztonsági másolatként megmarad."
+soundsTitle        = "Lejátszunk hangeffekteket, amikor történik valami a csevegésben?"
+notificationsTitle = "Megjelenjenek asztali értesítések kérdésekről, jóváhagyásokról és persona-váltásokról?"
+speechTitle        = "Felolvassa az asszisztens üzeneteit a(z) {program} programmal?"
+nothing            = "Semmi nem lett bekapcsolva, ezért a hooks.toml érintetlen maradt."
+soundsFailed       = "Nem sikerült letölteni a hangeffekteket. Futtasd újra a `kaja config hooks` parancsot, ha online vagy."
+needsTerminal      = "A `kaja config hooks` kérdéseket tesz fel, ezért terminál kell hozzá."
+done               = "A hookok be vannak állítva. A sajátjaidat a hooks.toml szerkesztésével adhatod hozzá."
 
 
 [wizard]
