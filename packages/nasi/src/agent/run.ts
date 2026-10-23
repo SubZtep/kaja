@@ -140,8 +140,8 @@ function* yieldStoredImages(
 ): Generator<AgentEvent, void, void> {
   for (const image of stored) {
     if ("error" in image) continue
-    const { ref, key, mimeType } = image
-    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}) }
+    const { ref, key, mimeType, source } = image
+    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}), ...(source ? { source } : {}) }
     messages.push({ role: "user", content: image.parts })
   }
 }
@@ -210,7 +210,9 @@ async function* handleToolCall(
 
   // Stored as they arrive, so the message holds a ref (and a label, what the tool said, until it's described); one that can't be used becomes a note.
   const alt = altFrom(result.text, `an image from ${call.function.name}`)
-  const images = await Promise.all((result.images ?? []).map(image => storeImage(agent, session, image.data, alt)))
+  const images = await Promise.all(
+    (result.images ?? []).map(image => storeImage(agent, session, image.data, alt, image.source))
+  )
   const refused = images.flatMap(image => ("error" in image ? [image.error] : []))
   messages.push({ role: "tool", tool_call_id: call.id, content: withImageNote(result.text, refused) })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
@@ -319,9 +321,10 @@ async function promptImageParts(
   // An approved tool's images carry what it said about them; anything else is the user's
   const stored = await Promise.all(
     images.map(async image => {
-      const fromTool = typeof image === "object" && "alt" in image
-      const alt = fromTool ? image.alt : "an image the user sent"
-      return { fromTool, alt, image: await storeImage(agent, session, fromTool ? image.data : image, alt) }
+      const sent = typeof image === "string" || image instanceof Uint8Array ? { data: image } : image
+      const fromTool = sent.alt !== undefined
+      const alt = sent.alt ?? "an image the user sent"
+      return { fromTool, alt, image: await storeImage(agent, session, sent.data, alt, sent.source) }
     })
   )
   const parts = stored.flatMap(({ image }) =>
@@ -337,7 +340,8 @@ async function promptImageParts(
             ref: image.ref,
             mimeType: image.mimeType,
             alt,
-            ...(image.key ? { key: image.key } : {})
+            ...(image.key ? { key: image.key } : {}),
+            ...(image.source ? { source: image.source } : {})
           }
         ]
       : []

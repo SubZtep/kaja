@@ -1,6 +1,6 @@
 import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
-import { objectSessionImages, sessionImagePrefix } from "./images"
+import { type ImageRows, memoryImageRows, objectSessionImages, sessionImagePrefix } from "./images"
 import { memoryObjects, type ObjectStore } from "./objects"
 import { sessionIdOf } from "./rows"
 import type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
@@ -33,6 +33,13 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
   const memoryByOwner = new Map<string, MemoryStore>()
   const answers = new Map<string, DatasetAnswer & { topic: string; owner: string | null; version: number }>()
   const versions = new Map<string, { topic: string; owner: string | null; version: number; completedAt: string }>()
+  const imageRows = new Map<string, ImageRows>()
+  const sessionImages = (id: string) =>
+    objectSessionImages(
+      objects,
+      sessionImagePrefix(id),
+      imageRows.get(id) ?? imageRows.set(id, memoryImageRows()).get(id)!
+    )
 
   return {
     createSession(data: SessionWrite & { title: string }) {
@@ -87,11 +94,12 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
 
     async deleteSession(id) {
       if (!sessions.delete(id)) return false
-      await objectSessionImages(objects, sessionImagePrefix(id)).clear()
+      await sessionImages(id).clear()
+      imageRows.delete(id)
       return true
     },
 
-    images: id => objectSessionImages(objects, sessionImagePrefix(id)),
+    images: sessionImages,
 
     listSessions(): Promise<SessionMeta[]> {
       return Promise.try(() => {

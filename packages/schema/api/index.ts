@@ -1,6 +1,7 @@
 export * from "./ability"
 export * from "./auth"
 export * from "./config-export"
+export * from "./image"
 export * from "./model"
 export * from "./sandbox"
 export * from "./stats"

@@ -18,6 +18,7 @@ import { recordPausedCall } from "./agent/telemetry"
 import { allowKey } from "./agent/tool-allow"
 import { runApprovedTool, type Tool, toolName } from "./agent/tools"
 import { createGuardedFetch, type FetchLike } from "./security/ssrf"
+import type { ImageSource } from "./store/images"
 import type { NasiStore } from "./store/types"
 import { viewLinkedImageTool } from "./tools/builtin/view-image"
 import type { NasiToolDeps } from "./tools/deps"
@@ -68,10 +69,10 @@ export type NasiOpenOptions = {
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
 /**
- * A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the
- * message.
+ * A turn as the host runs it: the HTTP request, plus images (data URLs, or with what's known of their source) a host
+ * like the Telegram bot got with the message.
  */
-export type NasiTurnInput = NasiTurnRequest & { images?: string[] }
+export type NasiTurnInput = NasiTurnRequest & { images?: (string | { data: string; source?: ImageSource })[] }
 
 /** How a message sent with a photo shows in history and titles: "📷", then its caption. */
 export function photoLabel(caption: string): string {

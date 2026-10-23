@@ -5,6 +5,7 @@ import { run } from "../../src/agent/run"
 import { Nasi } from "../../src/nasi"
 import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects, resolveImageLinks } from "../../src/store"
 import { setToolDeps } from "../../src/tools/deps"
+import { setWarnHandler } from "../../src/warn"
 import { TINY_PNG, TINY_PNG_BASE64 } from "../fixtures/images"
 
 type SentMessage = { role: string; content?: unknown }
@@ -112,6 +113,25 @@ test("an image whose description fails keeps its alt text, and the turn goes on"
   const done = await nasi.turnBuffered({ message: "what is this?", images: [PHOTO] })
   expect(done.status).toBe("completed")
   expect(labelled(sent[0]!)).toContain(`[Image ${LINK} (1×1): an image the user sent]`)
+})
+
+test("an empty description is warned about, and the image keeps its alt text", async () => {
+  const seen: string[] = []
+  setWarnHandler(message => seen.push(message))
+  try {
+    const sent: SentMessage[][] = []
+    const { describer: vision } = describer("")
+    const nasi = await Nasi.open({
+      store: createMemoryStore(),
+      chat: { client: chat(["Hm."], sent) as never, model: "blind", seesImages: false },
+      describer: vision
+    })
+    await nasi.turnBuffered({ message: "what is this?", images: [PHOTO] })
+    expect(seen).toContain("The vision model gave an image no description")
+    expect(labelled(sent[0]!)).toContain(`[Image ${LINK} (1×1): an image the user sent]`)
+  } finally {
+    setWarnHandler(() => {})
+  }
 })
 
 test("a chat model sees images unless its models.toml entry says images = false", () => {

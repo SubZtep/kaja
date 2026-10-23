@@ -581,10 +581,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   }
 
   /**
-   * `images` (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a
-   * command.
+   * `images` (data URLs, with a sent file's name): photos sent with the message, whose caption is `text`; they always
+   * run as a turn, never a command.
    */
-  async function handleMessage(userId: number, chatId: number, text: string, images: string[] = []) {
+  async function handleMessage(userId: number, chatId: number, text: string, images: PromptImage[] = []) {
     if (images.length > 0) return handlePhoto(userId, chatId, text, images)
 
     // Telegram sends it when an owner opens the chat anew; a code in it only pairs strangers
@@ -628,7 +628,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await runTurn(userId, chatId, state, await answerPendingWith(chatId, state, text), text)
   }
 
-  async function handlePhoto(userId: number, chatId: number, caption: string, images: string[]) {
+  async function handlePhoto(userId: number, chatId: number, caption: string, images: PromptImage[]) {
     const state = await getUserState(userId)
     if (state.busy) {
       await sender.sendMessage(chatId, t("telegram.stillWorking"))

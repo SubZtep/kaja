@@ -48,6 +48,7 @@ export const objects: ObjectStore = {
     }
   },
   exists: key => bucket.exists(key),
+  delete: key => bucket.delete(key),
   deletePrefix: async prefix => {
     // A page at a time; deleting them doesn't move the listing, since each page starts after the last.
     let startAfter: string | undefined
@@ -60,6 +61,19 @@ export const objects: ObjectStore = {
     }
   },
   location: imageUrl
+}
+
+/** Every object under `prefix`, a listing page at a time: its key, size and when it was last written. */
+export async function* listObjects(prefix: string): AsyncGenerator<{ key: string; size: number; modified: Date }> {
+  let startAfter: string | undefined
+  while (true) {
+    const page = await bucket.list({ prefix, ...(startAfter ? { startAfter } : {}) })
+    const contents = page.contents ?? []
+    for (const object of contents)
+      yield { key: object.key, size: object.size ?? 0, modified: new Date(object.lastModified ?? 0) }
+    if (!page.isTruncated || contents.length === 0) return
+    startAfter = contents.at(-1)!.key
+  }
 }
 
 /** Whether the bucket answers within `timeoutMs`, for `/health/ready`. */

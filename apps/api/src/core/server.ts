@@ -1,6 +1,7 @@
 import { websocket } from "@hono/bun"
 import { setWarnHandler } from "@kaja/nasi"
 import { app } from "../app"
+import { cloudDescriber } from "../features/nasi/chat"
 import { createTelegramBotService } from "../features/telegram"
 import { marketplaceService, sandboxService } from "../services"
 import { CronService } from "./cron"
@@ -13,7 +14,7 @@ const port = env.PORT
 setWarnHandler((message, payload) => console.warn(message, payload))
 
 // Start cron jobs
-const cron = new CronService()
+const cron = new CronService({ describer: cloudDescriber })
 cron.start()
 
 // No sandbox is connected to a fresh process, whatever the rows say from before it.

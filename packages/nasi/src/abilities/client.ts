@@ -93,7 +93,9 @@ export async function answerClientCalls(agent: Agent, session: Session, results:
       const result = byId.get(id)
       const alt = altFrom(result?.text, "an image from the user's computer")
       const kept = await Promise.all(
-        (result?.images ?? []).map(image => storeImage(agent, session, Buffer.from(image.data, "base64"), alt))
+        (result?.images ?? []).map(image =>
+          storeImage(agent, session, Buffer.from(image.data, "base64"), alt, { fileName: image.fileName })
+        )
       )
       return { id, result, kept }
     })

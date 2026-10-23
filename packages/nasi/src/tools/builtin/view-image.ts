@@ -1,5 +1,5 @@
 import { homedir } from "node:os"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import { z } from "zod"
 import { type Tool, tool, type ToolContext, ToolError, type ToolResult } from "../../agent/agent"
 import { ImageError, normalizeImage } from "../../images/normalize"
@@ -45,7 +45,8 @@ async function viewFile(path: string): Promise<string | ToolResult> {
   if (source.size > MAX_SOURCE_BYTES) throw new ToolError(NAME, `Too large to view: ${path}`)
   try {
     const image = await normalizeImage(new Uint8Array(await source.arrayBuffer()))
-    return { text: `Viewing image: ${path}`, images: [image] }
+    // Only the file's name: its path would tell where the user's files are
+    return { text: `Viewing image: ${path}`, images: [{ ...image, source: { fileName: basename(where.path) } }] }
   } catch (error) {
     if (error instanceof ImageError) throw new ToolError(NAME, `${path}: ${error.message}`)
     throw error

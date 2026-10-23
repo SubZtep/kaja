@@ -186,7 +186,7 @@ describe("postgres store", () => {
     const store = createPostgresStore(pool, userId)
     const id = Bun.randomUUIDv7()
     const data = noisyPng(2, 2)
-    const { ref, key } = await store.images(id).put({ data, mimeType: "image/png" })
+    const { ref, key } = await store.images(id).put({ data, mimeType: "image/png", width: 2, height: 2 })
     expect(key).toStartWith(`${sessionImagePrefix(id, userId)}/`)
     const messages: Messages = [{ role: "user", content: [{ type: "image_url", image_url: { url: ref } }] }]
     expect(await store.createSession({ ...write(messages, { session: { id, messages } }), title: "t" })).toBe(id)
@@ -194,10 +194,42 @@ describe("postgres store", () => {
     const fetched = await fetch(imageUrl(key!))
     expect(fetched.status).toBe(200)
     expect(fetched.headers.get("content-type")).toBe("image/png")
-    expect((await store.images(id).get(ref.slice("kaja-image:".length)))?.data).toEqual(new Uint8Array(data))
+    const imageId = ref.slice("kaja-image:".length)
+    expect(await store.images(id).get(imageId)).toEqual({ data: new Uint8Array(data), mimeType: "image/png" })
+    await store.images(id).describe(imageId, "Two noisy pixels.", "vision-m")
+    expect(await store.images(id).description(imageId)).toBe("Two noisy pixels.")
+    // Another account's store can't reach the row by the session id
+    expect(await createPostgresStore(pool, Bun.randomUUIDv7()).images(id).description(imageId)).toBeUndefined()
 
     await store.deleteSession(id)
     expect(await objects.exists(key!)).toBe(false)
+    const { rows } = await pool.query("SELECT 1 FROM nasi_image WHERE session_id = $1", [id])
+    expect(rows).toHaveLength(0)
+  })
+
+  test("an image's row keeps its first source's URL, and a later arrival only fills what's still empty", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = Bun.randomUUIDv7()
+    const image = { data: noisyPng(2, 2), mimeType: "image/png", width: 2, height: 2 }
+    await store.images(id).put(image, { fileName: "shot.png" })
+    await store.images(id).put(image, { url: "https://a.example/x.png", alt: "x", fileName: "other.png" })
+    await store.images(id).put(image, { url: "https://b.example/x.png", title: "X" })
+    const { rows } = await pool.query(
+      "SELECT source_url, alt, title, file_name, mime_type, width, bytes FROM nasi_image WHERE session_id = $1",
+      [id]
+    )
+    expect(rows).toEqual([
+      {
+        source_url: "https://a.example/x.png",
+        alt: "x",
+        title: "X",
+        file_name: "shot.png",
+        mime_type: "image/png",
+        width: 2,
+        bytes: image.data.byteLength
+      }
+    ])
+    await store.images(id).clear()
   })
 
   test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {

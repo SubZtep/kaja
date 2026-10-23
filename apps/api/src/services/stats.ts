@@ -1,7 +1,10 @@
-import type { StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
+import type { ImageStats, StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
 import type { Pool } from "pg"
+import { sourceHost } from "./image"
 
 const MAX_TOOLS = 50
+const MAX_IMAGE_SITES = 5
+const MAX_IMAGE_SESSIONS = 5
 
 // Sessions active in the range.
 const ACTIVE = "s.user_id = $1 AND s.updated_at >= $2"
@@ -19,15 +22,10 @@ export class StatsService {
    * rows.
    */
   async usage(userId: string, days: number, timeZone = "UTC"): Promise<UsageStatsResponse> {
-    // Midnight, in the viewer's zone, of the first day: a wall-clock day count keeps DST days whole.
-    const { rows } = await this.#db.query(
-      "SELECT (date_trunc('day', now() AT TIME ZONE $1) - ($2::int - 1) * interval '1 day') AT TIME ZONE $1 AS since",
-      [timeZone, days]
-    )
-    const since: Date = rows[0].since
+    const since = await this.#rangeStart(days, timeZone)
     const args = [userId, since]
 
-    const [perDay, totals, channels, calls, approvals, personas, models] = await Promise.all([
+    const [perDay, totals, channels, calls, approvals, personas, models, images] = await Promise.all([
       this.#db.query(
         `
         WITH days AS (
@@ -115,7 +113,8 @@ export class StatsService {
         GROUP BY 1 ORDER BY SUM(reply) + SUM(summary) DESC, 1
         `,
         args
-      )
+      ),
+      this.#imagesSince(userId, since)
     ])
 
     const tools = new Map<UsageStatsResponse["tools"][number]["name"], UsageStatsResponse["tools"][number]>()
@@ -159,6 +158,76 @@ export class StatsService {
         sessions: row.sessions,
         promptTokens: row.prompt_tokens,
         completionTokens: row.completion_tokens
+      })),
+      images
+    }
+  }
+
+  /** The user's stored images, with what arrived over the last `days` calendar days in `timeZone` (today included). */
+  async images(userId: string, days: number, timeZone = "UTC"): Promise<ImageStats> {
+    return this.#imagesSince(userId, await this.#rangeStart(days, timeZone))
+  }
+
+  // Midnight, in the viewer's zone, of the first day: a wall-clock day count keeps DST days whole.
+  async #rangeStart(days: number, timeZone: string): Promise<Date> {
+    const { rows } = await this.#db.query<{ since: Date }>(
+      "SELECT (date_trunc('day', now() AT TIME ZONE $1) - ($2::int - 1) * interval '1 day') AT TIME ZONE $1 AS since",
+      [timeZone, days]
+    )
+    return rows[0]!.since
+  }
+
+  // What's kept now, what arrived since `since`, where most came from and which chats hold the most.
+  async #imagesSince(userId: string, since: Date): Promise<ImageStats> {
+    const [totals, sites, sessions] = await Promise.all([
+      this.#db.query(
+        `
+        SELECT COUNT(*)::int AS count, COALESCE(SUM(bytes), 0)::float8 AS bytes,
+          COUNT(description)::int AS described,
+          COUNT(*) FILTER (WHERE created_at >= $2)::int AS added,
+          COALESCE(SUM(bytes) FILTER (WHERE created_at >= $2), 0)::float8 AS added_bytes
+        FROM nasi_image WHERE user_id = $1
+        `,
+        [userId, since]
+      ),
+      // A URL's host, without "www."; images from files or tools without a URL have none
+      this.#db.query(
+        `
+        SELECT host, COUNT(*)::int AS images FROM (
+          SELECT ${sourceHost("source_url")} AS host
+          FROM nasi_image WHERE user_id = $1 AND source_url IS NOT NULL
+        ) hosts
+        WHERE host IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT $2
+        `,
+        [userId, MAX_IMAGE_SITES]
+      ),
+      // Only saved sessions: a new session's images arrive before its first save
+      this.#db.query(
+        `
+        SELECT s.id, s.title, s.channel, COUNT(*)::int AS images, SUM(i.bytes)::float8 AS bytes
+        FROM nasi_image i JOIN nasi_session s ON s.id = i.session_id AND s.user_id = i.user_id
+        WHERE i.user_id = $1
+        GROUP BY 1, 2, 3 ORDER BY 5 DESC, 1 LIMIT $2
+        `,
+        [userId, MAX_IMAGE_SESSIONS]
+      )
+    ])
+    const row = totals.rows[0]
+    return {
+      count: row.count,
+      bytes: row.bytes,
+      described: row.described,
+      undescribed: row.count - row.described,
+      added: row.added,
+      addedBytes: row.added_bytes,
+      sites: sites.rows,
+      sessions: sessions.rows.map(session => ({
+        id: session.id,
+        title: session.title,
+        channel: session.channel as StatsChannel,
+        images: session.images,
+        bytes: session.bytes
       }))
     }
   }

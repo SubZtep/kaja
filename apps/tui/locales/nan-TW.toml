@@ -57,26 +57,28 @@ help        = """
 Kaja 命令列工具 • v{version} • https://kaja.io
 
 用法
-  $ kaja [選項] [指令]
+  $ kaja [OPTIONS] [COMMAND]
 
 指令
   config <wizard|fetch|diff|paths>
-                       一步一步設定，抑是管理設定檔
-  doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
-  telegram [--pair]    行你个 Telegram 機器人；--pair 會顯示一个代碼，予閣一个人配對
-  abilities [update]   揀欲載入佗一寡技能，抑是提 marketplace
-  sessions             列出存起來个本機工作階段佮怹个 id
-  login                登入雲端帳號，毋免開始開講
-  logout               登出雲端帳號，清掉存起來个憑證
+                       互動式設定，抑是管理設定檔
+  doctor               列出設定好个模型、MCP 伺服器佮工具，閣檢查連線
+  telegram [--pair]    執行你个 Telegram 機器人；--pair 會顯示一組配對碼，予閣一个人配對
+  abilities [update]   揀欲載入佗寡技能，抑是提市集个內容
+  sessions             列出儲存好个本機工作階段佮怹个 ID
+  images [describe [--retry] | clean [--yes]]
+                       顯示儲存个圖；共無描述个圖描述，抑是提掉賰落來个物件（--local）
+  login                登入雲端帳號，毋過無開始開講
+  logout               登出雲端帳號，閣清掉儲存个憑證
 
 選項
-  --local         用你家己个供應商行本機代理迴圈，毋是登入雲端
+  --local         用你家己个供應商執行本機代理迴圈，毋免登入雲端
   --cloud         就算有本機設定嘛強制登入雲端（預設）
-  --continue, -c  接續上尾个工作階段（干焦 --local）
+  --continue, -c  繼續上新个工作階段（干焦 --local）
   --headless      無終端介面；予有支援个子指令用（親像 telegram）
-  --session, -s   照 id 接續工作階段（干焦 --local；看：kaja sessions）
-  --help          顯示這个說明
-  --version       印出版本
+  --session, -s   照 ID 繼續工作階段（干焦 --local；請看：kaja sessions）
+  --help          顯示這份說明
+  --version       顯示版本
 """
 unknownFlag = "{message}。執行 `kaja --help` 看有啥物選項通用。"
 
@@ -455,6 +457,36 @@ checkModelFailed       = "{model} 無應（{error}）"
 checkTimeout           = "15 秒內無回應"
 stats                  = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
 yolo                   = "{path} 內底 yolo 有開：逐个指令佮工具呼叫攏無問就執行"
+
+
+[images]
+empty             = "猶無儲存任何圖。"
+totals            = "{count} 張圖，{size}"
+descriptions      = "{described} 張有描述，{undescribed} 張無描述"
+added             = "最近 {days} 工加 {count} 張（{size}）"
+sitesTitle        = "對佗位來："
+sessionsTitle     = "圖上濟个工作階段："
+sessionLine       = "{images} 張圖，{size}  {title}"
+describeHint      = "用 `kaja --local images describe` 共賰个圖描述。"
+unknownAction     = "毋捌 `kaja images {action}`。請用 `describe` 抑是 `clean`。"
+localOnly         = "`kaja images describe` 佮 `clean` 干焦會當用佇本機儲存（`kaja --local images …`）。"
+signInFirst       = "猶未登入。請先執行 `kaja login`。"
+cloudFailed       = "無法度對雲端載入你个圖（HTTP {status}）。"
+noVision          = "models.toml 內底無視覺模型：加一个任務有 `vision` 个模型，才會當描述圖。"
+nothingToDescribe = "逐張圖攏有描述矣（試過三擺个圖會略過；欲處理怹請加 --retry）。"
+describing        = "當咧用 {model} 描述 {count} 張圖…"
+noDescription     = "模型無予描述"
+described         = "{total} 張內底描述 {described} 張矣。"
+nothingToClean    = "無物件愛清。"
+removeAsk         = "欲共怹提掉無？[y/N]"
+removed           = "提掉 {count} 个矣。"
+removeHint        = "佇終端機執行才會問你，抑是加 --yes 全部提掉。"
+
+
+  [images.orphans]
+  files   = "{count} 个無資料列个檔案（{size}）："
+  rows    = "{count} 筆檔案無去个資料列（{size}）："
+  unsaved = "{count} 張對從來無儲存个工作階段來、超過一工个圖（{size}）："
 
 
 [session]

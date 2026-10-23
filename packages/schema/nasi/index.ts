@@ -50,7 +50,7 @@ export const TURN_BODY_MAX_BYTES = 16 * 1024 * 1024
 
 /**
  * The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned
- * (base64).
+ * (base64, with the file's name when it read one).
  */
 export const NasiToolResultSchema = z.object({
   id: z.string().min(1).max(256),
@@ -60,7 +60,9 @@ export const NasiToolResultSchema = z.object({
     .array(
       z.object({
         data: z.string().max(TOOL_RESULT_IMAGE_BASE64_MAX),
-        mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/)
+        mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/),
+        /** The image file's name (never its path), when a file is what the tool read. */
+        fileName: z.string().max(255).optional()
       })
     )
     .max(TOOL_RESULT_IMAGES_MAX)
@@ -190,14 +192,15 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("final"), content: z.string().nullable() }),
   /**
    * An image a tool returned (a screenshot, say), as its public (or data) URL; `alt` its text until `image_described`
-   * replaces it.
+   * replaces it, `source` where it came from (a URL, a file's name) as far as the tool knew.
    */
   z.object({
     type: z.literal("tool_image"),
     mimeType: z.string(),
     url: z.string(),
     ref: z.string().optional(),
-    alt: z.string().optional()
+    alt: z.string().optional(),
+    source: z.object({ url: z.string().optional(), fileName: z.string().optional() }).optional()
   }),
   /** The image `ref` (a `tool_image`'s) has its description now. */
   z.object({ type: z.literal("image_described"), ref: z.string(), description: z.string() })

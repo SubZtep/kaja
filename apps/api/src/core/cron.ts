@@ -1,4 +1,5 @@
-import { marketplaceService, sandboxService } from "../services"
+import type { Describer } from "@kaja/nasi"
+import { imageService, marketplaceService, sandboxService } from "../services"
 import { reportError } from "./report"
 
 /** An anonymous sandbox offline this long is gone for good (one restarted without a volume comes back as a new row). */
@@ -9,6 +10,12 @@ const SANDBOX_SAMPLE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 export class CronService {
   #jobs: Bun.CronJob[] = []
   #isRunning = false
+  readonly #describer: () => Promise<Describer | undefined>
+
+  /** `describer` finds the vision model the hourly sweep describes images with (none: the sweep skips). */
+  constructor(opts: { describer: () => Promise<Describer | undefined> }) {
+    this.#describer = opts.describer
+  }
 
   start() {
     if (this.#isRunning) {
@@ -23,6 +30,15 @@ export class CronService {
       Bun.cron("0 * * * *", async () => {
         // sync() reports and records its own failure before rethrowing
         await marketplaceService.sync().catch(() => {})
+      }),
+      // Images still without a description (a turn's describer failed or there was none then)
+      Bun.cron("15 * * * *", async () => {
+        const describer = await this.#describer().catch((err: unknown) => {
+          reportError("Couldn't find the vision model for the image sweep", err)
+          return undefined
+        })
+        if (describer)
+          await imageService.sweep(describer).catch(err => reportError("The image description sweep failed", err))
       }),
       Bun.cron("30 * * * *", async () => {
         await sandboxService

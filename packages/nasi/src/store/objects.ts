@@ -7,6 +7,8 @@ export type ObjectStore = {
   /** The object's bytes, or undefined when there's none under `key`. */
   get(key: string): Promise<Uint8Array | undefined>
   exists(key: string): Promise<boolean>
+  /** Removes the object under `key`; none there is fine. */
+  delete(key: string): Promise<void>
   /** Removes every object whose key starts with `prefix`. */
   deletePrefix(prefix: string): Promise<void>
   /** Where a viewer opens the object: a public URL, or a file path; unset when there's nowhere. */
@@ -23,6 +25,10 @@ export function memoryObjects(): ObjectStore {
     },
     get: key => Promise.resolve(objects.get(key)),
     exists: key => Promise.resolve(objects.has(key)),
+    delete: key => {
+      objects.delete(key)
+      return Promise.resolve()
+    },
     deletePrefix: prefix => {
       // Deleting the key an iteration just read is safe on a Map, so no snapshot is needed.
       for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key)
@@ -43,6 +49,7 @@ export function folderObjects(root: string): ObjectStore {
       return (await file.exists()) ? new Uint8Array(await file.arrayBuffer()) : undefined
     },
     exists: key => Bun.file(path(key)).exists(),
+    delete: key => rm(path(key), { force: true }),
     deletePrefix: async prefix => {
       // A prefix ending in "/" is a folder; otherwise it's the start of names in its folder.
       if (prefix.endsWith("/")) return rm(path(prefix), { recursive: true, force: true })

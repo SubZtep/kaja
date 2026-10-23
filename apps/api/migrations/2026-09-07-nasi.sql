@@ -85,6 +85,35 @@ CREATE TABLE IF NOT EXISTS nasi_model_call (
 
 CREATE INDEX IF NOT EXISTS nasi_model_call_session_idx ON nasi_model_call (session_id);
 
+-- A session image's metadata; its bytes are the object images/<user_id>/<session_id>/<id>.
+CREATE TABLE IF NOT EXISTS nasi_image (
+  -- no FK: a new session's images arrive before its first save; deleting a session clears them
+  session_id uuid NOT NULL,
+  user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
+  -- the first 16 hex characters of the bytes' sha256
+  id text NOT NULL,
+  mime_type text NOT NULL,
+  width integer NOT NULL,
+  height integer NOT NULL,
+  bytes integer NOT NULL,
+  -- where it came from, as its arrivals knew: a later one only fills what's still unset
+  source_url text,
+  alt text,
+  title text,
+  -- a sent or viewed file's name, never its path
+  file_name text,
+  description text,
+  description_model text,
+  described_at timestamptz,
+  -- tries by the sweep and the admin's buttons (the sweep gives up at 3), and when the last one was
+  describe_attempts integer NOT NULL DEFAULT 0,
+  describe_tried_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (session_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS nasi_image_user_idx ON nasi_image (user_id);
+
 CREATE TABLE IF NOT EXISTS nasi_note (
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
   -- whose notes: '' is the web app and the CLI, else a Telegram user or a widget visitor (like sessions and datasets)

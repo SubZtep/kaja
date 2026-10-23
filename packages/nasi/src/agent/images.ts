@@ -2,7 +2,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { ImageError, normalizeImage } from "../images/normalize"
 import { dataUrlBytes, imageDataUrl } from "../images/parts"
 import { fetchPublicHttp } from "../security/ssrf"
-import { imageRefId, inlineImages, type SessionImages } from "../store/images"
+import { boundedSource, imageRefId, type ImageSource, inlineImages, type SessionImages } from "../store/images"
 import { getToolDeps } from "../tools/deps"
 import { warn } from "../warn"
 import type { Agent, Session } from "./agent"
@@ -36,10 +36,15 @@ export type ArrivedImage = {
   mimeType: string
   width: number
   height: number
+  /** Where it came from, as this arrival knew: the URL and file name a host shows beside it. */
+  source?: { url?: string; fileName?: string }
 }
 
-/** An image going to the model with a prompt: a data URL or bytes, or either with the alt text its source gave it. */
-export type PromptImage = string | Uint8Array | { data: string | Uint8Array; alt: string }
+/**
+ * An image going to the model with a prompt: a data URL or bytes, or either with where it came from and, for an
+ * approved tool's image, the `alt` text its tool gave it (without one, it's an image the user sent).
+ */
+export type PromptImage = string | Uint8Array | { data: string | Uint8Array; alt?: string; source?: ImageSource }
 
 /** An image's parts in its message: its label (alt text, later its description) and the image itself. */
 export type ImageParts = [{ type: "text"; text: string }, { type: "image_url"; image_url: { url: string } }]
@@ -58,22 +63,24 @@ export function altFrom(text: string | undefined, fallback: string): string {
 }
 
 /**
- * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo). Its label starts as
- * `alt`, which the vision model's description replaces once it's written (see `describeInBackground`); seen before in
- * this session, it takes that description at once. One that can't be used comes back as the reason why.
+ * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo), with what its arrival
+ * knows of its `source`. Its label starts as `alt`, which the vision model's description replaces once it's written
+ * (see `describeInBackground`); seen before in this session, it takes that description at once. One that can't be used
+ * comes back as the reason why.
  */
 export async function storeImage(
   agent: Agent,
   session: Session,
   input: Uint8Array | string,
-  alt: string
+  alt: string,
+  source?: ImageSource
 ): Promise<(ArrivedImage & { parts: ImageParts }) | { error: string }> {
   const bytes = typeof input === "string" ? dataUrlBytes(input) : input
   if (!bytes) return { error: "only images sent as data can be shown" }
   try {
     const image = await normalizeImage(bytes)
     const images = sessionImagesFor(agent, session)
-    const stored = await images.put(image)
+    const stored = await images.put(image, source)
     const dataUrl = imageDataUrl(image)
     cacheOf(session).set(stored.ref, dataUrl)
     const size = { width: image.width, height: image.height }
@@ -87,7 +94,9 @@ export async function storeImage(
       { type: "text", text: imageLabel(stored.ref, size, alt) },
       { type: "image_url", image_url: { url: stored.ref } }
     ]
-    return { ...stored, mimeType: image.mimeType, ...size, parts }
+    const { url, fileName } = boundedSource(source) ?? {}
+    const shown = url || fileName ? { source: { ...(url ? { url } : {}), ...(fileName ? { fileName } : {}) } } : {}
+    return { ...stored, mimeType: image.mimeType, ...size, ...shown, parts }
   } catch (error) {
     if (error instanceof ImageError) return { error: error.message }
     throw error
@@ -98,7 +107,8 @@ export async function storeImage(
 const MAX_REMOTE_IMAGE_BYTES = 20 * 1024 * 1024
 /** Remote images taken from one reply; a gallery past this stays as links. */
 const MAX_REPLY_IMAGES = 8
-const REMOTE_IMAGE = /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g
+// `![alt](url)`, or `![alt](url "title")` as fetch_url writes an image with a title
+const REMOTE_IMAGE = /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+"([^"]*)")?\)/g
 
 /**
  * A reply with each `![alt](http(s) url)` image fetched and stored like any other, and its link swapped for the
@@ -112,22 +122,24 @@ export async function storeRemoteImages(agent: Agent, session: Session, text: st
     tool => tool.definition.type === "function" && tool.definition.function.name === "fetch_url"
   )
   if (!session.id || !text.includes("![") || !canFetch) return text
-  const alts = new Map<string, string>()
-  for (const [, alt, url] of text.matchAll(REMOTE_IMAGE)) if (!alts.has(url!)) alts.set(url!, alt!)
+  const found = new Map<string, { alt: string; title?: string }>()
+  for (const [, alt, url, title] of text.matchAll(REMOTE_IMAGE))
+    if (!found.has(url!)) found.set(url!, { alt: alt!, title })
   const refs = new Map<string, string>()
   await Promise.all(
-    [...alts].slice(0, MAX_REPLY_IMAGES).map(async ([url, alt]) => {
+    [...found].slice(0, MAX_REPLY_IMAGES).map(async ([url, { alt, title }]) => {
       try {
         const res = await fetchPublicHttp(url, { maxBytes: MAX_REMOTE_IMAGE_BYTES, send: getToolDeps().fetchSend })
         if (!res.ok || !res.headers.get("content-type")?.startsWith("image/")) return
         const data = new Uint8Array(await res.arrayBuffer())
-        const stored = await storeImage(agent, session, data, alt || `Image from ${url}`)
+        const stored = await storeImage(agent, session, data, alt || `Image from ${url}`, { url, alt, title })
         if ("ref" in stored && imageRefId(stored.ref)) refs.set(url, stored.ref)
       } catch (error) {
         warn("A reply's image couldn't be stored", { url, error })
       }
     })
   )
+  // A stored image's title is in its row; the link is left without it, as hosts place `](kaja-image:<id>)` links
   return text.replace(REMOTE_IMAGE, (link, alt: string, url: string) =>
     refs.has(url) ? `![${alt}](${refs.get(url)})` : link
   )

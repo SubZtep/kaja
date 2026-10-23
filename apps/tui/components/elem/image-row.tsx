@@ -3,6 +3,7 @@ import { Box, type DOMElement, Text, useWindowSize } from "ink"
 import { useRef, useState } from "react"
 import { t } from "../../lib/i18n"
 import { openImage } from "../../lib/image/open-image"
+import { sourceName } from "../../lib/image/source"
 import { useKajaTheme } from "../theme"
 import { TerminalImage } from "./terminal-image"
 import { useClick } from "./use-click"
@@ -33,15 +34,20 @@ function OpenLink({ target }: Readonly<{ target: string }>) {
 }
 
 /**
- * A tool's image with what it shows (its alt text, then its description once written) and a way to open it: beside the
- * picture on a wide terminal, under it on a narrow one.
+ * A tool's image with what it shows (its alt text, then its description once written), where it came from and a way
+ * to open it: beside the picture on a wide terminal, under it on a narrow one.
  */
-export function ImageRow({ path, text }: Readonly<{ path: string; text?: string }>) {
+export function ImageRow({
+  path,
+  text,
+  source
+}: Readonly<{ path: string; text?: string; source?: { url?: string; fileName?: string } }>) {
   const { columns } = useWindowSize()
   const { muted } = useKajaTheme()
   const wide = columns >= IMAGE_ROW_MIN_COLUMNS
   // A data URL has nothing to open; a stored file or a URL does.
   const target = path.startsWith("data:") ? undefined : path
+  const from = sourceName(source)
   return (
     <Box flexDirection={wide ? "row" : "column"} columnGap={2}>
       <Box flexShrink={0} width={wide ? "60%" : "100%"}>
@@ -49,6 +55,7 @@ export function ImageRow({ path, text }: Readonly<{ path: string; text?: string 
       </Box>
       <Box flexDirection="column" flexGrow={1} flexShrink={1}>
         {text && <Text {...muted()}>{text}</Text>}
+        {from && <Text {...muted()}>{source?.url ? terminalLink(from, source.url) : from}</Text>}
         {target && <OpenLink target={target} />}
       </Box>
     </Box>

@@ -4,6 +4,8 @@ import { dirname, join } from "node:path"
 import {
   clearTelemetry,
   folderObjects,
+  type ImageRow,
+  type ImageRows,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -180,9 +182,119 @@ function createSchema(db: Database) {
       PRIMARY KEY (topic, owner, version)
     )
   `)
+  // A session image's metadata; its bytes are the file files/images/<sessionId>/<id>. No FK: a new session's images arrive before its first save.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS images (
+      sessionId        TEXT NOT NULL,
+      id               TEXT NOT NULL,
+      mimeType         TEXT NOT NULL,
+      width            INTEGER NOT NULL,
+      height           INTEGER NOT NULL,
+      bytes            INTEGER NOT NULL,
+      sourceUrl        TEXT,
+      alt              TEXT,
+      title            TEXT,
+      fileName         TEXT,
+      description      TEXT,
+      descriptionModel TEXT,
+      describedAt      TEXT,
+      describeAttempts INTEGER NOT NULL DEFAULT 0,
+      describeTriedAt  TEXT,
+      createdAt        TEXT NOT NULL,
+      PRIMARY KEY (sessionId, id)
+    )
+  `)
+  migrateImageAttemptColumns(db)
 }
 
-function openDb(dbPath: string): Database {
+// images from before `kaja images describe` counted its tries lack these; add them in place, keeping the rows.
+function migrateImageAttemptColumns(db: Database) {
+  const columns = db.query("PRAGMA table_info(images)").all() as { name: string }[]
+  if (columns.some(c => c.name === "describeAttempts")) return
+  db.run("ALTER TABLE images ADD COLUMN describeAttempts INTEGER NOT NULL DEFAULT 0")
+  db.run("ALTER TABLE images ADD COLUMN describeTriedAt TEXT")
+}
+
+type ImageDbRow = Omit<ImageRow, "source"> & {
+  sourceUrl: string | null
+  alt: string | null
+  title: string | null
+  fileName: string | null
+  description: string | null
+}
+
+function imageRows(db: Database, sessionId: string): ImageRows {
+  return {
+    add(row) {
+      return Promise.try(() => {
+        const { url, alt, title, fileName } = row.source ?? {}
+        // A later arrival fills only what the first left unset
+        db.query(
+          `INSERT INTO images (sessionId, id, mimeType, width, height, bytes, sourceUrl, alt, title, fileName, createdAt)
+           VALUES ($sessionId, $id, $mimeType, $width, $height, $bytes, $sourceUrl, $alt, $title, $fileName, $createdAt)
+           ON CONFLICT (sessionId, id) DO UPDATE SET
+             sourceUrl = COALESCE(sourceUrl, excluded.sourceUrl),
+             alt = COALESCE(alt, excluded.alt),
+             title = COALESCE(title, excluded.title),
+             fileName = COALESCE(fileName, excluded.fileName)`
+        ).run({
+          $sessionId: sessionId,
+          $id: row.id,
+          $mimeType: row.mimeType,
+          $width: row.width,
+          $height: row.height,
+          $bytes: row.bytes,
+          $sourceUrl: url ?? null,
+          $alt: alt ?? null,
+          $title: title ?? null,
+          $fileName: fileName ?? null,
+          $createdAt: new Date().toISOString()
+        })
+      })
+    },
+    get(id) {
+      return Promise.try(() => {
+        const row = db
+          .query(
+            `SELECT id, mimeType, width, height, bytes, sourceUrl, alt, title, fileName, description
+             FROM images WHERE sessionId = $sessionId AND id = $id`
+          )
+          .get({ $sessionId: sessionId, $id: id }) as ImageDbRow | null
+        if (!row) return undefined
+        const { sourceUrl, alt, title, fileName, description, ...image } = row
+        const fields = { url: sourceUrl, alt, title, fileName }
+        const source = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== null))
+        return {
+          ...image,
+          ...(Object.keys(source).length ? { source } : {}),
+          ...(description === null ? {} : { description })
+        }
+      })
+    },
+    describe(id, description, model) {
+      return Promise.try(() => {
+        db.query(
+          `UPDATE images SET description = $description, descriptionModel = $model, describedAt = $at
+           WHERE sessionId = $sessionId AND id = $id`
+        ).run({
+          $sessionId: sessionId,
+          $id: id,
+          $description: description,
+          $model: model,
+          $at: new Date().toISOString()
+        })
+      })
+    },
+    clear() {
+      return Promise.try(() => {
+        db.query("DELETE FROM images WHERE sessionId = $sessionId").run({ $sessionId: sessionId })
+      })
+    }
+  }
+}
+
+/** The store's SQLite file, opened with its schema in place (created or brought up to date). */
+export function openDb(dbPath: string): Database {
   mkdirSync(dirname(dbPath), { recursive: true })
   const db = new Database(dbPath, { create: true })
   db.run("PRAGMA journal_mode = WAL")
@@ -255,7 +367,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
   const filesRoot = imagesRoot(dbPath)
   const objects = folderObjects(filesRoot)
-  const sessionImages = (id: string) => objectSessionImages(objects, sessionImagePrefix(id))
+  const sessionImages = (id: string) => objectSessionImages(objects, sessionImagePrefix(id), imageRows(db, id))
 
   // The inverse of storedEvent: the keys become the stored files' paths, plain files under the images folder.
   function loadedEvent(event: unknown): unknown {

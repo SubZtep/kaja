@@ -132,9 +132,9 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
 // An event as the client gets it: as is (nasi placed the reply's image links), a tool image as its public URL
 function sseEvent(event: FinalizedAgentEvent | AgentDelta): object {
   if (event.type !== "tool_image") return event
-  const { mimeType, key, ref, alt } = event
+  const { mimeType, key, ref, alt, source } = event
   const url = key ? imageUrl(key) : ref
-  return { type: "tool_image", mimeType, url, ref, alt }
+  return { type: "tool_image", mimeType, url, ref, alt, ...(source ? { source } : {}) }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */

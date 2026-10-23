@@ -92,6 +92,7 @@ export {
   isContextOverflow,
   summarize
 } from "./agent/compaction"
+export { type Describer, describeImage, imageLabel, relabeledParts } from "./agent/describe"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 export type { PromptImage } from "./agent/images"
@@ -171,10 +172,14 @@ export {
   IMAGE_REF_PREFIX,
   imageId,
   imageKey,
+  type ImageRow,
+  type ImageRows,
+  type ImageSource,
   imageRefId,
   inlineImages,
   joinConversation,
   type MessageRow,
+  memoryImageRows,
   memoryObjects,
   type NasiStore,
   noteHeader,
@@ -187,6 +192,7 @@ export {
   type SessionImages,
   type SessionWrite,
   type StepRow,
+  type StoredImage,
   sessionIdOf,
   sessionImagePrefix,
   splitConversation,
