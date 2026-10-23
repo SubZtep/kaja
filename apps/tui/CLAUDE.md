@@ -9,7 +9,11 @@ This package uses Bun. The entry point is **`cli.ts`** at the package root (not 
 ```bash
 bun dev:tui               # from the monorepo root: interactive, attaches your real TTY
 bun run --filter @kaja/tui test
+bun session list          # from the monorepo root: local terminal sessions, newest first
+bun session dump <id>     # one session as markdown with a Mermaid sequenceDiagram (id may be a unique prefix)
 ```
+
+`bun session` (`scripts/session.ts`, tested in `tests/scripts/session.test.ts`) is a read-only debugging dump of `memory.sqlite`: it never creates or migrates the database, and it only sees terminal sessions (empty owner), not cloud or Telegram ones. Redirect `dump` to a file and open it in a Mermaid-aware viewer.
 
 `bun run --filter @kaja/tui start` runs through Bun's workspace script runner, which does not pass the TTY through: Ink sees `process.stdin.isTTY` as falsy (skips the setup wizard, and the main app crashes with "Raw mode is not supported"). Use `bun dev:tui` (or `cd apps/tui && bun run cli.ts`) for interactive use.
 
