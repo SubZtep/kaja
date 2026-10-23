@@ -27,7 +27,6 @@ COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/server.js ./serv
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/migrate.js ./migrate.js
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/public ./public
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/migrations ./migrations
-COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/assets ./assets
 
 EXPOSE 3001
 # Unhealthy only when the database is unreachable (see /health/ready); the slim image has no curl, so Bun asks

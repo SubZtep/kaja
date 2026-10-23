@@ -4,9 +4,9 @@ import { readdir } from "node:fs/promises"
 import { join, resolve } from "node:path"
 import type { SoundsManifest } from "@kaja/schema/config"
 
-// Prod runs from the Docker WORKDIR with assets/ beside server.js; unbundled (dev, tests) the folder is two levels up.
-// oxlint-disable-next-line bun/no-cwd-dependent-path -- the Dockerfile copies assets/ next to server.js under the working directory
-const candidates = [resolve("assets/sounds"), resolve(import.meta.dir, "../../assets/sounds")]
+// Prod runs from the Docker WORKDIR with public/ beside server.js; unbundled (dev, tests) the folder is two levels up.
+// oxlint-disable-next-line bun/no-cwd-dependent-path -- the Dockerfile copies public/ next to server.js under the working directory
+const candidates = [resolve("public/sounds"), resolve(import.meta.dir, "../../public/sounds")]
 
 let loaded: Promise<{ dir: string; manifest: SoundsManifest }> | undefined
 
