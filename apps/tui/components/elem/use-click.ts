@@ -31,13 +31,22 @@ function screenRect(node: DOMElement): Rect | undefined {
   return rect.right > rect.left && rect.bottom > rect.top ? rect : undefined
 }
 
-/** Runs `onClick` when the mouse presses inside `ref`'s box where it's visible (the chat turns mouse reports on). */
-export function useClick(ref: RefObject<DOMElement | null>, onClick: () => void) {
+/**
+ * Runs `onClick` when the mouse presses inside `ref`'s box where it's visible (the chat turns mouse reports on).
+ * `onHover`, if given, is told whenever a button-less move report lands inside or leaves that box.
+ */
+export function useClick(
+  ref: RefObject<DOMElement | null>,
+  onClick: () => void,
+  onHover?: (hovering: boolean) => void
+) {
   useTerminalReports(input => {
     const mouse = parseMouse(input)
-    if (mouse?.kind !== "press" || !ref.current) return
+    if (!mouse || !ref.current) return
     const rect = screenRect(ref.current)
-    if (rect && mouse.col >= rect.left && mouse.col < rect.right && mouse.row >= rect.top && mouse.row < rect.bottom)
-      onClick()
+    const inside =
+      !!rect && mouse.col >= rect.left && mouse.col < rect.right && mouse.row >= rect.top && mouse.row < rect.bottom
+    if (mouse.kind === "press" && inside) onClick()
+    else if (mouse.kind === "move") onHover?.(inside)
   })
 }

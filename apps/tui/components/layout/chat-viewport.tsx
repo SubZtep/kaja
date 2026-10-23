@@ -1,12 +1,10 @@
 import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
-import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { useTerminalReports } from "../../hooks/use-terminal-reports"
-import { fireHook } from "../../lib/config/hooks"
+import { copyableText, copyToClipboard } from "../../lib/copy"
 import { t } from "../../lib/i18n"
-import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { parseWheelDirection } from "../../lib/terminal-input"
 import { type DisplayEvent, foldToolCalls } from "../../lib/tool-summary"
@@ -56,20 +54,6 @@ function spacing(items: DisplayEvent[], thinking: boolean) {
     if (itemShows(item, thinking)) previous = item.type
     return spaced
   })
-}
-
-/** Timeline event types whose text is worth copying to the clipboard: the agent's words, never the user's own message. */
-function copyableText(event: TimelineEvent): string | null {
-  switch (event.type) {
-    case "message":
-      return event.content
-    case "final":
-      return event.content
-    case "ask_user":
-      return event.question
-    default:
-      return null
-  }
 }
 
 /** Most recent message with copyable text, searching from the end of the timeline. */
@@ -274,9 +258,7 @@ export function ChatViewport({
   const copyLatest = () => {
     const text = lastCopyableText(events)
     if (!text) return
-    writeText(text)
-      .then(() => fireHook("copy"))
-      .catch(error => log.warn("Copy to clipboard failed", { error }))
+    copyToClipboard(text)
   }
   // The key bar's Copy button asks through uiEvents; an effect event keeps the listener on the latest events
   const copy = useEffectEvent(copyLatest)

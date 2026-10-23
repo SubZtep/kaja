@@ -6,6 +6,7 @@ import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
 import type { DisplayEvent } from "../lib/tool-summary"
 import { CodePreview } from "./elem/code-preview"
+import { CopyableBlock } from "./elem/copyable-block"
 import { ImageRow } from "./elem/image-row"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
@@ -99,9 +100,17 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":
-      return <Said dot={theme.accent()}>{item.content}</Said>
+      return (
+        <CopyableBlock text={item.content}>
+          <Said dot={theme.accent()}>{item.content}</Said>
+        </CopyableBlock>
+      )
     case "ask_user":
-      return <Said dot={theme.userText()}>{item.question}</Said>
+      return (
+        <CopyableBlock text={item.question}>
+          <Said dot={theme.userText()}>{item.question}</Said>
+        </CopyableBlock>
+      )
     case "confirm_command":
       return <CodePreview command={item.command} tone={theme.warning()} />
     case "confirm_tool":
@@ -133,8 +142,14 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
       const errorLabel = t(`error.${item.category}`)
       return <StatusMessage variant={ERROR_VARIANT[item.category]}>{`${errorLabel}: ${item.text}`}</StatusMessage>
     }
-    case "final":
-      return <Said dot={theme.accent()}>{item.content ?? "N/A"}</Said>
+    case "final": {
+      const content = item.content ?? "N/A"
+      return (
+        <CopyableBlock text={content}>
+          <Said dot={theme.accent()}>{content}</Said>
+        </CopyableBlock>
+      )
+    }
     case "client_tool_calls":
       return null
   }

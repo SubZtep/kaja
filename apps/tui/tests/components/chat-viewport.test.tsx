@@ -82,6 +82,32 @@ test("copy takes the agent's latest words, not the user's message that came afte
   await t.waitUntilExit()
 })
 
+test("clicking an agent message copies its own text, not just the latest one", async () => {
+  const events: TimelineEvent[] = [
+    { type: "final", content: "first reply" },
+    { type: "user", text: "follow-up" },
+    { type: "final", content: "second reply" }
+  ]
+  const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
+  const t = renderForTest(
+    <Box flexDirection="column" width={40} height={12}>
+      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
+    </Box>
+  )
+  await t.tick()
+  await t.tick()
+  const lines = t.lastFrame().split("\n")
+  const row = lines.findIndex(line => line.includes("first reply"))
+  expect(row).toBeGreaterThan(-1)
+  const col = lines[row]!.indexOf("first reply")
+  await t.press(`\u001B[<0;${col + 1};${row + 1}M`)
+  await t.tick()
+  expect(spy).toHaveBeenCalledWith("first reply")
+  spy.mockRestore()
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   const mdEvents: TimelineEvent[] = Array.from({ length: 50 }, (_, i) => ({
     type: "message" as const,

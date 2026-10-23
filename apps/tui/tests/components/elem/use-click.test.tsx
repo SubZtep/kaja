@@ -6,10 +6,12 @@ import { renderForTest } from "../../test-utils"
 
 // A press at screen column `col`, row `row` (0-based), as an SGR mouse report.
 const press = (col: number, row: number) => `\u001B[<0;${col + 1};${row + 1}M`
+// A button-less move (mode 1003), same encoding.
+const move = (col: number, row: number) => `\u001B[<35;${col + 1};${row + 1}M`
 
-function Target({ clicks }: Readonly<{ clicks: string[] }>) {
+function Target({ clicks, hovers }: Readonly<{ clicks: string[]; hovers?: boolean[] }>) {
   const ref = useRef<DOMElement>(null)
-  useClick(ref, () => clicks.push("open"))
+  useClick(ref, () => clicks.push("open"), hovers && (hovering => hovers.push(hovering)))
   return (
     <Box ref={ref}>
       <Text>open</Text>
@@ -53,6 +55,28 @@ test("inside a scrolled box, the press lands where the box is drawn, and a scrol
   expect(clicks).toEqual([])
   await t.press(press(1, 0))
   expect(clicks).toEqual(["open"])
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("onHover fires true entering the box and false leaving it", async () => {
+  const clicks: string[] = []
+  const hovers: boolean[] = []
+  const t = renderForTest(
+    <Box flexDirection="column">
+      <Text>first line</Text>
+      <Box marginLeft={4}>
+        <Target clicks={clicks} hovers={hovers} />
+      </Box>
+    </Box>,
+    { columns: 40 }
+  )
+  await t.press(move(0, 1))
+  expect(hovers).toEqual([false])
+  await t.press(move(5, 1))
+  expect(hovers).toEqual([false, true])
+  await t.press(move(0, 1))
+  expect(hovers).toEqual([false, true, false])
   t.unmount()
   await t.waitUntilExit()
 })
