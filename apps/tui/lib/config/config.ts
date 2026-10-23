@@ -26,7 +26,7 @@ export function getConfigPath() {
   return join(getConfigDir(), "settings.toml")
 }
 
-export async function isConfigExists() {
+export function isConfigExists() {
   const f = file(getConfigPath())
   return f.exists()
 }
