@@ -1,6 +1,6 @@
 {
   "name": "@kaja/web",
-  "version": "0.24.22",
+  "version": "0.24.23",
   "private": true,
   "type": "module",
   "scripts": {
