@@ -21,7 +21,7 @@ const toast =
   "$text = $xml.GetElementsByTagName('text'); " +
   "[void]$text[0].AppendChild($xml.CreateTextNode($env:KAJA_TITLE)); " +
   "[void]$text[1].AppendChild($xml.CreateTextNode($env:KAJA_TEXT)); " +
-  "$app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'; " +
+  String.raw`$app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'; ` +
   "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($app).Show([Windows.UI.Notifications.ToastNotification]::new($xml))"
 
 const player = (program: string, args: string): Backend => ({

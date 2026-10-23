@@ -14,24 +14,21 @@ describe("config defaults (public)", () => {
     expect(body.catalog.providers.length).toBeGreaterThan(0)
   })
 
-  test("GET /config/catalog honours If-None-Match with a 304", async () => {
-    const etag = (await app.request("/config/catalog")).headers.get("etag")
-    expect(etag).not.toBeNull()
-    const res = await app.request("/config/catalog", { headers: { "If-None-Match": etag! } })
-    expect(res.status).toBe(304)
-  })
+  test.each(["/config/catalog", "/config/templates/commands.toml", "/config/schemas/settings.json", "/config/sounds"])(
+    "GET %s honours If-None-Match with a 304",
+    async path => {
+      const etag = (await app.request(path)).headers.get("etag")
+      expect(etag).not.toBeNull()
+      const res = await app.request(path, { headers: { "If-None-Match": etag! } })
+      expect(res.status).toBe(304)
+    }
+  )
 
   test("GET /config/templates/<file> returns plain TOML", async () => {
     const res = await app.request("/config/templates/models.default.toml")
     expect(res.status).toBe(200)
     expect(res.headers.get("content-type")).toContain("text/plain")
     expect(ModelsFileSchema.safeParse(TOML.parse(await res.text())).success).toBe(true)
-  })
-
-  test("GET /config/templates/<file> honours If-None-Match with a 304", async () => {
-    const etag = (await app.request("/config/templates/commands.toml")).headers.get("etag")
-    const res = await app.request("/config/templates/commands.toml", { headers: { "If-None-Match": etag! } })
-    expect(res.status).toBe(304)
   })
 
   test.each(["secrets.toml", "settings.toml", "catalog.toml", "constructor", "does-not-exist.toml"])(
@@ -46,12 +43,6 @@ describe("config defaults (public)", () => {
     expect(res.status).toBe(200)
     const committed = await Bun.file(join(import.meta.dir, "../../../../config/schemas/models.json")).json()
     expect(await res.json()).toEqual(committed)
-  })
-
-  test("GET /config/schemas/<file> honours If-None-Match with a 304", async () => {
-    const etag = (await app.request("/config/schemas/settings.json")).headers.get("etag")
-    const res = await app.request("/config/schemas/settings.json", { headers: { "If-None-Match": etag! } })
-    expect(res.status).toBe(304)
   })
 
   test.each(["constructor", "models", "does-not-exist.json"])("GET /config/schemas/%s is 404", async file => {
@@ -71,12 +62,6 @@ describe("config defaults (public)", () => {
     const bytes = new Uint8Array(await file.arrayBuffer())
     expect(bytes.byteLength).toBe(bell.size)
     expect(new Bun.CryptoHasher("sha256").update(bytes).digest("hex")).toBe(bell.sha256)
-  })
-
-  test("GET /config/sounds honours If-None-Match with a 304", async () => {
-    const etag = (await app.request("/config/sounds")).headers.get("etag")
-    const res = await app.request("/config/sounds", { headers: { "If-None-Match": etag! } })
-    expect(res.status).toBe(304)
   })
 
   test.each(["constructor", "../package.json", "does-not-exist.wav"])("GET /config/sounds/%s is 404", async file => {

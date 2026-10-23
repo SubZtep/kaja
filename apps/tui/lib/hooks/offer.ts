@@ -4,13 +4,23 @@ import { writeTemplateConfig } from "../config/fetch"
 import { getHooksPath } from "../config/hooks"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
-import { type BackendKind, detectBackends, installHint, type Which } from "./detect"
+import { type BackendKind, detectBackends, type Detected, installHint, type Which } from "./detect"
 import { buildHooksToml } from "./templates"
 
 const KIND_LABEL: Record<BackendKind, string> = {
   player: "hooks.kindPlayer",
   notifier: "hooks.kindNotifier",
   speaker: "hooks.kindSpeaker"
+}
+
+function describeKind(kind: BackendKind, found: Detected, platform: string, which: Which) {
+  const what = t(KIND_LABEL[kind])
+  const backend = found[kind]
+  if (backend) return statusLine("success", t("hooks.found", { what, program: backend.program }))
+  const hint = installHint(kind, platform, which)
+  if (!hint) return statusLine("warning", t("hooks.missing", { what }))
+  if (hint.command) return statusLine("warning", t("hooks.missingInstall", { what, command: hint.command }))
+  return statusLine("warning", t("hooks.missingProgram", { what, program: hint.program }))
 }
 
 /**
@@ -31,18 +41,7 @@ export async function offerHooks(
   if (existsSync(path) && !(await askYesNo(t("hooks.replaceTitle", { path }), yes, no))) return
 
   const found = detectBackends(platform, which)
-  for (const kind of ["player", "notifier", "speaker"] as const) {
-    const backend = found[kind]
-    const what = t(KIND_LABEL[kind])
-    if (backend) {
-      print(statusLine("success", t("hooks.found", { what, program: backend.program })))
-      continue
-    }
-    const hint = installHint(kind, platform, which)
-    if (!hint) print(statusLine("warning", t("hooks.missing", { what })))
-    else if (hint.command) print(statusLine("warning", t("hooks.missingInstall", { what, command: hint.command })))
-    else print(statusLine("warning", t("hooks.missingProgram", { what, program: hint.program })))
-  }
+  for (const kind of ["player", "notifier", "speaker"] as const) print(describeKind(kind, found, platform, which))
 
   const wanted = {
     sounds: !!found.player && (await askYesNo(t("hooks.soundsTitle"), yes, no, { defaultYes: true, yesFirst: true })),
