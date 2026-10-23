@@ -5,8 +5,11 @@ export type Backend = {
   kind: BackendKind
   /** The program the command starts, which must be on PATH for it to work. */
   program: string
-  /** The shell command for a hook; a player's plays the given sound file of `$KAJA_SOUNDS`. */
-  command: (sound?: string) => string
+  /**
+   * The shell command for a hook; a player's plays the given sound file of `$KAJA_SOUNDS`, a speaker's may take the
+   * locale code to read in.
+   */
+  command: (arg?: string) => string
 }
 
 export type Which = (program: string) => string | null
@@ -45,9 +48,9 @@ const BACKENDS: Record<string, Backend[]> = {
       program: "kdialog",
       command: () => 'kdialog --title "$KAJA_TITLE" --passivepopup "$KAJA_TEXT" 5'
     },
-    { kind: "speaker", program: "espeak-ng", command: () => "espeak-ng --stdin" },
-    { kind: "speaker", program: "espeak", command: () => "espeak --stdin" },
-    { kind: "speaker", program: "spd-say", command: () => "spd-say -e" }
+    { kind: "speaker", program: "espeak-ng", command: lang => `espeak-ng${lang ? ` -v ${lang}` : ""} --stdin` },
+    { kind: "speaker", program: "espeak", command: lang => `espeak${lang ? ` -v ${lang}` : ""} --stdin` },
+    { kind: "speaker", program: "spd-say", command: lang => `spd-say -e${lang ? ` -l ${lang}` : ""}` }
   ],
   darwin: [
     player("afplay", ""),
@@ -58,7 +61,19 @@ const BACKENDS: Record<string, Backend[]> = {
       command: () =>
         `osascript -e 'display notification (system attribute "KAJA_TEXT") with title (system attribute "KAJA_TITLE")'`
     },
-    { kind: "speaker", program: "say", command: () => "say" }
+    {
+      kind: "speaker",
+      program: "say",
+      // No locale flag exists; picks the first installed voice for the language (ignoring region) at speech time
+      command: lang => {
+        if (!lang) return "say"
+        const code = lang.split("-")[0]?.toLowerCase()
+        return (
+          `v=$(say -v '?' | awk -v l="${code}" '{split($2,p,"_"); if (tolower(p[1])==l) {print $1; exit}}'); ` +
+          'say ${v:+-v "$v"}'
+        )
+      }
+    }
   ],
   win32: [
     {
@@ -70,10 +85,15 @@ const BACKENDS: Record<string, Backend[]> = {
     {
       kind: "speaker",
       program: "powershell",
-      command: () =>
-        powershell(
-          "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak($env:KAJA_TEXT)"
+      // No matching installed voice: SelectVoiceByHints throws, caught so the default voice still speaks
+      command: lang => {
+        const select = lang
+          ? `try { $s.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::NotSet, [System.Speech.Synthesis.VoiceAge]::NotSet, 0, (New-Object Globalization.CultureInfo('${lang}'))) } catch {}; `
+          : ""
+        return powershell(
+          `Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; ${select}$s.Speak($env:KAJA_TEXT)`
         )
+      }
     }
   ]
 }

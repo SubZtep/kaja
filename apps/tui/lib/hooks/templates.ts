@@ -24,11 +24,13 @@ const tomlString = (text: string) => (text.includes("'") ? JSON.stringify(text) 
 /**
  * The text of a hooks.toml for what was found on this machine: sounds, notifications and reading messages aloud, each
  * only when asked for and a command was detected. Speech commands share the "speech" cancel name, so a new reply
- * interrupts the one still being read.
+ * interrupts the one still being read. `lang` (the active locale, e.g. "hu-HU") is passed to the speaker backend,
+ * which uses it only if it supports a voice flag (currently espeak-ng's `-v`).
  */
 export function buildHooksToml(
   found: Detected,
-  wanted: { sounds: boolean; notifications: boolean; speech: boolean }
+  wanted: { sounds: boolean; notifications: boolean; speech: boolean },
+  lang?: string
 ): string {
   const hooks = new Map<HookName, HookCommand[]>()
   const add = (name: HookName, command: HookCommand) => hooks.set(name, [...(hooks.get(name) ?? []), command])
@@ -42,7 +44,7 @@ export function buildHooksToml(
     for (const name of NOTIFICATIONS) add(name, { run: notifier.command() })
   }
   if (wanted.speech && speaker) {
-    for (const name of SPEECH) add(name, { run: speaker.command(), cancel: "speech" })
+    for (const name of SPEECH) add(name, { run: speaker.command(lang), cancel: "speech" })
   }
 
   const tables = [...hooks].flatMap(([name, commands]) =>

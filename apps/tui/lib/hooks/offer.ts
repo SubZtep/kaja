@@ -3,7 +3,7 @@ import { syncSounds } from "../audio/sounds"
 import { writeTemplateConfig } from "../config/fetch"
 import { getHooksPath } from "../config/hooks"
 import { statusLine } from "../doctor/status"
-import { t } from "../i18n"
+import { getLanguage, t } from "../i18n"
 import { type BackendKind, detectBackends, type Detected, installHint, type Which } from "./detect"
 import { buildHooksToml } from "./templates"
 
@@ -59,7 +59,7 @@ export async function offerHooks(
 
   if (wanted.sounds && !(await syncSounds())) print(statusLine("warning", t("hooks.soundsFailed")))
 
-  const written = await writeTemplateConfig(buildHooksToml(found, wanted), path)
+  const written = await writeTemplateConfig(buildHooksToml(found, wanted, getLanguage()), path)
   if (written.unchanged) print(statusLine("success", t("config.fetchedUnchanged", { path })))
   else if (written.backedUpTo)
     print(statusLine("success", t("config.fetchedWithBackup", { path, backup: written.backedUpTo })))
