@@ -174,8 +174,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   ): Promise<void> {
     if (event.type === "message") await reply.endRound(event.content)
     // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
-    else if (event.type === "ask_user")
-      await reply.finish(event.question, event.id && event.options ? askButtons(event.id, event.options) : undefined)
+    else if (event.type === "ask_user") await reply.finish(event.question, askButtons(event.id, event.options))
     else if (event.type === "final") await reply.finish(event.content ?? "")
     else if (event.type === "confirm_tool") await sendApproval(reply, chatId, event, language)
     else if (event.type === "compacted")

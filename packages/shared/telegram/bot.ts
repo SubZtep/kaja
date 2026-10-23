@@ -18,8 +18,12 @@ export function askCallbackData(callId: string, index: number): string {
   return `ask:${approvalToken(callId)}:${index}`
 }
 
-/** A question's options as buttons, one per row, for the call with this id. */
-export function askButtons(callId: string, options: string[]): { text: string; data: string }[][] {
+/** A question's options as buttons, one per row, for the call with this id; none without options or the id. */
+export function askButtons(
+  callId: string | undefined,
+  options: string[] | undefined
+): { text: string; data: string }[][] | undefined {
+  if (!callId || !options) return undefined
   return options.map((text, index) => [{ text, data: askCallbackData(callId, index) }])
 }
 

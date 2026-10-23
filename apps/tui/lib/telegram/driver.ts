@@ -460,7 +460,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
       // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
       case "ask_user":
-        await reply.finish(event.question, event.id && event.options ? askButtons(event.id, event.options) : undefined)
+        await reply.finish(event.question, askButtons(event.id, event.options))
         return true
 
       case "final":

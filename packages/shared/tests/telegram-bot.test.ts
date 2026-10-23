@@ -216,7 +216,9 @@ test("an option's callback data fits the Bot API's 64 bytes however long the cal
 })
 
 test("a question's options become one button each, in order", () => {
-  const rows = askButtons("call_1", ["Yes", "No"])
+  const rows = askButtons("call_1", ["Yes", "No"])!
   expect(rows.map(row => row.map(button => button.text))).toEqual([["Yes"], ["No"]])
   expect(rows.map(row => parseAskCallback(row[0]!.data)?.index)).toEqual([0, 1])
+  expect(askButtons("call_1", undefined)).toBeUndefined()
+  expect(askButtons(undefined, ["Yes", "No"])).toBeUndefined()
 })

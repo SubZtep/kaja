@@ -413,6 +413,13 @@ function handleAskUserCall(call: FunctionToolCall): AskUser | { error: string } 
   }
 }
 
+/** The question to pause on, or undefined after its options that don't fit went back to the model to fix. */
+function askOrFail(messages: ChatCompletionMessageParam[], call: FunctionToolCall, record: RecordCall) {
+  const asked = handleAskUserCall(call)
+  if (!("error" in asked)) return asked
+  toolCallFailed(messages, call, record, asked.error)
+}
+
 async function* handleToolCalls(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
@@ -440,9 +447,7 @@ async function* handleToolCalls(
     }
 
     if (call.function.name === ASK_USER_TOOL) {
-      const asked = handleAskUserCall(call)
-      if ("error" in asked) toolCallFailed(messages, call, record, asked.error)
-      else ask = asked
+      ask = askOrFail(messages, call, record) ?? ask
       continue
     }
 

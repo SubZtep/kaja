@@ -121,7 +121,7 @@ export function askUserChatClient() {
       completions: {
         stream: () => ({
           async *[Symbol.asyncIterator]() {},
-          finalChatCompletion: async () => ({ choices: [{ message }] })
+          finalChatCompletion: () => Promise.resolve({ choices: [{ message }] })
         })
       }
     }

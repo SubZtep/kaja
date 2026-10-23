@@ -87,7 +87,7 @@ export function Prompt({
             pending={false}
             speaking={speaking}
             asking
-            send={async text => onResolve({ kind: "text", text })}
+            send={text => Promise.resolve(onResolve({ kind: "text", text }))}
             personaModels={personaModels}
             history={history}
             mic={mic}

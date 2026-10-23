@@ -15,7 +15,7 @@ id/          # randomUUIDv7
 locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage ({param} interpolation), createMessages
 toml/        # stringifyToml, groupTomlTables: every TOML file Kaja writes groups sub-tables under their parent's header (API and TUI)
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
-  bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency), approvalToken (a call id's hash for callback data), albumCollector (an album's photos as one turn)
+  bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency), approvalToken (a call id's hash for callback data), askButtons/parseAskCallback (a question's options as `ask:<token>:<index>` buttons and back), albumCollector (an album's photos as one turn)
   markdown.ts  # renderTelegramHtml, splitTelegramMessage and truncateForStreaming (both close and reopen the tags a cut falls inside, never cut a tag or entity), TELEGRAM_MESSAGE_LIMIT
   reply.ts     # openReply (a turn's "…" placeholder: throttled streamed edits sent one at a time, a failed one not counted as sent; endRound keeps a tool-calling round's text as its own message; finish with chunks and photos; settle before an approval, removing an untouched placeholder; fail), compactedLine; each bot passes its sender, photo rule, translations and logger
 ```
