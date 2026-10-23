@@ -6,7 +6,7 @@ import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/device")({
   component: DeviceLayout,
-  loader: ({ location }) => userRequired(undefined, location.href),
+  loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
   head: () => ({ meta: noindexSeo() })
 })
 

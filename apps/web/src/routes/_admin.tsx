@@ -10,7 +10,7 @@ import { Header } from "./_public/-components/header"
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutRoute,
-  loader: ({ location }) => userRequired(undefined, location.href),
+  loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
   head: () => ({ meta: noindexSeo() })
 })
 

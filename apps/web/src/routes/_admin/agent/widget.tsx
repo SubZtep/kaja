@@ -33,7 +33,7 @@ import { EditWidgetDialog, parseOrigins } from "./-components/EditWidgetDialog"
 
 export const Route = createFileRoute("/_admin/agent/widget")({
   component: WidgetPage,
-  loader: () => userRequired(),
+  loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_widget() }) })
 })
 

@@ -26,7 +26,7 @@ const signinSearchSchema = (search: Record<string, unknown>): { redirect?: strin
 
 export const Route = createFileRoute("/_public/signin")({
   validateSearch: signinSearchSchema,
-  beforeLoad: ({ search }) => guestOnly(search.redirect),
+  beforeLoad: ({ context, search }) => guestOnly(context.session, search.redirect),
   component: SignIn,
   head: () => ({
     meta: seo({ title: m.nav_sign_in(), description: m.seo_signin_desc() })
