@@ -12,6 +12,7 @@ import {
   imageRefId,
   isImageRejection,
   notApprovedPrompt,
+  pendingQuestionOptions,
   personaAbilities,
   photoLabel,
   type PromptImage,
@@ -25,13 +26,16 @@ import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
   approvalToken,
+  askButtons,
   commandArgument,
   compactedLine,
   escapeHtml,
   isCommand,
   openReply,
+  parseAskCallback,
   renderTelegramHtml,
-  type Reply
+  type Reply,
+  type ReplyButton
 } from "@kaja/shared/telegram"
 import { sessionTitle } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"
@@ -109,6 +113,9 @@ function errorLine(error: unknown): string {
   const label = t(`error.${category}`)
   return `⚠ ${label}: ${escapeHtml(message)}`
 }
+
+const toKeyboard = (rows: ReplyButton[][] | undefined): InlineKeyboardLike | undefined =>
+  rows?.map(row => row.map(({ text, data }) => ({ text, callback_data: data })))
 
 /**
  * A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy
@@ -453,7 +460,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
       // The question is the round's whole text, its links already placed (a trailing "?" reply, or the ask_user call's own)
       case "ask_user":
-        await reply.finish(event.question)
+        await reply.finish(event.question, event.id && event.options ? askButtons(event.id, event.options) : undefined)
         return true
 
       case "final":
@@ -535,8 +542,9 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
     try {
       const reply = await openReply({
-        send: text => sender.sendMessage(chatId, text),
-        edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+        send: (text, rows) => sender.sendMessage(chatId, text, { replyMarkup: toKeyboard(rows) }),
+        edit: (messageId, text, rows) =>
+          sender.editMessageText(chatId, messageId, text, { replyMarkup: toKeyboard(rows) }),
         remove: messageId => sender.deleteMessage(chatId, messageId),
         sendPhoto: async (photo: { path: string } | { url: string }, caption) => {
           await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
@@ -674,15 +682,44 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return { result: ran.text, images: ran.images }
   }
 
+  /**
+   * A tap on one of a question's options: it must be the question the session still waits on, so an old button only
+   * says so. The message keeps the question and shows the pick, which then is the user's answer.
+   */
+  async function answerQuestion(
+    userId: number,
+    chatId: number,
+    messageId: number,
+    answer: { token: string; index: number },
+    messageText?: string
+  ) {
+    const state = await getUserState(userId)
+    // The turn that sent the question may still be finishing (saving, waiting on an image's description)
+    await state.idle
+    const askId = state.session.pendingAskUserId
+    const choice = pendingQuestionOptions(state.session)[answer.index]
+    const question = messageText ? `${escapeHtml(messageText)}\n\n` : ""
+    if (state.busy || !askId || approvalToken(askId) !== answer.token || choice === undefined) {
+      await editSafely(chatId, messageId, `${question}${t("telegram.questionExpired")}`, { replyMarkup: [] })
+      return
+    }
+    // The turn starts (and marks the user busy) before the edit is awaited, so a second tap can't answer it again
+    const marked = editSafely(chatId, messageId, `${question}→ ${escapeHtml(choice)}`, { replyMarkup: [] })
+    await Promise.all([marked, runTurn(userId, chatId, state, choice, choice)])
+  }
+
   async function handleCallbackQuery(
     userId: number,
     chatId: number,
     messageId: number,
     data: string,
-    callbackQueryId: string
+    callbackQueryId: string,
+    messageText?: string
   ) {
     // Ack immediately regardless of outcome — Telegram shows a client-side spinner on the pressed button until this call resolves.
     await sender.answerCallbackQuery(callbackQueryId)
+    const answer = parseAskCallback(data)
+    if (answer) return answerQuestion(userId, chatId, messageId, answer, messageText)
     const match = /^(cmd|tool):(approve|approve_session|decline):(.+)$/.exec(data)
     if (!match) return
     const kind = match[1] === "cmd" ? "command" : "tool"

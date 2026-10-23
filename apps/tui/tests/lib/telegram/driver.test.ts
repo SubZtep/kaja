@@ -692,6 +692,35 @@ test("an approval asked for before any text removes the empty placeholder", asyn
   expect(deleted).toEqual([1])
 })
 
+test("a question's options become buttons, a tap answers it once, and a later tap says it was answered", async () => {
+  const { sender, edited } = fakeSender()
+  const ask = {
+    id: "call_q",
+    type: "function" as const,
+    function: { name: "ask_user", arguments: JSON.stringify({ question: "Proceed?", options: ["Yes", "No"] }) }
+  }
+  const driver = makeDriver([{ content: null, tool_calls: [ask] }, { content: "Standing down." }], sender)
+
+  await driver.handleMessage(42, 100, "deploy")
+  const asked = edited.find(e => e.replyMarkup?.length)!
+  expect(asked.text).toBe("Proceed?")
+  expect(asked.replyMarkup!.map(row => row.map(button => button.text))).toEqual([["Yes"], ["No"]])
+  expect(asked.replyMarkup![1]![0]!.callback_data).toBe(`ask:${approvalToken("call_q")}:1`)
+
+  const tap = asked.replyMarkup![1]![0]!.callback_data
+  await driver.handleCallbackQuery(42, 100, asked.messageId, tap, "q1", "Proceed?")
+  expect(edited.find(e => e.messageId === asked.messageId && e.text === "Proceed?\n\n→ No")).toBeDefined()
+  expect(edited.at(-1)!.text).toBe("Standing down.")
+  expect(requests.at(-1)!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_q", content: "No" })
+
+  await driver.handleCallbackQuery(42, 100, asked.messageId, tap, "q2", "Proceed?")
+  expect(edited.at(-1)).toMatchObject({
+    messageId: asked.messageId,
+    text: `Proceed?\n\n${t("telegram.questionExpired")}`,
+    replyMarkup: []
+  })
+})
+
 test("a tap while the turn that asked is still finishing waits for it instead of running beside it", async () => {
   const { sender, sent, edited } = fakeSender()
   const driver = makeDriver([runCommandCall("call_8"), { content: "Done." }], sender)
