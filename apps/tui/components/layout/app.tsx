@@ -101,12 +101,14 @@ function buildKeyBarItems(
       .filter(binding => binding.when)
       .map(binding => ({
         key: `${label}+${binding.letter.toUpperCase()}`,
+        // ‽ stands for whichever modifier it is; the help modal names it
+        short: `‽+${binding.letter.toUpperCase()}`,
         label: binding.label,
         onPress: binding.run,
         lit: modifierHeld
       })),
-    { key: "PgUp", label: t("keybar.older"), onPress: () => uiEvents.emit("pageUp") },
-    { key: "PgDn", label: t("keybar.newer"), onPress: () => uiEvents.emit("pageDown") },
+    { key: "PgUp", label: t("keybar.older"), onPress: () => uiEvents.emit("pageUp"), droppable: true },
+    { key: "PgDn", label: t("keybar.newer"), onPress: () => uiEvents.emit("pageDown"), droppable: true },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -277,7 +279,7 @@ function Chrome({
                 personaModels={personaModels}
               />
             )}
-            <KeyBar items={keyBarItems} />
+            <KeyBar items={keyBarItems} width={columns} />
           </Backdrop>
           {modal === "help" && (
             <HelpModal
