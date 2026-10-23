@@ -71,7 +71,8 @@ export const fetchUrlTool = tool({
     const contentType = res.headers.get("content-type") ?? ""
     if (contentType.startsWith("image/")) {
       const data = new Uint8Array(await res.arrayBuffer())
-      return { text: `Image from ${args.url}`, images: [{ data, mimeType: contentType.split(";")[0]! }] }
+      const image = { data, mimeType: contentType.split(";")[0]!, source: { url: args.url } }
+      return { text: `Image from ${args.url}`, images: [image] }
     }
     if (!isTextual(contentType)) {
       await res.body?.cancel()
@@ -209,7 +210,12 @@ function toMarkdown(html: string, opts: Omit<FetchArgs, "url">): string {
       const src = img.getAttribute("src")
       if (!opts.images || !src || images >= MAX_PAGE_IMAGES) return ""
       images++
-      return `![${(img.getAttribute("alt") ?? "").replace(/[[\]]/g, "")}](${src})`
+      // A title rides along as Markdown's `"title"`, so a reply showing the image passes it to the image's row
+      const title = img
+        .getAttribute("title")
+        ?.replace(/["\s]+/g, " ")
+        .trim()
+      return `![${(img.getAttribute("alt") ?? "").replace(/[[\]]/g, "")}](${src}${title ? ` "${title}"` : ""})`
     }
   })
   turndown.addRule("links", {

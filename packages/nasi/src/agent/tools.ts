@@ -1,7 +1,7 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/resources/chat/completions"
 import { z } from "zod"
-import type { SessionImages } from "../store/images"
+import type { ImageSource, SessionImages } from "../store/images"
 import type { NasiStore } from "../store/types"
 import { altFrom, type PromptImage } from "./images"
 
@@ -30,11 +30,12 @@ export const LOCAL_OWNER_CTX: ToolContext = { owner: LOCAL_OWNER }
  * A tool result that includes images alongside text — e.g. a browser screenshot. Images can't travel in the `role:
  * "tool"` message itself (the OpenAI API restricts tool message content to text), so {@link run} sends `text` as the
  * tool response and follows up with a separate `role: "user"` message carrying each image, so the model actually sees
- * it. `images` are the bytes as the tool got them: run() normalises and stores them.
+ * it. `images` are the bytes as the tool got them, with what the tool knows of where each came from: run() normalises
+ * and stores them.
  */
 export type ToolResult = {
   text: string
-  images?: { data: Uint8Array; mimeType: string }[]
+  images?: { data: Uint8Array; mimeType: string; source?: ImageSource }[]
   /**
    * A remote image to show next to the tool's result in the timeline — display-only, e.g. a search result thumbnail.
    * Unlike {@link images}, this never reaches the model: it's not fed back as vision content, just yielded as a
@@ -195,7 +196,10 @@ export async function runApprovedTool(
     onStatus?.("ok")
     if (typeof result === "string") return { text: result, images: [] }
     const alt = altFrom(result.text, `an image from ${name}`)
-    return { text: result.text, images: (result.images ?? []).map(image => ({ data: image.data, alt })) }
+    return {
+      text: result.text,
+      images: (result.images ?? []).map(image => ({ data: image.data, alt, source: image.source }))
+    }
   } catch (error) {
     return failed(`Error: ${error instanceof Error ? error.message : String(error)}`)
   }

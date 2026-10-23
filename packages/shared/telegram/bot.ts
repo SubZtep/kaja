@@ -195,18 +195,23 @@ const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif
 /** The image fields of a Telegram message, structurally, so this needs no grammy import. */
 export type TelegramImageMessage = {
   photo?: { file_id: string; file_size?: number }[]
-  document?: { file_id: string; mime_type?: string; file_size?: number }
+  document?: { file_id: string; mime_type?: string; file_size?: number; file_name?: string }
 }
 
-/** A message's image: the largest size of a photo, or a file sent uncompressed that is an image. */
+/** A message's image: the largest size of a photo, or a file sent uncompressed that is an image (with its name). */
 export function incomingImage(
   message: TelegramImageMessage
-): { fileId: string; mimeType: string; size?: number } | undefined {
+): { fileId: string; mimeType: string; size?: number; fileName?: string } | undefined {
   const photo = message.photo?.at(-1)
   if (photo) return { fileId: photo.file_id, mimeType: "image/jpeg", size: photo.file_size }
   const document = message.document
   if (document?.mime_type && IMAGE_TYPES.has(document.mime_type))
-    return { fileId: document.file_id, mimeType: document.mime_type, size: document.file_size }
+    return {
+      fileId: document.file_id,
+      mimeType: document.mime_type,
+      size: document.file_size,
+      ...(document.file_name ? { fileName: document.file_name } : {})
+    }
 }
 
 /** Downloads a message's image from Telegram as a data URL for the model; `getFile` is the bot's `api.getFile`. */

@@ -136,6 +136,21 @@ test("a session's images are files beside the database: its messages keep their 
   db.close()
 })
 
+test("an image's row keeps its first source's URL, and a later arrival only fills what's still empty", async () => {
+  const { getStore } = await import("../../../lib/memory/store")
+  const id = Bun.randomUUIDv7()
+  const images = (await getStore()).images(id)
+  const image = { data: TINY_PNG, mimeType: "image/png", width: 1, height: 1 }
+  await images.put(image, { fileName: "shot.png" })
+  await images.put(image, { url: "https://a.example/x.png", alt: "x", fileName: "other.png" })
+  await images.put(image, { url: "https://b.example/x.png", title: "X" })
+  const db = await openDb()
+  const rows = db.query("SELECT sourceUrl, alt, title, fileName FROM images WHERE sessionId = ?").all(id)
+  db.close()
+  expect(rows).toEqual([{ sourceUrl: "https://a.example/x.png", alt: "x", title: "X", fileName: "shot.png" }])
+  await images.clear()
+})
+
 test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
   const image = { type: "image_url" as const, image_url: { url: `data:image/png;base64,${TINY_PNG_BASE64}` } }
   const id = await createSessionRow(row({ session: { messages: [{ role: "user", content: [image] }] } }))

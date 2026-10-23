@@ -21,7 +21,10 @@ async function fetchFrom(response: Response, args: Record<string, boolean> = {})
 test("an image URL comes back as the image, for the conversation to keep and show", async () => {
   const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0])
   const result = await fetchFrom(new Response(bytes, { headers: { "content-type": "image/jpeg" } }))
-  expect(result).toEqual({ text: `Image from ${PUBLIC_URL}`, images: [{ data: bytes, mimeType: "image/jpeg" }] })
+  expect(result).toEqual({
+    text: `Image from ${PUBLIC_URL}`,
+    images: [{ data: bytes, mimeType: "image/jpeg", source: { url: PUBLIC_URL } }]
+  })
 })
 
 test("a binary that isn't an image isn't returned as text", async () => {
@@ -51,6 +54,12 @@ const ARTICLE = `<html><head><title>Budapest</title></head><body>
   </article>
   <footer>© someone</footer>
 </body></html>`
+
+test("an image's title rides along as Markdown's title, for the stored image's row", () => {
+  const titled = ARTICLE.replace('alt="Parliament"', `alt="Parliament" title='The "House"\n  at night'`)
+  const markdown = pageMarkdown(titled, "https://example.com/city", { images: true })
+  expect(markdown).toContain('![Parliament](https://example.com/l.jpg "The House at night")')
+})
 
 test("a page is its article as Markdown, with no images or link URLs unless asked", () => {
   const markdown = pageMarkdown(ARTICLE, "https://example.com/city")

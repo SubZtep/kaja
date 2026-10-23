@@ -52,6 +52,7 @@ test("a file that isn't an image is refused; a big one comes back model-sized", 
   writeFileSync(join(root, "photo.png"), png(3000, 1500))
   const result = (await viewImageTool.execute({ path: "photo.png" })) as ToolResult
   expect(result.text).toBe("Viewing image: photo.png")
+  expect(result.images![0]!.source).toEqual({ fileName: "photo.png" })
   const image = result.images![0]!
   expect(image.mimeType).toBe("image/png")
   expect((await new Bun.Image(image.data).metadata()).width).toBe(1568)

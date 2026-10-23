@@ -108,6 +108,7 @@ test("results stay within the turn's limits: long text is cut, images are made m
     const photo = await run("2", "view_image", "photo.png")
     expect(photo.images).toHaveLength(1)
     expect(photo.images![0]!.mimeType).toBe("image/png")
+    expect(photo.images![0]!.fileName).toBe("photo.png")
     const { width } = await new Bun.Image(Buffer.from(photo.images![0]!.data, "base64")).metadata()
     expect(width).toBe(1568)
     expect(NasiToolResultSchema.safeParse(photo).success).toBe(true)

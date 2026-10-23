@@ -115,27 +115,61 @@ type ImageDbRow = {
   width: number
   height: number
   bytes: number
+  source_url: string | null
+  alt: string | null
+  title: string | null
+  file_name: string | null
   description: string | null
 }
 
 function rowToImage(row: ImageDbRow): ImageRow & { description?: string } {
-  const image = { id: row.id, mimeType: row.mime_type, width: row.width, height: row.height, bytes: row.bytes }
-  return row.description === null ? image : { ...image, description: row.description }
+  const image: ImageRow & { description?: string } = {
+    id: row.id,
+    mimeType: row.mime_type,
+    width: row.width,
+    height: row.height,
+    bytes: row.bytes
+  }
+  const fields = { url: row.source_url, alt: row.alt, title: row.title, fileName: row.file_name }
+  const source = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== null))
+  if (Object.keys(source).length) image.source = source
+  if (row.description !== null) image.description = row.description
+  return image
 }
 
 // Scoped by user too: a session id alone never reaches another account's images.
 function imageRows(db: Pool | PoolClient, userId: string, sessionId: string): ImageRows {
   return {
     async add(row) {
+      const { url, alt, title, fileName } = row.source ?? {}
+      // A later arrival fills only what the first left unset
       await db.query(
-        `INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (session_id, id) DO NOTHING`,
-        [sessionId, userId, row.id, row.mimeType, row.width, row.height, row.bytes]
+        `INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes, source_url, alt, title, file_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (session_id, id) DO UPDATE SET
+           source_url = COALESCE(nasi_image.source_url, EXCLUDED.source_url),
+           alt = COALESCE(nasi_image.alt, EXCLUDED.alt),
+           title = COALESCE(nasi_image.title, EXCLUDED.title),
+           file_name = COALESCE(nasi_image.file_name, EXCLUDED.file_name)
+         WHERE nasi_image.user_id = EXCLUDED.user_id`,
+        [
+          sessionId,
+          userId,
+          row.id,
+          row.mimeType,
+          row.width,
+          row.height,
+          row.bytes,
+          url ?? null,
+          alt ?? null,
+          title ?? null,
+          fileName ?? null
+        ]
       )
     },
     async get(id) {
       const result = await db.query<ImageDbRow>(
-        `SELECT id, mime_type, width, height, bytes, description FROM nasi_image
+        `SELECT id, mime_type, width, height, bytes, source_url, alt, title, file_name, description FROM nasi_image
          WHERE session_id = $1 AND user_id = $2 AND id = $3`,
         [sessionId, userId, id]
       )

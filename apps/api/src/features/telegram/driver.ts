@@ -313,14 +313,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
   /**
    * `telegramLanguage` is the sender's Telegram app language, used only when their account has none saved. `images`
-   * (data URLs): photos sent with the message, whose caption is `text`; they always run as a turn, never a command.
+   * (data URLs, with a sent file's name): photos sent with the message, whose caption is `text`; they always run as a
+   * turn, never a command.
    */
   async function handleMessage(
     telegramUserId: number,
     chatId: number,
     text: string,
     telegramLanguage?: string,
-    images: string[] = []
+    images: NonNullable<NasiTurnInput["images"]> = []
   ) {
     const linked = await resolveLinkedUser(telegramUserId)
     const language = botLanguage(linked?.locale, telegramLanguage)

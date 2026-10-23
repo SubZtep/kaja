@@ -203,14 +203,16 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
 }
 
 // A tool's images, made model-sized here (the turn's request has a size limit); one that can't be used is named in `refused`.
-async function normalizedImages(found: { data: Uint8Array }[]) {
+async function normalizedImages(found: { data: Uint8Array; source?: { fileName?: string } }[]) {
   const { ImageError, normalizeImage } = await import("@kaja/nasi")
   // One image's failure doesn't hold up the others, so they are normalised together and put back in the order they came in.
-  const normalised: ({ data: string; mimeType: string } | { refused: string })[] = await Promise.all(
+  const normalised: ({ data: string; mimeType: string; fileName?: string } | { refused: string })[] = await Promise.all(
     found.map(async image => {
       try {
         const normalized = await normalizeImage(image.data)
-        return { data: Buffer.from(normalized.data).toString("base64"), mimeType: normalized.mimeType }
+        const fileName = image.source?.fileName
+        const data = Buffer.from(normalized.data).toString("base64")
+        return { data, mimeType: normalized.mimeType, ...(fileName ? { fileName } : {}) }
       } catch (error) {
         if (!(error instanceof ImageError)) throw error
         return { refused: error.message }

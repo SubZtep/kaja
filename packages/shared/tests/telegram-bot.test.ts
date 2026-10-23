@@ -168,6 +168,8 @@ test("incomingImage takes a photo's largest size, or a file that is an image", (
     mimeType: "image/png",
     size: 5
   })
+  const named = { file_id: "f", mime_type: "image/png", file_name: "cat.png" }
+  expect(incomingImage({ document: named })).toEqual({ fileId: "f", mimeType: "image/png", fileName: "cat.png" })
   expect(incomingImage({ document: { file_id: "f", mime_type: "application/pdf" } })).toBeUndefined()
   expect(incomingImage({})).toBeUndefined()
 })

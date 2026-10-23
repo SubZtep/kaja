@@ -96,10 +96,12 @@ CREATE TABLE IF NOT EXISTS nasi_image (
   width integer NOT NULL,
   height integer NOT NULL,
   bytes integer NOT NULL,
-  -- where the image came from (the first source wins); unset until the sources reach the store
+  -- where it came from, as its arrivals knew: a later one only fills what's still unset
   source_url text,
   alt text,
   title text,
+  -- a sent or viewed file's name, never its path
+  file_name text,
   description text,
   description_model text,
   described_at timestamptz,

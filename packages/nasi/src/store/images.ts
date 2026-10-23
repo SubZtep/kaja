@@ -44,10 +44,28 @@ export type SessionImage = { data: Uint8Array; mimeType: string }
 /** An image as it's stored: its bytes and type, and its size in pixels. */
 export type StoredImage = SessionImage & { width: number; height: number }
 
+/** Where an image came from, as far as its arrival knows: a URL, the HTML alt and title, a file's name (never its path). */
+export type ImageSource = { url?: string; alt?: string; title?: string; fileName?: string }
+
+const SOURCE_LIMITS = { url: 2048, alt: 300, title: 300, fileName: 255 } as const
+
+/** `source` with its fields trimmed and cut to their limits, the empty ones left out; undefined when nothing is left. */
+export function boundedSource(source: ImageSource | undefined): ImageSource | undefined {
+  if (!source) return undefined
+  const fields = Object.entries(SOURCE_LIMITS).flatMap(([field, limit]) => {
+    const value = source[field as keyof ImageSource]?.trim()
+    return value ? [[field, value.slice(0, limit)]] : []
+  })
+  return fields.length ? (Object.fromEntries(fields) as ImageSource) : undefined
+}
+
 /** One session's images: put when they arrive (already normalised), got back when a model request needs the bytes. */
 export type SessionImages = {
-  /** Stores an image once; `ref` is what the message holds, `key` its object key. */
-  put(image: StoredImage): Promise<{ ref: string; key?: string }>
+  /**
+   * Stores an image once; `ref` is what the message holds, `key` its object key. Its row keeps the first source's URL,
+   * and a later arrival fills only the source fields still empty.
+   */
+  put(image: StoredImage, source?: ImageSource): Promise<{ ref: string; key?: string }>
   get(id: string): Promise<SessionImage | undefined>
   /** Where a viewer opens the image: its public URL, or its file; undefined where the host has none. */
   location(id: string): string | undefined
@@ -60,11 +78,18 @@ export type SessionImages = {
 }
 
 /** What a store keeps about one image; the bytes are an object. */
-export type ImageRow = { id: string; mimeType: string; width: number; height: number; bytes: number }
+export type ImageRow = {
+  id: string
+  mimeType: string
+  width: number
+  height: number
+  bytes: number
+  source?: ImageSource
+}
 
 /** One session's image rows, in the store's database (Postgres, SQLite) or in memory. */
 export type ImageRows = {
-  /** Adds a row; one already there is kept. */
+  /** Adds a row; for one already there, only fills its empty source fields. */
   add(row: ImageRow): Promise<void>
   get(id: string): Promise<(ImageRow & { description?: string }) | undefined>
   describe(id: string, description: string, model: string): Promise<void>
@@ -76,7 +101,9 @@ export function memoryImageRows(): ImageRows {
   const rows = new Map<string, ImageRow & { description?: string }>()
   return {
     add(row) {
-      if (!rows.has(row.id)) rows.set(row.id, { ...row })
+      const kept = rows.get(row.id)
+      if (!kept) rows.set(row.id, { ...row })
+      else if (row.source) kept.source = { ...row.source, ...kept.source }
       return Promise.resolve()
     },
     get(id) {
@@ -98,13 +125,15 @@ export function memoryImageRows(): ImageRows {
  */
 export function objectSessionImages(objects: ObjectStore, prefix: string, rows: ImageRows): SessionImages {
   return {
-    async put(image) {
+    async put(image, source) {
       const id = imageId(image.data)
       const key = imageKey(prefix, id)
-      if (!(await rows.get(id))) {
-        await objects.put(key, image.data, image.mimeType)
+      const stored = await rows.get(id)
+      if (!stored) await objects.put(key, image.data, image.mimeType)
+      const bounded = boundedSource(source)
+      if (!stored || bounded) {
         const { mimeType, width, height } = image
-        await rows.add({ id, mimeType, width, height, bytes: image.data.byteLength })
+        await rows.add({ id, mimeType, width, height, bytes: image.data.byteLength, source: bounded })
       }
       return { ref: `${IMAGE_REF_PREFIX}${id}`, key }
     },

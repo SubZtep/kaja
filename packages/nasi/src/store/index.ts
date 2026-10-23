@@ -4,6 +4,7 @@ export {
   imageKey,
   type ImageRow,
   type ImageRows,
+  type ImageSource,
   imageRefId,
   inlineImages,
   memoryImageRows,

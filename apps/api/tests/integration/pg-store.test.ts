@@ -207,6 +207,31 @@ describe("postgres store", () => {
     expect(rows).toHaveLength(0)
   })
 
+  test("an image's row keeps its first source's URL, and a later arrival only fills what's still empty", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = Bun.randomUUIDv7()
+    const image = { data: noisyPng(2, 2), mimeType: "image/png", width: 2, height: 2 }
+    await store.images(id).put(image, { fileName: "shot.png" })
+    await store.images(id).put(image, { url: "https://a.example/x.png", alt: "x", fileName: "other.png" })
+    await store.images(id).put(image, { url: "https://b.example/x.png", title: "X" })
+    const { rows } = await pool.query(
+      "SELECT source_url, alt, title, file_name, mime_type, width, bytes FROM nasi_image WHERE session_id = $1",
+      [id]
+    )
+    expect(rows).toEqual([
+      {
+        source_url: "https://a.example/x.png",
+        alt: "x",
+        title: "X",
+        file_name: "shot.png",
+        mime_type: "image/png",
+        width: 2,
+        bytes: image.data.byteLength
+      }
+    ])
+    await store.images(id).clear()
+  })
+
   test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
     const store = createPostgresStore(pool, userId)
     const inline = `data:image/png;base64,${noisyPng(2, 2).toString("base64")}`

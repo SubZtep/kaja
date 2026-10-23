@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { normalizeImage } from "../../src/images/normalize"
 import {
+  boundedSource,
   IMAGE_REF_PREFIX,
   imageId,
   imageKey,
@@ -58,6 +59,37 @@ test("an image is only as stored as its row: bytes without one aren't served", a
   const id = imageId(image.data)
   await stray.put(imageKey("images/r", id), image.data, image.mimeType)
   expect(await objectSessionImages(stray, "images/r", memoryImageRows()).get(id)).toBeUndefined()
+})
+
+test("an image's row keeps the first source's URL, and a later arrival only fills what's still empty", async () => {
+  const rows = memoryImageRows()
+  const images = objectSessionImages(memoryObjects(), "images/src", rows)
+  const image = await normalizeImage(png(2, 2))
+  const id = imageId(image.data)
+  await images.put(image)
+  expect((await rows.get(id))?.source).toBeUndefined()
+  await images.put(image, { fileName: "shot.png" })
+  await images.put(image, { url: "https://a.example/x.png", alt: "x", fileName: "other.png" })
+  await images.put(image, { url: "https://b.example/x.png", title: "X" })
+  expect((await rows.get(id))?.source).toEqual({
+    fileName: "shot.png",
+    url: "https://a.example/x.png",
+    alt: "x",
+    title: "X"
+  })
+})
+
+test("a source is trimmed and cut to its limits, its empty fields left out", () => {
+  expect(boundedSource(undefined)).toBeUndefined()
+  expect(boundedSource({ alt: "  ", fileName: "" })).toBeUndefined()
+  expect(boundedSource({ alt: " a cat ", url: `https://x.example/${"a".repeat(3000)}` })).toEqual({
+    alt: "a cat",
+    url: `https://x.example/${"a".repeat(3000)}`.slice(0, 2048)
+  })
+  expect(boundedSource({ title: "t".repeat(400), fileName: "f".repeat(300) })).toEqual({
+    title: "t".repeat(300),
+    fileName: "f".repeat(255)
+  })
 })
 
 test("a description is kept in its image's row", async () => {

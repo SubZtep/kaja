@@ -49,7 +49,7 @@ type IncomingPhoto = {
   chatId: number
   languageCode?: string
   caption: string
-  image: { fileId: string; mimeType: string; size?: number }
+  image: { fileId: string; mimeType: string; size?: number; fileName?: string }
 }
 
 /** How long to wait before polling again while another instance holds the getUpdates connection. */
@@ -145,17 +145,20 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       await bot.api.sendMessage(chatId, t("telegram.photoTooLarge"))
       return
     }
-    let dataUrls: string[]
+    let images: { data: string; source: { fileName?: string } }[]
     try {
-      dataUrls = await Promise.all(
-        photos.map(photo => downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image))
+      images = await Promise.all(
+        photos.map(async photo => ({
+          data: await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image),
+          source: { fileName: photo.image.fileName }
+        }))
       )
     } catch (error) {
       reportError("Telegram photo download failed", error)
       await bot.api.sendMessage(chatId, t("telegram.photoFailed"))
       return
     }
-    await driver.handleMessage(telegramUserId, chatId, caption, languageCode, dataUrls)
+    await driver.handleMessage(telegramUserId, chatId, caption, languageCode, images)
   }
 
   const addPhoto = albumCollector<IncomingPhoto>(photos =>

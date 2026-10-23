@@ -118,7 +118,12 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
   // Private chats only: in a group, the chat's messages and buttons would mix several people's conversations
   const chat = bot.chatType("private")
 
-  type IncomingPhoto = { userId: number; chatId: number; caption: string; image: { fileId: string; mimeType: string } }
+  type IncomingPhoto = {
+    userId: number
+    chatId: number
+    caption: string
+    image: { fileId: string; mimeType: string; fileName?: string }
+  }
 
   /** An image message, or a whole album, as one turn; the photos download here, never in grammy's update loop. */
   async function handlePhotos(photos: IncomingPhoto[]) {
@@ -127,17 +132,20 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       .map(photo => photo.caption)
       .filter(Boolean)
       .join("\n")
-    let dataUrls: string[]
+    let images: { data: string; source: { fileName?: string } }[]
     try {
-      dataUrls = await Promise.all(
-        photos.map(photo => downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image))
+      images = await Promise.all(
+        photos.map(async photo => ({
+          data: await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), photo.image),
+          source: { fileName: photo.image.fileName }
+        }))
       )
     } catch (error) {
       log.warn("Telegram photo download failed", { error })
       await bot.api.sendMessage(chatId, t("telegram.photoFailed"))
       return
     }
-    await driver.handleMessage(userId, chatId, caption, dataUrls)
+    await driver.handleMessage(userId, chatId, caption, images)
   }
 
   const addPhoto = albumCollector<IncomingPhoto>(photos => inBackground(handlePhotos(photos)))

@@ -194,6 +194,7 @@ function createSchema(db: Database) {
       sourceUrl        TEXT,
       alt              TEXT,
       title            TEXT,
+      fileName         TEXT,
       description      TEXT,
       descriptionModel TEXT,
       describedAt      TEXT,
@@ -203,15 +204,28 @@ function createSchema(db: Database) {
   `)
 }
 
-type ImageDbRow = ImageRow & { description: string | null }
+type ImageDbRow = Omit<ImageRow, "source"> & {
+  sourceUrl: string | null
+  alt: string | null
+  title: string | null
+  fileName: string | null
+  description: string | null
+}
 
 function imageRows(db: Database, sessionId: string): ImageRows {
   return {
     add(row) {
       return Promise.try(() => {
+        const { url, alt, title, fileName } = row.source ?? {}
+        // A later arrival fills only what the first left unset
         db.query(
-          `INSERT INTO images (sessionId, id, mimeType, width, height, bytes, createdAt)
-           VALUES ($sessionId, $id, $mimeType, $width, $height, $bytes, $createdAt) ON CONFLICT DO NOTHING`
+          `INSERT INTO images (sessionId, id, mimeType, width, height, bytes, sourceUrl, alt, title, fileName, createdAt)
+           VALUES ($sessionId, $id, $mimeType, $width, $height, $bytes, $sourceUrl, $alt, $title, $fileName, $createdAt)
+           ON CONFLICT (sessionId, id) DO UPDATE SET
+             sourceUrl = COALESCE(sourceUrl, excluded.sourceUrl),
+             alt = COALESCE(alt, excluded.alt),
+             title = COALESCE(title, excluded.title),
+             fileName = COALESCE(fileName, excluded.fileName)`
         ).run({
           $sessionId: sessionId,
           $id: row.id,
@@ -219,6 +233,10 @@ function imageRows(db: Database, sessionId: string): ImageRows {
           $width: row.width,
           $height: row.height,
           $bytes: row.bytes,
+          $sourceUrl: url ?? null,
+          $alt: alt ?? null,
+          $title: title ?? null,
+          $fileName: fileName ?? null,
           $createdAt: new Date().toISOString()
         })
       })
@@ -227,12 +245,19 @@ function imageRows(db: Database, sessionId: string): ImageRows {
       return Promise.try(() => {
         const row = db
           .query(
-            "SELECT id, mimeType, width, height, bytes, description FROM images WHERE sessionId = $sessionId AND id = $id"
+            `SELECT id, mimeType, width, height, bytes, sourceUrl, alt, title, fileName, description
+             FROM images WHERE sessionId = $sessionId AND id = $id`
           )
           .get({ $sessionId: sessionId, $id: id }) as ImageDbRow | null
         if (!row) return undefined
-        const { description, ...image } = row
-        return description === null ? image : { ...image, description }
+        const { sourceUrl, alt, title, fileName, description, ...image } = row
+        const fields = { url: sourceUrl, alt, title, fileName }
+        const source = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== null))
+        return {
+          ...image,
+          ...(Object.keys(source).length ? { source } : {}),
+          ...(description === null ? {} : { description })
+        }
       })
     },
     describe(id, description, model) {

@@ -50,7 +50,7 @@ export const TURN_BODY_MAX_BYTES = 16 * 1024 * 1024
 
 /**
  * The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned
- * (base64).
+ * (base64, with the file's name when it read one).
  */
 export const NasiToolResultSchema = z.object({
   id: z.string().min(1).max(256),
@@ -60,7 +60,9 @@ export const NasiToolResultSchema = z.object({
     .array(
       z.object({
         data: z.string().max(TOOL_RESULT_IMAGE_BASE64_MAX),
-        mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/)
+        mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/),
+        /** The image file's name (never its path), when a file is what the tool read. */
+        fileName: z.string().max(255).optional()
       })
     )
     .max(TOOL_RESULT_IMAGES_MAX)
