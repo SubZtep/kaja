@@ -112,7 +112,11 @@ function count(
 test("a session's images are files beside the database: its messages keep their refs, and deleting it removes them", async () => {
   const { getStore, peekStorePath } = await import("../../../lib/memory/store")
   const id = Bun.randomUUIDv7()
-  const { ref } = await (await getStore()).images(id).put({ data: TINY_PNG, mimeType: "image/png" })
+  const { ref } = await (
+    await getStore()
+  )
+    .images(id)
+    .put({ data: TINY_PNG, mimeType: "image/png", width: 1, height: 1 })
   const image = { type: "image_url" as const, image_url: { url: ref } }
   const messages: Messages = [
     { role: "user", content: [image] },
@@ -123,8 +127,13 @@ test("a session's images are files beside the database: its messages keep their 
   expect((await readdir(folder)).filter(name => !name.endsWith(".meta.json"))).toHaveLength(1)
   const loaded = (await loadSessionRow(id))!.session
   expect(loaded).toEqual({ id, messages })
+  const db = await openDb()
+  const stored = () => db.query("SELECT mimeType, width, height FROM images WHERE sessionId = ?").all(id)
+  expect(stored()).toEqual([{ mimeType: "image/png", width: 1, height: 1 }])
   expect(await deleteSessionRow(id)).toBe(true)
   expect(await readdir(folder).catch(() => [])).toHaveLength(0)
+  expect(stored()).toHaveLength(0)
+  db.close()
 })
 
 test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
@@ -140,7 +149,11 @@ test("an image still inline when a session is saved is stored then, so no row ho
 test("a timeline tool image is saved by its stored key and replays from the stored file", async () => {
   const { getStore } = await import("../../../lib/memory/store")
   const id = Bun.randomUUIDv7()
-  const { key } = await (await getStore()).images(id).put({ data: TINY_PNG, mimeType: "image/png" })
+  const { key } = await (
+    await getStore()
+  )
+    .images(id)
+    .put({ data: TINY_PNG, mimeType: "image/png", width: 1, height: 1 })
   const shown = { type: "tool_image", key, mimeType: "image/png", path: "/somewhere/it/was/shown.png" }
   await createSessionRow(row({ session: { id, messages: [] }, events: [shown] }))
 

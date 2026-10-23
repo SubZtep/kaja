@@ -1,6 +1,8 @@
 import {
   clearTelemetry,
   type DatasetAnswer,
+  type ImageRow,
+  type ImageRows,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -107,8 +109,53 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   return undefined
 }
 
-const sessionImages = (userId: string, sessionId: string) =>
-  objectSessionImages(objects, sessionImagePrefix(sessionId, userId))
+type ImageDbRow = {
+  id: string
+  mime_type: string
+  width: number
+  height: number
+  bytes: number
+  description: string | null
+}
+
+function rowToImage(row: ImageDbRow): ImageRow & { description?: string } {
+  const image = { id: row.id, mimeType: row.mime_type, width: row.width, height: row.height, bytes: row.bytes }
+  return row.description === null ? image : { ...image, description: row.description }
+}
+
+// Scoped by user too: a session id alone never reaches another account's images.
+function imageRows(db: Pool | PoolClient, userId: string, sessionId: string): ImageRows {
+  return {
+    async add(row) {
+      await db.query(
+        `INSERT INTO nasi_image (session_id, user_id, id, mime_type, width, height, bytes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (session_id, id) DO NOTHING`,
+        [sessionId, userId, row.id, row.mimeType, row.width, row.height, row.bytes]
+      )
+    },
+    async get(id) {
+      const result = await db.query<ImageDbRow>(
+        `SELECT id, mime_type, width, height, bytes, description FROM nasi_image
+         WHERE session_id = $1 AND user_id = $2 AND id = $3`,
+        [sessionId, userId, id]
+      )
+      return result.rows[0] && rowToImage(result.rows[0])
+    },
+    async describe(id, description, model) {
+      await db.query(
+        `UPDATE nasi_image SET description = $4, description_model = $5, described_at = NOW()
+         WHERE session_id = $1 AND user_id = $2 AND id = $3`,
+        [sessionId, userId, id, description, model]
+      )
+    },
+    async clear() {
+      await db.query("DELETE FROM nasi_image WHERE session_id = $1 AND user_id = $2", [sessionId, userId])
+    }
+  }
+}
+
+const sessionImages = (db: Pool | PoolClient, userId: string, sessionId: string) =>
+  objectSessionImages(objects, sessionImagePrefix(sessionId, userId), imageRows(db, userId, sessionId))
 
 // Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save
 const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?? null
@@ -116,7 +163,7 @@ const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?
 async function insertMessage(client: PoolClient, userId: string, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
   // Images were stored when they arrived; one still inline (a run without the store) is stored now, never put in a row.
-  const parts = await storeInlineImages(row.parts, sessionImages(userId, sessionId))
+  const parts = await storeInlineImages(row.parts, sessionImages(client, userId, sessionId))
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -277,11 +324,11 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
     async deleteSession(id) {
       const result = await db.query("DELETE FROM nasi_session WHERE id = $1 AND user_id = $2", [id, userId])
       if (!result.rowCount) return false
-      await sessionImages(userId, id).clear()
+      await sessionImages(db, userId, id).clear()
       return true
     },
 
-    images: id => sessionImages(userId, id),
+    images: id => sessionImages(db, userId, id),
 
     async listSessions(): Promise<SessionMeta[]> {
       const result = await db.query(

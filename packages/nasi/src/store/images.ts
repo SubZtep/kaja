@@ -41,57 +41,85 @@ export function resolveImageLinks(text: string, url: (id: string) => string | un
 
 export type SessionImage = { data: Uint8Array; mimeType: string }
 
+/** An image as it's stored: its bytes and type, and its size in pixels. */
+export type StoredImage = SessionImage & { width: number; height: number }
+
 /** One session's images: put when they arrive (already normalised), got back when a model request needs the bytes. */
 export type SessionImages = {
   /** Stores an image once; `ref` is what the message holds, `key` its object key. */
-  put(image: SessionImage): Promise<{ ref: string; key?: string }>
+  put(image: StoredImage): Promise<{ ref: string; key?: string }>
   get(id: string): Promise<SessionImage | undefined>
   /** Where a viewer opens the image: its public URL, or its file; undefined where the host has none. */
   location(id: string): string | undefined
-  /** Keeps an image's description beside it (`<key>.json`), with the model that wrote it. */
+  /** Keeps an image's description in its row, with the model that wrote it. */
   describe(id: string, description: string, model: string): Promise<void>
-  /** The description kept beside an image, if one was written. */
+  /** The description kept for an image, if one was written. */
   description(id: string): Promise<string | undefined>
   /** Removes every image of the session. */
   clear(): Promise<void>
 }
 
-// What an image's bytes are, by their header: a folder keeps no content type.
-async function typeOf(data: Uint8Array): Promise<string> {
-  try {
-    return `image/${(await new Bun.Image(data).metadata()).format}`
-  } catch {
-    return "application/octet-stream"
+/** What a store keeps about one image; the bytes are an object. */
+export type ImageRow = { id: string; mimeType: string; width: number; height: number; bytes: number }
+
+/** One session's image rows, in the store's database (Postgres, SQLite) or in memory. */
+export type ImageRows = {
+  /** Adds a row; one already there is kept. */
+  add(row: ImageRow): Promise<void>
+  get(id: string): Promise<(ImageRow & { description?: string }) | undefined>
+  describe(id: string, description: string, model: string): Promise<void>
+  clear(): Promise<void>
+}
+
+/** A session's image rows in memory, for the memory store and tests. */
+export function memoryImageRows(): ImageRows {
+  const rows = new Map<string, ImageRow & { description?: string }>()
+  return {
+    add(row) {
+      if (!rows.has(row.id)) rows.set(row.id, { ...row })
+      return Promise.resolve()
+    },
+    get(id) {
+      const row = rows.get(id)
+      return Promise.resolve(row && { ...row })
+    },
+    describe(id, description) {
+      const row = rows.get(id)
+      if (row) row.description = description
+      return Promise.resolve()
+    },
+    clear: () => Promise.resolve(rows.clear())
   }
 }
 
-/** A session's images as objects under `prefix` (the cloud's bucket, the TUI's folder beside its database). */
-export function objectSessionImages(objects: ObjectStore, prefix: string): SessionImages {
+/**
+ * A session's images as objects under `prefix` (the cloud's bucket, the TUI's folder beside its database), described
+ * by `rows`. The object is written before its row, so a row always has its bytes.
+ */
+export function objectSessionImages(objects: ObjectStore, prefix: string, rows: ImageRows): SessionImages {
   return {
     async put(image) {
       const id = imageId(image.data)
       const key = imageKey(prefix, id)
-      if (!(await objects.exists(key))) await objects.put(key, image.data, image.mimeType)
+      if (!(await rows.get(id))) {
+        await objects.put(key, image.data, image.mimeType)
+        const { mimeType, width, height } = image
+        await rows.add({ id, mimeType, width, height, bytes: image.data.byteLength })
+      }
       return { ref: `${IMAGE_REF_PREFIX}${id}`, key }
     },
     async get(id) {
-      const data = await objects.get(imageKey(prefix, id))
-      if (!data) return undefined
-      // The bytes say what they are: a folder keeps no content type.
-      return { data, mimeType: await typeOf(data) }
+      const row = await rows.get(id)
+      const data = row && (await objects.get(imageKey(prefix, id)))
+      return data ? { data, mimeType: row.mimeType } : undefined
     },
     location: id => objects.location?.(imageKey(prefix, id)),
-    async describe(id, description, model) {
-      const sidecar = { description, model, at: new Date().toISOString() }
-      await objects.put(`${imageKey(prefix, id)}.json`, JSON.stringify(sidecar), "application/json")
-    },
-    async description(id) {
-      const data = await objects.get(`${imageKey(prefix, id)}.json`)
-      if (!data) return undefined
-      const { description } = JSON.parse(new TextDecoder().decode(data)) as { description?: unknown }
-      return typeof description === "string" ? description : undefined
-    },
-    clear: () => objects.deletePrefix(`${prefix}/`)
+    describe: (id, description, model) => rows.describe(id, description, model),
+    description: async id => (await rows.get(id))?.description,
+    async clear() {
+      await objects.deletePrefix(`${prefix}/`)
+      await rows.clear()
+    }
   }
 }
 

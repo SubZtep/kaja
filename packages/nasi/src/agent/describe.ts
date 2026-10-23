@@ -58,7 +58,10 @@ export function describeInBackground(
       const text = await describeImage(describer, dataUrl, usage =>
         recordModelCall(session, { kind: "describe", ...usage })
       )
-      if (!text) return
+      if (!text) {
+        warn("The vision model gave an image no description", { model: describer.model })
+        return
+      }
       pending.text = text
       await keep.save?.(text, describer.model)
     } catch (error) {

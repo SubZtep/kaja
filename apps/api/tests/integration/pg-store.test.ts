@@ -186,7 +186,7 @@ describe("postgres store", () => {
     const store = createPostgresStore(pool, userId)
     const id = Bun.randomUUIDv7()
     const data = noisyPng(2, 2)
-    const { ref, key } = await store.images(id).put({ data, mimeType: "image/png" })
+    const { ref, key } = await store.images(id).put({ data, mimeType: "image/png", width: 2, height: 2 })
     expect(key).toStartWith(`${sessionImagePrefix(id, userId)}/`)
     const messages: Messages = [{ role: "user", content: [{ type: "image_url", image_url: { url: ref } }] }]
     expect(await store.createSession({ ...write(messages, { session: { id, messages } }), title: "t" })).toBe(id)
@@ -194,10 +194,17 @@ describe("postgres store", () => {
     const fetched = await fetch(imageUrl(key!))
     expect(fetched.status).toBe(200)
     expect(fetched.headers.get("content-type")).toBe("image/png")
-    expect((await store.images(id).get(ref.slice("kaja-image:".length)))?.data).toEqual(new Uint8Array(data))
+    const imageId = ref.slice("kaja-image:".length)
+    expect(await store.images(id).get(imageId)).toEqual({ data: new Uint8Array(data), mimeType: "image/png" })
+    await store.images(id).describe(imageId, "Two noisy pixels.", "vision-m")
+    expect(await store.images(id).description(imageId)).toBe("Two noisy pixels.")
+    // Another account's store can't reach the row by the session id
+    expect(await createPostgresStore(pool, Bun.randomUUIDv7()).images(id).description(imageId)).toBeUndefined()
 
     await store.deleteSession(id)
     expect(await objects.exists(key!)).toBe(false)
+    const { rows } = await pool.query("SELECT 1 FROM nasi_image WHERE session_id = $1", [id])
+    expect(rows).toHaveLength(0)
   })
 
   test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
