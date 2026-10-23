@@ -76,7 +76,7 @@ export function Header({
       ) : null}
       <Badge color={modeBadge.background}>
         <Text color={modeBadge.text}>{t(`header.${mode}`).toUpperCase()}</Text>
-        {profile ? <Text dimColor> ·{profile}</Text> : null}
+        {profile ? <Text dimColor>·{profile}</Text> : null}
       </Badge>
     </Box>
   )
