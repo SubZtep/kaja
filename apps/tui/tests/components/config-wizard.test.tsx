@@ -784,3 +784,100 @@ test("providers kept from models.toml are written back with the ticked ones", as
     "other"
   ])
 })
+
+test("a key is tested against its provider while it's typed, never with the key on screen", async () => {
+  const targets: unknown[] = []
+  const w = await openProviders({
+    probe: async target => {
+      targets.push(target)
+      return { tone: "ok", note: "Accepted: it lists 3 models." }
+    }
+  })
+  await tick(w, FIREWORKS)
+  await w.t.press("fw-live")
+  const deadline = Date.now() + 5000
+  while (!w.t.lastFrame()?.includes("Accepted") && Date.now() < deadline) await Bun.sleep(50)
+  expect(w.t.lastFrame()).toContain("✓ Accepted: it lists 3 models.")
+  expect(w.t.lastFrame()).not.toContain("fw-live")
+  expect(targets).toEqual([{ kind: "key", baseUrl: "https://api.fireworks.ai/inference/v1", key: "fw-live" }])
+  await close(w)
+})
+
+test("a key already in the environment is read from there, copied, or replaced by a typed one", async () => {
+  const env = { FIREWORKS_API_KEY: "fw-env" }
+  const reach = async () => {
+    const w = await openProviders({ env })
+    await w.t.press(ENTER) // providers: Fireworks came ticked
+    expect(w.t.lastFrame()).toContain("Your Fireworks key is already in $FIREWORKS_API_KEY")
+    return w
+  }
+
+  const read = await reach()
+  await read.t.press(ENTER) // read it from the environment
+  await acceptModels(read)
+  await read.t.press(ENTER) // extras
+  expect(read.result?.keyEnv).toEqual({ fireworks: "FIREWORKS_API_KEY" })
+  expect(read.result?.keys).toEqual({})
+  expect(read.t.lastFrame()).toContain("Fireworks API key read from $FIREWORKS_API_KEY")
+  expect(read.t.output()).not.toContain("fw-env")
+  await close(read)
+
+  const copy = await reach()
+  await copy.t.press(DOWN)
+  await copy.t.press(ENTER)
+  await acceptModels(copy)
+  await copy.t.press(ENTER)
+  expect(copy.result?.keys).toEqual({ fireworks: "fw-env" })
+  expect(copy.result?.keyEnv).toEqual({})
+  await close(copy)
+
+  const typed = await reach()
+  await typed.t.press(DOWN)
+  await typed.t.press(DOWN)
+  await typed.t.press(ENTER)
+  expect(typed.t.lastFrame()).toContain("Paste your Fireworks API key")
+  await close(typed)
+})
+
+test("a server found running comes first and ticked, and needs no address question", async () => {
+  const local = [
+    {
+      id: "vllm",
+      name: "vLLM",
+      kind: "self-hosted" as const,
+      baseUrl: "http://127.0.0.1:8000/v1",
+      models: [{ model: "qwen3:8b", tasks: ["chat" as const, "summarize" as const] }]
+    }
+  ]
+  const w = await openProviders({ prefill: { local } })
+  expect(w.t.lastFrame()).toContain("[✔] vLLM — running at 127.0.0.1:8000/v1, 1 models")
+  await w.t.press(ENTER) // providers: vLLM came ticked
+  await acceptModels(w)
+  expect(w.t.output()).not.toContain("Where does your vLLM server listen?")
+  await w.t.press(ENTER) // extras
+  expect(chosenProviders(w.result!).map(provider => provider.id)).toEqual(["vllm"])
+  expect(w.result?.models).toBeUndefined()
+
+  await close(w)
+})
+
+test("offline, a server found running is offered beside your own provider", async () => {
+  setCatalog(undefined)
+  try {
+    const local = [
+      {
+        id: "ollama",
+        name: "Ollama",
+        kind: "self-hosted" as const,
+        baseUrl: "http://127.0.0.1:11434/v1",
+        models: [{ model: "llama3.2:latest", tasks: ["chat" as const] }]
+      }
+    ]
+    const w = await openProviders({ prefill: { local } })
+    expect(w.t.lastFrame()).toContain("Which model providers can you use?")
+    expect(w.t.lastFrame()).toContain("[✔] Ollama — running at")
+    await close(w)
+  } finally {
+    setCatalog(TEST_CATALOG)
+  }
+})

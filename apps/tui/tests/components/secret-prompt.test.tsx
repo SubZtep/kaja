@@ -88,3 +88,81 @@ test("a yes/no prompt defaults to no; the second option is yes", async () => {
 
   expect(answers).toEqual([false, true])
 })
+
+/** Polls until `frame()` contains `text`; the live check waits for typing to pause, so a fixed sleep would be a guess. */
+async function waitForText(frame: () => string | undefined, text: string, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs
+  while (!frame()?.includes(text) && Date.now() < deadline) await Bun.sleep(50)
+  expect(frame()).toContain(text)
+}
+
+test("validate speaks up while typing, before Enter", async () => {
+  const t = renderForTest(
+    <InputPrompt title="x" validate={v => (v.startsWith("http") ? undefined : "Not an address")} onSubmit={() => {}} />
+  )
+  await t.tick()
+  await t.press("f")
+  expect(t.lastFrame()).toContain("Not an address")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("the check runs once typing pauses, on the final answer only", async () => {
+  const checked: string[] = []
+  const t = renderForTest(
+    <InputPrompt
+      secret
+      title="x"
+      check={async value => {
+        checked.push(value)
+        return { tone: "ok", note: "Accepted" }
+      }}
+      onSubmit={() => {}}
+    />
+  )
+  await t.tick()
+  for (const ch of "key") await t.press(ch)
+  await waitForText(t.lastFrame, "✓ Accepted")
+  expect(checked).toEqual(["key"])
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("Enter on a refused answer asks for a second Enter before taking it", async () => {
+  const values: string[] = []
+  const t = renderForTest(
+    <InputPrompt
+      secret
+      title="x"
+      check={async () => ({ tone: "bad", note: "Refused" })}
+      onSubmit={value => values.push(value)}
+    />
+  )
+  await t.tick()
+  await t.press("bad-key")
+  await waitForText(t.lastFrame, "✗ Refused")
+  await t.press("\r")
+  expect(values).toEqual([])
+  expect(t.lastFrame()).toContain("Press Enter again to keep it anyway.")
+  await t.press("\r")
+  expect(values).toEqual(["bad-key"])
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a warning doesn't hold Enter back", async () => {
+  const values: string[] = []
+  const t = renderForTest(
+    <InputPrompt
+      title="x"
+      defaultValue="http://localhost:11434/v1"
+      check={async () => ({ tone: "warn", note: "Nothing answers there yet" })}
+      onSubmit={value => values.push(value)}
+    />
+  )
+  await waitForText(t.lastFrame, "! Nothing answers there yet")
+  await t.press("\r")
+  expect(values).toEqual(["http://localhost:11434/v1"])
+  t.unmount()
+  await t.waitUntilExit()
+})

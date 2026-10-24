@@ -1,5 +1,5 @@
 import { createFolderAbilityStore, mcpAbilityTarget, McpRunnerMissingError, personaAbilities } from "@kaja/nasi"
-import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
+import { type CliResolvedModel, providerKey, type SecretsFile } from "@kaja/schema/config"
 import { getMarketplaceDir } from "../abilities/abilities-file"
 import { saveSecrets, type SecretPlaceholder, secrets, updateSecretPlaceholders } from "../config/secrets"
 import { t } from "../i18n"
@@ -81,10 +81,13 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
 
   const modelsFile = await loadModelsFile().catch(() => undefined)
   for (const [provider, model] of modelsByProvider(modelsFile ? resolveModels(modelsFile) : [])) {
-    const saved = creds.providers[provider]?.api_key
+    const entry = creds.providers[provider]
+    const saved = providerKey(entry)
     items.push({
       label: t("doctor.itemProvider", { name: provider }),
       where: `[providers.${provider}] api_key`,
+      // A key read from the environment that isn't there: name the variable, it's what needs setting
+      ...(entry && "api_key_env" in entry && !saved ? { hint: t("doctor.envUnset", { env: entry.api_key_env }) } : {}),
       present: Boolean(saved),
       required: false,
       check: value => checkProvider(model, value ?? saved),

@@ -8,9 +8,17 @@ export const SecretsTelegramSchema = z.object({
     .describe("Telegram user ids the bot answers; `kaja telegram` adds one when someone sends it the pairing code")
 })
 
-const SecretsProviderSchema = z.object({
-  api_key: z.string().min(1).describe("The provider's API key; Ollama needs one but ignores its value")
-})
+const SecretsProviderSchema = z.union([
+  z.object({ api_key: z.string().min(1).describe("The provider's API key; Ollama needs one but ignores its value") }),
+  z.object({
+    api_key_env: z
+      .string()
+      .regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
+      .describe(
+        "The environment variable holding the key, e.g. OPENAI_API_KEY: read when Kaja starts, never copied here"
+      )
+  })
+])
 
 const SecretsAbilitySchema = z.object({
   api_key: z.string().min(1).describe("The ability's key; its manifest's `auth` says where it goes")
@@ -32,3 +40,13 @@ export const SecretsFileSchema = z.object({
 export type SecretsFile = z.infer<typeof SecretsFileSchema>
 export type SecretsTelegram = z.infer<typeof SecretsTelegramSchema>
 export type SecretsAbility = z.infer<typeof SecretsAbilitySchema>
+export type SecretsProvider = z.infer<typeof SecretsProviderSchema>
+
+/** A provider's key: the one saved, or what the environment variable it names holds (undefined when that's unset). */
+export function providerKey(
+  entry: SecretsProvider | undefined,
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  if (!entry) return undefined
+  return "api_key" in entry ? entry.api_key : env[entry.api_key_env] || undefined
+}

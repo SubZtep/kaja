@@ -34,6 +34,10 @@ second run, the wizard starts from your previous answers.
 In a field you type into, <kbd>Enter</kbd> on an empty value skips it. An address keeps its usual default.
 <kbd>Esc</kbd> on the very first question cancels the wizard.
 
+Answers are checked as you type. A key is tried against its provider a moment after you stop typing, and an
+address is asked whether a server answers there (✓ fine, ! worth knowing, ✗ refused). A refused key takes a
+second <kbd>Enter</kbd> to keep anyway.
+
 The questions come in blocks: **Basics**, **Providers**, **Models** and **Extras**. The top line shows
 which block you're in and how many questions it has. A finished block folds into one ✓ line with your
 answers.
@@ -53,13 +57,16 @@ answers.
    Starting with `kaja --cloud` or `kaja --local` answers this for you.
 
 4. **Providers.** Tick every provider you can use (at least one). The list comes from
-   [models.dev](https://models.dev); type to narrow it. Providers whose API key is already in your
-   environment (`OPENAI_API_KEY` and the like) come first, ticked.
-   - **Cloud** providers run online, so you give an API key.
+   [models.dev](https://models.dev); type to narrow it. Model servers already running on your machine
+   (Ollama, LM Studio, llama.cpp, vLLM, Jan, KoboldCpp, text-generation-webui, Speaches, or wherever
+   `OLLAMA_HOST` points) come first, ticked, with their models. Next come providers whose API key is
+   already in your environment (`OPENAI_API_KEY` and the like), also ticked.
+   - **Cloud** providers run online, so you give an API key. If it's already in your environment, you
+     choose between reading it from there each time (nothing is saved) and copying it into secrets.toml.
    - **Self-hosted** ones run on your machine or server, so you confirm where they listen.
-   - **Custom** is any other OpenAI-compatible server (Ollama, llama.cpp, vLLM, a proxy). You give a name,
+   - **Custom** is any other OpenAI-compatible server (one on another machine, a proxy). You give a name,
      an address and a key, then pick each model from the list the server reports (or type its id), and say
-     what it's for. Without internet, this is the only choice.
+     what it's for. Without internet, this and the servers found running are the choices.
 5. **Tasks.** Tick what Kaja should be able to do: chat (always), memory search (embedding), summaries and
    pictures (vision) are ticked to start with; speech, reranking and image generation are yours to add.
 6. **Which model.** For each ticked task with more than one model to choose from, pick one. The newest

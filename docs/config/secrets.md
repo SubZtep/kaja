@@ -25,6 +25,10 @@ owner_ids = [123456789]
   [providers.fireworks]
   api_key = "fw_YourSecretKey"
 
+  # Or name the environment variable that holds it: read when Kaja starts, never copied here
+  [providers.openai]
+  api_key_env = "OPENAI_API_KEY"
+
 # An ability, by name; its manifest's `auth` says which header, query parameter or env var it goes in
 [abilities]
   [abilities.web-search]
@@ -34,6 +38,10 @@ owner_ids = [123456789]
   # [abilities.context7]
   # api_key = ""
 ```
+
+A provider key can stay in your environment: `api_key_env` names the variable, so changing it there is all a
+new key takes. The wizard offers this when it finds the provider's usual variable set. If the variable isn't set
+when Kaja starts, `kaja doctor` says which one.
 
 A missing section, or a missing file, just turns that feature off. The
 wizard and `kaja doctor` fill it in for you, testing each key first. The doctor asks for the key of every

@@ -1,6 +1,12 @@
 import { join } from "node:path"
 import type { PersonaModels } from "@kaja/schema/cli"
-import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
+import {
+  type CliResolvedModel,
+  type KajaModelsFile,
+  ModelsFileSchema,
+  type ModelTask,
+  providerKey
+} from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 import { getConfigDir } from "../config/config"
 import { writeConfigFile } from "../config/schema-file"
@@ -146,7 +152,7 @@ export async function loadModelsFile(): Promise<ResolvedModelsFile> {
     const providers = Object.fromEntries(
       Object.entries(parsed.providers).map(([name, provider]) => [
         name,
-        { ...provider, api_key: providerSecrets[name]?.api_key }
+        { ...provider, api_key: providerKey(providerSecrets[name]) }
       ])
     )
     return { ...parsed, providers }

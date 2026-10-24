@@ -16,11 +16,12 @@ import {
   resolvePicks,
   TASK_ORDER
 } from "../lib/models/catalog"
+import { sameAddress } from "../lib/models/detect"
 import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
 import { Answered, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
-import { InputPrompt, Problem } from "./secret-prompt"
+import { InputPrompt, type LiveCheck, Problem } from "./secret-prompt"
 import { themeFor, useKajaTheme } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
@@ -65,6 +66,8 @@ export type WizardResult = {
    */
   providers?: string[]
   custom?: WizardCustom
+  /** Model servers found running on this machine: offered first in the checklist, ticked on a first run. */
+  local?: CatalogProvider[]
   /**
    * Providers models.toml already has that the wizard doesn't ask about (the catalog doesn't know them, and the custom
    * steps cover only one): written back as they are, so a re-run never drops them.
@@ -74,6 +77,8 @@ export type WizardResult = {
   tasks?: ModelTask[]
   /** Typed API keys by provider id; only hosted providers are asked. */
   keys?: Record<string, string>
+  /** Providers whose key is read from an environment variable, by id: secrets.toml names the variable, not the key. */
+  keyEnv?: Record<string, string>
   /** Where each local provider's server listens. */
   addresses?: Record<string, string>
   /** The model picked for each task that had more than one to choose from; the rest take the best guess. */
@@ -81,6 +86,12 @@ export type WizardResult = {
   extras?: WizardExtra[]
   telegramToken?: string
 }
+
+/** An answer the runner can test while it's typed: a key against its provider, an address, a bot token. */
+export type ProbeTarget =
+  | { kind: "key"; baseUrl: string; key: string }
+  | { kind: "address"; baseUrl: string }
+  | { kind: "telegram"; token: string }
 
 /** Which secrets are already in secrets.toml, so their step can offer to keep what's there. */
 export type WizardSaved = {
@@ -187,11 +198,11 @@ function isWebAddress(value: string): boolean {
 }
 
 /**
- * The ticked providers. Without a catalog (offline) there is nothing to tick: the user's own provider is the only
- * one, asked for detail by detail.
+ * The ticked providers. Without a catalog (offline) or a server found running there is nothing to tick: the user's own
+ * provider is the only one, asked for detail by detail.
  */
 function tickedProviders(result: WizardResult): string[] {
-  return CATALOG.length === 0 ? [CUSTOM] : (result.providers ?? [])
+  return CATALOG.length === 0 && !result.local?.length ? [CUSTOM] : (result.providers ?? [])
 }
 
 /** The custom provider as a catalog entry, once it has an address and at least one model with its task. */
@@ -210,14 +221,19 @@ function catalogChoices(result: WizardResult): CatalogProvider[] {
   return CATALOG.filter(provider => result.providers?.includes(provider.id))
 }
 
+/** The ticked servers found running here. */
+function localChoices(result: WizardResult): CatalogProvider[] {
+  return (result.local ?? []).filter(provider => result.providers?.includes(provider.id))
+}
+
 /**
- * Every ticked provider, then the custom one, then those kept from models.toml. Exported for the runner, which writes
- * models.toml from it.
+ * Every ticked provider, the servers found running here, then the custom one, then those kept from models.toml.
+ * Exported for the runner, which writes models.toml from it.
  */
 export function chosenProviders(result: WizardResult): CatalogProvider[] {
   const custom = customProvider(result)
   const keep = (result.keep ?? []).filter(provider => provider.id !== custom?.id)
-  return [...catalogChoices(result), ...(custom ? [custom] : []), ...keep]
+  return [...catalogChoices(result), ...localChoices(result), ...(custom ? [custom] : []), ...keep]
 }
 
 /** Ticked on a first run: what a chat with memory and pictures needs. Voice and the rest are opt-in. */
@@ -258,7 +274,7 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
   if (result.mode === "cloud") return [...steps, "done"]
 
-  if (CATALOG.length > 0) steps.push("providers")
+  if (CATALOG.length > 0 || result.local?.length) steps.push("providers")
   for (const provider of catalogChoices(result)) {
     steps.push(provider.kind === "hosted" ? `key:${provider.id}` : `address:${provider.id}`)
   }
@@ -291,8 +307,9 @@ function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode):
   return steps[lastCustom + 1] ?? "done"
 }
 
-function providerName(id: string): string {
-  return catalogProvider(id)?.name ?? (id === CUSTOM ? "Custom" : id)
+function providerName(id: string, result?: WizardResult): string {
+  const local = result?.local?.find(provider => provider.id === id)
+  return catalogProvider(id)?.name ?? local?.name ?? (id === CUSTOM ? "Custom" : id)
 }
 
 /**
@@ -303,6 +320,17 @@ function keyState(typed: string | undefined, alreadySaved: boolean | undefined):
   if (typed === undefined) return undefined
   if (typed) return t("wizard.keyStateEntered")
   return t(alreadySaved ? "wizard.keyStateKept" : "wizard.keyStateSkipped")
+}
+
+/** The environment variable a custom provider's key would usually be in, e.g. `MY_BOX_API_KEY`. */
+function envGuess(name: string): string {
+  return `${name.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_API_KEY`
+}
+
+// Without `id`: the rest of the record, so a key typed and a key read from the environment never both apply
+function without<T>(record: Record<string, T> | undefined, id: string): Record<string, T> {
+  const { [id]: _, ...rest } = record ?? {}
+  return rest
 }
 
 // A key step's hint: Enter keeps a key typed earlier (you came back to it), or one already saved.
@@ -323,6 +351,14 @@ function keyLine(label: string, typed: string | undefined, alreadySaved: boolean
   return value ? { label, value } : undefined
 }
 
+// A key read from the environment: the variable's name, never its value.
+function envLine(id: string, name: string, result: WizardResult): AnswerLine {
+  const env = result.keyEnv?.[id]
+  return env
+    ? { label: t("wizard.summaryKeyProvider", { provider: name }), value: t("wizard.keyStateEnv", { env }) }
+    : undefined
+}
+
 // A line only when there is a value to show.
 function lineIf(label: string, value: string | undefined): AnswerLine {
   return value ? { label, value } : undefined
@@ -338,9 +374,10 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
     ),
   providers: (_, result) => ({
     label: t("wizard.summaryProvider"),
-    value: (result.providers ?? []).map(providerName).join(", ")
+    value: (result.providers ?? []).map(id => providerName(id, result)).join(", ")
   }),
   key: (subject, result, saved) =>
+    envLine(subject, providerName(subject), result) ??
     keyLine(
       t("wizard.summaryKeyProvider", { provider: providerName(subject) }),
       result.keys?.[subject],
@@ -360,7 +397,7 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
     const picked = chosenPicks(result)[task]
     return lineIf(
       capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
-      picked && `${providerName(picked.provider)} (${picked.model})`
+      picked && `${providerName(picked.provider, result)} (${picked.model})`
     )
   },
   "custom-name": (_, result) => lineIf(t("wizard.summaryCustom"), result.custom?.name),
@@ -368,7 +405,10 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
     lineIf(t("wizard.summaryAddress", { provider: result.custom?.name ?? "" }), result.custom?.baseUrl),
   "custom-key": (_, result, saved) => {
     const id = result.custom?.name ?? ""
-    return keyLine(t("wizard.summaryKeyProvider", { provider: id }), result.keys?.[id], saved?.providers?.includes(id))
+    return (
+      envLine(id, id, result) ??
+      keyLine(t("wizard.summaryKeyProvider", { provider: id }), result.keys?.[id], saved?.providers?.includes(id))
+    )
   },
   "custom-task": (subject, result) => {
     const entry = result.custom?.models[Number(subject)]
@@ -450,6 +490,7 @@ export function ConfigWizard({
   mode,
   saved,
   listModels,
+  probe,
   env = process.env,
   onDone,
   onCancel
@@ -464,6 +505,8 @@ export function ConfigWizard({
    * if any. Without it, or when the server lists none, model ids are typed.
    */
   listModels?: (baseUrl: string, provider: string, key?: string) => Promise<string[]>
+  /** Tests a typed answer once typing pauses; the wizard does no I/O itself. Without it, nothing is tested live. */
+  probe?: (target: ProbeTarget, signal: AbortSignal) => Promise<LiveCheck | undefined>
   /** Where a provider's API key may already be set; the process's environment unless a test passes its own. */
   env?: Record<string, string | undefined>
   onDone: (result: WizardResult) => void
@@ -481,7 +524,7 @@ export function ConfigWizard({
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
   const [preview, setPreview] = useState<ThemeName>(initial.theme ?? "dark")
   // The custom server's model ids, per address; `ids` is unset while it is being asked
-  const [probe, setProbe] = useState<{ url: string; ids?: string[] }>()
+  const [listing, setListing] = useState<{ url: string; ids?: string[] }>()
   // The user chose to type a model id rather than pick a listed one
   const [typing, setTyping] = useState(false)
 
@@ -491,10 +534,10 @@ export function ConfigWizard({
   useEffect(() => {
     if (!probeUrl || !listModels || probedUrl.current === probeUrl) return
     probedUrl.current = probeUrl
-    setProbe({ url: probeUrl })
+    setListing({ url: probeUrl })
     const name = result.custom?.name ?? ""
     void listModels(probeUrl, name, result.keys?.[name] || undefined).then(ids => {
-      if (probedUrl.current === probeUrl) setProbe({ url: probeUrl, ids })
+      if (probedUrl.current === probeUrl) setListing({ url: probeUrl, ids })
     })
   }, [probeUrl, listModels, result.custom?.name, result.keys])
 
@@ -530,6 +573,45 @@ export function ConfigWizard({
     setStep(previous)
   }
 
+  /**
+   * A key step for a provider whose key is already in one of `envNames`: use it from there, copy it into secrets.toml,
+   * or type another. Undefined when none of them is set, or the user chose to type.
+   */
+  function envKeyView(id: string, name: string, envNames: string[]) {
+    const envName = envNames.find(candidate => env[candidate])
+    if (!envName || typing) return undefined
+    const choices = [
+      t("wizard.keyFromEnv", { env: envName }),
+      t("wizard.keyCopyEnv", { env: envName }),
+      t("wizard.keyTypeOther")
+    ]
+    let current = 0
+    if (result.keys?.[id]) current = result.keys[id] === env[envName] ? 1 : 2
+    return (
+      <Question title={t("wizard.keyEnvTitle", { provider: name, env: envName })}>
+        <SelectMenu
+          closeOnBackspace={false}
+          items={choices}
+          width={70}
+          initialIndex={current}
+          onSelect={choice => {
+            if (choice === 2) return setTyping(true)
+            if (choice === 0)
+              return advance({ keyEnv: { ...result.keyEnv, [id]: envName }, keys: without(result.keys, id) })
+            advance({ keys: { ...result.keys, [id]: env[envName]! }, keyEnv: without(result.keyEnv, id) })
+          }}
+          onClose={back}
+        />
+        <Text dimColor>{t("wizard.keyEnvHint")}</Text>
+      </Question>
+    )
+  }
+
+  // The `check` an InputPrompt gets for `target`, or none without a probe
+  function checkWith(target: (value: string) => ProbeTarget) {
+    return probe ? (value: string, signal: AbortSignal) => probe(target(value), signal) : undefined
+  }
+
   function stepView() {
     const [kind, subject] = step.split(":") as [string, string | undefined]
     return providerStepView(kind, subject) ?? customStepView(kind, subject) ?? fixedStepView()
@@ -540,14 +622,20 @@ export function ConfigWizard({
     const provider = subject ? catalogProvider(subject) : undefined
 
     if (kind === "key" && provider) {
+      const fromEnv = envKeyView(provider.id, provider.name, provider.env ?? [])
+      if (fromEnv) return fromEnv
       return (
         <InputPrompt
           onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: provider.name })}
           hint={keyHint(result.keys?.[provider.id], saved?.providers?.includes(provider.id))}
+          check={checkWith(key => ({ kind: "key", baseUrl: result.addresses?.[provider.id] ?? provider.baseUrl, key }))}
           onSubmit={value =>
-            advance({ keys: { ...result.keys, [provider.id]: value || result.keys?.[provider.id] || "" } })
+            advance({
+              keys: { ...result.keys, [provider.id]: value || result.keys?.[provider.id] || "" },
+              keyEnv: without(result.keyEnv, provider.id)
+            })
           }
         />
       )
@@ -560,6 +648,7 @@ export function ConfigWizard({
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
           hint={t("wizard.baseUrlHint")}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
+          check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
           onSubmit={value => advance({ addresses: { ...result.addresses, [provider.id]: value || provider.baseUrl } })}
         />
       )
@@ -577,7 +666,7 @@ export function ConfigWizard({
             closeOnBackspace={false}
             filterable
             visibleCount={8}
-            items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
+            items={candidates.map(candidate => `${providerName(candidate.provider, result)} — ${candidate.model}`)}
             hints={candidates.map(candidate => candidate.released ?? "")}
             width={70}
             initialIndex={Math.max(current, 0)}
@@ -621,19 +710,28 @@ export function ConfigWizard({
           hint={t("wizard.customUrlHint")}
           defaultValue={custom.baseUrl}
           validate={value => (isWebAddress(value) ? undefined : t("wizard.customUrlInvalid"))}
+          check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
           onSubmit={value => advance({ custom: { ...custom, baseUrl: value } })}
         />
       )
     }
 
     if (step === "custom-key") {
+      const fromEnv = envKeyView(nameOf, nameOf, [envGuess(nameOf)])
+      if (fromEnv) return fromEnv
       return (
         <InputPrompt
           onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: nameOf })}
           hint={keyHint(result.keys?.[nameOf], saved?.providers?.includes(nameOf))}
-          onSubmit={value => advance({ keys: { ...result.keys, [nameOf]: value || result.keys?.[nameOf] || "" } })}
+          check={checkWith(key => ({ kind: "key", baseUrl: custom.baseUrl ?? "", key }))}
+          onSubmit={value =>
+            advance({
+              keys: { ...result.keys, [nameOf]: value || result.keys?.[nameOf] || "" },
+              keyEnv: without(result.keyEnv, nameOf)
+            })
+          }
         />
       )
     }
@@ -642,7 +740,7 @@ export function ConfigWizard({
       const index = Number(subject)
       // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
       const existing = custom.models[index]
-      const listed = probe?.url === custom.baseUrl ? probe : undefined
+      const listed = listing?.url === custom.baseUrl ? listing : undefined
       if (!existing && !typing && listed && !listed.ids) {
         return <Text dimColor>{t("wizard.customModelSearching", { url: custom.baseUrl ?? "" })}</Text>
       }
@@ -787,7 +885,12 @@ export function ConfigWizard({
         const envKey = (provider: CatalogProvider) => provider.env?.find(name => env[name])
         const front = (provider: CatalogProvider) =>
           result.providers?.includes(provider.id) || Boolean(envKey(provider))
-        const ordered = [...CATALOG.filter(front), ...CATALOG.filter(provider => !front(provider))]
+        // A catalog entry for a server found running here (LM Studio) gives way to the server's own model list
+        const local = result.local ?? []
+        const sameServer = (provider: CatalogProvider) =>
+          local.some(server => sameAddress(server.baseUrl, provider.baseUrl))
+        const listed = CATALOG.filter(provider => !sameServer(provider))
+        const ordered = [...listed.filter(front), ...listed.filter(provider => !front(provider))]
         return (
           <Question title={t("wizard.providerTitle")}>
             {/* A re-run starts with the providers in models.toml ticked; a first run with those whose key is in the environment, and Enter won't continue until one is. */}
@@ -796,6 +899,14 @@ export function ConfigWizard({
               visibleCount={10}
               options={[
                 { label: t("wizard.providerCustom"), value: CUSTOM },
+                ...local.map(server => ({
+                  label: t("wizard.providerDetected", {
+                    name: server.name,
+                    address: server.baseUrl.replace(/^https?:\/\//, ""),
+                    count: server.models.length
+                  }),
+                  value: server.id
+                })),
                 ...ordered.map(provider => {
                   const found = envKey(provider)
                   const label = t(provider.kind === "hosted" ? "wizard.providerHosted" : "wizard.providerSelfHosted", {
@@ -807,7 +918,12 @@ export function ConfigWizard({
                   }
                 })
               ]}
-              defaultValue={result.providers ?? CATALOG.filter(envKey).map(provider => provider.id)}
+              defaultValue={
+                result.providers ?? [
+                  ...local.map(server => server.id),
+                  ...listed.filter(envKey).map(provider => provider.id)
+                ]
+              }
               onSubmit={providers => {
                 setRefused(providers.length === 0)
                 if (providers.length > 0) advance({ providers })
@@ -869,6 +985,7 @@ export function ConfigWizard({
             secret
             title={t("wizard.telegramTokenTitle")}
             hint={keyHint(result.telegramToken, saved?.telegram)}
+            check={checkWith(token => ({ kind: "telegram", token }))}
             onSubmit={value => advance({ telegramToken: value || result.telegramToken || "" })}
           />
         )

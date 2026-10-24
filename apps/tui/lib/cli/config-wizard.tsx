@@ -1,12 +1,15 @@
-import type { ModelTask } from "@kaja/schema/config"
+import { type ModelTask, providerKey } from "@kaja/schema/config"
 import { render } from "ink"
-import type { WizardResult, WizardSaved } from "../../components/config-wizard"
+import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
+import type { LiveCheck } from "../../components/secret-prompt"
 import { create, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
+import { type CatalogProvider, catalogProvider } from "../models/catalog"
 import { readCurrentModels } from "../models/current"
+import { detectedProvider, type DetectedServer, detectLocalServers, sameAddress } from "../models/detect"
 import { writeModelsFromCatalog } from "../models/models"
 import { refreshCatalog } from "../models/modelsdev"
 import type { PullProgress } from "../models/pull"
@@ -52,6 +55,14 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   if (providers.length === 0) return
 
   await writeModelsFromCatalog({ providers, picks: chosenPicks(result), baseUrls: result.addresses })
+  // A key read from the environment is saved as the variable's name now; the credential pass then tests what it holds
+  const keyEnv = Object.entries(result.keyEnv ?? {})
+  if (keyEnv.length > 0) {
+    const { saveSecrets } = await import("../config/secrets")
+    await saveSecrets({
+      providers: Object.fromEntries(keyEnv.map(([id, name]) => [id, { api_key_env: name }]))
+    })
+  }
   // Speaches is the one provider that also lives in settings.toml: its address is where voice goes.
   const speaches = providers.find(provider => provider.id === "speaches")
   if (speaches) await applySpeachesUrl(result.addresses?.speaches ?? speaches.baseUrl, print)
@@ -190,21 +201,32 @@ async function offerModelDownloads(print: (line: string) => void) {
  * re-offering what the machine already runs. The first provider the catalog doesn't know becomes the
  * custom one the wizard asks about; any others are kept as they are. Nothing when the file is missing or unparseable.
  */
-async function currentModels(): Promise<
-  Pick<WizardResult, "providers" | "addresses" | "tasks" | "models" | "custom" | "keep">
-> {
+async function currentModels(
+  servers: DetectedServer[]
+): Promise<Pick<WizardResult, "providers" | "addresses" | "tasks" | "models" | "custom" | "keep" | "local">> {
+  const local = localProviders(servers)
   const current = await readCurrentModels()
-  if (!current) return {}
-  const [first, ...rest] = current.own
+  if (!current) return local.length > 0 ? { local } : {}
+  // A provider models.toml already has at a running server's address is that server, under the name it has there
+  const running: string[] = []
+  const own = current.own.filter(provider => {
+    const server = local.find(candidate => sameAddress(candidate.baseUrl, provider.baseUrl))
+    if (!server) return true
+    server.id = provider.id
+    running.push(provider.id)
+    return false
+  })
+  const [first, ...rest] = own
   const custom = first && {
     name: first.id,
     baseUrl: first.baseUrl,
     models: first.models.flatMap(({ model, tasks }) => tasks.map(task => ({ model, task })))
   }
-  const providers = [...current.providers, ...(custom ? ["custom"] : [])]
-  if (providers.length === 0) return {}
+  const providers = [...current.providers, ...running, ...(custom ? ["custom"] : [])]
+  if (providers.length === 0) return local.length > 0 ? { local } : {}
   return {
     providers,
+    ...(local.length > 0 ? { local } : {}),
     addresses: current.addresses,
     tasks: Object.keys(current.picks) as ModelTask[],
     models: current.picks,
@@ -213,8 +235,23 @@ async function currentModels(): Promise<
   }
 }
 
+/**
+ * The servers found running as providers the wizard offers, each under an id no catalog provider or other server has
+ * (models.dev lists LM Studio too; the running one's own models win).
+ */
+function localProviders(servers: DetectedServer[]): CatalogProvider[] {
+  const taken = new Set<string>()
+  return servers.map(server => {
+    const provider = detectedProvider(server)
+    let id = catalogProvider(provider.id) ? `${provider.id}-local` : provider.id
+    for (let n = 2; taken.has(id); n++) id = `${provider.id}-${n}`
+    taken.add(id)
+    return { ...provider, id }
+  })
+}
+
 /** Every step's current value, so a re-run over a working setup opens on what is already there. */
-async function readPrefill(): Promise<WizardResult> {
+async function readPrefill(servers: DetectedServer[]): Promise<WizardResult> {
   const config = await readConfigLoose()
   const { resolveTheme } = await import("../terminal-background")
 
@@ -223,7 +260,7 @@ async function readPrefill(): Promise<WizardResult> {
     language: config.preferences?.locale,
     // A saved dark/light as is; otherwise the terminal is asked, which reads stdin, so this has to finish before the wizard renders
     theme: await resolveTheme(config.preferences?.theme),
-    ...(await currentModels())
+    ...(await currentModels(servers))
   }
 }
 
@@ -236,17 +273,44 @@ async function readSavedSecrets(): Promise<WizardSaved> {
   const creds = await secrets()
   return {
     providers: Object.entries(creds.providers)
-      .filter(([, value]) => value?.api_key)
+      .filter(([, value]) => Boolean(value))
       .map(([name]) => name),
     telegram: Boolean(creds.telegram?.bot_token)
   }
+}
+
+/** The wizard's live test of a typed answer: a key or address against `GET /models`, a bot token against Telegram. */
+async function probeAnswer(target: ProbeTarget, signal: AbortSignal): Promise<LiveCheck | undefined> {
+  if (target.kind === "telegram") {
+    const { checkTelegramToken } = await import("../doctor/checks")
+    const result = await checkTelegramToken(target.token)
+    return result.ok
+      ? { tone: "ok", note: t("wizard.checkTelegramOk") }
+      : { tone: "bad", note: t("wizard.checkTelegramBad", { reason: result.reason }) }
+  }
+  const { probeModels } = await import("../models/list")
+  const key = target.kind === "key" ? target.key : undefined
+  const probe = await probeModels(target.baseUrl, key, { signal })
+  if (probe.ok) {
+    const count = probe.ids.length
+    return { tone: "ok", note: t(key ? "wizard.checkKeyOk" : "wizard.checkServerOk", { count }) }
+  }
+  const refused = probe.status === 401 || probe.status === 403
+  if (key) {
+    // Only a refusal is about the key; anything else means it couldn't be judged
+    return refused
+      ? { tone: "bad", note: t("wizard.checkKeyRejected", { error: probe.error }) }
+      : { tone: "warn", note: t("wizard.checkKeyUnknown", { error: probe.error }) }
+  }
+  if (refused) return { tone: "ok", note: t("wizard.checkServerNeedsKey") }
+  return { tone: "warn", note: t("wizard.checkServerDown", { error: probe.error }) }
 }
 
 /** The custom provider's model ids, asked with the key just typed, else the one already saved for it. */
 async function listProviderModels(baseUrl: string, provider: string, key?: string): Promise<string[]> {
   const { listModelIds } = await import("../models/list")
   const { secrets } = await import("../config/secrets")
-  const apiKey = key ?? (await secrets()).providers[provider]?.api_key
+  const apiKey = key ?? providerKey((await secrets()).providers[provider])
   return listModelIds(baseUrl, apiKey)
 }
 
@@ -286,9 +350,10 @@ export async function runConfigWizard({
   }
 
   const { ConfigWizard } = await import("../../components/config-wizard")
-  // Before the prefill, which matches models.toml's providers against the catalog
-  if (!(await refreshCatalog())) console.log(statusLine("info", t("wizard.noCatalog")))
-  const [prefill, saved] = await Promise.all([readPrefill(), readSavedSecrets()])
+  // Before the prefill, which matches models.toml's providers against the catalog and the servers running here
+  const [hasCatalog, servers] = await Promise.all([refreshCatalog(), detectLocalServers()])
+  if (!hasCatalog) console.log(statusLine("info", t("wizard.noCatalog")))
+  const [prefill, saved] = await Promise.all([readPrefill(servers), readSavedSecrets()])
 
   const result = await new Promise<WizardResult | undefined>(resolve => {
     const { unmount } = render(
@@ -297,6 +362,7 @@ export async function runConfigWizard({
         mode={mode}
         saved={saved}
         listModels={listProviderModels}
+        probe={probeAnswer}
         onDone={r => {
           unmount()
           resolve(r)
