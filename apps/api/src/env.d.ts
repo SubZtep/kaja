@@ -34,6 +34,8 @@ declare module "bun" {
      * test secrets); never localhost in production
      */
     TURNSTILE_HOSTNAMES?: string
+    /** Gravatar API key; sent as a bearer token when looking up profiles, lifting the keyless hourly limit */
+    GRAVATAR_API_KEY?: string
     /** SMTP server hostname */
     SMTP_HOST?: string
     /** SMTP server port */

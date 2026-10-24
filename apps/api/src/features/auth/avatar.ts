@@ -1,5 +1,6 @@
 import { userImagePrefix } from "@kaja/nasi"
 import { sql } from "../../core/db"
+import { env } from "../../core/env"
 import { imageUrl, objects } from "../../core/files"
 import { reportError } from "../../core/report"
 
@@ -28,10 +29,11 @@ export function googlePictureUrl(url: string): string {
 
 /**
  * The public Gravatar profile's display name, if it has a usable one (no profile, or over the 100-an-hour keyless
- * limit, gives none).
+ * limit, gives none). Sends `GRAVATAR_API_KEY` when set, which lifts that limit.
  */
 export async function gravatarName(email: string, fetcher: Fetch = fetch): Promise<string | undefined> {
   const res = await fetcher(`https://api.gravatar.com/v3/profiles/${gravatarHash(email)}`, {
+    headers: env.GRAVATAR_API_KEY ? { Authorization: `Bearer ${env.GRAVATAR_API_KEY}` } : undefined,
     signal: AbortSignal.timeout(TIMEOUT_MS)
   })
   if (!res.ok) return undefined

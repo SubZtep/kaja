@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { sql } from "../../src/core/db"
+import { env } from "../../src/core/env"
 import { objects } from "../../src/core/files"
 import {
   copyGooglePicture,
   fillFromGravatar,
   googlePictureUrl,
   gravatarHash,
+  gravatarName,
   isGooglePicture
 } from "../../src/features/auth/avatar"
 import { signUpAndSignIn } from "./helpers"
@@ -100,6 +102,31 @@ describe("Gravatar fill", () => {
       throw new Error("offline")
     })
     expect(await profile(user.id)).toEqual({ name: "", image: null })
+  })
+})
+
+describe("Gravatar API key", () => {
+  const lookup = async (key?: string) => {
+    const sent: (HeadersInit | undefined)[] = []
+    const before = env.GRAVATAR_API_KEY
+    env.GRAVATAR_API_KEY = key
+    try {
+      await gravatarName("ada@example.com", async (_url, init) => {
+        sent.push(init?.headers)
+        return new Response(null, { status: 404 })
+      })
+    } finally {
+      env.GRAVATAR_API_KEY = before
+    }
+    return sent[0]
+  }
+
+  test("is sent as a bearer token when set", async () => {
+    expect(await lookup("secret")).toEqual({ Authorization: "Bearer secret" })
+  })
+
+  test("is left out when unset", async () => {
+    expect(await lookup()).toBeUndefined()
   })
 })
 
