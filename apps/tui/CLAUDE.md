@@ -40,6 +40,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 `components/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml.
 
 - Every step opens on the current value (`readPrefill`), so Enter throughout keeps a machine unchanged. `--cloud`/`--local` skip the mode step; a prefilled mode does not
+- Steps are grouped into blocks (`BLOCK_OF_KIND`) shown in the header; Esc pops `history`, and the trail is drawn from it each render (not Ink `<Static>`), so finished blocks fold and a changed answer updates its line
 - **Keys are typed in the wizard but saved by the credential pass**, so each is tested first. In `offered`, `null` means "asked and turned down" (`""` in `WizardResult`) versus `undefined` "never applied": losing that distinction brings back the double-ask
 - `refreshCatalog` loads the API's `/config/catalog` (the cached last good one when it can't); with neither, the providers checklist is skipped and the custom-provider steps ask everything, offering the models its `/models` lists
 - Every config file is written through `lib/config/schema-file.ts`'s `writeConfigFile` (or edited in place): a `#:schema ./schemas/<f>.json` line on top, and this build's schema copied beside it. Defaults live in code and the Zod schemas (`PREFERENCE_DEFAULTS`), never in templates

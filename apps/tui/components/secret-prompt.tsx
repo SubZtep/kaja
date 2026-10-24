@@ -1,6 +1,7 @@
 import { PasswordInput, TextInput } from "@inkjs/ui"
-import { Text, useInput } from "ink"
+import { Text } from "ink"
 import { useState } from "react"
+import { useKey } from "../hooks/use-key"
 import { t } from "../lib/i18n"
 import { InputFrame, Question } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
@@ -16,7 +17,7 @@ export function Problem({ children }: Readonly<{ children: string }>) {
  * Asks for one typed answer: a key (`secret`, masked and never prefilled) or a plain value such as an address. The
  * trimmed answer goes through `validate`, and a refused one keeps the question open with the reason under it. With
  * `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for the caller to
- * read.
+ * read. With `onBack`, Esc goes back instead.
  */
 export function InputPrompt({
   title,
@@ -25,7 +26,8 @@ export function InputPrompt({
   defaultValue,
   validate,
   onSubmit,
-  onSkip
+  onSkip,
+  onBack
 }: Readonly<{
   /** What's needed and why, e.g. "github needs an API key (header Authorization)." */
   title: string
@@ -36,13 +38,15 @@ export function InputPrompt({
   validate?: (value: string) => string | undefined
   onSubmit: (value: string) => void
   onSkip?: () => void
+  /** Esc returns to the previous question, as the setup wizard does. */
+  onBack?: () => void
 }>) {
   const [problem, setProblem] = useState<string>()
-  useInput(
+  useKey(
     (_input, key) => {
-      if (key.escape) onSkip?.()
+      if (key.escape) (onBack ?? onSkip)?.()
     },
-    { isActive: Boolean(onSkip) }
+    { isActive: Boolean(onBack ?? onSkip) }
   )
   const submit = (raw: string) => {
     const value = raw.trim()

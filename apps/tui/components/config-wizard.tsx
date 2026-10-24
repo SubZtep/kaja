@@ -2,7 +2,7 @@ import { ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
-import { Box, Static, Text } from "ink"
+import { Box, Text } from "ink"
 import { useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
@@ -13,7 +13,7 @@ import { CheckMenu } from "./elem/check-menu"
 import { Answered, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { InputPrompt, Problem } from "./secret-prompt"
-import { themeFor } from "./theme"
+import { themeFor, useKajaTheme } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -99,6 +99,40 @@ type Step =
   | "extras"
   | "telegramToken"
   | "done"
+
+/** The parts the questions are grouped in, in the order they are asked; the header shows where you are among them. */
+type Block = "basics" | "providers" | "models" | "extras"
+
+const BLOCK_ORDER: Block[] = ["basics", "providers", "models", "extras"]
+
+const BLOCK_LABEL_KEY: Record<Block, string> = {
+  basics: "wizard.blockBasics",
+  providers: "wizard.blockProviders",
+  models: "wizard.blockModels",
+  extras: "wizard.blockExtras"
+}
+
+// By the step's kind, the part before any `:`. A custom provider's models are model choices, so they sit in Models.
+const BLOCK_OF_KIND: Record<string, Block> = {
+  language: "basics",
+  theme: "basics",
+  mode: "basics",
+  providers: "providers",
+  key: "providers",
+  address: "providers",
+  "custom-name": "providers",
+  "custom-url": "providers",
+  "custom-key": "providers",
+  "custom-model": "models",
+  "custom-task": "models",
+  model: "models",
+  extras: "extras",
+  telegramToken: "extras"
+}
+
+function blockOf(step: Step): Block | undefined {
+  return BLOCK_OF_KIND[step.split(":")[0]!]
+}
 
 const TASK_LABEL_KEY: Record<ModelTask, string> = {
   chat: "wizard.taskChat",
@@ -238,11 +272,14 @@ function keyState(typed: string | undefined, alreadySaved: boolean | undefined):
   return t(alreadySaved ? "wizard.keyStateKept" : "wizard.keyStateSkipped")
 }
 
+// A key step's hint: Enter keeps a key typed earlier (you came back to it), or one already saved.
+function keyHint(typed: string | undefined, alreadySaved: boolean | undefined): string {
+  if (typed) return t("wizard.keyHintTyped")
+  return t(alreadySaved ? "wizard.keyHintSaved" : "wizard.keyHint")
+}
+
 /** One answered step, kept on screen above the next question. */
 type Answer = { id: string; label: string; value: string }
-
-/** What the trail prints, once each: the header, then every answer. */
-type TrailItem = Answer | { id: "header" }
 
 type AnswerLine = Pick<Answer, "label" | "value"> | undefined
 type AnswerLineFn = (subject: string, result: WizardResult, saved?: WizardSaved) => AnswerLine
@@ -314,11 +351,48 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
-/** The trail's first line: the mascot. */
-function Header() {
+/** Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count. */
+function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
+  const { success } = useKajaTheme()
+  const reached = current ? blocks.indexOf(current) : blocks.length
   return (
     <RailLine marker={<Text dimColor>┌</Text>}>
-      <Text>༼☉ω⊙༽🪄</Text>
+      <Text>
+        ༼☉ω⊙༽🪄{" "}
+        {blocks.map((block, index) => (
+          <Text key={block}>
+            {index > 0 ? <Text dimColor> › </Text> : null}
+            {index < reached ? <Text {...success()}>✓ {t(BLOCK_LABEL_KEY[block])}</Text> : null}
+            {index === reached ? (
+              <Text bold color="magenta">
+                {t(BLOCK_LABEL_KEY[block])} {t("wizard.progressCount", { at, of })}
+              </Text>
+            ) : null}
+            {index > reached ? <Text dimColor>{t(BLOCK_LABEL_KEY[block])}</Text> : null}
+          </Text>
+        ))}
+        {current ? <Text dimColor>{`  ${t("wizard.escBack")}`}</Text> : null}
+      </Text>
+    </RailLine>
+  )
+}
+
+/** A finished block folded into one line: its name, then each answer. A label that repeats the name is left out. */
+function FoldedBlock({ block, lines }: Readonly<{ block: Block; lines: Answer[] }>) {
+  const { success } = useKajaTheme()
+  const name = t(BLOCK_LABEL_KEY[block])
+  return (
+    <RailLine marker={<Text {...success()}>✓</Text>}>
+      <Text>
+        <Text bold>{name}</Text>
+        {lines.map(line => (
+          <Text key={line.id}>
+            <Text dimColor> · </Text>
+            {line.label === name ? null : <Text dimColor>{line.label} </Text>}
+            {line.value}
+          </Text>
+        ))}
+      </Text>
     </RailLine>
   )
 }
@@ -326,9 +400,10 @@ function Header() {
 /**
  * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`. Every step opens on
  * the current value, so holding Enter walks a configured machine through unchanged, and the last answer finishes it
- * with no confirmation. Escape on a list cancels the whole wizard; Backspace/Delete don't, unlike other
- * {@link SelectMenu}s, since a typo-fixing reflex shouldn't throw every answer away. Nothing is written here: the caller
- * applies the collected {@link WizardResult} once `onDone` fires.
+ * with no confirmation. The questions are grouped in blocks; finished ones fold into a line each. Escape goes back one
+ * question (on the first it cancels); Backspace/Delete don't, unlike other {@link SelectMenu}s, since a typo-fixing
+ * reflex shouldn't throw an answer away. Nothing is written here: the caller applies the collected {@link WizardResult}
+ * once `onDone` fires.
  */
 export function ConfigWizard({
   prefill,
@@ -356,8 +431,8 @@ export function ConfigWizard({
   // someone who can read it.
   const [step, setStep] = useState<Step>("language")
   const [result, setResult] = useState<WizardResult>(initial)
-  // Append-only: <Static> prints each item once and leaves it in the scrollback.
-  const [answered, setAnswered] = useState<TrailItem[]>([{ id: "header" }])
+  // The steps answered so far, in order: the trail is drawn from them, and Esc steps back through them
+  const [history, setHistory] = useState<Step[]>([])
   // Set when Enter was pressed on the providers checklist with nothing ticked.
   const [noProvider, setNoProvider] = useState(false)
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
@@ -390,11 +465,26 @@ export function ConfigWizard({
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
-    const line = answerLine(step, next, saved)
-    if (line) setAnswered(list => [...list, { id: step, ...line }])
+    setHistory(list => [...list, step])
     setResult(next)
     setTyping(false)
     setStep(nextStepAfter(step, next, mode))
+  }
+
+  // Esc: the previous question opens again on its answer; on the first one it cancels the wizard.
+  function back() {
+    const previous = history.at(-1)
+    if (!previous) return onCancel()
+    setHistory(list => list.slice(0, -1))
+    setTyping(false)
+    setNoProvider(false)
+    // The step that ended the custom model list is asked again, so the list isn't finished any more.
+    if (previous.startsWith("custom-model")) {
+      setResult(current =>
+        current.custom?.done ? { ...current, custom: { ...current.custom, done: false } } : current
+      )
+    }
+    setStep(previous)
   }
 
   function stepView() {
@@ -409,10 +499,13 @@ export function ConfigWizard({
     if (kind === "key" && provider) {
       return (
         <InputPrompt
+          onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: provider.name })}
-          hint={t(saved?.providers?.includes(provider.id) ? "wizard.keyHintSaved" : "wizard.keyHint")}
-          onSubmit={value => advance({ keys: { ...result.keys, [provider.id]: value } })}
+          hint={keyHint(result.keys?.[provider.id], saved?.providers?.includes(provider.id))}
+          onSubmit={value =>
+            advance({ keys: { ...result.keys, [provider.id]: value || result.keys?.[provider.id] || "" } })
+          }
         />
       )
     }
@@ -420,6 +513,7 @@ export function ConfigWizard({
     if (kind === "address" && provider) {
       return (
         <InputPrompt
+          onBack={back}
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
           hint={t("wizard.baseUrlHint")}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
@@ -440,7 +534,7 @@ export function ConfigWizard({
             width={70}
             initialIndex={current >= 0 ? current : undefined}
             onSelect={index => advance({ models: { ...result.models, [task]: candidates[index]!.provider } })}
-            onClose={onCancel}
+            onClose={back}
           />
           <Text dimColor>{t("wizard.modelHint")}</Text>
         </Question>
@@ -458,6 +552,7 @@ export function ConfigWizard({
     if (step === "custom-name") {
       return (
         <InputPrompt
+          onBack={back}
           title={t("wizard.customNameTitle")}
           hint={t("wizard.customNameHint")}
           defaultValue={custom.name}
@@ -470,6 +565,7 @@ export function ConfigWizard({
     if (step === "custom-url") {
       return (
         <InputPrompt
+          onBack={back}
           title={t("wizard.customUrlTitle")}
           hint={t("wizard.customUrlHint")}
           defaultValue={custom.baseUrl}
@@ -482,10 +578,11 @@ export function ConfigWizard({
     if (step === "custom-key") {
       return (
         <InputPrompt
+          onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: nameOf })}
-          hint={t(saved?.providers?.includes(nameOf) ? "wizard.keyHintSaved" : "wizard.keyHint")}
-          onSubmit={value => advance({ keys: { ...result.keys, [nameOf]: value } })}
+          hint={keyHint(result.keys?.[nameOf], saved?.providers?.includes(nameOf))}
+          onSubmit={value => advance({ keys: { ...result.keys, [nameOf]: value || result.keys?.[nameOf] || "" } })}
         />
       )
     }
@@ -520,13 +617,14 @@ export function ConfigWizard({
                   custom: { ...custom, models: [...custom.models, { model: offered[choice - actions.length]! }] }
                 })
               }}
-              onClose={onCancel}
+              onClose={back}
             />
           </Question>
         )
       }
       return (
         <InputPrompt
+          onBack={back}
           title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
             provider: nameOf
           })}
@@ -565,7 +663,7 @@ export function ConfigWizard({
                 }
               })
             }
-            onClose={onCancel}
+            onClose={back}
           />
         </Question>
       )
@@ -586,7 +684,7 @@ export function ConfigWizard({
               width={70}
               initialIndex={Math.max(0, MODE_CHOICES.indexOf(result.mode ?? "cloud"))}
               onSelect={index => advance({ mode: MODE_CHOICES[index] })}
-              onClose={onCancel}
+              onClose={back}
             />
           </Question>
         )
@@ -608,7 +706,7 @@ export function ConfigWizard({
                 setLanguage(language)
                 advance({ language })
               }}
-              onClose={onCancel}
+              onClose={back}
             />
           </Question>
         )
@@ -626,7 +724,7 @@ export function ConfigWizard({
               preview
               onFocus={index => setPreview(THEME_CHOICES[index]!)}
               onSelect={index => advance({ theme: THEME_CHOICES[index] })}
-              onClose={onCancel}
+              onClose={back}
             />
             <Text dimColor>{t("wizard.themeHint")}</Text>
           </Question>
@@ -652,7 +750,7 @@ export function ConfigWizard({
                 setNoProvider(providers.length === 0)
                 if (providers.length > 0) advance({ providers })
               }}
-              onClose={onCancel}
+              onClose={back}
             />
             {noProvider ? (
               <Problem>{t("wizard.providerRequired")}</Problem>
@@ -671,7 +769,7 @@ export function ConfigWizard({
               options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
               defaultValue={result.extras}
               onSubmit={values => advance({ extras: values as WizardExtra[] })}
-              onClose={onCancel}
+              onClose={back}
             />
             <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Question>
@@ -681,10 +779,11 @@ export function ConfigWizard({
       case "telegramToken": {
         return (
           <InputPrompt
+            onBack={back}
             secret
             title={t("wizard.telegramTokenTitle")}
-            hint={t(saved?.telegram ? "wizard.keyHintSaved" : "wizard.keyHint")}
-            onSubmit={telegramToken => advance({ telegramToken })}
+            hint={keyHint(result.telegramToken, saved?.telegram)}
+            onSubmit={value => advance({ telegramToken: value || result.telegramToken || "" })}
           />
         )
       }
@@ -695,18 +794,30 @@ export function ConfigWizard({
     }
   }
 
+  const steps = stepsFor(result, mode)
+  const blocks = BLOCK_ORDER.filter(block => steps.some(candidate => blockOf(candidate) === block))
+  const current = blockOf(step)
+  const inBlock = steps.filter(candidate => blockOf(candidate) === current)
+  // The open step is missing from the list only while it ends the custom model list: it's then that list's last one.
+  const at = Math.max(inBlock.indexOf(step), 0) + 1
+  const of = Math.max(inBlock.length, at)
+  // Each answered step's line, latest answers shown, so going back and changing one updates it
+  const trail = history.flatMap(answeredStep => {
+    const line = answerLine(answeredStep, result, saved)
+    const block = blockOf(answeredStep)
+    return line && block ? [{ id: answeredStep, block, ...line }] : []
+  })
+
   return (
     <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
-        <Static items={answered}>
-          {item =>
-            "label" in item ? (
-              <Answered key={item.id} label={`${item.label}:`} value={item.value} />
-            ) : (
-              <Header key={item.id} />
-            )
-          }
-        </Static>
+        <Progress blocks={blocks} current={current} at={at} of={of} />
+        {blocks.map(block => {
+          const lines = trail.filter(line => line.block === block)
+          if (block === current)
+            return lines.map(line => <Answered key={line.id} label={`${line.label}:`} value={line.value} />)
+          return lines.length > 0 ? <FoldedBlock key={block} block={block} lines={lines} /> : null
+        })}
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
         <Box key={step} flexDirection="column">
           {stepView()}

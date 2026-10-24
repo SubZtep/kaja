@@ -23,15 +23,20 @@ second run, the wizard starts from your previous answers.
 
 ## Moving around
 
-| Key                       | What it does                                                |
-| ------------------------- | ----------------------------------------------------------- |
-| <kbd>↑</kbd> <kbd>↓</kbd> | Move through a list                                         |
-| <kbd>Space</kbd>          | Tick or untick an item, in lists where you can pick several |
-| <kbd>Enter</kbd>          | Confirm and go on                                           |
-| <kbd>Esc</kbd>            | Cancel the wizard from a list. Nothing is saved             |
+| Key                          | What it does                                                |
+| ---------------------------- | ----------------------------------------------------------- |
+| <kbd>↑</kbd> <kbd>↓</kbd>    | Move through a list                                         |
+| <kbd>Space</kbd>             | Tick or untick an item, in lists where you can pick several |
+| <kbd>Enter</kbd>             | Confirm and go on                                           |
+| <kbd>Esc</kbd>               | Go back to the previous question, your answer kept          |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Quit the wizard. Nothing is saved                           |
 
 In a field you type into, <kbd>Enter</kbd> on an empty value skips it. An address keeps its usual default.
-Your answers stay on screen with a ✓, so you can see what you've chosen so far.
+<kbd>Esc</kbd> on the very first question cancels the wizard.
+
+The questions come in blocks: **Basics**, **Providers**, **Models** and **Extras**. The top line shows
+which block you're in and how many questions it has. A finished block folds into one ✓ line with your
+answers.
 
 ## The questions
 

@@ -244,7 +244,8 @@ test("a step that says a key is already saved offers to keep it", async () => {
   expect(w.t.lastFrame()).toContain("already saved")
 
   await w.t.press(ENTER) // keep it
-  expect(w.t.output()).toContain("✓  Fireworks API key: already saved, kept")
+  // The Providers block is finished, so it's folded into one line
+  expect(w.t.lastFrame()).toContain("Fireworks API key already saved, kept")
 
   await close(w)
 })
@@ -274,9 +275,10 @@ test("the trail says what became of each key, without showing it", async () => {
   await w.t.press(ENTER)
   await w.t.press(ENTER) // telegram token: skipped
 
+  // Every block is finished, so each is folded into its line
   const trail = w.t.output()
-  expect(trail).toContain("✓  Fireworks API key: entered, tested at the end")
-  expect(trail).toContain("✓  Telegram bot token: skipped")
+  expect(w.t.lastFrame()).toContain("Fireworks API key entered, tested at the end")
+  expect(w.t.lastFrame()).toMatch(/Telegram bot\s+token skipped/)
   expect(trail).not.toContain("fw-secret-value")
   // Nothing follows the last answer: no closing screen claiming it's all done while the setup still runs.
   expect(w.result).toBeDefined()
@@ -395,11 +397,70 @@ test("backspace on a menu doesn't cancel: the wizard stays on the question", asy
   await close(w)
 })
 
-test("escape on the providers checklist cancels too", async () => {
-  const w = await openProviders()
+test("escape on a later question goes back to the previous one, on its answer", async () => {
+  const w = await openProviders({ prefill: { theme: "light" } })
   await w.t.press(ESC)
 
+  expect(w.cancelled).toBe(false)
+  expect(w.t.lastFrame()).toContain("Which colours read best in this terminal?")
+  expect(w.t.lastFrame()).toContain("❯ Light background")
+  // Back again to the language, and once more cancels: there is nothing before it
+  await w.t.press(ESC)
+  expect(w.t.lastFrame()).toContain("Choose your language")
+  await w.t.press(ESC)
   expect(w.cancelled).toBe(true)
+
+  await close(w)
+})
+
+test("going back keeps the answers, and a changed one replaces its line", async () => {
+  const w = await openProviders()
+  await tick(w, FIREWORKS)
+  await w.t.press(ESC) // back to the checklist, Fireworks still ticked
+  expect(w.t.lastFrame()).toContain("[✔] Fireworks")
+  await w.t.press(DOWN) // Ollama
+  await w.t.press(SPACE)
+  await w.t.press(ENTER)
+
+  expect(w.t.lastFrame()).toContain("✓  Providers: Fireworks, Ollama")
+  expect(w.t.lastFrame()).not.toContain("✓  Providers: Fireworks\n")
+  await close(w)
+})
+
+test("a key typed earlier is kept when you come back past it", async () => {
+  const w = await openProviders()
+  await tick(w, FIREWORKS)
+  await w.t.press("fw-secret")
+  await w.t.press(ENTER)
+  await w.t.press(ESC) // back from extras to the key
+  expect(w.t.lastFrame()).toContain("You typed one already")
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // extras
+
+  expect(w.result?.keys).toEqual({ fireworks: "fw-secret" })
+  await close(w)
+})
+
+test("the header shows the blocks, where you are and the question count; finished blocks fold", async () => {
+  const w = await openProviders()
+  expect(w.t.lastFrame()).toContain("✓ Basics › Providers 1/1 › Extras")
+  expect(w.t.lastFrame()).toContain("✓  Basics · Language British English · Colours Dark background")
+
+  await tick(w, FIREWORKS, OLLAMA)
+  // A key and an address joined the block
+  expect(w.t.lastFrame()).toContain("Providers 2/3")
+  await close(w)
+})
+
+test("cloud mode has only the Basics block", async () => {
+  const w = renderWizard()
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme
+  expect(w.t.lastFrame()).toContain("Basics 3/3 › Providers")
+  await w.t.press(ENTER) // cloud
+  expect(w.t.lastFrame()).toContain("✓ Basics")
+  expect(w.t.lastFrame()).not.toContain("Providers")
   await close(w)
 })
 
@@ -629,7 +690,7 @@ test("the models the custom server lists are offered to pick from, with typing o
   await w.t.press(ENTER) // chat
   // alpha is still offered, beta isn't; "That's all" ends the list
   expect(w.t.lastFrame()).toContain("Another box model?")
-  expect(w.t.lastFrame()).not.toContain("beta")
+  expect(w.t.lastFrame()?.split("Another box model?")[1]).not.toContain("beta")
   await w.t.press("\x1b[A") // up from alpha to "That's all"
   await w.t.press(ENTER)
   await w.t.press(ENTER) // extras
