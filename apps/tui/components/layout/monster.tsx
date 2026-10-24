@@ -34,7 +34,7 @@ const FACES = {
 /** A face the monster pulls when something happens, see {@link emote}. */
 export type Mood = keyof typeof FACES
 
-const EMOTE_MS = 2200
+const EMOTE_MS = 1200
 
 const MOOD_OF_HOOK: Partial<Record<HookName, Mood>> = {
   question: "asking",

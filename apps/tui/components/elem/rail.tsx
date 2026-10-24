@@ -83,7 +83,8 @@ export function Question({
           <Text bold>{title}</Text>
         </Box>
       </RailLine>
-      <Box {...RAIL} flexDirection="column" gap={1}>
+      {/* The padding keeps the rail running through the blank line above the hint */}
+      <Box {...RAIL} flexDirection="column" gap={1} paddingBottom={1}>
         <InRail value>{children}</InRail>
       </Box>
       <RailLine marker={<Text dimColor>└</Text>}>

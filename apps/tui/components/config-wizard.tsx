@@ -3,7 +3,7 @@ import type { ModelTask } from "@kaja/schema/config"
 import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
 import { Box, Text } from "ink"
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { BackendKind } from "../lib/hooks/detect"
 import type { WantedHooks } from "../lib/hooks/templates"
@@ -461,8 +461,16 @@ function keyPlaceholder(typed: string | undefined, alreadySaved: boolean | undef
   return tail ? t(`wizard.keyKeeps${which}Tail`, { tail }) : t(`wizard.keyKeeps${which}`)
 }
 
-/** A wizard question's hint: its keys, then "Esc back", then `note`. */
+// False on the first question, where Esc cancels instead, so its hint offers no "back"
+const CanGoBack = createContext(true)
+
+/**
+ * A wizard question's hint: its keys, then "Esc back", then `note`; the first question says it can all change later
+ * instead of Esc.
+ */
 function WizardHint({ keys, note }: Readonly<{ keys: [key: string, action: string][]; note?: string }>) {
+  const canGoBack = useContext(CanGoBack)
+  if (!canGoBack) return <KeyHint keys={keys} note={note ?? t("wizard.themeHint")} />
   return <KeyHint keys={[...keys, ["Esc", t("wizard.back")]]} note={note} />
 }
 
@@ -1232,7 +1240,7 @@ export function ConfigWizard({
 
       case "theme": {
         return (
-          <Question title={t("wizard.themeTitle")} hint={pickHint(t("wizard.themeHint"))}>
+          <Question title={t("wizard.themeTitle")} hint={pickHint()}>
             <SelectMenu
               closeOnBackspace={false}
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
@@ -1485,7 +1493,7 @@ export function ConfigWizard({
         ) : null}
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
         <Box key={step} flexDirection="column">
-          {stepView()}
+          <CanGoBack value={history.length > 0}>{stepView()}</CanGoBack>
         </Box>
       </Box>
     </ThemeProvider>
