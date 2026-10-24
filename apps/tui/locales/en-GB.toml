@@ -88,7 +88,7 @@ invalidAt            = "Invalid config file at {path}: {message}"
 notExists            = "Config file does not exist: {path}"
 usage                = """
 Usage
-  $ kaja config fetch   Update models.toml from the online provider catalog
+  $ kaja config fetch   Refresh models.toml from models.dev
   $ kaja config diff    Show whether fetch would change models.toml, without writing it
   $ kaja config wizard  Interactive setup for language, provider, and persona
   $ kaja config hooks   Set up sounds, notifications and speech for this computer
