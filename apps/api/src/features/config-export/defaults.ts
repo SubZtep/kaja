@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto"
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi"
-import { configCatalogSchema } from "@kaja/schema/api"
+import { publicCatalogSchema } from "@kaja/schema/api"
 import { SoundsManifestSchema } from "@kaja/schema/config"
 import type { Context } from "hono"
-import { catalogBundle, defaultSchemas, defaultTemplates } from "../../services/config-defaults"
+import { catalogService } from "../../services"
+import { defaultSchemas, defaultTemplates } from "../../services/config-defaults"
 import { soundFile, sounds } from "../../services/sounds"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
@@ -12,10 +13,9 @@ const errorSchema = z.object({ error: z.string() })
 
 const etagOf = (text: string) => `"${createHash("sha256").update(text).digest("hex")}"`
 
-const catalogEtag = etagOf(JSON.stringify(catalogBundle))
 const schemaEtags = new Map([...defaultSchemas].map(([file, schema]) => [file, etagOf(JSON.stringify(schema))]))
 
-// Same caching as /config/export: the content only changes with a deploy.
+// Same caching as /config/export; the catalog changes with a sync or an admin edit, the rest with a deploy.
 function notModified(c: Context<RouteProps>, etag: string): boolean {
   c.header("Cache-Control", "public, max-age=300")
   c.header("ETag", etag)
@@ -26,9 +26,9 @@ const catalogRoute = createRoute({
   method: "get",
   path: "/catalog",
   tags: ["Config"],
-  summary: "The model catalog the setup wizard builds models.toml from",
+  summary: "The listed providers and their models, which the setup wizard builds models.toml from",
   responses: {
-    200: { description: "OK", content: { "application/json": { schema: configCatalogSchema } } },
+    200: { description: "OK", content: { "application/json": { schema: publicCatalogSchema } } },
     304: { description: "Not modified" }
   }
 })
@@ -99,9 +99,10 @@ export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
     })
   })
 
-  routes.openapi(catalogRoute, c => {
-    if (notModified(c, catalogEtag)) return c.body(null, 304)
-    return c.json(catalogBundle, 200)
+  routes.openapi(catalogRoute, async c => {
+    const { body, etag } = await catalogService.publicCatalog()
+    if (notModified(c, etag)) return c.body(null, 304)
+    return c.json(body, 200)
   })
 
   routes.openapi(templateRoute, c => {

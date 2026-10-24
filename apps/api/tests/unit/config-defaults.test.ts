@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { readdir } from "node:fs/promises"
 import { join } from "node:path"
-import { catalogBundle, defaultTemplates } from "../../src/services/config-defaults"
+import { defaultTemplates } from "../../src/services/config-defaults"
 
 const configDir = join(import.meta.dir, "../../../../config")
 // The files in config/ that the API deliberately doesn't serve as templates.
@@ -11,10 +11,6 @@ describe("config defaults", () => {
   test("every template file in config/ is served, and nothing else is", async () => {
     const files = (await readdir(configDir)).filter(name => name.endsWith(".toml") && !NOT_SERVED.has(name))
     expect([...defaultTemplates.keys()].sort()).toEqual(files.sort())
-  })
-
-  test("every example the catalog generates is served", () => {
-    for (const { file } of catalogBundle.catalog.examples) expect(defaultTemplates.has(file)).toBe(true)
   })
 
   test("served templates match the files on disk", async () => {

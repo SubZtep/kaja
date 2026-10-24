@@ -27,10 +27,10 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 
 ## Routes
 
-- `/config/*` is fail-closed (it would leak provider keys): it needs a non-empty `CONFIG_API_TOKEN` match. Public exceptions: `/config/catalog`, `/config/templates/<file>`, `/config/schemas/<file>.json`, embedded from the repo's `config/` at build time, so a catalog change ships with an API deploy (the TUI wizard prefers the API's catalog)
+- `/config/*` is fail-closed (it would leak provider keys): it needs a non-empty `CONFIG_API_TOKEN` match. Public exceptions: `/config/catalog` (from the database, see Catalog), `/config/templates/<file>` (embedded from the repo's `config/` at build time) and `/config/schemas/<file>.json` (generated from `@kaja/schema`)
 - Rate limits: global, `/auth/*` and `/nasi/turn(/stream)` (by user id); off under `bun test` or `RATE_LIMIT_ENABLED=false`
 - CSRF: cookie-session writes must come from `CORS_ORIGIN`
-- `/admin/*` needs a signed-in non-banned user; `providers`/`models`/`abilities`/`sandbox` also the `admin` role
+- `/admin/*` needs a signed-in non-banned user; `providers`/`models`/`catalog`/`abilities`/`sandbox` also the `admin` role
 - `/nasi/turn*` take 16 MB bodies (images), everything else 1 MB
 - Both Telegram bots (here and the TUI's local one, plumbing in `@kaja/shared/telegram`) behave alike: private chats only, "still working" during a turn, an album is one turn, a `/new` + `/compact` menu
 
@@ -43,6 +43,12 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 - **Every caller of `openNasiFor` must `close()` the instance after the turn** (lazy MCP connections)
 - Ability keys are server-wide only: an admin's key per ability in `service_secret` (`services/secret.ts`, AES-256-GCM with `USER_SECRET_KEY`), write-only over `/admin/abilities/keys`. Without `USER_SECRET_KEY`, key routes answer 503 and keyed abilities are hidden
 - Approvals (flow in `packages/nasi/CLAUDE.md`): `approve_session` grants live in `nasi_session.granted_tools`. Telegram buttons carry a hash of the call id (`tool:…`, `ask:…:<index>`), matched against the pressing user's latest session; a stale tap says so
+
+## Catalog
+
+- `services/catalog.ts`: `catalog_provider`/`catalog_model` are the public provider catalog the TUI wizard offers, separate from the cloud's own `provider`/`model` (which hold keys). Synced from models.dev (startup, daily, `POST /admin/catalog/sync`; ETag, so unchanged is a 304)
+- The sync owns only models.dev's fields: `listed`, `position`, `kind`, `note`, a `base_url` override, edited tasks, `default_tasks` and admin-added rows are the admin's. Synced rows are never deleted; a dropped model gets `status = 'removed'`
+- `/config/catalog` serves listed providers with an address, ordered by `position`, cached in memory until the next sync or admin write
 
 ## Images
 

@@ -1,7 +1,4 @@
-import { CATALOG_VERSION, CatalogFileSchema } from "@kaja/schema/config"
 import { tombiSchemas } from "@kaja/schema/tombi"
-import { TOML } from "bun"
-import CATALOG_TOML from "../../../../config/catalog.toml" with { type: "text" }
 import COMMANDS_TOML from "../../../../config/commands.toml" with { type: "text" }
 import HOOKS_TOML from "../../../../config/hooks.toml" with { type: "text" }
 import MODELS_DEFAULT_TOML from "../../../../config/models.default.toml" with { type: "text" }
@@ -9,9 +6,6 @@ import MODELS_LLAMA_TOML from "../../../../config/models.llama.toml" with { type
 import MODELS_OLLAMA_TOML from "../../../../config/models.ollama.toml" with { type: "text" }
 import MODELS_OPENROUTER_TOML from "../../../../config/models.openrouter.toml" with { type: "text" }
 import MODELS_XAI_TOML from "../../../../config/models.xai.toml" with { type: "text" }
-
-/** The model catalog, parsed once at boot so a broken `config/catalog.toml` fails the deploy, not a request. */
-export const catalogBundle = { version: CATALOG_VERSION, catalog: CatalogFileSchema.parse(TOML.parse(CATALOG_TOML)) }
 
 /**
  * Version-independent defaults served as text. settings.toml and secrets.toml stay out: they describe one CLI build's

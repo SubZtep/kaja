@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { configCatalogSchema } from "@kaja/schema/api"
-import { CATALOG_VERSION, ModelsFileSchema, SoundsManifestSchema } from "@kaja/schema/config"
+import { PUBLIC_CATALOG_VERSION, publicCatalogSchema } from "@kaja/schema/api"
+import { ModelsFileSchema, SoundsManifestSchema } from "@kaja/schema/config"
 import { tombiSchemas } from "@kaja/schema/tombi"
 import { TOML } from "bun"
 import { app } from "../../src/app"
@@ -10,9 +10,7 @@ describe("config defaults (public)", () => {
   test("GET /config/catalog requires no auth and returns the versioned catalog", async () => {
     const res = await app.request("/config/catalog")
     expect(res.status).toBe(200)
-    const body = configCatalogSchema.parse(await res.json())
-    expect(body.version).toBe(CATALOG_VERSION)
-    expect(body.catalog.providers.length).toBeGreaterThan(0)
+    expect(publicCatalogSchema.parse(await res.json()).version).toBe(PUBLIC_CATALOG_VERSION)
   })
 
   test.each(["/config/catalog", "/config/templates/commands.toml", "/config/schemas/settings.json", "/config/sounds"])(

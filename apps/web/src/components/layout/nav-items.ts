@@ -47,5 +47,6 @@ export const getAdminItems = (): NavItem[] => [
   { to: "/admin/dashboard", label: m.nav_dashboard() },
   { to: "/admin/users", label: m.nav_users() },
   { to: "/admin/images", label: m.nav_images() },
-  { to: "/admin/models", label: m.nav_models() }
+  { to: "/admin/models", label: m.nav_models() },
+  { to: "/admin/catalog", label: m.nav_catalog() }
 ]
