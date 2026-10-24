@@ -881,3 +881,57 @@ test("offline, a server found running is offered beside your own provider", asyn
     setCatalog(TEST_CATALOG)
   }
 })
+
+test("a saved custom provider's models are reviewed in one list, not asked one by one", async () => {
+  const custom = {
+    name: "box",
+    baseUrl: "https://box.test/v1",
+    models: [
+      { model: "big", task: "chat" as const },
+      { model: "embedder", task: "embedding" as const }
+    ],
+    saved: true,
+    done: true
+  }
+  const w = await openProviders({ prefill: { providers: ["custom"], custom } })
+  await w.t.press(ENTER) // providers: Custom kept
+  await w.t.press(ENTER) // name
+  await w.t.press(ENTER) // address
+  await w.t.press(ENTER) // key: skipped
+  expect(w.t.lastFrame()).toContain("These box models are set up")
+  expect(w.t.lastFrame()).toContain("[✔] big (chat)")
+  await w.t.press(DOWN) // embedder
+  await w.t.press(SPACE) // drop it
+  await w.t.press(ENTER)
+  await acceptModels(w)
+  await w.t.press(ENTER) // extras
+  expect(w.result?.custom?.models).toEqual([{ model: "big", task: "chat" }])
+  expect(w.t.output()).not.toContain("Which box model should Kaja use?")
+  await close(w)
+})
+
+test("ticking the review's last row asks for one more model after the kept ones", async () => {
+  const custom = {
+    name: "box",
+    baseUrl: "https://box.test/v1",
+    models: [{ model: "big", task: "chat" as const }],
+    saved: true,
+    done: true
+  }
+  const w = await openProviders({ prefill: { providers: ["custom"], custom } })
+  for (let step = 0; step < 4; step++) await w.t.press(ENTER) // providers, name, address, key
+  await w.t.press(DOWN) // "Add another model"
+  await w.t.press(SPACE)
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("Another box model?")
+  await close(w)
+})
+
+test("the open block shows its latest answers, counting the older ones above them", async () => {
+  const w = await openProviders()
+  await tick(w, FIREWORKS, OLLAMA, at("llama"), at("xai"), at("openrouter"))
+  for (let step = 0; step < 4; step++) await w.t.press(ENTER) // keys and addresses
+  expect(w.t.lastFrame()).toContain("earlier answers")
+  expect(w.t.lastFrame()).not.toContain("✓  Providers:")
+  await close(w)
+})

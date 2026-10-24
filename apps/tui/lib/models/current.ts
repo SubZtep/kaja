@@ -2,6 +2,7 @@ import type { ModelTask } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { writeTemplateConfig } from "../config/fetch"
 import { buildModelsToml, CATALOG, type CatalogModel, type CatalogProvider, type ModelPick } from "./catalog"
+import { sameAddress } from "./detect"
 import { getModelsPath } from "./models"
 
 // models.toml read loosely: a hand-edited file needn't match the schema to be re-offered
@@ -55,11 +56,29 @@ async function readModelsFile(): Promise<LooseModelsFile | undefined> {
   }
 }
 
+/**
+ * A provider models.toml names differently from the catalog but at the same address (an older `fireworks` for
+ * models.dev's `fireworks-ai`) is that catalog provider: the catalog entry takes the file's id, so its key in
+ * secrets.toml and its models keep matching.
+ */
+function adoptFileIds(tables: NonNullable<LooseModelsFile["providers"]>): void {
+  for (const [id, table] of Object.entries(tables)) {
+    if (catalogHas(id) || typeof table?.base_url !== "string") continue
+    const url = table.base_url
+    // Hosted only: many local servers share a port, so a local address says nothing about which one it is
+    const match = CATALOG.find(
+      provider => provider.kind === "hosted" && !tables[provider.id] && sameAddress(provider.baseUrl, url)
+    )
+    if (match) match.id = id
+  }
+}
+
 /** Reads models.toml against the current catalog. Undefined when it is missing or unparseable. */
 export async function readCurrentModels(): Promise<CurrentModels | undefined> {
   const data = await readModelsFile()
   if (!data) return undefined
   const tables = data.providers ?? {}
+  adoptFileIds(tables)
   const entries = Object.values(data.models ?? {})
 
   const known = CATALOG.filter(provider => tables[provider.id])
@@ -107,6 +126,7 @@ export async function modelsTomlFromCatalog(): Promise<string | RefreshSkipped> 
   const data = await readModelsFile()
   if (!data) return { skipped: "no-models" }
   const tables = data.providers ?? {}
+  adoptFileIds(tables)
   if (!Object.keys(tables).some(catalogHas)) return { skipped: "no-catalog-providers" }
 
   const entries = Object.values(data.models ?? {})

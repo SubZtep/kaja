@@ -220,7 +220,10 @@ async function currentModels(
   const custom = first && {
     name: first.id,
     baseUrl: first.baseUrl,
-    models: first.models.flatMap(({ model, tasks }) => tasks.map(task => ({ model, task })))
+    models: first.models.flatMap(({ model, tasks }) => tasks.map(task => ({ model, task }))),
+    // Reviewed in one list rather than asked model by model
+    saved: true,
+    done: true
   }
   const providers = [...current.providers, ...running, ...(custom ? ["custom"] : [])]
   if (providers.length === 0) return local.length > 0 ? { local } : {}

@@ -127,6 +127,26 @@ test("fetch brings models.toml's catalog providers up to date, keeping every pic
   expect(await Bun.file(backup(getModelsPath())).text()).toBe(OUTDATED)
 })
 
+test("a provider models.toml names differently, at the catalog's address, keeps its name", async () => {
+  await Bun.write(
+    getModelsPath(),
+    OUTDATED.replaceAll("fireworks-ai", "fireworks").replace(
+      "https://old.fireworks.test/v1",
+      "https://api.fireworks.ai/inference/v1"
+    )
+  )
+  const restore = mockCatalogFetch()
+  try {
+    await runConfigCli(["fetch"])
+  } finally {
+    restore()
+  }
+  const parsed = ModelsFileSchema.parse(TOML.parse(await Bun.file(getModelsPath()).text()))
+  expect(Object.keys(parsed.providers).sort()).toEqual(["box", "fireworks"])
+  // Recognised as models.dev's Fireworks, so what models.dev knows about its model is filled in
+  expect(parsed.models["minimax-m3"]?.context_window).toBe(196608)
+})
+
 test("a second fetch with nothing new changes nothing and backs nothing up", async () => {
   await Bun.write(getModelsPath(), OUTDATED)
   const restore = mockCatalogFetch()

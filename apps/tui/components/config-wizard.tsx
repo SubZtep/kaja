@@ -42,6 +42,10 @@ export type WizardCustom = {
   models: { model: string; task?: ModelTask }[]
   /** The user has listed all the models they want. */
   done?: boolean
+  /** Came from models.toml: its models are reviewed in one checklist, not asked one by one. */
+  saved?: boolean
+  /** How many models the review kept; new ones are asked after them. */
+  reviewed?: number
 }
 
 /** What the checklist stores for "a provider that isn't listed". */
@@ -116,6 +120,7 @@ type Step =
   | "custom-name"
   | "custom-url"
   | "custom-key"
+  | "custom-review"
   | `custom-model:${number}`
   | `custom-task:${number}`
   | "extras"
@@ -145,6 +150,7 @@ const BLOCK_OF_KIND: Record<string, Block> = {
   "custom-name": "providers",
   "custom-url": "providers",
   "custom-key": "providers",
+  "custom-review": "providers",
   "custom-model": "providers",
   "custom-task": "providers",
   tasks: "models",
@@ -280,10 +286,14 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   }
   if (tickedProviders(result).includes(CUSTOM)) {
     steps.push("custom-name", "custom-url", "custom-key")
-    const models = result.custom?.models ?? []
-    models.forEach((_, index) => {
+    const custom = result.custom
+    const models = custom?.models ?? []
+    // A saved provider's models are reviewed in one list; only the ones added after it are asked one by one
+    if (custom?.saved) steps.push("custom-review")
+    const first = custom?.saved ? (custom.reviewed ?? models.length) : 0
+    for (let index = first; index < models.length; index++) {
       steps.push(`custom-model:${index}`, `custom-task:${index}`)
-    })
+    }
     // Ask for another model until the user ends the list, but never while the last one still needs its task.
     if (!result.custom?.done && models.at(-1)?.task !== undefined) steps.push(`custom-model:${models.length}`)
     else if (models.length === 0) steps.push("custom-model:0")
@@ -410,6 +420,8 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
       keyLine(t("wizard.summaryKeyProvider", { provider: id }), result.keys?.[id], saved?.providers?.includes(id))
     )
   },
+  "custom-review": (_, result) =>
+    lineIf(t("wizard.summaryCustomModels"), t("wizard.customModelsKept", { count: result.custom?.models.length ?? 0 })),
   "custom-task": (subject, result) => {
     const entry = result.custom?.models[Number(subject)]
     return lineIf(t("wizard.summaryCustomModel"), entry?.task && `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})`)
@@ -437,7 +449,7 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
   const reached = current ? blocks.indexOf(current) : blocks.length
   return (
     <RailLine marker={<Text dimColor>┌</Text>}>
-      <Text>
+      <Text wrap="truncate-end">
         ༼☉ω⊙༽🪄{" "}
         {blocks.map((block, index) => (
           <Text key={block}>
@@ -457,13 +469,17 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
   )
 }
 
+/** How many answers the open block shows; older ones are counted on a line above them. */
+const OPEN_BLOCK_LINES = 4
+
 /** A finished block folded into one line: its name, then each answer. A label that repeats the name is left out. */
-function FoldedBlock({ block, lines }: Readonly<{ block: Block; lines: Answer[] }>) {
+function FoldedBlock({ block, lines, full }: Readonly<{ block: Block; lines: Answer[]; full?: boolean }>) {
   const { success } = useKajaTheme()
   const name = t(BLOCK_LABEL_KEY[block])
   return (
     <RailLine marker={<Text {...success()}>✓</Text>}>
-      <Text>
+      {/* One row, cut at the edge, while questions are open: a frame taller than the terminal can't be redrawn in place. The last frame is never redrawn, so it says everything */}
+      <Text wrap={full ? "wrap" : "truncate-end"}>
         <Text bold>{name}</Text>
         {lines.map(line => (
           <Text key={line.id}>
@@ -733,6 +749,32 @@ export function ConfigWizard({
             })
           }
         />
+      )
+    }
+
+    if (step === "custom-review") {
+      const ADD = "add"
+      return (
+        <Question title={t("wizard.customReviewTitle", { provider: nameOf })}>
+          <CheckMenu
+            filterable
+            visibleCount={10}
+            options={[
+              ...custom.models.map((entry, index) => ({
+                label: entry.task ? `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})` : entry.model,
+                value: String(index)
+              })),
+              { label: t("wizard.customAddModel"), value: ADD }
+            ]}
+            defaultValue={custom.models.map((_, index) => String(index))}
+            onSubmit={values => {
+              const models = custom.models.filter((_, index) => values.includes(String(index)))
+              advance({ custom: { ...custom, models, reviewed: models.length, done: !values.includes(ADD) } })
+            }}
+            onClose={back}
+          />
+          <Text dimColor>{t("wizard.customReviewHint")}</Text>
+        </Question>
       )
     }
 
@@ -1017,9 +1059,21 @@ export function ConfigWizard({
         <Progress blocks={blocks} current={current} at={at} of={of} />
         {blocks.map(block => {
           const lines = trail.filter(line => line.block === block)
-          if (block === current)
-            return lines.map(line => <Answered key={line.id} label={`${line.label}:`} value={line.value} />)
-          return lines.length > 0 ? <FoldedBlock key={block} block={block} lines={lines} /> : null
+          if (block === current) {
+            // The latest few only: a frame taller than the terminal can't be redrawn in place
+            const hidden = Math.max(0, lines.length - OPEN_BLOCK_LINES)
+            return [
+              ...(hidden > 0
+                ? [
+                    <RailLine key="more" marker={<Text dimColor>⋮</Text>}>
+                      <Text dimColor>{t("wizard.moreAnswers", { count: hidden })}</Text>
+                    </RailLine>
+                  ]
+                : []),
+              ...lines.slice(hidden).map(line => <Answered key={line.id} label={`${line.label}:`} value={line.value} />)
+            ]
+          }
+          return lines.length > 0 ? <FoldedBlock key={block} block={block} lines={lines} full={!current} /> : null
         })}
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
         <Box key={step} flexDirection="column">
