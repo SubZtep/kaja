@@ -84,8 +84,8 @@ answers.
    asks just these again.
 
 After the last answer the wizard says **All set**, and under a **Finishing up** line carries on by itself: fetching the
-marketplace, any model downloads and a check of your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
-before it's saved.
+marketplace, any model downloads and a check of your keys. A key is hidden while you type it and never shown again. It's
+tested before it's saved.
 
 ## After the last question
 
@@ -102,13 +102,17 @@ With **your own provider**, Kaja fetches the marketplace (if you said yes) and m
    install it (uv's official installer runs; for Chrome, its download page opens), run it on a
    [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode) instead (signing you in to Kaja cloud if you
    aren't yet), or skip it and see how to install it yourself.
-2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
+2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them. Each
+   download shows a progress bar, then its size once it's done.
 3. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
 4. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/config/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
 
-The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.
+A question here disappears once answered and leaves just its result line, e.g. "✓ Chat now grok-4 from xAI".
+
+The first time, the chat starts right after. After `kaja config wizard`, it ends with **Ready. Type kaja to start.**
+(or how many things still need attention) and you're back at your prompt.
 
 ## Where your answers go
 

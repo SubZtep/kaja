@@ -73,9 +73,11 @@ export async function offerAbilityHosts(print: (line: string) => void): Promise<
     })
     const picked =
       choices[
+        // `apply` prints what came of the answer
         (await askPick(
           title,
-          choices.map(choice => labels[choice])
+          choices.map(choice => labels[choice]),
+          { quiet: true }
         )) ?? 0
       ]!
     await apply(picked, next, print)

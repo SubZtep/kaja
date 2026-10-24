@@ -1,5 +1,5 @@
 import { Box, type BoxProps, Text } from "ink"
-import { createContext, type ReactNode, useContext } from "react"
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react"
 import { useKajaTheme } from "../theme"
 
 /**
@@ -29,6 +29,18 @@ const InRail = createContext(false)
 /** Whether a menu sits inside a {@link Question}, and so draws its rows on the rail's grid. */
 export function useInRail(): boolean {
   return useContext(InRail)
+}
+
+const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+/** The setup grid's "busy" mark, dim: a check or download that's still running. */
+export function Spinner() {
+  const [frame, setFrame] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setFrame(current => (current + 1) % SPINNER.length), 100)
+    return () => clearInterval(timer)
+  }, [])
+  return <Text dimColor>{SPINNER[frame]}</Text>
 }
 
 /** A mark in the gutter (column 2), then its text from column 4, so a wrapped line stays clear of the gutter. */

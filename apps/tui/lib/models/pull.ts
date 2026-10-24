@@ -3,8 +3,11 @@ import type { CliResolvedModel } from "@kaja/schema/config"
 /** A model the config points at that its server could fetch on request. */
 export type PullTarget = { model: string; baseUrl: string }
 
-/** One status update while a model downloads; `percent` only once the server reports a size. */
-export type PullProgress = { status: string; percent?: number }
+/**
+ * One status update while a model downloads: `percent` across every layer seen so far, only on updates that report a
+ * size; `bytes` the size of those layers, once known.
+ */
+export type PullProgress = { status: string; percent?: number; bytes?: number }
 
 const LIST_TIMEOUT_MS = 3_000
 
@@ -115,12 +118,27 @@ async function errorText(res: Response): Promise<string> {
  */
 async function reportPullStream(body: ReadableStream<Uint8Array>, onProgress: (progress: PullProgress) => void) {
   let failure: string | undefined
+  // Each layer reports its own total, so a single bar has to add them up
+  const layers = new Map<string, { total: number; completed: number }>()
   for await (const event of streamEvents(body)) {
     if (typeof event.error === "string") failure = event.error
     if (typeof event.status !== "string") continue
     const total = typeof event.total === "number" ? event.total : undefined
-    const completed = typeof event.completed === "number" ? event.completed : 0
-    onProgress({ status: event.status, percent: total ? Math.round((completed / total) * 100) : undefined })
+    if (total) {
+      const layer = typeof event.digest === "string" ? event.digest : event.status
+      layers.set(layer, { total, completed: typeof event.completed === "number" ? event.completed : 0 })
+    }
+    let bytes = 0
+    let completed = 0
+    for (const layer of layers.values()) {
+      bytes += layer.total
+      completed += layer.completed
+    }
+    onProgress({
+      status: event.status,
+      ...(total ? { percent: Math.round((completed / bytes) * 100) } : {}),
+      ...(bytes ? { bytes } : {})
+    })
   }
   return failure
 }

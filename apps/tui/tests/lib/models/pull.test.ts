@@ -20,11 +20,17 @@ const server = Bun.serve({
       const events =
         name === "breaks-halfway"
           ? ['{"status":"pulling manifest"}', '{"error":"max retries exceeded"}']
-          : [
-              '{"status":"pulling manifest"}',
-              '{"status":"pulling 1234","total":100,"completed":25}',
-              '{"status":"success"}'
-            ]
+          : name === "two-layers"
+            ? [
+                '{"status":"pulling aaaa","digest":"sha256:aaaa","total":300,"completed":300}',
+                '{"status":"pulling bbbb","digest":"sha256:bbbb","total":100,"completed":50}',
+                '{"status":"success"}'
+              ]
+            : [
+                '{"status":"pulling manifest"}',
+                '{"status":"pulling 1234","total":100,"completed":25}',
+                '{"status":"success"}'
+              ]
       // Split across chunk boundaries mid-object, so the line buffering is exercised too.
       const body = `${events.join("\n")}\n`
       return new Response(
@@ -90,6 +96,16 @@ test("pullModel reports progress and succeeds", async () => {
   )
   expect(result).toEqual({ ok: true })
   expect(seen).toEqual(["pulling manifest", "pulling 1234 25%", "success"])
+})
+
+test("pullModel's percent and size cover every layer, not just the one downloading", async () => {
+  const seen: unknown[] = []
+  await pullModel({ model: "two-layers", baseUrl }, progress => seen.push(progress))
+  expect(seen).toEqual([
+    { status: "pulling aaaa", percent: 100, bytes: 300 },
+    { status: "pulling bbbb", percent: 88, bytes: 400 },
+    { status: "success", bytes: 400 }
+  ])
 })
 
 test("pullModel surfaces a rejected model without throwing", async () => {

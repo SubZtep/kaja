@@ -10,7 +10,12 @@ export type StatusVariant = "success" | "warning" | "error" | "info"
 
 const MARK: Record<StatusVariant, string> = { success: "✓", warning: "!", error: "✗", info: "ℹ" }
 
-function StatusRow({ variant, text, subject }: Readonly<{ variant: StatusVariant; text: string; subject?: string }>) {
+/** A {@link statusLine} as a component, for a live row that ends as a report line. */
+export function StatusRow({
+  variant,
+  text,
+  subject
+}: Readonly<{ variant: StatusVariant; text: string; subject?: string }>) {
   const theme = useKajaTheme()
   const style = { success: theme.success(), warning: theme.warning(), error: theme.danger(), info: { dimColor: true } }[
     variant
@@ -35,7 +40,7 @@ function StatusRow({ variant, text, subject }: Readonly<{ variant: StatusVariant
  */
 export function statusLine(variant: StatusVariant, text: string, { subject }: { subject?: string } = {}): string {
   // Never past column 80 in a terminal, like the setup frame
-  const columns = process.stdout.isTTY ? Math.min(process.stdout.columns ?? 80, 80) : UNWRAPPED_COLUMNS
+  const columns = process.stdout.isTTY ? Math.min(process.stdout.columns || 80, 80) : UNWRAPPED_COLUMNS
   return renderToString(
     <ConsoleTheme>
       <StatusRow variant={variant} text={text} subject={subject} />

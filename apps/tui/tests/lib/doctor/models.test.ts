@@ -95,7 +95,8 @@ test("a broken first model with a working one after it offers the switch, and ch
   // The safe answer is first, then only the models that actually answered.
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "ollama — llama3.2:1b"])
   expect(r.saved).toEqual([["minimax-m3"]])
-  expect(r.lines.at(-1)).toContain("chat now uses ollama — llama3.2:1b")
+  // The question leaves only its result, under the task's heading
+  expect(r.lines.at(-1)).toBe(" ✓ Chat          now llama3.2:1b from ollama")
   expect(r.outcomes[0]).toMatchObject({ ok: true, switchedTo: OLLAMA_CHAT })
 })
 
@@ -109,6 +110,7 @@ test("keeping the broken model, or dismissing the question, changes nothing", as
   const keep = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "minimax-m3": "down" }, [0])
   expect(keep.saved).toEqual([])
   expect(keep.outcomes[0]).toMatchObject({ ok: false })
+  expect(keep.lines.at(-1)).toBe(" ℹ Chat          kept minimax-m3")
 
   const dismissed = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "minimax-m3": "down" }, [undefined])
   expect(dismissed.saved).toEqual([])

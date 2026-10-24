@@ -1,6 +1,6 @@
 import { homedir } from "node:os"
 import { type ModelTask, providerKey } from "@kaja/schema/config"
-import { render } from "ink"
+import { Box, render, renderToString, Text } from "ink"
 import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
 import type { LiveCheck } from "../../components/secret-prompt"
 import { create, getConfigDir, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
@@ -13,7 +13,6 @@ import { readCurrentModels } from "../models/current"
 import { detectedProvider, type DetectedServer, detectLocalServers, sameAddress } from "../models/detect"
 import { writeModelsFromCatalog } from "../models/models"
 import { refreshCatalog } from "../models/modelsdev"
-import type { PullProgress } from "../models/pull"
 
 /**
  * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API for speech-to-text
@@ -76,6 +75,18 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
   invalidateConfigCache()
 }
 
+// The last line printed: the mascot that closed the wizard's header, then what's next
+function readyLine(text: string): string {
+  return renderToString(
+    <Box paddingLeft={1}>
+      <Text>
+        ༼^ω^༽🪄 <Text bold>{text}</Text>
+      </Text>
+    </Box>,
+    { columns: 80 }
+  )
+}
+
 // A path under the home folder as people write it: ~/.config/kaja
 function tildePath(path: string): string {
   const home = homedir()
@@ -129,27 +140,6 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
 }
 
 /**
- * One rewritten line while a model downloads, e.g. " llama3.2:1b: pulling manifest 42%". Only a terminal gets it — a
- * redirected log would collect one line per progress update otherwise.
- */
-function progressLine(model: string) {
-  let width = 0
-  return {
-    update({ status, percent }: PullProgress) {
-      if (!process.stdout.isTTY) return
-      const suffix = percent === undefined ? "" : ` ${percent}%`
-      const line = `  ${model}: ${status}${suffix}`
-      width = Math.max(width, line.length)
-      process.stdout.write(`\r${line.padEnd(width)}`)
-    },
-    // Wipes the progress line so the result prints on a clean one.
-    clear() {
-      if (process.stdout.isTTY && width > 0) process.stdout.write(`\r${" ".repeat(width)}\r`)
-    }
-  }
-}
-
-/**
  * Offers to download the models the local server hasn't got. One question for the lot rather than one per model:
  * nothing about them is a choice — the config already names them, and either the machine has them or it doesn't. Runs
  * before the credential pass so its probes meet a real model instead of reporting every task as broken. Servers that
@@ -168,7 +158,7 @@ async function offerModelDownloads(print: (line: string) => void) {
     t("wizard.pullYes"),
     t("wizard.pullNo"),
     // Without them the local agent can't answer at all, so "yes" is the safe default here.
-    { defaultYes: true }
+    { defaultYes: true, quiet: true }
   )
   if (!wanted) {
     print(statusLine("info", t("wizard.pullSkipped")))
@@ -176,14 +166,28 @@ async function offerModelDownloads(print: (line: string) => void) {
   }
 
   print(statusLine("info", t("wizard.pullStarted")))
+  const { liveProgress } = await import("../abilities/progress")
+  const { StatusRow } = await import("../doctor/status")
+  const { formatBytes } = await import("../image/report")
   for (const target of missing) {
-    const progress = progressLine(target.model)
-    const result = await pullModel(target, status => progress.update(status))
-    progress.clear()
-    print(
+    const bar = liveProgress(target.model)
+    let bytes: number | undefined
+    const result = await pullModel(target, progress => {
+      bytes = progress.bytes ?? bytes
+      if (progress.percent !== undefined) bar.update(progress.percent)
+    })
+    bar.finish(
       result.ok
-        ? statusLine("success", t("wizard.pullDone", { model: target.model }))
-        : statusLine("error", t("wizard.pullFailed", { model: target.model, error: result.error }))
+        ? { note: bytes ? formatBytes(bytes) : t("wizard.pullDone") }
+        : {
+            instead: (
+              <StatusRow
+                variant="error"
+                subject={target.model}
+                text={t("wizard.pullFailed", { error: result.error })}
+              />
+            )
+          }
     )
   }
 }
@@ -410,7 +414,7 @@ export async function runConfigWizard({
   await applyResult(result, line => console.log(line))
   // Cloud chat has the same hooks, so this comes before the mode split
   await applyHooks(chosenHooks(result, hooks.programs), line => console.log(line))
-  if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
+  if (result.mode === "cloud") return { code: 0, text: readyLine(t("wizard.doneCloud")) }
 
   await applyMarketplace(result, git, line => console.log(line))
   // Right after the sync: abilities a persona uses that can't start here get install / sandbox / skip.
@@ -433,5 +437,8 @@ export async function runConfigWizard({
   })
   const failingModels = await checkModels()
   const unresolved = outcomes.filter(isUnresolved).length + failingModels
-  return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
+  return {
+    code: 0,
+    text: readyLine(unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done"))
+  }
 }

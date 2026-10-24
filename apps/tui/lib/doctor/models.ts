@@ -42,7 +42,7 @@ export function groupModelsByTask(models: CliResolvedModel[]): [ModelTask, CliRe
 export type ModelIo = {
   interactive: boolean
   /** Resolves to the index of the chosen item, or undefined when dismissed. Item 0 is always "keep it as it is". */
-  askPick: (title: string, items: string[]) => Promise<number | undefined>
+  askPick: (title: string, items: string[], opts?: { quiet?: boolean }) => Promise<number | undefined>
 }
 
 /** What became of a task's active model: still fine, still broken, or replaced by another that answered. */
@@ -145,17 +145,21 @@ export async function runModelPass(
         model: active.model.model,
         reason: trimTrailingDots(failure.error)
       }),
-      [t("doctor.modelSwitchKeep", { model: active.model.model }), `${chosen.provider} — ${chosen.model}`]
+      [t("doctor.modelSwitchKeep", { model: active.model.model }), `${chosen.provider} — ${chosen.model}`],
+      // Either answer prints its own line below
+      { quiet: true }
     )
-    if (picked !== 1) continue
+    const heading = { subject: t(TASK_HEADING_KEY[task]) }
+    if (picked !== 1) {
+      print(statusLine("info", t("doctor.modelKept", { model: active.model.model }), heading))
+      continue
+    }
 
     // Every model ahead of it failed, so dropping them all makes it the first.
     dropped.push(...results.slice(0, next).map(entry => entry.model.id))
     outcome.ok = true
     outcome.switchedTo = chosen
-    print(
-      statusLine("success", t("doctor.modelSwitched", { task: noun, provider: chosen.provider, model: chosen.model }))
-    )
+    print(statusLine("success", t("doctor.modelSwitched", { provider: chosen.provider, model: chosen.model }), heading))
   }
   // One write for every switch; a model dropped for two tasks is commented out once.
   if (dropped.length) await save(dropped)

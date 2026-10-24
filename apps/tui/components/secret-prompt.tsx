@@ -2,7 +2,7 @@ import { Box, Text } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useState } from "react"
 import { useKey } from "../hooks/use-key"
 import { t } from "../lib/i18n"
-import { KeyHint, Question, textWidth } from "./elem/rail"
+import { KeyHint, Question, Spinner, textWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { useKajaTheme } from "./theme"
 
@@ -46,7 +46,12 @@ export function maskSecret(value: string): string {
 /** A live check's result at the right of the field: its mark and short note in its tone's colour. */
 function LiveMark({ result }: Readonly<{ result?: LiveCheck }>) {
   const theme = useKajaTheme()
-  if (!result) return <Text dimColor>⠋ {t("secretPrompt.checking")}</Text>
+  if (!result)
+    return (
+      <Text dimColor>
+        <Spinner /> {t("secretPrompt.checking")}
+      </Text>
+    )
   const style = { ok: theme.success(), warn: theme.warning(), bad: theme.danger() }[result.tone]
   const mark = { ok: "✓", warn: "!", bad: "✗" }[result.tone]
   return (

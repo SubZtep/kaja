@@ -316,7 +316,8 @@ export async function runCredentialPass(
 
   const outcomes = await resolveCredentials(
     found,
-    { interactive: process.stdin.isTTY, ask: askSecret },
+    // Each answer is followed by its outcome line, so the question leaves nothing behind
+    { interactive: process.stdin.isTTY, ask: title => askSecret(title, { quiet: true }) },
     outcome => print(outcomeLine(outcome)),
     offered
   )
