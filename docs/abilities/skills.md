@@ -51,6 +51,8 @@ Create the folder under `~/.config/kaja/marketplace/abilities/` and it loads on 
 that lists it in `abilities` gets it. `kaja abilities` tags your own `local`. A skill with missing or broken
 frontmatter is listed with the reason, and the others still load.
 
+Scripts should work with plain POSIX `sh`; if one needs more (Python, `jq`), say so in `SKILL.md`.
+
 ## How the model uses them
 
 - The system prompt lists the name and description of every skill the persona uses.

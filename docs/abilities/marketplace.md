@@ -104,8 +104,9 @@ Datasets come with the personas that use them.
 Only the repo owner adds entries, by committing under `marketplace/` (a merged pull request counts). To try
 one first:
 
-1. Put it in a copy of the repo, following the
-   [marketplace README](https://github.com/SubZtep/kaja/blob/main/marketplace/README.md).
+1. Put it in a copy of the repo's `marketplace/` folder, in the format of its kind: [skill](/abilities/skills),
+   [persona](/abilities/personas), [HTTP tool](/abilities/tools#http-tools), [MCP server](/abilities/mcp) or
+   [dataset](/abilities/memory#datasets).
 2. Point [`[marketplace]`](/config/settings#marketplace)'s `url` at that copy, run
    `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.

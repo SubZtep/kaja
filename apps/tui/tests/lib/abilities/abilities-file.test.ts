@@ -31,7 +31,7 @@ test("under KAJA_PROFILE=dev the source defaults to the checkout's current branc
   const repo = mkdtempSync(join(tmpdir(), "kaja-dev-source-"))
   const bare = mkdtempSync(join(tmpdir(), "kaja-dev-source-none-"))
   try {
-    put(join(repo, "marketplace/README.md"), "x\n")
+    put(join(repo, "marketplace/personas/default.toml"), 'label = "D"\n')
     await $`git -C ${repo} init -q -b wip-branch && git -C ${repo} add . && git -C ${repo} -c user.name=t -c user.email=t@t commit -q -m init`.quiet()
     expect(await devSource(repo)).toBeUndefined()
 

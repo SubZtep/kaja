@@ -64,7 +64,7 @@ async function listFiles(dir: string, rel = ""): Promise<string[]> {
     if (entry.name.startsWith(".")) continue
     const path = rel ? `${rel}/${entry.name}` : entry.name
     if (entry.isDirectory()) files.push(...(await listFiles(dir, path)))
-    // Loose top-level files (the repo's README.md) are for the repo, not abilities
+    // Loose top-level files are for the repo, not abilities
     else if (entry.isFile() && rel) files.push(path)
   }
   return files
