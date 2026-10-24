@@ -1,17 +1,10 @@
-import { PasswordInput, TextInput } from "@inkjs/ui"
-import { Text } from "ink"
-import { useEffect, useEffectEvent, useState } from "react"
+import { Box, Text } from "ink"
+import { type ReactNode, useEffect, useEffectEvent, useState } from "react"
 import { useKey } from "../hooks/use-key"
 import { t } from "../lib/i18n"
-import { InputFrame, KeyHint, Question } from "./elem/rail"
+import { KeyHint, Question, textWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { useKajaTheme } from "./theme"
-
-/** Why Enter didn't move on: the line under a question whose answer was refused. */
-export function Problem({ children }: Readonly<{ children: string }>) {
-  const { danger } = useKajaTheme()
-  return <Text {...danger()}>{children}</Text>
-}
 
 // The keys of a short list you pick one from
 function PickKeys() {
@@ -25,36 +18,61 @@ function PickKeys() {
   )
 }
 
-/** What a live check found: fine, worth a word (a server that isn't up yet), or refused (a key rejected). */
-export type LiveCheck = { tone: "ok" | "warn" | "bad"; note: string }
+/** Why Enter didn't move on: the hint line of a question whose answer was refused, after a "✗". */
+export function Problem({ children }: Readonly<{ children: string }>) {
+  const { danger } = useKajaTheme()
+  return <Text {...danger()}>✗ {children}</Text>
+}
+
+/**
+ * What a live check found: fine, worth a word (a server that isn't up yet), or refused (a key rejected). `note` is
+ * short, at the right of the field; `detail` (the error) goes on the hint line when it isn't fine.
+ */
+export type LiveCheck = { tone: "ok" | "warn" | "bad"; note: string; detail?: string }
 
 // How long typing has to pause before an answer is checked over the network
 const CHECK_DELAY_MS = 600
 
-/** A live check's line under the field, in its tone's colour. */
-function LiveLine({ result, confirming }: Readonly<{ result?: LiveCheck; confirming: boolean }>) {
+// A key shows as a fixed run of dots, so its length stays hidden, then its last 4 once it's long enough not to give it away
+const MASK = "•".repeat(24)
+const TAIL_FROM = 12
+
+/** A secret as the field shows it: dots, and the last 4 characters of a long one, so a wrong paste is spotted. */
+export function maskSecret(value: string): string {
+  if (!value) return ""
+  return value.length >= TAIL_FROM ? `${MASK}${value.slice(-4)}` : MASK
+}
+
+/** A live check's result at the right of the field: its mark and short note in its tone's colour. */
+function LiveMark({ result }: Readonly<{ result?: LiveCheck }>) {
   const theme = useKajaTheme()
-  if (!result) return <Text dimColor>{t("secretPrompt.checking")}</Text>
+  if (!result) return <Text dimColor>⠋ {t("secretPrompt.checking")}</Text>
   const style = { ok: theme.success(), warn: theme.warning(), bad: theme.danger() }[result.tone]
   const mark = { ok: "✓", warn: "!", bad: "✗" }[result.tone]
   return (
-    <Text {...style}>
+    <Text {...style} wrap="truncate-end">
       {mark} {result.note}
-      {confirming ? ` ${t("secretPrompt.enterAgain")}` : ""}
     </Text>
   )
 }
 
+// Printable text only: a paste can carry line breaks and other control characters
+const printable = (input: string) =>
+  Array.from(input)
+    .filter(char => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127)
+    .join("")
+
 /**
- * Asks for one typed answer: a key (`secret`, masked and never prefilled) or a plain value such as an address. The
- * trimmed answer goes through `validate`, and a refused one keeps the question open with the reason under it. With
- * `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for the caller to
- * read. With `onBack`, Esc goes back instead. `validate` also runs while typing, and `check` (a network test) once
- * typing pauses; Enter on an answer `check` refused asks for a second Enter before it's taken.
+ * Asks for one typed answer on a "›" line: a key (`secret`, masked and never prefilled) or a plain value such as an
+ * address. The trimmed answer goes through `validate`, and a refused one keeps the question open with the reason on the
+ * hint line. With `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for
+ * the caller to read. With `onBack`, Esc goes back instead. `validate` also runs while typing, and `check` (a network
+ * test) once typing pauses, its result at the right of the field.
  */
 export function InputPrompt({
   title,
   hint,
+  placeholder,
   secret,
   defaultValue,
   validate,
@@ -65,7 +83,10 @@ export function InputPrompt({
 }: Readonly<{
   /** What's needed and why, e.g. "github needs an API key (header Authorization)." */
   title: string
-  hint?: string
+  /** The closing line's hint; Enter and what it does by default. */
+  hint?: ReactNode
+  /** Shown dim in the empty field, e.g. that Enter keeps a key already saved. */
+  placeholder?: string
   secret?: boolean
   defaultValue?: string
   /** Says what is wrong with an answer, or nothing when it is fine. */
@@ -78,11 +99,11 @@ export function InputPrompt({
   check?: (value: string, signal: AbortSignal) => Promise<LiveCheck | undefined>
 }>) {
   const [problem, setProblem] = useState<string>()
-  const [typed, setTyped] = useState(defaultValue ?? "")
+  const [typed, setTyped] = useState(secret ? "" : (defaultValue ?? ""))
+  // Where the cursor is in `typed`; a secret's stays at the end, since its characters can't be seen
+  const [cursor, setCursor] = useState(typed.length)
   // The check's latest answer, for the value it was run on; no result yet while it runs
   const [live, setLive] = useState<{ value: string; result?: LiveCheck }>()
-  // A refused value Enter was pressed on once: the next Enter on it takes it anyway
-  const [confirming, setConfirming] = useState<string>()
   // Callers pass fresh functions each render; the check reruns only when the answer changes
   const checkable = useEffectEvent((answer: string) => (check && !validate?.(answer) ? check : undefined))
 
@@ -108,42 +129,62 @@ export function InputPrompt({
     }
   }, [value])
 
-  useKey(
-    (_input, key) => {
-      if (key.escape) (onBack ?? onSkip)?.()
-    },
-    { isActive: Boolean(onBack ?? onSkip) }
-  )
-  const submit = (raw: string) => {
-    const answer = raw.trim()
-    if (!answer && onSkip) return onSkip()
-    const complaint = validate?.(answer)
-    setProblem(complaint)
-    if (complaint) return
-    const refused = live?.value === answer && live.result?.tone === "bad"
-    if (refused && confirming !== answer) return setConfirming(answer)
-    onSubmit(answer)
-  }
-  const onChange = (next: string) => {
-    // The inputs report the unchanged value again on Enter, which mustn't undo a pending confirmation
-    if (next === typed) return
+  const edit = (next: string, at: number) => {
     setTyped(next)
+    setCursor(at)
     setProblem(undefined)
-    setConfirming(undefined)
   }
-  const complaint = value ? validate?.(value) : undefined
-  let below = <Text dimColor>{hint ?? t("secretPrompt.hint")}</Text>
-  if (problem ?? complaint) below = <Problem>{(problem ?? complaint)!}</Problem>
-  else if (live?.value === value) below = <LiveLine result={live.result} confirming={confirming === value} />
+  const submit = () => {
+    if (!value && onSkip) return onSkip()
+    const complaint = validate?.(value)
+    setProblem(complaint)
+    if (!complaint) onSubmit(value)
+  }
+  useKey((input, key) => {
+    if (key.escape) return (onBack ?? onSkip)?.()
+    if (key.return) return submit()
+    if (key.backspace || key.delete) {
+      if (cursor > 0) edit(typed.slice(0, cursor - 1) + typed.slice(cursor), cursor - 1)
+      return
+    }
+    // Ctrl+U clears the line: the quick way out of a wrong paste
+    if (key.ctrl && input === "u") return edit("", 0)
+    if (!secret && key.leftArrow) return setCursor(Math.max(0, cursor - 1))
+    if (!secret && key.rightArrow) return setCursor(Math.min(typed.length, cursor + 1))
+    if (key.ctrl || key.meta || key.upArrow || key.downArrow || key.tab) return
+    const text = printable(input)
+    if (text) edit(typed.slice(0, cursor) + text + typed.slice(cursor), cursor + text.length)
+  })
+
+  const { accent } = useKajaTheme()
+  const complaint = problem ?? (value ? validate?.(value) : undefined)
+  const result = live?.value === value ? live : undefined
+  let below: ReactNode = hint ?? <KeyHint keys={[["Enter", t("hint.save")]]} note={t("secretPrompt.hint")} />
+  if (complaint) below = <Problem>{complaint}</Problem>
+  else if (result?.result?.tone === "bad") below = <Text dimColor>{t("secretPrompt.refusedHint")}</Text>
+  else if (result?.result?.detail)
+    below = (
+      <Text dimColor wrap="truncate-end">
+        {result.result.detail}
+      </Text>
+    )
+
+  const shown = secret ? maskSecret(typed) : typed
+  const at = secret ? shown.length : cursor
   return (
     <Question title={title} hint={below}>
-      <InputFrame>
-        {secret ? (
-          <PasswordInput placeholder={t("secretPrompt.placeholder")} onChange={onChange} onSubmit={submit} />
-        ) : (
-          <TextInput defaultValue={defaultValue} onChange={onChange} onSubmit={submit} />
-        )}
-      </InputFrame>
+      <Box flexDirection="column">
+        <Box width={textWidth()} justifyContent="space-between" gap={2}>
+          <Text wrap="truncate-start">
+            <Text {...accent()}>›</Text> {shown.slice(0, at)}
+            <Text inverse>{shown[at] ?? " "}</Text>
+            {shown.slice(at + 1)}
+            {!typed && placeholder ? <Text dimColor>{placeholder}</Text> : null}
+          </Text>
+          {result ? <LiveMark result={result.result} /> : null}
+        </Box>
+        <Text> </Text>
+      </Box>
     </Question>
   )
 }

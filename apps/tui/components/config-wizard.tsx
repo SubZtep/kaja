@@ -174,6 +174,8 @@ export type WizardSaved = {
   /** Provider names with an `api_key` already saved — a list, since the step can pick any of them. */
   providers?: string[]
   telegram?: boolean
+  /** The last 4 characters of each saved key, by provider (and `telegram`), so a step can say which one Enter keeps. */
+  tails?: Record<string, string>
 }
 
 /**
@@ -444,10 +446,20 @@ function without<T>(record: Record<string, T> | undefined, id: string): Record<s
   return rest
 }
 
-// A key step's hint: Enter keeps a key typed earlier (you came back to it), or one already saved.
-function keyHint(typed: string | undefined, alreadySaved: boolean | undefined): string {
-  if (typed) return t("wizard.keyHintTyped")
-  return t(alreadySaved ? "wizard.keyHintSaved" : "wizard.keyHint")
+// The last 4 characters of a key long enough not to give it away, for "Enter keeps the key (…Qx7f)"
+const tailOf = (key: string | undefined) => (key && key.length >= 12 ? key.slice(-4) : undefined)
+
+// A key step's empty field: Enter keeps a key typed earlier (you came back to it) or one already saved, else skips
+function keyPlaceholder(typed: string | undefined, alreadySaved: boolean | undefined, savedTail?: string): string {
+  const tail = typed ? tailOf(typed) : savedTail
+  const which = typed ? "Typed" : alreadySaved ? "Saved" : undefined
+  if (!which) return t("wizard.keySkips")
+  return tail ? t(`wizard.keyKeeps${which}Tail`, { tail }) : t(`wizard.keyKeeps${which}`)
+}
+
+/** A key step's hint: Enter saves, and how the key is handled. */
+function keyHint() {
+  return <KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.keyNote")} />
 }
 
 /** One answered step, kept on screen above the next question. */
@@ -910,7 +922,12 @@ export function ConfigWizard({
           onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: provider.name })}
-          hint={keyHint(result.keys?.[provider.id], saved?.providers?.includes(provider.id))}
+          hint={keyHint()}
+          placeholder={keyPlaceholder(
+            result.keys?.[provider.id],
+            saved?.providers?.includes(provider.id),
+            saved?.tails?.[provider.id]
+          )}
           check={checkWith(key => ({ kind: "key", baseUrl: result.addresses?.[provider.id] ?? provider.baseUrl, key }))}
           onSubmit={value =>
             advance({
@@ -927,7 +944,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
-          hint={t("wizard.baseUrlHint")}
+          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.baseUrlHint")} />}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
           onSubmit={value => advance({ addresses: { ...result.addresses, [provider.id]: value || provider.baseUrl } })}
@@ -977,7 +994,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customNameTitle")}
-          hint={t("wizard.customNameHint")}
+          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customNameHint")} />}
           defaultValue={custom.name}
           validate={value => (customId(value) ? undefined : t("wizard.customNameInvalid"))}
           onSubmit={value => advance({ custom: { ...custom, name: customId(value) } })}
@@ -990,7 +1007,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customUrlTitle")}
-          hint={t("wizard.customUrlHint")}
+          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customUrlHint")} />}
           defaultValue={custom.baseUrl}
           validate={value => (isWebAddress(value) ? undefined : t("wizard.customUrlInvalid"))}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
@@ -1007,7 +1024,12 @@ export function ConfigWizard({
           onBack={back}
           secret
           title={t("wizard.providerKeyTitle", { provider: nameOf })}
-          hint={keyHint(result.keys?.[nameOf], saved?.providers?.includes(nameOf))}
+          hint={keyHint()}
+          placeholder={keyPlaceholder(
+            result.keys?.[nameOf],
+            saved?.providers?.includes(nameOf),
+            saved?.tails?.[nameOf]
+          )}
           check={checkWith(key => ({ kind: "key", baseUrl: custom.baseUrl ?? "", key }))}
           onSubmit={value =>
             advance({
@@ -1089,7 +1111,7 @@ export function ConfigWizard({
           title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
             provider: nameOf
           })}
-          hint={t("wizard.customModelHint")}
+          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
           defaultValue={existing?.model}
           // The first model is required, or the provider would serve nothing.
           validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
@@ -1312,7 +1334,8 @@ export function ConfigWizard({
             onBack={back}
             secret
             title={t("wizard.telegramTokenTitle")}
-            hint={keyHint(result.telegramToken, saved?.telegram)}
+            hint={keyHint()}
+            placeholder={keyPlaceholder(result.telegramToken, saved?.telegram, saved?.tails?.telegram)}
             check={checkWith(token => ({ kind: "telegram", token }))}
             onSubmit={value => advance({ telegramToken: value || result.telegramToken || "" })}
           />

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { InputPrompt, YesNoPrompt } from "../../components/secret-prompt"
+import { InputPrompt, maskSecret, YesNoPrompt } from "../../components/secret-prompt"
 import { renderForTest } from "../test-utils"
 
 test("masks input and submits the trimmed value; an empty Enter skips", async () => {
@@ -128,7 +128,7 @@ test("the check runs once typing pauses, on the final answer only", async () => 
   await t.waitUntilExit()
 })
 
-test("Enter on a refused answer asks for a second Enter before taking it", async () => {
+test("a refused answer says so at the right of the field, and the hint that Enter saves it anyway", async () => {
   const values: string[] = []
   const t = renderForTest(
     <InputPrompt
@@ -139,15 +139,22 @@ test("Enter on a refused answer asks for a second Enter before taking it", async
     />
   )
   await t.tick()
-  await t.press("bad-key")
+  await t.press("bad-key-0123456789")
   await waitForText(t.lastFrame, "✗ Refused")
+  expect(t.lastFrame()).toContain("Check for a typo, or Enter saves it anyway")
+  // Masked, but its last 4 show, so a wrong paste is spotted
+  expect(t.lastFrame()).toContain("••••6789")
+  expect(t.lastFrame()).not.toContain("bad-key")
   await t.press("\r")
-  expect(values).toEqual([])
-  expect(t.lastFrame()).toContain("Press Enter again to keep it anyway.")
-  await t.press("\r")
-  expect(values).toEqual(["bad-key"])
+  expect(values).toEqual(["bad-key-0123456789"])
   t.unmount()
   await t.waitUntilExit()
+})
+
+test("a short secret shows no characters at all", () => {
+  expect(maskSecret("short")).toBe("•".repeat(24))
+  expect(maskSecret("")).toBe("")
+  expect(maskSecret("sk-0123456789abcdef")).toBe(`${"•".repeat(24)}cdef`)
 })
 
 test("a warning doesn't hold Enter back", async () => {

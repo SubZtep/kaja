@@ -35,8 +35,9 @@ In a field you type into, <kbd>Enter</kbd> on an empty value skips it. An addres
 <kbd>Esc</kbd> on the very first question cancels the wizard.
 
 Answers are checked as you type. A key is tried against its provider a moment after you stop typing, and an
-address is asked whether a server answers there (✓ fine, ! worth knowing, ✗ refused). A refused key takes a
-second <kbd>Enter</kbd> to keep anyway.
+address is asked whether a server answers there. The result shows at the right of the field (✓ fine,
+! worth knowing, ✗ refused); <kbd>Enter</kbd> still saves a refused key. A key shows as dots plus its last 4
+characters, so you can tell you pasted the right one, and <kbd>Ctrl</kbd>+<kbd>U</kbd> clears the field.
 
 The questions come in blocks: **Basics**, **Providers**, **Models**, **Extras** and **Sounds** (Kaja Cloud
 asks only Basics and Sounds). The top line shows

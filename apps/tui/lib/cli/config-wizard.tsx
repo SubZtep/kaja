@@ -259,11 +259,23 @@ async function readPrefill(servers: DetectedServer[]): Promise<WizardResult> {
 async function readSavedSecrets(): Promise<WizardSaved> {
   const { secrets } = await import("../config/secrets")
   const creds = await secrets()
+  // A key read from an environment variable isn't saved, so it has no tail to show
+  const tail = (key: string | undefined) => (key && key.length >= 12 ? key.slice(-4) : undefined)
+  const tails = Object.fromEntries(
+    [
+      ...Object.entries(creds.providers).map(([name, value]) => [
+        name,
+        value && "api_key" in value ? tail(value.api_key) : undefined
+      ]),
+      ["telegram", tail(creds.telegram?.bot_token)]
+    ].filter(([, value]) => value !== undefined)
+  )
   return {
     providers: Object.entries(creds.providers)
       .filter(([, value]) => Boolean(value))
       .map(([name]) => name),
-    telegram: Boolean(creds.telegram?.bot_token)
+    telegram: Boolean(creds.telegram?.bot_token),
+    tails
   }
 }
 
@@ -274,7 +286,7 @@ async function probeAnswer(target: ProbeTarget, signal: AbortSignal): Promise<Li
     const result = await checkTelegramToken(target.token)
     return result.ok
       ? { tone: "ok", note: t("wizard.checkTelegramOk") }
-      : { tone: "bad", note: t("wizard.checkTelegramBad", { reason: result.reason }) }
+      : { tone: "bad", note: t("wizard.checkTelegramBad"), detail: result.reason }
   }
   const { probeModels } = await import("../models/list")
   const key = target.kind === "key" ? target.key : undefined
@@ -287,11 +299,19 @@ async function probeAnswer(target: ProbeTarget, signal: AbortSignal): Promise<Li
   if (key) {
     // Only a refusal is about the key; anything else means it couldn't be judged
     return refused
-      ? { tone: "bad", note: t("wizard.checkKeyRejected", { error: probe.error }) }
-      : { tone: "warn", note: t("wizard.checkKeyUnknown", { error: probe.error }) }
+      ? { tone: "bad", note: t("wizard.checkKeyRejected"), detail: probe.error }
+      : {
+          tone: "warn",
+          note: t("wizard.checkKeyUnknown"),
+          detail: t("wizard.checkKeyUnknownDetail", { error: probe.error })
+        }
   }
   if (refused) return { tone: "ok", note: t("wizard.checkServerNeedsKey") }
-  return { tone: "warn", note: t("wizard.checkServerDown", { error: probe.error }) }
+  return {
+    tone: "warn",
+    note: t("wizard.checkServerDown"),
+    detail: t("wizard.checkServerDownDetail", { error: probe.error })
+  }
 }
 
 /** The custom provider's model ids, asked with the key just typed, else the one already saved for it. */

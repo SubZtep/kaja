@@ -366,7 +366,7 @@ test("a task with one model to choose from isn't asked", async () => {
 test("a step that says a key is already saved offers to keep it", async () => {
   const w = await openProviders({ saved: { providers: ["fireworks"] } })
   await tick(w, FIREWORKS)
-  expect(w.t.lastFrame()).toContain("already saved")
+  expect(w.t.lastFrame()).toContain("Enter keeps the saved key")
 
   await w.t.press(ENTER) // keep it
   // The Providers block is finished, so it's folded into one line
@@ -591,7 +591,7 @@ test("a key typed earlier is kept when you come back past it", async () => {
   await w.t.press("fw-secret")
   await w.t.press(ENTER)
   await w.t.press(ESC) // back from the tasks to the key
-  expect(w.t.lastFrame()).toContain("You typed one already")
+  expect(w.t.lastFrame()).toContain("Enter keeps the key you typed")
   await w.t.press(ENTER)
   await acceptModels(w)
   await w.t.press(ENTER) // extras

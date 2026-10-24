@@ -72,7 +72,17 @@ export function Question({
       <Box {...RAIL} flexDirection="column" gap={1}>
         <InRail value>{children}</InRail>
       </Box>
-      <RailLine marker={<Text dimColor>└</Text>}>{hint ?? null}</RailLine>
+      <RailLine marker={<Text dimColor>└</Text>}>
+        <Box width={textWidth()}>
+          {typeof hint === "string" ? (
+            <Text dimColor wrap="truncate-end">
+              {hint}
+            </Text>
+          ) : (
+            (hint ?? null)
+          )}
+        </Box>
+      </RailLine>
     </Box>
   )
 }
