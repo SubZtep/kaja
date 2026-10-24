@@ -3,9 +3,10 @@ import {
   chosenHooks,
   chosenProviders,
   ConfigWizard,
-  rankedProviders,
+  providerGroups,
   type WizardResult
 } from "../../components/config-wizard"
+import { padLabel } from "../../components/elem/rail"
 import { setLanguage } from "../../lib/i18n"
 import { CATALOG, setCatalog } from "../../lib/models/catalog"
 import { TEST_CATALOG } from "../fixtures/catalog"
@@ -18,12 +19,19 @@ const ESC = "\x1b"
 const ENTER = "\r"
 const SPACE = " "
 
-// The providers in the order the checklist shows them: your own server first, then the catalog's, popular ones first.
-const at = (id: string) => 1 + rankedProviders(CATALOG, () => false).findIndex(provider => provider.id === id)
+// The providers in the order the checklist shows them with nothing found: the popular ones, Custom, then the rest
+const ORDER = (() => {
+  const groups = providerGroups(CATALOG, () => false)
+  return [...groups.popular.map(provider => provider.id), "custom", ...groups.rest.map(provider => provider.id)]
+})()
+const at = (id: string) => ORDER.indexOf(id)
 const FIREWORKS = at("fireworks")
 const OLLAMA = at("ollama")
 const SPEACHES = at("speaches")
-const CUSTOM = 0
+const CUSTOM = at("custom")
+
+/** An answer as the open block shows it: on the rail, the label padded to the value column. */
+const answered = (label: string, value: string) => `│ ${padLabel(label)}${value}`
 
 function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
   let result: WizardResult | undefined
@@ -114,7 +122,7 @@ test("sounds, notifications and speech are a last block, asked only for the prog
   // No notifier was found, so speech is next; it starts on No
   expect(w.t.lastFrame()).toContain("Read the assistant's messages aloud with espeak-ng?")
   await w.t.press(ENTER)
-  expect(w.t.output()).toContain("Sounds · Sound effects Yes · Read aloud No")
+  expect(w.t.output()).toContain("Sounds        Sound effects · Read aloud off")
   expect(chosenHooks(w.result!, { player: "paplay", speaker: "espeak-ng" })).toEqual({
     sounds: true,
     notifications: false,
@@ -160,7 +168,7 @@ test("choosing your own provider leads to the providers checklist", async () => 
   await w.t.press(DOWN) // "Your own provider"
   await w.t.press(ENTER)
   const frame = w.t.lastFrame()
-  expect(frame).toContain("Which model providers can you use?")
+  expect(frame).toContain("Which AI providers will you use?")
   for (const name of ["Fireworks", "xAI", "OpenRouter", "Ollama", "llama.cpp", "Speaches"])
     expect(frame).toContain(name)
 
@@ -175,7 +183,7 @@ test("a forced mode skips the mode step, but never the language one", async () =
   // Straight past the mode question — `--local` already answered it.
   await w.t.press(ENTER)
   await w.t.press(ENTER) // theme
-  expect(w.t.lastFrame()).toContain("Which model providers can you use?")
+  expect(w.t.lastFrame()).toContain("Which AI providers will you use?")
   expect(w.t.lastFrame()).not.toContain("Kaja Cloud")
 
   await close(w)
@@ -184,7 +192,7 @@ test("a forced mode skips the mode step, but never the language one", async () =
 test("providers whose key is in the environment come first and ticked; typing filters the list", async () => {
   const w = await openProviders({ env: { XAI_API_KEY: "sk-env" } })
   const frame = w.t.lastFrame()!
-  expect(frame).toContain("[✔] xAI (cloud, needs an API key) · $XAI_API_KEY is set")
+  expect(frame).toContain("● xAI")
   expect(frame.indexOf("xAI")).toBeLessThan(frame.indexOf("Fireworks"))
 
   await w.t.press("olla")
@@ -193,7 +201,7 @@ test("providers whose key is in the environment come first and ticked; typing fi
   await w.t.press(SPACE) // ticks Ollama, the one row left
   await w.t.press(ENTER)
   expect(w.result).toBeUndefined()
-  expect(w.t.output()).toContain("✓  Providers: xAI, Ollama")
+  expect(w.t.output()).toContain(answered("Providers", "xAI, Ollama"))
 
   await close(w)
 })
@@ -210,9 +218,9 @@ test("well-known providers come before the rest of the catalog", async () => {
 
 test("Enter with nothing ticked takes the highlighted provider", async () => {
   const w = await openProviders()
-  await w.t.press(ENTER) // Custom is highlighted
-  expect(w.t.output()).toContain("✓  Providers: Custom")
-  expect(w.t.lastFrame()).toContain("What should this provider be called?")
+  await w.t.press(ENTER) // OpenRouter, the first popular one, is highlighted
+  expect(w.t.output()).toContain(answered("Providers", "OpenRouter"))
+  expect(w.t.lastFrame()).toContain("Paste your OpenRouter API key")
 
   await close(w)
 })
@@ -221,7 +229,7 @@ test("the providers step won't continue with nothing ticked or highlighted: loca
   const w = await openProviders()
   await w.t.press("zzz") // filters every row away
   await w.t.press(ENTER)
-  expect(w.t.lastFrame()).toContain("Which model providers can you use?")
+  expect(w.t.lastFrame()).toContain("Which AI providers will you use?")
   expect(w.t.lastFrame()).toContain("Tick at least one")
   for (let i = 0; i < 3; i++) await w.t.press("\x7f") // clear the filter
 
@@ -229,7 +237,7 @@ test("the providers step won't continue with nothing ticked or highlighted: loca
   expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras: nothing ticked
   expect(w.result).toMatchObject({ mode: "local", providers: ["ollama"] })
-  expect(w.t.output()).toContain("✓  Providers: Ollama")
+  expect(w.t.output()).toContain(answered("Providers", "Ollama"))
 
   await close(w)
 })
@@ -298,8 +306,8 @@ test("the tasks step offers what the ticked providers can do, with chat, memory,
   await w.t.press(ENTER) // key: skipped
   expect(w.t.lastFrame()).toContain("What should Kaja be able to do?")
   const frame = w.t.lastFrame()!
-  expect(frame).toContain("[✔] Chat")
-  expect(frame).toMatch(/\[ \] Rerank/i)
+  expect(frame).toContain("● Chat")
+  expect(frame).toContain("○ Reranking")
   // Nobody ticked serves voice, so it isn't offered
   expect(frame).not.toMatch(/speech/i)
 
@@ -339,7 +347,7 @@ test("each ticked task with more than one model asks which, newest tool-calling 
     summarize: { provider: "fireworks", model: "accounts/fireworks/models/minimax-m3" },
     vision: { provider: "ollama", model: "qwen3.5:4b" }
   })
-  expect(w.t.output()).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
+  expect(w.t.output()).toContain(answered("Chat model", "Ollama (qwen3.5:4b)"))
 
   await close(w)
 })
@@ -362,7 +370,7 @@ test("a step that says a key is already saved offers to keep it", async () => {
 
   await w.t.press(ENTER) // keep it
   // The Providers block is finished, so it's folded into one line
-  expect(w.t.lastFrame()).toContain("Fireworks API key already saved, kept")
+  expect(w.t.output()).toContain("Fireworks · keys set: 1")
 
   await close(w)
 })
@@ -373,10 +381,10 @@ test("each answer stays on screen and the next question opens below it", async (
 
   // The active question is the only thing in the last frame; what was answered is in the trail above it.
   expect(w.t.lastFrame()).toContain("Paste your Fireworks API key")
-  expect(w.t.lastFrame()).not.toContain("Which model providers can you use?")
+  expect(w.t.lastFrame()).not.toContain("Which AI providers will you use?")
   const trail = w.t.output()
-  expect(trail).toContain("✓  Language: British English")
-  expect(trail).toContain("✓  Providers: Fireworks, Ollama")
+  expect(trail).toContain(answered("Language", "British English"))
+  expect(trail).toContain(answered("Providers", "Fireworks, Ollama"))
   // A forced mode was never asked, so it leaves no line.
   expect(trail).not.toContain("Mode:")
 
@@ -395,8 +403,8 @@ test("the trail says what became of each key, without showing it", async () => {
 
   // Every block is finished, so each is folded into its line
   const trail = w.t.output()
-  expect(w.t.lastFrame()).toContain("Fireworks API key entered, tested at the end")
-  expect(w.t.lastFrame()).toMatch(/Telegram bot\s+token skipped/)
+  expect(w.t.output()).toContain("Fireworks · keys set: 1")
+  expect(w.t.lastFrame()).toContain("Telegram bot, no token")
   expect(trail).not.toContain("fw-secret-value")
   // Nothing follows the last answer: no closing screen claiming it's all done while the setup still runs.
   expect(w.result).toBeDefined()
@@ -442,7 +450,7 @@ test("with git, the marketplace is asked in Extras, and auto-update only while i
   await w.t.press(ENTER)
   // Off, so there's nothing to keep up to date: that was the last question
   expect(w.result).toMatchObject({ marketplace: false })
-  expect(w.t.output()).toContain("Marketplace No")
+  expect(w.t.output()).toContain("Marketplace off")
 
   await close(w)
 })
@@ -513,7 +521,7 @@ test("a model question opens on the model already in use", async () => {
   await w.t.press(ENTER) // Fireworks key: skipped
   await w.t.press(ENTER) // Ollama address: default
   // Only chat was set up before, so only chat is ticked
-  expect(w.t.lastFrame()).toContain("[ ] Embedding")
+  expect(w.t.lastFrame()).toContain("○ Embedding")
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("❯ Ollama — qwen3.5:4b")
 
@@ -567,13 +575,13 @@ test("going back keeps the answers, and a changed one replaces its line", async 
   const w = await openProviders()
   await tick(w, FIREWORKS)
   await w.t.press(ESC) // back to the checklist, Fireworks still ticked
-  expect(w.t.lastFrame()).toContain("[✔] Fireworks")
+  expect(w.t.lastFrame()).toContain("● Fireworks")
   for (let row = 0; row < OLLAMA; row++) await w.t.press(DOWN)
   await w.t.press(SPACE) // Ollama
   await w.t.press(ENTER)
 
-  expect(w.t.lastFrame()).toContain("✓  Providers: Fireworks, Ollama")
-  expect(w.t.lastFrame()).not.toContain("✓  Providers: Fireworks\n")
+  expect(w.t.lastFrame()).toContain(answered("Providers", "Fireworks, Ollama"))
+  expect(w.t.lastFrame()).not.toContain(answered("Providers", "Fireworks\n"))
   await close(w)
 })
 
@@ -595,7 +603,7 @@ test("a key typed earlier is kept when you come back past it", async () => {
 test("the header shows the blocks, where you are and the question count; finished blocks fold", async () => {
   const w = await openProviders()
   expect(w.t.lastFrame()).toContain("✓ Basics › Providers 1/1 › Extras")
-  expect(w.t.lastFrame()).toContain("✓  Basics · Language British English · Colours Dark background")
+  expect(w.t.lastFrame()).toContain("✓ Basics        British English · Dark colours")
 
   await tick(w, FIREWORKS, OLLAMA)
   // A key and an address joined the block
@@ -671,9 +679,9 @@ test("a custom provider is asked its name, address, key, then each model and wha
   })
   expect(w.result?.keys).toEqual({ "lm-studio": "" })
   const trail = w.t.output()
-  expect(trail).toContain("✓  Custom provider: lm-studio")
-  expect(trail).toContain("✓  lm-studio server: http://localhost:1234/v1")
-  expect(trail).toContain("✓  Custom model: llama-3.2-1b-instruct (chat)")
+  expect(trail).toContain(answered("Custom provider", "lm-studio"))
+  expect(trail).toContain(answered("lm-studio server", "http://localhost:1234/v1"))
+  expect(trail).toContain(answered("Custom model", "llama-3.2-1b-instruct (chat)"))
 
   await close(w)
 })
@@ -905,7 +913,7 @@ test("a key already in the environment is read from there, copied, or replaced b
   await read.t.press(ENTER) // extras
   expect(read.result?.keyEnv).toEqual({ fireworks: "FIREWORKS_API_KEY" })
   expect(read.result?.keys).toEqual({})
-  expect(read.t.lastFrame()).toContain("Fireworks API key read from $FIREWORKS_API_KEY")
+  expect(read.t.output()).toContain("Fireworks · keys set: 1")
   expect(read.t.output()).not.toContain("fw-env")
   await close(read)
 
@@ -937,7 +945,7 @@ test("a server found running comes first and ticked, and needs no address questi
     }
   ]
   const w = await openProviders({ prefill: { local } })
-  expect(w.t.lastFrame()).toContain("[✔] vLLM — running at 127.0.0.1:8000/v1, 1 models")
+  expect(w.t.lastFrame()).toContain("● vLLM")
   await w.t.press(ENTER) // providers: vLLM came ticked
   await acceptModels(w)
   expect(w.t.output()).not.toContain("Where does your vLLM server listen?")
@@ -961,8 +969,9 @@ test("offline, a server found running is offered beside your own provider", asyn
       }
     ]
     const w = await openProviders({ prefill: { local } })
-    expect(w.t.lastFrame()).toContain("Which model providers can you use?")
-    expect(w.t.lastFrame()).toContain("[✔] Ollama — running at")
+    expect(w.t.lastFrame()).toContain("Which AI providers will you use?")
+    expect(w.t.lastFrame()).toContain("● Ollama")
+    expect(w.t.lastFrame()).toContain("running at")
     await close(w)
   } finally {
     setCatalog(TEST_CATALOG)
@@ -985,8 +994,8 @@ test("a saved custom provider's models are reviewed in one list, not asked one b
   await w.t.press(ENTER) // name
   await w.t.press(ENTER) // address
   await w.t.press(ENTER) // key: skipped
-  expect(w.t.lastFrame()).toContain("These box models are set up")
-  expect(w.t.lastFrame()).toContain("[✔] big (chat)")
+  expect(w.t.lastFrame()).toContain("Which box models should stay?")
+  expect(w.t.lastFrame()).toContain("● big (chat)")
   await w.t.press(DOWN) // embedder
   await w.t.press(SPACE) // drop it
   await w.t.press(ENTER)

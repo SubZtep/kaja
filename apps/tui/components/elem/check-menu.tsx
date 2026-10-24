@@ -3,29 +3,42 @@ import { useState } from "react"
 import { useKey } from "../../hooks/use-key"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
-import { InputFrame } from "./rail"
-import { FilterLine, matchesFilter, useFilter } from "./use-filter"
+import { MenuRow } from "./rail"
+import { FilterLine, Matched, matchesFilter, useFilter } from "./use-filter"
+
+/** One row of a {@link CheckMenu}. */
+export type CheckOption = {
+  label: string
+  value: string
+  /** Dim columns after the label, lined up across rows: what kind of thing it is, why it's ticked. */
+  detail?: string[]
+  /** A dim heading drawn above the first row of each run of rows sharing it, while nothing is typed. */
+  group?: string
+}
+
+// Widest a label or a detail column grows before the rest of its rows are cut short
+const MAX_LABEL = 26
+const MAX_DETAIL = 22
+
+type Row = { heading: string } | { option: number }
 
 /**
- * A checklist: every row has a box, `[✔]` ticked or `[ ]` not, so it reads as "pick any" at a glance. Up/down to move,
- * space to tick or untick, return to submit the ticked values (in option order), escape to dismiss. Drawn like
- * {@link SelectMenu} rather than through @inkjs/ui's `MultiSelect`, which marks only the ticked rows and so looks like a
- * single-choice list until something is ticked. With `filterable`, typing narrows the rows and ticks survive it.
+ * A checklist on the rail: "●" ticked, "○" not, so it reads as "pick any" without colour. Up/down to move, space to
+ * tick or untick, return to submit the ticked values (in option order), escape to dismiss. With `filterable`, typing
+ * narrows the rows (ticks survive it), the matches underlined; the line above counts what's ticked and shown.
  */
 export function CheckMenu({
   options,
   defaultValue,
-  width = 70,
   visibleCount,
   filterable = false,
   enterPicksFocused = false,
   onSubmit,
   onClose
 }: Readonly<{
-  options: { label: string; value: string }[]
+  options: CheckOption[]
   /** The values ticked on open, e.g. the providers a re-run finds in use. */
   defaultValue?: string[]
-  width?: number
   /** Rows shown at once, the list scrolling past that; defaults to all of them. */
   visibleCount?: number
   /** Typing filters the rows, for a list too long to scroll through. */
@@ -36,25 +49,39 @@ export function CheckMenu({
   onClose?: () => void
 }>) {
   const filter = useFilter(filterable)
-  // The rows on show; `focused` and `from` are positions in this list
-  const shown = options.filter(option => matchesFilter(option.label, filter.query))
-  const visible = visibleCount === undefined ? options.length : Math.max(visibleCount, 1)
+  // The options on show, as indexes into `options`; `focused` is a position in this list
+  const shown = options.flatMap((option, index) => (matchesFilter(option.label, filter.query) ? [index] : []))
   const [focused, setFocused] = useState(0)
   const [from, setFrom] = useState(0)
   const [ticked, setTicked] = useState(() => new Set(defaultValue))
+
+  // Headings only while nothing is typed: a filtered list is short enough to read without them
+  const rows: Row[] = []
+  let previous: string | undefined
+  for (const index of shown) {
+    const group = options[index]!.group
+    if (!filter.query && group && group !== previous) rows.push({ heading: group })
+    previous = group
+    rows.push({ option: index })
+  }
+  const visible = visibleCount === undefined ? rows.length : Math.max(visibleCount, 1)
+  const rowOf = (position: number) => rows.findIndex(row => "option" in row && row.option === shown[position])
 
   function move(delta: number) {
     const next = focused + delta
     if (next < 0 || next >= shown.length) return
     setFocused(next)
-    if (next < from) setFrom(next)
-    else if (next >= from + visible) setFrom(next - visible + 1)
+    const row = rowOf(next)
+    // Keep the heading above a group's first row in view with it
+    const top = rows[row - 1] && "heading" in rows[row - 1]! ? row - 1 : row
+    if (top < from) setFrom(top)
+    else if (row >= from + visible) setFrom(row - visible + 1)
   }
 
   useKey((input, key) => {
     // Space ticks, so it never reaches the filter
     if (input === " ") {
-      const value = shown[focused]?.value
+      const value = options[shown[focused]!]?.value
       if (value === undefined) return
       setTicked(current => {
         const next = new Set(current)
@@ -69,38 +96,81 @@ export function CheckMenu({
     else if (key.upArrow) move(-1)
     else if (key.return) {
       const values = options.filter(option => ticked.has(option.value)).map(option => option.value)
-      const focusedValue = shown[focused]?.value
+      const focusedValue = options[shown[focused]!]?.value
       onSubmit(values.length === 0 && enterPicksFocused && focusedValue !== undefined ? [focusedValue] : values)
     }
   })
 
-  const { success } = useKajaTheme()
-  const scrolls = shown.length > visible
-  const hiddenBelow = Math.max(0, shown.length - from - visible)
+  const { accent } = useKajaTheme()
+  const windowed = rows.slice(from, from + visible).flatMap(row => ("option" in row ? [options[row.option]!] : []))
+  // Columns as wide as the rows on show need, so a short list isn't spread across the screen
+  const labelWidth = Math.min(MAX_LABEL, Math.max(0, ...windowed.map(option => Bun.stringWidth(option.label))))
+  const detailWidths = windowed.reduce<number[]>((widths, option) => {
+    for (const [column, text] of (option.detail ?? []).entries())
+      widths[column] = Math.min(MAX_DETAIL, Math.max(widths[column] ?? 0, Bun.stringWidth(text)))
+    return widths
+  }, [])
+  const optionsIn = (list: Row[]) => list.filter(row => "option" in row).length
+  const hiddenAbove = optionsIn(rows.slice(0, from))
+  const hiddenBelow = optionsIn(rows.slice(from + visible))
+  const count = [
+    ...(ticked.size > 0 ? [t("menu.countTicked", { count: ticked.size })] : []),
+    filter.query ? t("menu.countMatch", { count: shown.length }) : t("menu.countTotal", { count: options.length })
+  ].join(" · ")
 
   return (
-    // Like SelectMenu: no background and no colour change, the highlighted row is marked by "❯" and bold alone.
-    <InputFrame width={width} plain>
-      {filterable && <FilterLine query={filter.query} />}
+    <Box flexDirection="column">
+      {filterable && (
+        <Box marginBottom={1}>
+          <FilterLine query={filter.query} count={count} />
+        </Box>
+      )}
       {shown.length === 0 && <Text dimColor>{t("menu.noMatches")}</Text>}
-      {shown.slice(from, from + visible).map((option, offset) => {
-        const isFocused = from + offset === focused
-        const isTicked = ticked.has(option.value)
-        let arrow = " "
-        if (offset === 0 && from > 0) arrow = "↑"
-        else if (offset === visible - 1 && hiddenBelow > 0) arrow = "↓"
-        return (
-          <Box key={option.value} paddingLeft={isFocused ? 0 : 2} gap={1}>
-            {isFocused && <Text bold>❯</Text>}
-            {scrolls && <Text dimColor>{arrow}</Text>}
-            {/* Only the tick is coloured: it says what's picked, the "❯" and bold say where you are. An empty box is dimmed so the ticks stand out. */}
-            <Text bold={isFocused} {...(isTicked ? success() : { dimColor: !isFocused })}>
-              {isTicked ? "[✔]" : "[ ]"}
+      {hiddenAbove > 0 && <More count={hiddenAbove} />}
+      {rows.slice(from, from + visible).map(row => {
+        if ("heading" in row)
+          return (
+            <Text key={`heading:${row.heading}`} dimColor>
+              {row.heading}
             </Text>
-            <Text bold={isFocused}>{option.label}</Text>
-          </Box>
+          )
+        const option = options[row.option]!
+        const isFocused = shown[focused] === row.option
+        const isTicked = ticked.has(option.value)
+        return (
+          <MenuRow key={option.value} focused={isFocused}>
+            <Box>
+              <Box width={2} flexShrink={0}>
+                <Text {...(isTicked ? accent() : { dimColor: true })}>{isTicked ? "●" : "○"}</Text>
+              </Box>
+              <Box width={labelWidth + 2} flexShrink={0}>
+                <Text wrap="truncate-end">
+                  <Matched text={option.label} query={filter.query} bold={isFocused} />
+                </Text>
+              </Box>
+              {(option.detail ?? []).map((text, column) => (
+                // The last column takes what's left of the row, so a long reason isn't cut short early
+                <Box
+                  key={column}
+                  {...(column === (option.detail?.length ?? 0) - 1
+                    ? { flexGrow: 1, flexShrink: 1 }
+                    : { width: (detailWidths[column] ?? 0) + 2, flexShrink: 0 })}
+                >
+                  <Text dimColor wrap="truncate-end">
+                    {text}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+          </MenuRow>
         )
       })}
-    </InputFrame>
+      {hiddenBelow > 0 && <More count={hiddenBelow} />}
+    </Box>
   )
+}
+
+/** "⋮ N more", in the cursor's column: rows scrolled out of view. */
+function More({ count }: Readonly<{ count: number }>) {
+  return <Text dimColor>⋮ {t("menu.more", { count })}</Text>
 }

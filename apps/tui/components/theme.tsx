@@ -173,6 +173,8 @@ function kajaStyles(p: Palette) {
     /** The theme step's highlighted row: a band in the theme's colours, so the choice previews itself. */
     previewRow: (): BoxProps => ({ backgroundColor: p.tint("magenta", 0.3) }),
     previewText: (): TextProps => ({ color: p.foreground, bold: true }),
+    /** The focused row of a menu on the rail: a band to column 78. */
+    highlightRow: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.18) }),
     /** The panel behind an answer field (a typed value or a menu), in the input box's background. */
     field: (): BoxProps => ({ backgroundColor: p.tint("blue", 0.12) }),
     /** The chat box border while a power command is typed. */

@@ -1,21 +1,41 @@
 import { Box, type BoxProps, Text } from "ink"
-import type { ReactNode } from "react"
+import { createContext, type ReactNode, useContext } from "react"
 import { useKajaTheme } from "../theme"
 
-// The line down the left edge that ties a trail of answers, the open question and its input together
-const RAIL: BoxProps = {
-  borderStyle: "single",
-  borderTop: false,
-  borderRight: false,
-  borderBottom: false,
-  borderDimColor: true
+/**
+ * The grid every setup screen shares (the wizard, doctor's prompts, the output after them): a gutter mark in column 2,
+ * labels from column 4, values from column 18, and nothing past column 78, since writing into the last column makes
+ * some terminals wrap.
+ */
+export const FRAME_WIDTH = 78
+/** Columns 4 to 17: a label, padded so its value starts at column 18. */
+export const LABEL_WIDTH = 14
+/** Where a row's text starts: past the gutter mark and its space. */
+export const TEXT_COLUMN = 3
+
+/** The width left for a row's text at this terminal width, never past column 78. */
+export function textWidth(columns = process.stdout.columns || 80): number {
+  return Math.min(FRAME_WIDTH, columns - 2) - TEXT_COLUMN
 }
 
-/** A marker in the rail's column, then its text indented past it, so a wrapped line stays clear of the rail. */
+/** Pads `label` to the value column, always leaving at least one space. */
+export function padLabel(label: string): string {
+  return label + " ".repeat(Math.max(1, LABEL_WIDTH - Bun.stringWidth(label)))
+}
+
+// Inside a question: menus draw their rows in the rail style (a highlight band to column 78) instead of their own
+const InRail = createContext(false)
+
+/** Whether a menu sits inside a {@link Question}, and so draws its rows on the rail's grid. */
+export function useInRail(): boolean {
+  return useContext(InRail)
+}
+
+/** A mark in the gutter (column 2), then its text from column 4, so a wrapped line stays clear of the gutter. */
 export function RailLine({ marker, children }: Readonly<{ marker: ReactNode; children: ReactNode }>) {
   return (
-    <Box>
-      <Box width={3} flexShrink={0}>
+    <Box paddingLeft={1}>
+      <Box width={2} flexShrink={0}>
         {marker}
       </Box>
       {children}
@@ -23,43 +43,124 @@ export function RailLine({ marker, children }: Readonly<{ marker: ReactNode; chi
   )
 }
 
-/** The open question: a "◆" and its title, then its input on the rail, closed off below. */
-export function Question({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
-  // The question in its own colour, so it never reads like one of its answers. The terminal's own magenta, the same on
-  // every question, the ones asked before a theme is chosen included: its palette keeps it readable on its background.
-  const tone = { color: "magenta" }
+// The rail down the open question: a dim line in the gutter, its rows from column 4
+const RAIL: BoxProps = {
+  borderStyle: "single",
+  borderTop: false,
+  borderRight: false,
+  borderBottom: false,
+  borderDimColor: true,
+  marginLeft: 1,
+  paddingLeft: 1
+}
+
+/**
+ * The open question, one bracket from "◆" to "└": the question in bold, its rows on the rail, then the hint on the
+ * closing line. Nothing else goes on the question's line, keys included: they belong in the hint.
+ */
+export function Question({
+  title,
+  hint,
+  children
+}: Readonly<{ title: string; hint?: ReactNode; children: ReactNode }>) {
+  const { accent } = useKajaTheme()
   return (
     <Box flexDirection="column">
-      <Text dimColor>│</Text>
-      <RailLine marker={<Text {...tone}>◆</Text>}>
-        <Text bold {...tone}>
-          {title}
-        </Text>
+      <RailLine marker={<Text {...accent()}>◆</Text>}>
+        <Text bold>{title}</Text>
       </RailLine>
-      <Box {...RAIL} flexDirection="column" gap={1} paddingLeft={2}>
-        {children}
+      <Box {...RAIL} flexDirection="column" gap={1}>
+        <InRail value>{children}</InRail>
       </Box>
-      <Text dimColor>└</Text>
+      <RailLine marker={<Text dimColor>└</Text>}>{hint ?? null}</RailLine>
     </Box>
   )
 }
 
-/** An answered question, left in the trail: a "✓", then the label dimmed and the answer. */
+/** A hint line: each key plain and what it does dim, joined by a dim "·", then an optional note, dim. */
+export function KeyHint({ keys = [], note }: Readonly<{ keys?: [key: string, action: string][]; note?: string }>) {
+  const parts: ReactNode[] = keys.map(([key, action]) => (
+    <Text key={key}>
+      {key} <Text dimColor>{action}</Text>
+    </Text>
+  ))
+  if (note)
+    parts.push(
+      <Text key="note" dimColor>
+        {note}
+      </Text>
+    )
+  return (
+    <Text wrap="truncate-end">
+      {parts.flatMap((part, index) =>
+        index > 0
+          ? [
+              <Text key={`dot${index}`} dimColor>
+                {" · "}
+              </Text>,
+              part
+            ]
+          : [part]
+      )}
+    </Text>
+  )
+}
+
+/** An answered question left on screen: "✓", the label dim to the value column, then the answer. */
 export function Answered({ label, value }: Readonly<{ label: string; value: string }>) {
   const { success } = useKajaTheme()
   return (
     <RailLine marker={<Text {...success()}>✓</Text>}>
       <Text>
-        <Text dimColor>{label}</Text> {value}
+        <Text dimColor>{padLabel(label)}</Text>
+        {value}
+      </Text>
+    </RailLine>
+  )
+}
+
+/** One of the open block's recent answers: on the rail, the label dim to the value column, then the answer. */
+export function RecentAnswer({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <RailLine marker={<Text dimColor>│</Text>}>
+      <Text wrap="truncate-end">
+        <Text dimColor>{padLabel(label)}</Text>
+        {value}
       </Text>
     </RailLine>
   )
 }
 
 /**
- * The panel an answer sits in: `width` columns wide inside and growing with longer content. A typed answer's panel has
- * the input box's background, so the field stands out from the question; `plain` drops it, for the menus (their
- * highlight band is colour enough).
+ * A menu row on the rail: the cursor, then the row. The focused one is a band to column 78 with "❯" in the accent and
+ * the row in bold; the others leave the cursor's place blank.
+ */
+export function MenuRow({
+  focused,
+  dim,
+  band,
+  children
+}: Readonly<{
+  focused: boolean
+  dim?: boolean
+  /** The focused row's band in place of the highlight, e.g. the theme step's preview colours. */
+  band?: BoxProps
+  children: ReactNode
+}>) {
+  const { accent, highlightRow } = useKajaTheme()
+  return (
+    <Box width={textWidth()} gap={1} {...(focused ? (band ?? highlightRow()) : {})}>
+      <Text dimColor={dim} {...(focused && !dim ? accent() : {})}>
+        {focused ? "❯" : " "}
+      </Text>
+      <Box flexGrow={1}>{children}</Box>
+    </Box>
+  )
+}
+
+/**
+ * The panel a typed answer sits in: `width` columns wide inside and growing with longer content, in the input box's
+ * background so the field stands out from the question; `plain` drops it, for the menus.
  */
 export function InputFrame({
   children,

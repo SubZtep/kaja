@@ -3,7 +3,7 @@ import { Text } from "ink"
 import { useEffect, useEffectEvent, useState } from "react"
 import { useKey } from "../hooks/use-key"
 import { t } from "../lib/i18n"
-import { InputFrame, Question } from "./elem/rail"
+import { InputFrame, KeyHint, Question } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { useKajaTheme } from "./theme"
 
@@ -11,6 +11,18 @@ import { useKajaTheme } from "./theme"
 export function Problem({ children }: Readonly<{ children: string }>) {
   const { danger } = useKajaTheme()
   return <Text {...danger()}>{children}</Text>
+}
+
+// The keys of a short list you pick one from
+function PickKeys() {
+  return (
+    <KeyHint
+      keys={[
+        ["↑↓", t("hint.move")],
+        ["Enter", t("hint.pick")]
+      ]}
+    />
+  )
 }
 
 /** What a live check found: fine, worth a word (a server that isn't up yet), or refused (a key rejected). */
@@ -124,7 +136,7 @@ export function InputPrompt({
   if (problem ?? complaint) below = <Problem>{(problem ?? complaint)!}</Problem>
   else if (live?.value === value) below = <LiveLine result={live.result} confirming={confirming === value} />
   return (
-    <Question title={title}>
+    <Question title={title} hint={below}>
       <InputFrame>
         {secret ? (
           <PasswordInput placeholder={t("secretPrompt.placeholder")} onChange={onChange} onSubmit={submit} />
@@ -132,7 +144,6 @@ export function InputPrompt({
           <TextInput defaultValue={defaultValue} onChange={onChange} onSubmit={submit} />
         )}
       </InputFrame>
-      {below}
     </Question>
   )
 }
@@ -159,7 +170,7 @@ export function YesNoPrompt({
   onResolve: (yes: boolean) => void
 }>) {
   return (
-    <Question title={title}>
+    <Question title={title} hint={<PickKeys />}>
       <SelectMenu
         width={Math.max(yesLabel.length, noLabel.length) + 10}
         items={yesFirst ? [yesLabel, noLabel] : [noLabel, yesLabel]}
@@ -183,7 +194,7 @@ export function PickPrompt({
   onResolve: (index: number | undefined) => void
 }>) {
   return (
-    <Question title={title}>
+    <Question title={title} hint={<PickKeys />}>
       <SelectMenu
         width={Math.max(...items.map(item => item.length)) + 10}
         items={items}

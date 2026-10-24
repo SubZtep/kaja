@@ -3,8 +3,8 @@ import { useState } from "react"
 import { useKey } from "../../hooks/use-key"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
-import { InputFrame } from "./rail"
-import { FilterLine, matchesFilter, useFilter } from "./use-filter"
+import { InputFrame, MenuRow, useInRail } from "./rail"
+import { FilterLine, Matched, matchesFilter, useFilter } from "./use-filter"
 
 /**
  * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss. With
@@ -106,11 +106,46 @@ export function SelectMenu({
   )
 
   const { accent, previewRow, previewText } = useKajaTheme()
+  const inRail = useInRail()
 
   // A scrolling list reserves an arrow slot between the cursor and the label, so the menu stays `visible` rows tall.
   const scrolls = shown.length > visible
   const hiddenAbove = from
   const hiddenBelow = Math.max(0, shown.length - from - visible)
+
+  if (inRail) {
+    // On a question's rail: the focused row a band to column 78, rows out of view counted above and below
+    const count = filter.query
+      ? t("menu.countMatch", { count: shown.length })
+      : t("menu.countTotal", { count: items.length })
+    return (
+      <Box flexDirection="column">
+        {filterable && (
+          <Box marginBottom={1}>
+            <FilterLine query={filter.query} count={count} />
+          </Box>
+        )}
+        {shown.length === 0 && <Text dimColor>{t("menu.noMatches")}</Text>}
+        {hiddenAbove > 0 && <Text dimColor>⋮ {t("menu.more", { count: hiddenAbove })}</Text>}
+        {shown.slice(from, from + visible).map((index, offset) => {
+          const isFocused = from + offset === focused
+          const hint = hints?.[index]
+          const previewing = isFocused && preview
+          return (
+            <MenuRow key={index} focused={isFocused} dim={!active} {...(previewing ? { band: previewRow() } : {})}>
+              <Box justifyContent="space-between" flexGrow={1} paddingRight={1}>
+                <Text wrap="truncate-end" dimColor={!active} {...(previewing ? previewText() : {})}>
+                  <Matched text={items[index]!} query={filter.query} bold={isFocused} />
+                </Text>
+                {hint ? <Text dimColor>{hint}</Text> : null}
+              </Box>
+            </MenuRow>
+          )
+        })}
+        {hiddenBelow > 0 && <Text dimColor>⋮ {t("menu.more", { count: hiddenBelow })}</Text>}
+      </Box>
+    )
+  }
 
   return (
     // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only

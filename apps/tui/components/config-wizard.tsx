@@ -21,7 +21,7 @@ import {
 import { sameAddress } from "../lib/models/detect"
 import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
-import { Answered, Question, RailLine } from "./elem/rail"
+import { KeyHint, LABEL_WIDTH, padLabel, Question, RailLine, RecentAnswer, textWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { InputPrompt, type LiveCheck, Problem } from "./secret-prompt"
 import { themeFor, useKajaTheme } from "./theme"
@@ -33,6 +33,10 @@ const EXTRA_CHOICES: WizardExtra[] = ["telegram"]
 
 const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
   telegram: "wizard.extraTelegram"
+}
+
+const EXTRA_SHORT_KEY: Record<WizardExtra, string> = {
+  telegram: "wizard.extraTelegramShort"
 }
 
 /** A provider that isn't in the catalog: any OpenAI-compatible server the user names. */
@@ -64,18 +68,21 @@ const POPULAR_PROVIDERS = [
   "togetherai"
 ]
 
-/** The checklist's order: `front` ones (in use, key in the environment), the popular ones, then the rest by name. */
-export function rankedProviders(
+/**
+ * The checklist's groups: `found` ones (in use, key in the environment), the popular ones in their own order, then the
+ * rest in the catalog's order, by name.
+ */
+export function providerGroups(
   providers: CatalogProvider[],
-  front: (provider: CatalogProvider) => boolean
-): CatalogProvider[] {
-  const rank = (provider: CatalogProvider) => {
-    if (front(provider)) return 0
-    const popular = POPULAR_PROVIDERS.indexOf(provider.id)
-    return popular === -1 ? POPULAR_PROVIDERS.length + 1 : popular + 1
+  found: (provider: CatalogProvider) => boolean
+): { found: CatalogProvider[]; popular: CatalogProvider[]; rest: CatalogProvider[] } {
+  const others = providers.filter(provider => !found(provider))
+  const popular = POPULAR_PROVIDERS.flatMap(id => others.filter(provider => provider.id === id))
+  return {
+    found: providers.filter(found),
+    popular,
+    rest: others.filter(provider => !popular.includes(provider))
   }
-  // A stable sort: same-rank providers keep the catalog's order, by name
-  return providers.toSorted((a, b) => rank(a) - rank(b))
 }
 
 /** What the checklist stores for "a provider that isn't listed". */
@@ -252,6 +259,12 @@ const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
 
 const THEME_CHOICES: ThemeName[] = ["dark", "light", "terminal"]
 
+const THEME_SHORT_KEY: Record<ThemeName, string> = {
+  dark: "wizard.themeDarkShort",
+  light: "wizard.themeLightShort",
+  terminal: "wizard.themeTerminalShort"
+}
+
 const THEME_LABEL_KEY: Record<ThemeName, string> = {
   dark: "wizard.themeDark",
   light: "wizard.themeLight",
@@ -406,7 +419,8 @@ function nextStepAfter(
 
 function providerName(id: string, result?: WizardResult): string {
   const local = result?.local?.find(provider => provider.id === id)
-  return catalogProvider(id)?.name ?? local?.name ?? (id === CUSTOM ? "Custom" : id)
+  if (id === CUSTOM) return result?.custom?.name ?? t("wizard.providerCustom")
+  return catalogProvider(id)?.name ?? local?.name ?? id
 }
 
 /**
@@ -541,61 +555,165 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
-/** Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count. */
+// Each finished block's short answers, for its folded line: no labels, the shortest form of each answer
+const FOLDS: Record<Block, (result: WizardResult, asked: Set<string>, saved?: WizardSaved) => string[]> = {
+  basics: (result, asked) => [
+    ...(asked.has("language") && result.language ? [LOCALE_LABELS[result.language]] : []),
+    ...(asked.has("theme") && result.theme ? [t(THEME_SHORT_KEY[result.theme])] : []),
+    ...(asked.has("mode") && result.mode
+      ? [t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")]
+      : [])
+  ],
+  providers: (result, _, saved) => {
+    const names = (result.providers ?? []).map(id =>
+      id === CUSTOM && result.custom?.name ? result.custom.name : providerName(id, result)
+    )
+    const ids = [
+      ...catalogChoices(result)
+        .filter(p => p.kind === "hosted")
+        .map(p => p.id),
+      result.custom?.name ?? ""
+    ]
+    // Enter on a key already saved keeps it
+    const kept = (id: string) => result.keys?.[id] === "" && saved?.providers?.includes(id)
+    const set = ids.filter(id => result.keys?.[id] || result.keyEnv?.[id] || kept(id)).length
+    const skipped = ids.filter(id => result.keys?.[id] === "" && !kept(id)).length
+    return [
+      names.join(", "),
+      ...(set > 0 ? [t("wizard.foldKeysSet", { count: set })] : []),
+      ...(skipped > 0 ? [t("wizard.foldKeysSkipped", { count: skipped })] : [])
+    ].filter(Boolean)
+  },
+  models: result =>
+    Object.entries(chosenPicks(result)).map(
+      ([task, pick]) => `${capitalized(t(TASK_LABEL_KEY[task as ModelTask]))} ${pick.model.split("/").at(-1)}`
+    ),
+  extras: (result, asked, saved) => {
+    const on = [
+      ...(result.extras ?? []).map(extra =>
+        // A bot without a token can't start, which is worth saying
+        extra === "telegram" && result.telegramToken === "" && !saved?.telegram
+          ? t("wizard.foldNoToken", { name: t(EXTRA_SHORT_KEY[extra]) })
+          : t(EXTRA_SHORT_KEY[extra])
+      ),
+      ...(asked.has("marketplace")
+        ? [
+            result.marketplace === false
+              ? t("wizard.foldOff", { name: t("wizard.summaryMarketplace") })
+              : t("wizard.summaryMarketplace")
+          ]
+        : []),
+      ...(asked.has("autoFetch") && result.autoFetch !== false ? [t("wizard.summaryAutoFetch")] : [])
+    ]
+    return on.length > 0 ? on : [t("wizard.foldNothing")]
+  },
+  sounds: (result, asked) =>
+    HOOK_STEPS.filter(hook => asked.has(hook.step)).map(hook =>
+      (result.hooks?.[hook.step] ?? hook.on) ? t(hook.label) : t("wizard.foldOff", { name: t(hook.label) })
+    )
+}
+
+/** `parts` joined by " · " within `width` columns: the ones that don't fit are counted as "+N", never cut mid-word. */
+export function fitParts(parts: string[], width: number): string {
+  for (let kept = parts.length; kept > 0; kept--) {
+    const dropped = parts.length - kept
+    const text = [...parts.slice(0, kept), ...(dropped > 0 ? [`+${dropped}`] : [])].join(" · ")
+    if (Bun.stringWidth(text) <= width) return text
+  }
+  return parts.length > 0 ? `+${parts.length}` : ""
+}
+
+/**
+ * Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count, and
+ * "Esc back" at the right. What doesn't fit goes, "Esc back" first and then the mascot.
+ */
 function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
-  const { success } = useKajaTheme()
+  const { success, accent } = useKajaTheme()
   const reached = current ? blocks.indexOf(current) : blocks.length
+  // Smiles once every block is done
+  const mascot = current ? "༼☉ω⊙༽🪄" : "༼^ω^༽🪄"
+  const count = t("wizard.progressCount", { at, of })
+  const crumbs = blocks
+    .map(
+      (block, index) =>
+        (index < reached ? "✓ " : "") + t(BLOCK_LABEL_KEY[block]) + (index === reached ? ` ${count}` : "")
+    )
+    .join(" › ")
+  const esc = `Esc ${t("wizard.back")}`
+  const room = textWidth() + 1
+  const withMascot = Bun.stringWidth(`${mascot} ${crumbs}`)
+  const showEsc = current !== undefined && withMascot + 2 + Bun.stringWidth(esc) <= room
+  const showMascot = withMascot <= room
   return (
-    <RailLine marker={<Text dimColor>┌</Text>}>
+    <Box paddingLeft={1} width={room + 1} justifyContent="space-between">
       <Text wrap="truncate-end">
-        ༼☉ω⊙༽🪄{" "}
+        {showMascot ? `${mascot} ` : ""}
         {blocks.map((block, index) => (
           <Text key={block}>
             {index > 0 ? <Text dimColor> › </Text> : null}
-            {index < reached ? <Text {...success()}>✓ {t(BLOCK_LABEL_KEY[block])}</Text> : null}
+            {index < reached ? (
+              <Text>
+                <Text {...success()}>✓</Text> {t(BLOCK_LABEL_KEY[block])}
+              </Text>
+            ) : null}
             {index === reached ? (
-              <Text bold color="magenta">
-                {t(BLOCK_LABEL_KEY[block])} {t("wizard.progressCount", { at, of })}
+              <Text>
+                <Text bold {...accent()}>
+                  {t(BLOCK_LABEL_KEY[block])}
+                </Text>{" "}
+                <Text dimColor>{count}</Text>
               </Text>
             ) : null}
             {index > reached ? <Text dimColor>{t(BLOCK_LABEL_KEY[block])}</Text> : null}
           </Text>
         ))}
-        {/* The last frame stays on screen above what the runner prints next: saving, the marketplace, key checks */}
-        {current ? (
-          <Text dimColor>{`  ${t("wizard.escBack")}`}</Text>
-        ) : (
-          <Text>
-            <Text dimColor> › </Text>
-            <Text bold color="magenta">
-              {t("wizard.blockFinishing")}
-            </Text>
-          </Text>
-        )}
       </Text>
-    </RailLine>
+      {showEsc ? (
+        <Text>
+          Esc <Text dimColor>{t("wizard.back")}</Text>
+        </Text>
+      ) : null}
+    </Box>
+  )
+}
+
+/** The keys of a list you pick one from, then `note`. */
+function pickHint(note?: string) {
+  return (
+    <KeyHint
+      keys={[
+        ["↑↓", t("hint.move")],
+        ["Enter", t("hint.pick")]
+      ]}
+      note={note}
+    />
+  )
+}
+
+/** The keys of a checklist, then `note`. */
+function tickHint(note?: string) {
+  return (
+    <KeyHint
+      keys={[
+        ["Space", t("hint.tick")],
+        ["Enter", t("hint.continue")]
+      ]}
+      note={note}
+    />
   )
 }
 
 /** How many answers the open block shows; older ones are counted on a line above them. */
 const OPEN_BLOCK_LINES = 4
 
-/** A finished block folded into one line: its name, then each answer. A label that repeats the name is left out. */
-function FoldedBlock({ block, lines, full }: Readonly<{ block: Block; lines: Answer[]; full?: boolean }>) {
+/** A finished block folded into one line: "✓", its name to the value column, then its short answers, dim. */
+function FoldedBlock({ block, parts }: Readonly<{ block: Block; parts: string[] }>) {
   const { success } = useKajaTheme()
-  const name = t(BLOCK_LABEL_KEY[block])
   return (
     <RailLine marker={<Text {...success()}>✓</Text>}>
-      {/* One row, cut at the edge, while questions are open: a frame taller than the terminal can't be redrawn in place. The last frame is never redrawn, so it says everything */}
-      <Text wrap={full ? "wrap" : "truncate-end"}>
-        <Text bold>{name}</Text>
-        {lines.map(line => (
-          <Text key={line.id}>
-            <Text dimColor> · </Text>
-            {line.label === name ? null : <Text dimColor>{line.label} </Text>}
-            {line.value}
-          </Text>
-        ))}
+      <Text wrap="truncate-end">
+        {padLabel(t(BLOCK_LABEL_KEY[block]))}
+        <Text dimColor>{fitParts(parts, textWidth() - LABEL_WIDTH)}</Text>
       </Text>
     </RailLine>
   )
@@ -657,6 +775,8 @@ export function ConfigWizard({
   const [listing, setListing] = useState<{ url: string; ids?: string[] }>()
   // The user chose to type a model id rather than pick a listed one
   const [typing, setTyping] = useState(false)
+  // Rows a long list shows: set each render from the terminal's height, before the step is drawn
+  let listRows = 8
 
   // Asks the custom server for its models once its address and key are in, on the first model step
   const probeUrl = step.startsWith("custom-model") ? result.custom?.baseUrl : undefined
@@ -718,7 +838,10 @@ export function ConfigWizard({
     let current = 0
     if (result.keys?.[id]) current = result.keys[id] === env[envName] ? 1 : 2
     return (
-      <Question title={t("wizard.keyEnvTitle", { provider: name, env: envName })}>
+      <Question
+        title={t("wizard.keyEnvTitle", { provider: name, env: envName })}
+        hint={pickHint(t("wizard.keyEnvHint"))}
+      >
         <SelectMenu
           closeOnBackspace={false}
           items={choices}
@@ -732,7 +855,6 @@ export function ConfigWizard({
           }}
           onClose={back}
         />
-        <Text dimColor>{t("wizard.keyEnvHint")}</Text>
       </Question>
     )
   }
@@ -752,7 +874,7 @@ export function ConfigWizard({
     onPick: (on: boolean) => void
   }) {
     return (
-      <Question title={title}>
+      <Question title={title} hint={pickHint()}>
         <SelectMenu
           closeOnBackspace={false}
           items={items}
@@ -820,11 +942,14 @@ export function ConfigWizard({
       const guess = chosenPicks(result)[task]
       const current = candidates.findIndex(c => c.provider === guess?.provider && c.model === guess.model)
       return (
-        <Question title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}>
+        <Question
+          title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}
+          hint={pickHint(t("wizard.modelHint"))}
+        >
           <SelectMenu
             closeOnBackspace={false}
             filterable
-            visibleCount={8}
+            visibleCount={listRows}
             items={candidates.map(candidate => `${providerName(candidate.provider, result)} — ${candidate.model}`)}
             hints={candidates.map(candidate => candidate.released ?? "")}
             width={70}
@@ -835,7 +960,6 @@ export function ConfigWizard({
             }}
             onClose={back}
           />
-          <Text dimColor>{t("wizard.modelHint")}</Text>
         </Question>
       )
     }
@@ -898,10 +1022,13 @@ export function ConfigWizard({
     if (step === "custom-review") {
       const ADD = "add"
       return (
-        <Question title={t("wizard.customReviewTitle", { provider: nameOf })}>
+        <Question
+          title={t("wizard.customReviewTitle", { provider: nameOf })}
+          hint={tickHint(t("wizard.customReviewHint"))}
+        >
           <CheckMenu
             filterable
-            visibleCount={10}
+            visibleCount={listRows}
             options={[
               ...custom.models.map((entry, index) => ({
                 label: entry.task ? `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})` : entry.model,
@@ -916,7 +1043,6 @@ export function ConfigWizard({
             }}
             onClose={back}
           />
-          <Text dimColor>{t("wizard.customReviewHint")}</Text>
         </Question>
       )
     }
@@ -938,6 +1064,7 @@ export function ConfigWizard({
             title={t(index === 0 ? "wizard.customModelPickTitle" : "wizard.customModelPickMoreTitle", {
               provider: nameOf
             })}
+            hint={pickHint()}
           >
             <SelectMenu
               closeOnBackspace={false}
@@ -983,7 +1110,7 @@ export function ConfigWizard({
       const index = Number(subject)
       const entry = custom.models[index]
       return (
-        <Question title={t("wizard.customTaskTitle", { model: entry?.model ?? "" })}>
+        <Question title={t("wizard.customTaskTitle", { model: entry?.model ?? "" })} hint={pickHint()}>
           <SelectMenu
             closeOnBackspace={false}
             items={TASK_ORDER.map(task => t(TASK_LABEL_KEY[task]))}
@@ -1011,7 +1138,7 @@ export function ConfigWizard({
     switch (step) {
       case "mode": {
         return (
-          <Question title={t("wizard.modeTitle")}>
+          <Question title={t("wizard.modeTitle")} hint={pickHint()}>
             <SelectMenu
               closeOnBackspace={false}
               items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
@@ -1026,7 +1153,7 @@ export function ConfigWizard({
 
       case "language": {
         return (
-          <Question title={t("wizard.languageTitle")}>
+          <Question title={t("wizard.languageTitle")} hint={pickHint()}>
             <SelectMenu
               closeOnBackspace={false}
               items={locales.map(locale => LOCALE_LABELS[locale])}
@@ -1048,7 +1175,7 @@ export function ConfigWizard({
 
       case "theme": {
         return (
-          <Question title={t("wizard.themeTitle")}>
+          <Question title={t("wizard.themeTitle")} hint={pickHint(t("wizard.themeHint"))}>
             <SelectMenu
               closeOnBackspace={false}
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
@@ -1060,49 +1187,66 @@ export function ConfigWizard({
               onSelect={index => advance({ theme: THEME_CHOICES[index] })}
               onClose={back}
             />
-            <Text dimColor>{t("wizard.themeHint")}</Text>
           </Question>
         )
       }
 
       case "providers": {
-        // Your own server first, then what you already use or have a key for in the environment, the well-known ones, then the rest by name
+        // Servers running here and what you already use or have a key for, the well-known ones, then the rest by name
         const envKey = (provider: CatalogProvider) => provider.env?.find(name => env[name])
-        const front = (provider: CatalogProvider) =>
-          result.providers?.includes(provider.id) || Boolean(envKey(provider))
+        const inUse = (provider: CatalogProvider) => Boolean(result.providers?.includes(provider.id))
         // A catalog entry for a server found running here (LM Studio) gives way to the server's own model list
         const local = result.local ?? []
         const sameServer = (provider: CatalogProvider) =>
           local.some(server => sameAddress(server.baseUrl, provider.baseUrl))
         const listed = CATALOG.filter(provider => !sameServer(provider))
-        const ordered = rankedProviders(listed, front)
+        const groups = providerGroups(listed, provider => inUse(provider) || Boolean(envKey(provider)))
+        const kind = (provider: CatalogProvider) =>
+          t(provider.kind === "hosted" ? "wizard.kindCloud" : "wizard.kindLocal")
+        const row = (provider: CatalogProvider, group: string, reason?: string) => ({
+          label: provider.name,
+          value: provider.id,
+          group,
+          detail: [kind(provider), ...(reason ? [reason] : [])]
+        })
+        const foundGroup = t("wizard.groupFound")
+        const restGroup = t("wizard.groupRest")
         return (
-          <Question title={t("wizard.providerTitle")}>
-            {/* A re-run starts with the providers in models.toml ticked; a first run with those whose key is in the environment, and Enter won't continue until one is. */}
+          <Question
+            title={t("wizard.providerTitle")}
+            hint={refused ? <Problem>{t("wizard.providerRequired")}</Problem> : tickHint()}
+          >
+            {/* A re-run starts with the providers in models.toml ticked; a first run with those whose key is in the environment and the servers running here. */}
             <CheckMenu
               filterable
               enterPicksFocused
-              visibleCount={10}
+              visibleCount={listRows}
               options={[
-                { label: t("wizard.providerCustom"), value: CUSTOM },
                 ...local.map(server => ({
-                  label: t("wizard.providerDetected", {
-                    name: server.name,
-                    address: server.baseUrl.replace(/^https?:\/\//, ""),
-                    count: server.models.length
-                  }),
-                  value: server.id
+                  label: server.name,
+                  value: server.id,
+                  group: foundGroup,
+                  detail: [
+                    t("wizard.kindLocal"),
+                    t("wizard.foundRunning", { address: server.baseUrl.replace(/^https?:\/\//, "") })
+                  ]
                 })),
-                ...ordered.map(provider => {
-                  const found = envKey(provider)
-                  const label = t(provider.kind === "hosted" ? "wizard.providerHosted" : "wizard.providerSelfHosted", {
-                    name: provider.name
-                  })
-                  return {
-                    label: found ? `${label} · ${t("wizard.providerEnvSet", { env: found })}` : label,
-                    value: provider.id
-                  }
-                })
+                ...groups.found.map(provider => {
+                  const variable = envKey(provider)
+                  return row(
+                    provider,
+                    foundGroup,
+                    variable ? t("wizard.foundEnv", { env: variable }) : t("wizard.foundInUse")
+                  )
+                }),
+                ...groups.popular.map(provider => row(provider, t("wizard.groupPopular"))),
+                {
+                  label: t("wizard.providerCustom"),
+                  value: CUSTOM,
+                  group: restGroup,
+                  detail: [t("wizard.providerCustomDetail")]
+                },
+                ...groups.rest.map(provider => row(provider, restGroup))
               ]}
               defaultValue={
                 result.providers ?? [
@@ -1116,11 +1260,6 @@ export function ConfigWizard({
               }}
               onClose={back}
             />
-            {refused ? (
-              <Problem>{t("wizard.providerRequired")}</Problem>
-            ) : (
-              <Text dimColor>{t("wizard.providerHint")}</Text>
-            )}
           </Question>
         )
       }
@@ -1128,7 +1267,16 @@ export function ConfigWizard({
       case "tasks": {
         const available = availableTasks(result)
         return (
-          <Question title={t("wizard.tasksTitle")}>
+          <Question
+            title={t("wizard.tasksTitle")}
+            hint={
+              refused ? (
+                <Problem>{t(available.includes("chat") ? "wizard.tasksChatRequired" : "wizard.tasksNoChat")}</Problem>
+              ) : (
+                tickHint(t("wizard.tasksHint"))
+              )
+            }
+          >
             <CheckMenu
               options={available.map(task => ({ label: capitalized(t(TASK_LABEL_KEY[task])), value: task }))}
               defaultValue={selectedTasks(result)}
@@ -1140,18 +1288,13 @@ export function ConfigWizard({
               }}
               onClose={back}
             />
-            {refused ? (
-              <Problem>{t(available.includes("chat") ? "wizard.tasksChatRequired" : "wizard.tasksNoChat")}</Problem>
-            ) : (
-              <Text dimColor>{t("wizard.tasksHint")}</Text>
-            )}
           </Question>
         )
       }
 
       case "extras": {
         return (
-          <Question title={t("wizard.extrasTitle")}>
+          <Question title={t("wizard.extrasTitle")} hint={tickHint(t("wizard.extrasHint"))}>
             {/* Nothing ticked by default, so one Enter skips the whole step. */}
             <CheckMenu
               options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
@@ -1159,7 +1302,6 @@ export function ConfigWizard({
               onSubmit={values => advance({ extras: values as WizardExtra[] })}
               onClose={back}
             />
-            <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Question>
         )
       }
@@ -1229,29 +1371,38 @@ export function ConfigWizard({
     const block = blockOf(answeredStep)
     return line && block ? [{ id: answeredStep, block, ...line }] : []
   })
+  const asked = new Set(history.map(answeredStep => answeredStep.split(":")[0]!))
+  const recent = trail.filter(line => line.block === current)
+  // The latest few only: a frame taller than the terminal can't be redrawn in place
+  const hidden = Math.max(0, recent.length - OPEN_BLOCK_LINES)
+  const folded = blocks.filter(block => block !== current && trail.some(line => line.block === block))
+  // A list gets what the terminal has left after everything else on screen, 5 to 10 rows
+  const around = 1 + folded.length + Math.min(recent.length, OPEN_BLOCK_LINES) + (hidden > 0 ? 1 : 0) + 10
+  listRows = Math.min(10, Math.max(5, (process.stdout.rows || 24) - around))
 
   return (
     <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
         <Progress blocks={blocks} current={current} at={at} of={of} />
-        {blocks.map(block => {
-          const lines = trail.filter(line => line.block === block)
-          if (block === current) {
-            // The latest few only: a frame taller than the terminal can't be redrawn in place
-            const hidden = Math.max(0, lines.length - OPEN_BLOCK_LINES)
-            return [
-              ...(hidden > 0
-                ? [
-                    <RailLine key="more" marker={<Text dimColor>⋮</Text>}>
-                      <Text dimColor>{t("wizard.moreAnswers", { count: hidden })}</Text>
-                    </RailLine>
-                  ]
-                : []),
-              ...lines.slice(hidden).map(line => <Answered key={line.id} label={`${line.label}:`} value={line.value} />)
-            ]
-          }
-          return lines.length > 0 ? <FoldedBlock key={block} block={block} lines={lines} full={!current} /> : null
-        })}
+        {blocks.map(block =>
+          folded.includes(block) ? (
+            <FoldedBlock key={block} block={block} parts={FOLDS[block](result, asked, saved)} />
+          ) : null
+        )}
+        {hidden > 0 ? (
+          <RailLine marker={<Text dimColor>⋮</Text>}>
+            <Text dimColor>{t("wizard.moreAnswers", { count: hidden })}</Text>
+          </RailLine>
+        ) : null}
+        {recent.slice(hidden).map(line => (
+          <RecentAnswer key={line.id} label={line.label} value={line.value} />
+        ))}
+        {/* The rail runs from the recent answers into the question */}
+        {recent.length > 0 && current ? (
+          <RailLine marker={<Text dimColor>│</Text>}>
+            <Text> </Text>
+          </RailLine>
+        ) : null}
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
         <Box key={step} flexDirection="column">
           {stepView()}
