@@ -1,0 +1,626 @@
+[cli]
+invalidConfig          = "設定ファイルが無効です: {path}"
+startupError           = """
+Kajaで予期しないエラーが発生し、起動できませんでした: {message}
+詳細はログファイルに書き込まれました。"""
+bye                    = "じゃあね!"
+localNoProvider        = "--local にはチャットモデルが必要です。`kaja config wizard` で設定するか、クラウドチャットなら `kaja --cloud` を使ってください。"
+headlessNoSubcommand   = "--headless は対応するサブコマンド(`telegram` など)と一緒に使います。単独のヘッドレスモードはまだありません。"
+pleaseSignIn           = "サインインしてください!"
+deviceLoginGoTo        = "アクセス先:"
+deviceLoginEnterCode   = "コードを入力:"
+deviceLoginScan        = "スマホでスキャン:"
+deviceLoginOpened      = "ブラウザでサインインページが開きました。コードも入力済みです。"
+deviceLoginKeyLink     = "リンクとコード"
+deviceLoginKeyQr       = "スマホ用QRコード"
+deviceLoginCodeCopied  = "コードをクリップボードにコピーしました"
+secretsUnavailable     = "ログイン情報を保存するためのシステムキーチェーンにアクセスできませんでした。OSの資格情報ストレージが不要な --local で実行してみてください。"
+connecting             = "接続中…"
+logoutSuccess          = "ログアウトしました。"
+logoutNotSignedIn      = "サインインしていません。"
+loginDone              = "Kajaクラウドにサインインしました。"
+loginAlready           = "すでにKajaクラウドにサインインしています。サインアウトは `kaja logout` です。"
+deviceLoginStartFailed = "デバイスログインを開始できませんでした"
+deviceLoginDenied      = "デバイスログインが拒否されました"
+deviceLoginExpired     = "デバイスログインのコードの期限が切れました — もう一度ログインを実行してください"
+deviceLoginFailed      = "デバイスログインに失敗しました"
+deviceLoginTimedOut    = "デバイスログインがタイムアウトしました"
+personaSwitchedTitle   = "ペルソナを切り替えました"
+personaSwitchedMessage = "{label} に切り替えました"
+
+
+[update]
+available        = "Kaja {latest} がリリースされました(現在は {current})。"
+cloudNeedsLatest = "クラウドチャットは最新バージョンでのみ動作します。"
+title            = "今すぐ更新しますか?"
+yes              = "はい、更新する"
+later            = "後で"
+quit             = "いいえ、終了"
+done             = "Kaja {latest} をインストールしました。kaja を再起動してください。"
+failed           = "更新が完了しませんでした。"
+manual           = "{command} で手動更新するか、{url} からダウンロードしてください"
+
+
+[paths]
+settings       = "設定"
+memorySessions = "メモリとセッション"
+images         = "セッション画像"
+sounds         = "効果音"
+backups        = "ファイルバックアップ"
+models         = "モデル"
+commands       = "安全なコマンド"
+hooks          = "フック"
+marketplace    = "マーケットプレイス"
+temp           = "一時ファイル"
+
+
+[args]
+help        = """
+Kaja コマンドラインツール • v{version} • https://kaja.io
+
+使い方
+  $ kaja [OPTIONS] [COMMAND]
+
+コマンド
+  config <wizard|fetch|diff|paths>
+                       対話形式のセットアップ、または設定ファイルの管理
+  doctor               設定済みのモデル、MCPサーバー、ツールを表示し、接続を確認
+  telegram [--pair]    Telegramボットを起動。--pair でもう1人をペアリングするコードを表示
+  abilities [update]   読み込むスキルを選択、またはマーケットプレイスを取得
+  sessions             保存済みのローカルセッションをIDつきで一覧表示
+  images [describe [--retry] | clean [--yes]]
+                       保存済みの画像を表示。説明のない画像の説明を生成、または不要なものを削除(--local)
+  login                チャットを始めずにクラウドアカウントへサインイン
+  logout               クラウドアカウントからログアウトし、保存済みの認証情報を消去
+
+オプション
+  --local         クラウドログインではなく、自分のプロバイダーでローカルのエージェントループを実行
+  --cloud         ローカル設定があってもクラウドログインを強制(デフォルト)
+  --continue, -c  直近のセッションを再開(--local のみ)
+  --headless      ターミナルUIなし。対応するサブコマンド用(例: telegram)
+  --session, -s   IDを指定してセッションを再開(--local のみ。kaja sessions を参照)
+  --help          このヘルプを表示
+  --version       バージョンを表示
+"""
+unknownFlag = "{message}。`kaja --help` で利用可能なオプションを確認してください。"
+
+
+[config]
+invalidAt            = "{path} の設定ファイルが無効です: {message}"
+notExists            = "設定ファイルが存在しません: {path}"
+usage                = """
+使い方
+  $ kaja config fetch   models.dev から models.toml を更新
+  $ kaja config diff    fetch で models.toml が変わるかを、書き込まずに表示
+  $ kaja config wizard  言語、プロバイダー、ペルソナの対話式セットアップ
+  $ kaja config hooks   このコンピューターの効果音、通知、音声読み上げを設定
+  $ kaja config paths   Kajaが読み書きするすべてのパスを表示
+"""
+fetched              = "{path} を書き込みました"
+fetchedWithBackup    = "{path} を書き込みました(以前のファイルは {backup} にバックアップ)"
+fetchedUnchanged     = "{path} は最新です"
+fetchModelsNoCatalog = "models.toml は変更しませんでした: プロバイダーカタログがありません(オフライン?)。モデルを手動で変更するには `kaja config wizard` を実行してください。"
+fetchModelsNoFile    = "models.toml がまだありません。モデルを設定するには `kaja config wizard` を実行してください。"
+fetchModelsOwnOnly   = "models.toml は自分のプロバイダーのみを使用しているため、カタログから更新するものはありません。"
+diffUnchanged        = "{path}: 変更なし"
+diffWouldUpdate      = "{path}: 更新されます"
+
+
+[hooks]
+questionTitle      = "Kajaからの質問"
+confirmTitle       = "Kajaが承認を求めています"
+errorTitle         = "Kajaでエラーが発生しました"
+yes                = "はい"
+no                 = "いいえ"
+kindPlayer         = "サウンドプレーヤー"
+kindNotifier       = "通知ツール"
+kindSpeaker        = "音声読み上げツール"
+found              = "{what}が見つかりました: {program}"
+missing            = "このシステムに{what}が見つかりません。"
+missingInstall     = "{what}が見つかりません。次のコマンドでインストールしてください: {command}"
+missingProgram     = "{what}が見つかりません。パッケージマネージャーで {program} をインストールしてください。"
+replaceTitle       = "{path} はすでに存在します。置き換えますか?古いファイルはバックアップとして残ります。"
+soundsTitle        = "チャットで何かが起きたときに効果音を鳴らしますか?"
+notificationsTitle = "質問、承認、ペルソナの切り替えをデスクトップ通知で知らせますか?"
+speechTitle        = "{program} でアシスタントのメッセージを読み上げますか?"
+nothing            = "何も有効にしなかったため、hooks.toml はそのままです。"
+soundsFailed       = "効果音をダウンロードできませんでした。オンラインのときに `kaja config hooks` をもう一度実行してください。"
+needsTerminal      = "`kaja config hooks` は質問を行うため、ターミナルが必要です。"
+done               = "フックを設定しました。独自のフックは hooks.toml を編集して追加してください。"
+
+
+[wizard]
+modeTitle                = "Kajaへようこそ!どのように使いますか?"
+modeCloud                = "Kajaクラウド — サインインするだけ、設定不要"
+modeLocal                = "自分のプロバイダー — 自分のLLMで実行"
+modeCloudShort           = "Kajaクラウド"
+modeLocalShort           = "自分のプロバイダー"
+languageTitle            = "言語を選択してください"
+themeTitle               = "このターミナルで見やすい配色はどれですか?"
+themeDark                = "暗い背景"
+themeLight               = "明るい背景"
+themeTerminal            = "このターミナル独自の配色"
+themeDarkShort           = "暗い配色"
+themeLightShort          = "明るい配色"
+themeTerminalShort       = "ターミナルの配色"
+themeHint                = "後から settings.toml で変更できます"
+providerTitle            = "どのAIプロバイダーを使いますか?"
+providerRequired         = "1つ以上選択するか、代わりに kaja --cloud を実行してください"
+providerCustom           = "カスタム"
+providerCustomDetail     = "OpenAI互換の任意のサーバー"
+kindCloud                = "クラウド"
+kindLocal                = "ローカル"
+groupFound               = "このコンピューターで検出"
+groupPopular             = "人気"
+groupRest                = "その他すべて"
+foundEnv                 = "{env} にキーあり"
+foundRunning             = "{address} で起動中"
+foundInUse               = "models.toml に登録済み"
+customNameTitle          = "このプロバイダーの名前は何にしますか?"
+customNameHint           = "短い名前(例: lmstudio)。[providers.<name>] になります"
+customNameInvalid        = "英数字とダッシュを使ってください(例: lmstudio)。"
+customUrlTitle           = "ベースURLは何ですか?"
+customUrlHint            = "APIが応答する場所。通常は /v1 で終わります"
+customUrlInvalid         = "Webアドレスではありません(例: http://localhost:1234/v1)。"
+customModelTitle         = "Kajaに使わせる {provider} のモデルは?プロバイダーでの名前(ID)を入力してください。"
+customModelMoreTitle     = "{provider} のモデルをもう1つ追加しますか?IDを入力するか、Enterで完了します。"
+customModelHint          = "例: llama-3.2-1b-instruct"
+customModelRequired      = "モデルIDを1つ以上入力してください。"
+customModelSearching     = "{url} に利用可能なモデルを問い合わせ中…"
+customModelPickTitle     = "Kajaに使わせる {provider} のモデルは?"
+customModelPickMoreTitle = "{provider} のモデルをもう1つ追加しますか?"
+customModelTypeOther     = "モデルIDを自分で入力"
+customModelEnough        = "以上です"
+customTaskTitle          = "{model} は何に使いますか?"
+modelTitle               = "Kajaに使わせる{task}モデルは?"
+modelHint                = "新しい順、最有力が最初に選択されます"
+modelBestGuess           = "おすすめ"
+modelInUse               = "使用中"
+tasksTitle               = "Kajaにできるようにしたいことは?"
+tasksHint                = "それぞれ次の画面でモデルを選びます"
+tasksChatRequired        = "チャットは必須です。Kajaはチャットで会話します。"
+tasksNoChat              = "これらのプロバイダーにチャットモデルはありません。Esc で戻って別のものを選んでください。"
+summaryTasks             = "タスク"
+summaryCustomModels      = "カスタムモデル"
+customModelsKept         = "{count} 件保持"
+customReviewTitle        = "残す {provider} のモデルは?"
+customReviewHint         = "外すにはチェックを外し、追加するには最後の行にチェックを入れます"
+customAddModel           = "＋ モデルを追加"
+moreAnswers              = "以前の回答 {count} 件"
+checkKeyOk               = "キーは有効"
+checkKeyRejected         = "キーを拒否"
+checkKeyUnknown          = "確認できず"
+checkKeyUnknownDetail    = "{error}。Enterで保存され、最後にもう一度テストします"
+checkServerOk            = "応答あり、{count} モデル"
+checkServerNeedsKey      = "応答あり、キーが必要"
+checkServerDown          = "まだ応答なし"
+checkServerDownDetail    = "{error}。後で起動するなら問題ありません"
+checkTelegramOk          = "ボットを確認"
+checkTelegramBad         = "Telegramが拒否"
+taskChat                 = "チャット"
+taskEmbedding            = "埋め込み"
+taskRerank               = "リランキング"
+taskImageGeneration      = "画像生成"
+taskTts                  = "音声合成"
+taskStt                  = "音声認識"
+taskSummarize            = "要約"
+taskVision               = "画像の説明"
+providerKeyTitle         = "{provider} のAPIキーを貼り付けてください"
+keyEnvTitle              = "{provider} のキーはすでに ${env} にあります。Kajaでどう使いますか?"
+keyFromEnv               = "毎回 ${env} から読み込む(何も保存しない)"
+keyCopyEnv               = "${env} から secrets.toml にコピーする"
+keyTypeOther             = "別のキーを入力する"
+keyEnvHint               = "読み込みならコピーは1つだけで、最後にテストされます"
+keyNote                  = "入力は非表示で、入力が止まると確認されます"
+keySkips                 = "Enterのみでスキップ"
+keyKeepsTyped            = "Enterで入力したキーを保持"
+keyKeepsTypedTail        = "Enterで入力したキーを保持(…{tail})"
+keyKeepsSaved            = "Enterで保存済みのキーを保持"
+keyKeepsSavedTail        = "Enterで保存済みのキーを保持(…{tail})"
+keyStateEnv              = "${env} から読み込み"
+baseUrlTitle             = "{provider} サーバーはどこで待ち受けていますか?"
+baseUrlHint              = "デフォルトが入力済みです"
+extrasTitle              = "ほかにありますか?"
+extrasHint               = "すべて任意"
+extraTelegram            = "Telegramボット(ターミナル以外でKajaとチャット)"
+extraTelegramShort       = "Telegramボット"
+voiceSaved               = "音声を settings.toml で {url} に設定しました。"
+telegramTokenTitle       = "Telegramボットのトークンを貼り付けてください"
+marketplaceTitle         = "スキル、ペルソナ、ツールにオンラインのマーケットプレイスを使いますか?gitが必要です。"
+marketplaceYes           = "はい、使う"
+marketplaceNo            = "いいえ、オフラインのまま"
+marketplaceOff           = "マーケットプレイスはオフです。Kajaはアビリティのためにオンラインへ接続しません。変更するには settings.toml で [marketplace] enabled = true にしてください。"
+marketplaceNoGit         = "マーケットプレイスはオフのままです: {reason} gitをインストールして、もう一度 `kaja config wizard` を実行してください。"
+autoFetchTitle           = "マーケットプレイスを自動で最新に保ちますか?前回の同期から1日以上たっていれば、起動時にKajaが取得します。"
+autoFetchYes             = "はい、自動で更新する"
+autoFetchNo              = "いいえ、頼んだときだけ"
+pullTitle                = "モデルサーバーにまだ次のモデルがありません: {names}。今すぐダウンロードしますか?"
+pullYes                  = "ダウンロードする"
+pullNo                   = "後で"
+pullStarted              = "ダウンロード中 — 数分かかることがあります。"
+pullSkipped              = "スキップしました — 必要なときに `ollama pull <model>` を実行してください。"
+pullDone                 = "準備完了"
+pullFailed               = "ダウンロードできませんでした: {error}"
+hostTitle                = "{name} はこのコンピューターでは実行できません。{programs} が必要です。"
+hostSkip                 = "今はスキップする"
+hostInstallUv            = "今すぐuvをインストールする(公式インストーラーを実行)"
+hostGetChrome            = "Chromeを入手する(ダウンロードページを開く)"
+hostSandbox              = "代わりにKajaサンドボックスで実行する(Kajaクラウドへのサインインが必要)"
+hostSkipped              = "{programs} がインストールされるまで {name} はオフのままです。"
+hostSkippedUv            = "{name} はオフのままです。uvを自分でインストールするには: {command}"
+hostSkippedChrome        = "{name} はオフのままです。{url} からChromeをインストールして、Kajaを再起動してください。"
+hostChromeAt             = "{url} からChromeをインストールして、Kajaを再起動してください。"
+hostInstalled            = "uvをインストールしました。"
+hostInstallFailed        = "uvがインストールされていません。自分で実行してください: {command}"
+hostSandboxSet           = "{name} はKajaサンドボックスで実行されるようになりました(settings.toml の [tools.hosts])。"
+hostSignInFailed         = "{name} はサンドボックスで実行する設定ですが、サインインできなかったため今はオフです。`kaja login` でもう一度試せます。"
+summaryMode              = "モード"
+summaryLanguage          = "言語"
+summaryTheme             = "配色"
+summaryProvider          = "プロバイダー"
+summaryAddress           = "{provider} サーバー"
+summaryModel             = "{task}モデル"
+summaryCustom            = "カスタムプロバイダー"
+summaryCustomModel       = "カスタムモデル"
+summaryExtras            = "追加機能"
+summarySounds            = "効果音"
+summaryNotifications     = "通知"
+summarySpeech            = "読み上げ"
+summaryMarketplace       = "マーケットプレイス"
+summaryAutoFetch         = "自動更新"
+summaryKeyProvider       = "{provider} キー"
+summaryKeyTelegram       = "Telegramボットトークン"
+blockBasics              = "基本"
+blockProviders           = "プロバイダー"
+blockModels              = "モデル"
+blockExtras              = "追加機能"
+blockSounds              = "サウンド"
+blockFinishing           = "仕上げ"
+allSet                   = "設定完了です。"
+savedTo                  = "{path} に保存しました"
+progressCount            = "{at}/{of}"
+back                     = "戻る"
+foldKeysSet              = "設定済みのキー: {count}"
+foldKeysSkipped          = "スキップしたキー: {count}"
+foldOff                  = "{name} オフ"
+foldNothing              = "追加なし"
+foldNoToken              = "{name}、トークンなし"
+keyStateEntered          = "入力済み、最後にテスト"
+keyStateKept             = "保存済み、保持"
+keyStateSkipped          = "スキップ"
+headlessDone             = "デフォルト設定を書き込みました(非対話セッション)"
+cancelled                = "キャンセルしました — 何も変更していません"
+done                     = "準備完了です。kaja と入力して開始します。"
+doneWithIssues           = "準備完了ですが、まだ {count} 件の対応が必要です。`kaja doctor` で再確認できます。"
+doneCloud                = "準備完了です。kaja と入力してサインインします。"
+
+
+[models]
+invalidAt = "{path} のモデルファイルが無効です: {message}"
+
+
+[abilities]
+invalidAt = "{path} のアビリティファイルが無効です: {message}"
+
+
+[ability]
+usage               = "使い方: kaja abilities [update]"
+cloudHint           = "Kajaクラウドを使用中です。クラウドではすべてのアビリティが有効で、チャットで使うものはペルソナが選びます。APIキーはKajaが用意します。このマシンのアビリティはローカルモード用です: `kaja --local abilities`。"
+marketplace         = "マーケットプレイス"
+updating            = "マーケットプレイスを更新中..."
+synced              = "マーケットプレイスを {url}({ref})の {commit} に同期しました。"
+nothingChanged      = "すべて最新です。"
+countAdded          = "{count} 件追加"
+countUpdated        = "{count} 件更新"
+countRemoved        = "{count} 件削除"
+backedUp            = "  {path} を置き換え、あなたの版は {backup} に保存"
+kept                = "  {path} を保持: 上流で削除されましたが、編集済みです"
+fetchFailed         = "マーケットプレイスを取得できませんでした: {message}"
+disabled            = "マーケットプレイスは settings.toml でオフになっています([marketplace] enabled = false)。"
+gitMissing          = "gitがインストールされていません。マーケットプレイスを取得するにはgitをインストールしてください。"
+gitTimeout          = "{command} に時間がかかりすぎたため停止しました。"
+gitFailed           = "{command} が失敗しました: {message}"
+gitTooOld           = "git {version} は古すぎてマーケットプレイスを取得できません。git {min} 以降をインストールしてください。"
+noMarketplaceFolder = "{url}({ref})に marketplace/ フォルダーがありません。"
+local               = "ローカル"
+empty               = "アビリティはまだありません。`kaja abilities update` を実行するか、marketplace/abilities/ に自分で追加してください。"
+title               = "アビリティ"
+typeSkill           = "スキル"
+typeTool            = "ツール"
+typeMcp             = "mcp"
+typeCode            = "コード"
+onSandbox           = "Kajaサンドボックス"
+sandboxSignedOut    = "{names}: サンドボックスで実行する設定ですが、Kajaクラウドにサインインしていないため今はオフです。`kaja login` でサインインできます。"
+brokenPart          = "{part}: {error}"
+keySaved            = "キー保存済み"
+noKey               = "キーなし、オフ"
+keyless             = "キー不要で動作"
+needs               = "オフ: {programs} をインストール"
+colName             = "アビリティ"
+colParts            = "構成"
+colRuns             = "実行先"
+colKey              = "キー"
+colPersonas         = "ペルソナ"
+noPersona           = "使用するペルソナなし"
+listHint            = "チャットで使うアビリティはペルソナが選びます(marketplace/personas/<id>.toml の `abilities` リスト)。足りないキーは `kaja doctor` が尋ねます。"
+
+
+[secrets]
+invalidAt = "{path} のシークレットファイルが無効です: {message}"
+
+
+[input]
+placeholder           = "メッセージを入力..."
+askPlaceholder        = "回答を入力…"
+askChoicesPlaceholder = "または自分の回答を入力…"
+
+
+[header]
+local  = "ローカル"
+cloud  = "クラウド"
+tokens = "{count} トークン"
+
+
+[keybar]
+help      = "ヘルプ"
+persona   = "ペルソナ"
+copy      = "コピー"
+scroll    = "スクロール"
+quit      = "終了"
+expand    = "展開"
+quitAgain = "実行中: もう一度 Esc で終了"
+cancel    = "キャンセル"
+decline   = "拒否"
+close     = "閉じる"
+clear     = "クリア"
+command   = "コマンド"
+
+
+[viewport]
+scrolledBack = "↑ 履歴の {percent}%"
+
+
+[confirmCommand]
+yes          = "はい、実行する"
+no           = "いいえ、キャンセル"
+running      = "実行中…"
+truncated    = "… あと {count} 行"
+placeholder  = "または代わりにすることを入力(これは実行しません)"
+commandTitle = "承認待ちのコマンド"
+requestTitle = "承認待ちのリクエスト"
+toolRequest  = "{name} が次のリクエストを送信しようとしています:"
+
+
+[hint]
+move     = "移動"
+pick     = "選択"
+tick     = "チェック"
+continue = "次へ"
+save     = "保存"
+
+
+[menu]
+filterPlaceholder = "入力して絞り込み"
+noMatches         = "一致するものはありません。"
+countTotal        = "全 {count} 件"
+countMatch        = "{count} 件一致"
+countTicked       = "{count} 件チェック済み"
+more              = "あと {count} 件"
+
+
+[secretPrompt]
+hint        = "空のままEnterでスキップ"
+checking    = "確認中"
+refusedHint = "入力ミスがないか確認してください。Enterでもそのまま保存できます"
+
+
+[activity]
+thinking = "考え中… {seconds}秒経過、推論中"
+tokens   = " · これまでに約 {tokens} トークン生成"
+
+
+[help]
+title    = "ヘルプ"
+intro    = "メッセージを入力してEnterで送信します。Escで終了します。"
+persona  = "ペルソナを切り替え"
+copy     = "最新の返信をコピー(返信をクリックしてもコピーできます)"
+expand   = "長いコードを展開または折りたたみ"
+command  = "承認待ちのコマンドを表示"
+help     = "このヘルプを表示"
+scroll   = "チャットをスクロール"
+newline  = "メッセージ内で改行"
+openDocs = "ドキュメントを開く"
+
+
+[persona]
+pickerTitle = "ペルソナを選択"
+
+
+[toolCall]
+webSearch     = "\"{query}\" を検索中..."
+fetchUrl      = "{url} を取得中..."
+currentTime   = "時刻を確認中{timezone}..."
+generateImage = "画像を生成中: \"{prompt}\"..."
+listFiles     = "{path} のファイルを一覧表示中..."
+readFile      = "{path} を読み込み中..."
+viewImage     = "{path} を表示中..."
+editImage     = "画像を編集中..."
+rememberNote  = "\"{key}\" を記憶中..."
+recallMemory  = "記憶を呼び出し中{query}..."
+forgetNote    = "メモを忘れています..."
+listNotes     = "メモを一覧表示中..."
+rerank        = "{n} 件の結果を順位付け中..."
+summarize     = "要約中..."
+loadSkill     = "{name} スキルを読み込み中..."
+loadSkillFile = "{name} スキルの {file} を読み込み中..."
+
+
+[timeline]
+personaSwitch    = "ペルソナを切り替えました: {label}"
+toolsUsed        = "ツール呼び出し({count}): {names}"
+compacted        = "コンテキストを圧縮しました: {before} → {after} トークン"
+compactedDropped = "コンテキストを圧縮しました: {before} → {after} トークン。要約を作成できなかったため、古いメッセージを除外しました。"
+condensed        = "{tool} の出力を縮約しました: {before} → {after} トークン"
+nothingToCompact = "圧縮するものはまだありません。"
+computerStopped  = "停止しました: このコンピューターでのツール呼び出しが {count} ラウンド連続で失敗しました。次のメッセージで再開します。"
+imageFailed      = "読み込めません: {reason}"
+openImage        = "開く"
+imageMissing     = "ファイルが見つかりません"
+imageUnreachable = "接続できません"
+imageUnreadable  = "画像ではありません"
+
+
+[error]
+network = "ネットワークエラー"
+tool    = "ツールが失敗しました"
+agent   = "問題が発生しました"
+unknown = "不明なエラー"
+
+
+[doctor]
+envUnset               = "${env} はこの環境に設定されていません"
+cwd                    = "ディレクトリ: "
+gitOk                  = "git: {version}"
+gitBad                 = "git: "
+noModels               = "モデルが設定されていません"
+taskChat               = "チャット"
+taskTts                = "音声合成"
+taskStt                = "音声認識"
+taskEmbedding          = "埋め込み"
+taskRerank             = "リランク"
+taskImageGen           = "画像生成"
+taskSummarize          = "要約"
+taskVision             = "画像の説明"
+checking               = "モデルを確認中…"
+modelUp                = "正常"
+modelUpWindow          = "正常 · {tokens} トークン、{source}"
+contextWindow_config   = "models.toml より"
+contextWindow_detected = "検出"
+contextWindow_fallback = "仮定"
+modelDown              = "応答なし"
+modelSwitchTitle       = "{task}モデル {model} が動作しませんでした: {reason}。代わりに別の{task}モデルを使いますか?"
+modelSwitchKeep        = "{model} のままにする"
+modelSwitched          = "{provider} の {model} に変更"
+modelKept              = "{model} を維持"
+modelAlternativesDown  = "ほかの{task}モデルも応答しませんでした。"
+mcpServers             = "MCPサーバー"
+mcpServerToolCount     = "({count} ツール)"
+mcpServerFailed        = "(接続に失敗)"
+mcpServerNeeds         = "(オフ: 実行するには {programs} をインストール)"
+mcpServerNoRoots       = "(オフ: これを挙げているペルソナがルート(使用できるフォルダー)を与えていません)"
+tools                  = "ツール"
+toolsOfficial          = "公式"
+toolsCommunity         = "コミュニティ"
+toolsSkipped           = "スキップ"
+skippedReserved        = "Kajaの予約名"
+skippedTaken           = "{source} が使用中の名前"
+credentials            = "キーとトークン"
+itemProvider           = "{name}(モデルプロバイダー)"
+itemAbility            = "{name}(ツールのアビリティ)"
+itemMcpAbility         = "{name}(MCPアビリティ)"
+itemTelegram           = "Telegramボット"
+missing                = "未設定"
+askMissing             = "{label} にはキーまたはトークンが必要です{hint}。"
+askFailing             = "{label} が動作しませんでした: {reason}。新しいキーを入力してください{hint}。"
+askOff                 = "{label} はキーを設定するまでオフです{hint}。入力するか、スキップしてください。"
+askKeyless             = "{label} はキーなしでも動作しますが、キーがあると制限が緩和されます{hint}。入力するか、スキップしてキーなしで使ってください。"
+keyless                = "キー不要で動作"
+keyWorks               = "キーは有効"
+untested               = "設定済み、テスト不可"
+keyOff                 = "キーなし、オフ"
+noteOff                = "キーを設定するまでオフです{hint}。"
+noteKeyless            = "キーなしでも動作します。キーがあると制限が緩和されます{hint}。"
+savedWorking           = "保存済み、動作確認OK"
+savedUntested          = "保存済み(テスト方法なし)"
+savedFailing           = "保存済みですが動作しませんでした: {reason}"
+allGood                = "すべてのキーとトークンに問題ありません。"
+todoTitle              = "{path} で、まだ修正が必要なもの:"
+todoUnreachable        = "接続できませんでした — サービスが起動しているか、models.toml のURLを確認してください:"
+todoRerun              = "ファイルを編集するか、ターミナルで `kaja doctor` を実行すると入力を求められます。"
+checkModelFailed       = "{model} が応答しませんでした({error})"
+checkTimeout           = "15秒以内に応答なし"
+stats                  = "セッション: {sessionCount} · メモリノート: {memoryNoteCount}"
+yolo                   = "{path} で yolo がオンです: すべてのコマンドとツール呼び出しが確認なしで実行されます"
+
+
+[images]
+empty             = "保存された画像はまだありません。"
+totals            = "{count} 枚、{size}"
+descriptions      = "説明あり {described} 枚、説明なし {undescribed} 枚"
+added             = "過去 {days} 日間に {count} 枚追加({size})"
+sitesTitle        = "取得元:"
+sessionsTitle     = "画像が最も多いセッション:"
+sessionLine       = "{images} 枚、{size}  {title}"
+describeHint      = "残りは `kaja --local images describe` で説明を生成できます。"
+unknownAction     = "`kaja images {action}` は不明です。`describe` または `clean` を使ってください。"
+localOnly         = "`kaja images describe` と `clean` はローカルストアでのみ動作します(`kaja --local images …`)。"
+signInFirst       = "サインインしていません。先に `kaja login` を実行してください。"
+cloudFailed       = "クラウドから画像を読み込めませんでした(HTTP {status})。"
+noVision          = "models.toml にビジョンモデルがありません。画像を説明するには、tasks に `vision` を含むモデルを追加してください。"
+nothingToDescribe = "すべての画像に説明があります(3回試した画像はスキップされます。対象にするには --retry を付けてください)。"
+describing        = "{model} で {count} 枚の画像を説明中…"
+noDescription     = "モデルから説明が返りませんでした"
+described         = "{total} 枚中 {described} 枚を説明しました。"
+nothingToClean    = "整理するものはありません。"
+removeAsk         = "削除しますか? [y/N]"
+removed           = "{count} 件削除しました。"
+removeHint        = "ターミナルで実行すると確認が求められます。すべて削除するには --yes を付けてください。"
+
+
+  [images.orphans]
+  files   = "行のないファイル {count} 件({size}):"
+  rows    = "ファイルが失われた行 {count} 件({size}):"
+  unsaved = "保存されなかったセッションの画像で1日以上経過したもの {count} 枚({size}):"
+
+
+[session]
+none      = "続行できる保存済みセッションはまだありません。"
+notFound  = "ID {id} のセッションはありません。`kaja sessions` で一覧を確認してください。"
+listEmpty = "保存済みセッションはまだありません。"
+listHint  = "`kaja -s <id>` で再開、最新のものは `kaja -c` で再開できます。"
+
+
+[telegram]
+notConfigured        = "このコマンドを使うには、secrets.toml の `[telegram]` にボットトークンを保存してください(ファイルの場所は `kaja config paths` で確認できます)。"
+invalidToken         = "Telegramボットのトークンが無効です — secrets.toml の `[telegram] bot_token` を確認してください。"
+starting             = "Telegramボットを起動中…"
+yolo                 = "YOLOがオンです: ボットはすべてのコマンドとツール呼び出しを確認なしで承認します。"
+ready                = "Telegramボットの準備ができました。ロングポーリングでメッセージを待ち受けています。"
+pairFirst            = """
+@{username} にはまだペアリングした人がおらず、ペアリングするまで誰にも応答しません。
+https://t.me/{username}?start={code} を開くか、
+次を送信してください: /start {code}"""
+pairAnother          = """
+@{username} にもう1人をペアリングするには、https://t.me/{username}?start={code} を開くか、
+次を送信してもらってください: /start {code}"""
+pairedLog            = "{name}({id})をペアリングしました — secrets.toml に保存しました。"
+paired               = "✅ ペアリングしました。Kajaと話せます。"
+newSession           = "🆕 新しいセッションを開始しました。"
+stillWorking         = "前のメッセージをまだ処理中です…"
+pendingCommand       = "上に承認待ちのコマンドまたはリクエストがあります — 先に「承認」か「拒否」をタップしてください。"
+commandExpired       = "このコマンドはもう保留中ではありません。"
+questionExpired      = "この質問にはすでに回答済みです。"
+approved             = "承認しました"
+approveSession       = "このチャットで承認"
+declined             = "拒否しました"
+skipped              = "スキップ: 代わりに入力されました"
+welcome              = "👋 ペアリング完了です。メッセージを送ってチャットを始めましょう。"
+photoFailed          = "⚠ Telegramからその画像を取得できませんでした — もう一度送ってみてください。"
+emptyResponse        = "(空の応答)"
+noVision             = "⚠ このモデルは画像を見られないため、写真は除外しました。対応するモデルを選ぶか、言葉で説明してください。"
+photoTooLarge        = "画像が大きすぎます — 10 MB未満のものを送ってください。"
+genericError         = "処理中に問題が発生しました — ログを確認してください。"
+abilitiesTitle       = "各ペルソナが使うもの"
+abilitiesPersona     = "{persona}: {names}"
+abilitiesPersonaNone = "{persona}: 組み込みツールのみ"
+abilitiesHint        = "チャットで使うものは、各ペルソナの <code>abilities</code> リストで選ばれます。<code>kaja abilities</code> をコンピューターで実行すると一覧を確認できます。変更後は <code>kaja telegram</code> を再起動してください。"
+commandNew           = "新しい会話を開始"
+commandAbilities     = "このボットが使うスキルとツールを表示"
+commandCompact       = "ここまでの会話を要約して空きを確保"
+compacted            = "🗜 会話を圧縮しました: {before} → {after} トークン。"
+compactedDropped     = "🗜 会話を圧縮しました: {before} → {after} トークン。要約を作成できなかったため、古いメッセージを除外しました。"
+nothingToCompact     = "圧縮するものはまだありません。"
+
+
+[markdown]
+codeMore = "… あと {count} 行(展開してすべて表示)"

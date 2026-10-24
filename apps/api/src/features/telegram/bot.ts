@@ -55,11 +55,14 @@ type IncomingPhoto = {
 /** How long to wait before polling again while another instance holds the getUpdates connection. */
 const POLL_CONFLICT_RETRY_MS = 10_000
 
-/**
- * The Telegram app language each translated command menu is for; nan-TW has no two-letter code, so it gets the default
- * (English) one, and en-US shares it with en-GB.
- */
+/** Telegram command-menu translations use language codes rather than region-specific tags. */
 const MENU_LANGUAGE: [Locale, LanguageCode][] = [
+  ["es-ES", "es"],
+  ["ja-JP", "ja"],
+  ["ko-KR", "ko"],
+  ["de-DE", "de"],
+  ["fr-FR", "fr"],
+  ["pt-BR", "pt"],
   ["hu-HU", "hu"],
   ["zh-TW", "zh"]
 ]

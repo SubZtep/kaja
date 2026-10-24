@@ -1,0 +1,626 @@
+[cli]
+invalidConfig          = "Arquivo de configuração inválido: {path}"
+startupError           = """
+O Kaja encontrou um erro inesperado e não conseguiu iniciar: {message}
+Os detalhes foram gravados no arquivo de log."""
+bye                    = "Tchau, tchau!"
+localNoProvider        = "--local precisa de um modelo de chat. Execute `kaja config wizard` para configurar um, ou `kaja --cloud` para o chat na nuvem."
+headlessNoSubcommand   = "--headless precisa de um subcomando compatível, como `telegram`. Ainda não existe um modo headless puro."
+pleaseSignIn           = "Faça login, por favor!"
+deviceLoginGoTo        = "Acesse:"
+deviceLoginEnterCode   = "Digite o código:"
+deviceLoginScan        = "Escaneie com o celular:"
+deviceLoginOpened      = "A página de login está aberta no seu navegador, com o seu código."
+deviceLoginKeyLink     = "link e código"
+deviceLoginKeyQr       = "QR code para o celular"
+deviceLoginCodeCopied  = "Código copiado para a área de transferência"
+secretsUnavailable     = "Não foi possível acessar o chaveiro do sistema para guardar seu login. Tente executar com --local, que não exige armazenamento de credenciais do SO."
+connecting             = "Conectando…"
+logoutSuccess          = "Logout feito."
+logoutNotSignedIn      = "Você não estava conectado."
+loginDone              = "Login feito na nuvem do Kaja."
+loginAlready           = "Você já está conectado à nuvem do Kaja. `kaja logout` desconecta você."
+deviceLoginStartFailed = "Falha ao iniciar o login do dispositivo"
+deviceLoginDenied      = "O login do dispositivo foi negado"
+deviceLoginExpired     = "O código do login do dispositivo expirou — execute o login novamente"
+deviceLoginFailed      = "Falha no login do dispositivo"
+deviceLoginTimedOut    = "O login do dispositivo expirou por tempo"
+personaSwitchedTitle   = "Persona alterada"
+personaSwitchedMessage = "Alterado para {label}"
+
+
+[update]
+available        = "O Kaja {latest} já saiu (esta é a {current})."
+cloudNeedsLatest = "O chat na nuvem só funciona com a versão mais recente."
+title            = "Atualizar agora?"
+yes              = "Sim, atualizar"
+later            = "Agora não"
+quit             = "Não, sair"
+done             = "O Kaja {latest} está instalado. Inicie o kaja de novo para usá-lo."
+failed           = "A atualização não foi concluída."
+manual           = "Atualize manualmente com {command}, ou baixe em {url}"
+
+
+[paths]
+settings       = "configurações"
+memorySessions = "memória e sessões"
+images         = "imagens da sessão"
+sounds         = "efeitos sonoros"
+backups        = "backups de arquivos"
+models         = "modelos"
+commands       = "comandos seguros"
+hooks          = "hooks"
+marketplace    = "marketplace"
+temp           = "temp"
+
+
+[args]
+help        = """
+Ferramenta de linha de comando do Kaja • v{version} • https://kaja.io
+
+USO
+  $ kaja [OPÇÕES] [COMANDO]
+
+COMANDOS
+  config <wizard|fetch|diff|paths>
+                       Configure de forma interativa ou gerencie os arquivos de configuração
+  doctor               Mostra os modelos, servidores MCP e ferramentas configurados e verifica as conexões
+  telegram [--pair]    Executa seu bot do Telegram; --pair mostra um código para parear mais uma pessoa
+  abilities [update]   Escolha quais skills carregar, ou busque o marketplace
+  sessions             Lista as sessões locais salvas com seus ids
+  images [describe [--retry] | clean [--yes]]
+                       Mostra as imagens guardadas; descreve as que não têm descrição, ou remove as sobras (--local)
+  login                Entra na conta da nuvem sem iniciar um chat
+  logout               Sai da conta da nuvem, apagando a credencial guardada
+
+OPÇÕES
+  --local         Executa o loop do agente local com seu próprio provedor, em vez do login na nuvem
+  --cloud         Força o login na nuvem mesmo com uma configuração local (padrão)
+  --continue, -c  Retoma a sessão mais recente (somente --local)
+  --headless      Sem interface de terminal; para um subcomando compatível (ex.: telegram)
+  --session, -s   Retoma uma sessão pelo id (somente --local; veja: kaja sessions)
+  --help          Mostra esta ajuda
+  --version       Mostra a versão
+"""
+unknownFlag = "{message}. Execute `kaja --help` para ver as opções disponíveis."
+
+
+[config]
+invalidAt            = "Arquivo de configuração inválido em {path}: {message}"
+notExists            = "O arquivo de configuração não existe: {path}"
+usage                = """
+Uso
+  $ kaja config fetch   Atualiza o models.toml a partir do models.dev
+  $ kaja config diff    Mostra se o fetch mudaria o models.toml, sem gravar
+  $ kaja config wizard  Configuração interativa de idioma, provedor e persona
+  $ kaja config hooks   Configura sons, notificações e fala neste computador
+  $ kaja config paths   Mostra todos os caminhos que o Kaja lê ou grava
+"""
+fetched              = "{path} gravado"
+fetchedWithBackup    = "{path} gravado (arquivo anterior salvo em {backup})"
+fetchedUnchanged     = "{path} já está atualizado"
+fetchModelsNoCatalog = "O models.toml foi mantido: não há catálogo de provedores (sem conexão?). Execute `kaja config wizard` para alterar seus modelos manualmente."
+fetchModelsNoFile    = "Ainda não existe um models.toml. Execute `kaja config wizard` para configurar seus modelos."
+fetchModelsOwnOnly   = "O models.toml só usa seus próprios provedores, então o catálogo não tem nada a atualizar."
+diffUnchanged        = "{path}: sem alterações"
+diffWouldUpdate      = "{path}: seria atualizado"
+
+
+[hooks]
+questionTitle      = "O Kaja pergunta"
+confirmTitle       = "O Kaja precisa da sua aprovação"
+errorTitle         = "O Kaja encontrou um erro"
+yes                = "Sim"
+no                 = "Não"
+kindPlayer         = "player de som"
+kindNotifier       = "ferramenta de notificação"
+kindSpeaker        = "ferramenta de fala"
+found              = "Encontrado: {what}: {program}"
+missing            = "Nenhum {what} encontrado neste sistema."
+missingInstall     = "Nenhum {what} encontrado. Instale um com: {command}"
+missingProgram     = "Nenhum {what} encontrado. Instale {program} com seu gerenciador de pacotes."
+replaceTitle       = "{path} já existe. Substituir? O arquivo antigo fica como backup."
+soundsTitle        = "Tocar efeitos sonoros quando algo acontecer no chat?"
+notificationsTitle = "Mostrar notificações na área de trabalho para perguntas, aprovações e trocas de persona?"
+speechTitle        = "Ler as mensagens do assistente em voz alta com {program}?"
+nothing            = "Nada foi ativado, então o hooks.toml foi mantido como estava."
+soundsFailed       = "Não foi possível baixar os efeitos sonoros. Execute `kaja config hooks` de novo quando estiver online."
+needsTerminal      = "`kaja config hooks` faz perguntas, então precisa de um terminal."
+done               = "Os hooks estão configurados. Edite o hooks.toml para adicionar os seus."
+
+
+[wizard]
+modeTitle                = "Boas-vindas ao Kaja! Como você quer executá-lo?"
+modeCloud                = "Kaja Cloud — faça login, sem nada para configurar"
+modeLocal                = "Seu próprio provedor — use seu próprio LLM"
+modeCloudShort           = "Kaja Cloud"
+modeLocalShort           = "Provedores próprios"
+languageTitle            = "Escolha seu idioma"
+themeTitle               = "Quais cores ficam melhores neste terminal?"
+themeDark                = "Fundo escuro"
+themeLight               = "Fundo claro"
+themeTerminal            = "O esquema de cores do próprio terminal"
+themeDarkShort           = "Cores escuras"
+themeLightShort          = "Cores claras"
+themeTerminalShort       = "Cores do terminal"
+themeHint                = "mude depois no settings.toml"
+providerTitle            = "Quais provedores de IA você vai usar?"
+providerRequired         = "Marque pelo menos um, ou execute kaja --cloud"
+providerCustom           = "Personalizado"
+providerCustomDetail     = "qualquer servidor compatível com OpenAI"
+kindCloud                = "nuvem"
+kindLocal                = "local"
+groupFound               = "Encontrados neste computador"
+groupPopular             = "Populares"
+groupRest                = "Todo o resto"
+foundEnv                 = "chave em {env}"
+foundRunning             = "em execução em {address}"
+foundInUse               = "no models.toml"
+customNameTitle          = "Que nome este provedor deve ter?"
+customNameHint           = "um nome curto, ex.: lmstudio: vira [providers.<name>]"
+customNameInvalid        = "Use letras, números e hifens, por exemplo lmstudio."
+customUrlTitle           = "Qual é a URL base dele?"
+customUrlHint            = "onde a API responde, geralmente terminando em /v1"
+customUrlInvalid         = "Isso não é um endereço web, por exemplo http://localhost:1234/v1."
+customModelTitle         = "Qual modelo do {provider} o Kaja deve usar? Digite o id, como o provedor o chama."
+customModelMoreTitle     = "Outro modelo do {provider}? Digite o id, ou pressione Enter para terminar."
+customModelHint          = "ex.: llama-3.2-1b-instruct"
+customModelRequired      = "Digite pelo menos um id de modelo."
+customModelSearching     = "Perguntando a {url} quais modelos ele tem…"
+customModelPickTitle     = "Qual modelo do {provider} o Kaja deve usar?"
+customModelPickMoreTitle = "Outro modelo do {provider}?"
+customModelTypeOther     = "Digitar um id de modelo eu mesmo"
+customModelEnough        = "É só isso"
+customTaskTitle          = "Para que serve o {model}?"
+modelTitle               = "Qual modelo de {task} o Kaja deve usar?"
+modelHint                = "os mais novos primeiro, o melhor palpite já vem em foco"
+modelBestGuess           = "melhor palpite"
+modelInUse               = "em uso"
+tasksTitle               = "O que o Kaja deve ser capaz de fazer?"
+tasksHint                = "cada um recebe um modelo em seguida"
+tasksChatRequired        = "O chat é necessário: o Kaja conversa por ele."
+tasksNoChat              = "Nenhum desses provedores tem um modelo de chat. Esc volta para escolher outro."
+summaryTasks             = "Tarefas"
+summaryCustomModels      = "Modelos próprios"
+customModelsKept         = "{count} mantidos"
+customReviewTitle        = "Quais modelos do {provider} devem ficar?"
+customReviewHint         = "desmarque para remover um, marque a última linha para adicionar"
+customAddModel           = "＋ Adicionar outro modelo"
+moreAnswers              = "{count} respostas anteriores"
+checkKeyOk               = "chave válida"
+checkKeyRejected         = "recusou esta chave"
+checkKeyUnknown          = "não deu para verificar"
+checkKeyUnknownDetail    = "{error}; Enter salva, e ela é testada de novo no final"
+checkServerOk            = "responde, {count} modelos"
+checkServerNeedsKey      = "responde, pede chave"
+checkServerDown          = "ainda sem resposta"
+checkServerDownDetail    = "{error}; sem problema se você iniciar depois"
+checkTelegramOk          = "bot encontrado"
+checkTelegramBad         = "o Telegram recusou"
+taskChat                 = "chat"
+taskEmbedding            = "embedding"
+taskRerank               = "reranking"
+taskImageGeneration      = "geração de imagens"
+taskTts                  = "texto para fala"
+taskStt                  = "fala para texto"
+taskSummarize            = "resumo"
+taskVision               = "descrição de imagens"
+providerKeyTitle         = "Cole sua chave de API do {provider}"
+keyEnvTitle              = "Sua chave do {provider} já está em ${env}. Como o Kaja deve usá-la?"
+keyFromEnv               = "Ler de ${env} sempre (nada é salvo)"
+keyCopyEnv               = "Copiar de ${env} para o secrets.toml"
+keyTypeOther             = "Digitar outra chave"
+keyEnvHint               = "ler mantém uma só cópia, testada no final"
+keyNote                  = "oculta ao digitar, verificada quando você para"
+keySkips                 = "Enter sozinho pula"
+keyKeepsTyped            = "Enter mantém a chave digitada"
+keyKeepsTypedTail        = "Enter mantém a chave digitada (…{tail})"
+keyKeepsSaved            = "Enter mantém a chave salva"
+keyKeepsSavedTail        = "Enter mantém a chave salva (…{tail})"
+keyStateEnv              = "lida de ${env}"
+baseUrlTitle             = "Onde o seu servidor {provider} escuta?"
+baseUrlHint              = "o padrão já está preenchido"
+extrasTitle              = "Mais alguma coisa?"
+extrasHint               = "tudo opcional"
+extraTelegram            = "Bot do Telegram (converse com o Kaja fora do terminal)"
+extraTelegramShort       = "Bot do Telegram"
+voiceSaved               = "Voz definida como {url} no settings.toml."
+telegramTokenTitle       = "Cole o token do seu bot do Telegram"
+marketplaceTitle         = "Usar o marketplace online para skills, personas e ferramentas? Ele precisa do git."
+marketplaceYes           = "Sim, usar"
+marketplaceNo            = "Não, ficar offline"
+marketplaceOff           = "Marketplace desativado. O Kaja não vai à internet atrás de abilities; defina [marketplace] enabled = true no settings.toml para mudar isso."
+marketplaceNoGit         = "Marketplace mantido desativado: {reason} Instale o git e execute `kaja config wizard` de novo."
+autoFetchTitle           = "Manter o marketplace atualizado automaticamente? O Kaja o baixa na inicialização quando a última sincronização tiver mais de um dia."
+autoFetchYes             = "Sim, atualizar automaticamente"
+autoFetchNo              = "Não, só quando eu pedir"
+pullTitle                = "Seu servidor de modelos ainda não tem estes: {names}. Baixar agora?"
+pullYes                  = "Baixar"
+pullNo                   = "Agora não"
+pullStarted              = "Baixando — isso pode levar alguns minutos."
+pullSkipped              = "Ignorado — use `ollama pull <model>` quando quiser."
+pullDone                 = "pronto"
+pullFailed               = "não foi possível baixar: {error}"
+hostTitle                = "{name} não pode rodar neste computador: precisa de {programs}."
+hostSkip                 = "Pular por enquanto"
+hostInstallUv            = "Instalar o uv agora (executa o instalador oficial)"
+hostGetChrome            = "Obter o Chrome (abre a página de download)"
+hostSandbox              = "Executar em um sandbox do Kaja (exige login na nuvem do Kaja)"
+hostSkipped              = "{name} continua desativado até {programs} ser instalado."
+hostSkippedUv            = "{name} continua desativado. Para instalar o uv você mesmo: {command}"
+hostSkippedChrome        = "{name} continua desativado. Instale o Chrome em {url} e inicie o Kaja de novo."
+hostChromeAt             = "Instale o Chrome em {url} e inicie o Kaja de novo."
+hostInstalled            = "uv instalado."
+hostInstallFailed        = "O uv não foi instalado. Tente você mesmo: {command}"
+hostSandboxSet           = "{name} agora roda em um sandbox do Kaja ([tools.hosts] no settings.toml)."
+hostSignInFailed         = "{name} está configurado para rodar em um sandbox, mas o login não funcionou, então está desativado por ora. `kaja login` tenta de novo."
+summaryMode              = "Modo"
+summaryLanguage          = "Idioma"
+summaryTheme             = "Cores"
+summaryProvider          = "Provedores"
+summaryAddress           = "Servidor {provider}"
+summaryModel             = "Modelo de {task}"
+summaryCustom            = "Provedor próprio"
+summaryCustomModel       = "Modelo próprio"
+summaryExtras            = "Extras"
+summarySounds            = "Efeitos sonoros"
+summaryNotifications     = "Notificações"
+summarySpeech            = "Leitura em voz alta"
+summaryMarketplace       = "Marketplace"
+summaryAutoFetch         = "Atualização auto."
+summaryKeyProvider       = "Chave {provider}"
+summaryKeyTelegram       = "Token do bot Telegram"
+blockBasics              = "Básico"
+blockProviders           = "Provedores"
+blockModels              = "Modelos"
+blockExtras              = "Extras"
+blockSounds              = "Sons"
+blockFinishing           = "Finalizando"
+allSet                   = "Tudo pronto."
+savedTo                  = "Salvo em {path}"
+progressCount            = "{at}/{of}"
+back                     = "voltar"
+foldKeysSet              = "chaves: {count}"
+foldKeysSkipped          = "chaves puladas: {count}"
+foldOff                  = "{name} desativado"
+foldNothing              = "nenhum extra"
+foldNoToken              = "{name}, sem token"
+keyStateEntered          = "informada, testada no final"
+keyStateKept             = "já salva, mantida"
+keyStateSkipped          = "pulada"
+headlessDone             = "Configuração padrão gravada (sessão não interativa)"
+cancelled                = "Cancelado — nada foi alterado"
+done                     = "Pronto. Digite kaja para começar."
+doneWithIssues           = "Pronto, mas {count} item(ns) ainda precisa(m) de atenção: `kaja doctor` verifica de novo."
+doneCloud                = "Pronto. Digite kaja para fazer login."
+
+
+[models]
+invalidAt = "Arquivo de modelos inválido em {path}: {message}"
+
+
+[abilities]
+invalidAt = "Arquivo de abilities inválido em {path}: {message}"
+
+
+[ability]
+usage               = "Uso: kaja abilities [update]"
+cloudHint           = "Você está usando a nuvem do Kaja: todas as abilities estão ativas lá, e as personas escolhem o que um chat usa; o Kaja fornece as chaves de API. As abilities desta máquina são para o modo local: `kaja --local abilities`."
+marketplace         = "Marketplace"
+updating            = "Atualizando o marketplace..."
+synced              = "Marketplace sincronizado de {url} ({ref}) em {commit}."
+nothingChanged      = "Tudo está atualizado."
+countAdded          = "{count} adicionadas"
+countUpdated        = "{count} atualizadas"
+countRemoved        = "{count} removidas"
+backedUp            = "  {path} substituído, sua versão foi salva como {backup}"
+kept                = "  {path} mantido: removido da origem, mas você o editou"
+fetchFailed         = "Não foi possível buscar o marketplace: {message}"
+disabled            = "O marketplace está desativado no settings.toml ([marketplace] enabled = false)."
+gitMissing          = "O git não está instalado. Instale o git para buscar o marketplace."
+gitTimeout          = "{command} demorou demais e foi interrompido."
+gitFailed           = "{command} falhou: {message}"
+gitTooOld           = "O git {version} é antigo demais para buscar o marketplace. Instale o git {min} ou mais recente."
+noMarketplaceFolder = "Não há pasta marketplace/ em {url} ({ref})."
+local               = "local"
+empty               = "Ainda não há abilities. Execute `kaja abilities update`, ou adicione as suas em marketplace/abilities/."
+title               = "Abilities"
+typeSkill           = "skill"
+typeTool            = "ferramenta"
+typeMcp             = "mcp"
+typeCode            = "código"
+onSandbox           = "um sandbox do Kaja"
+sandboxSignedOut    = "{names}: configurado(s) para rodar em um sandbox, mas você não está conectado à nuvem do Kaja, então está(ão) desativado(s) por ora. `kaja login` conecta você."
+brokenPart          = "{part}: {error}"
+keySaved            = "chave salva"
+noKey               = "sem chave, off"
+keyless             = "funciona sem chave"
+needs               = "off: instale {programs}"
+colName             = "Ability"
+colParts            = "Partes"
+colRuns             = "Execuções"
+colKey              = "Chave"
+colPersonas         = "Personas"
+noPersona           = "nenhuma persona a usa"
+listHint            = "As personas escolhem as abilities que um chat usa: a lista `abilities` em marketplace/personas/<id>.toml. `kaja doctor` pede as chaves que faltam."
+
+
+[secrets]
+invalidAt = "Arquivo de segredos inválido em {path}: {message}"
+
+
+[input]
+placeholder           = "Digite algo..."
+askPlaceholder        = "Digite sua resposta…"
+askChoicesPlaceholder = "Ou digite a sua própria resposta…"
+
+
+[header]
+local  = "local"
+cloud  = "nuvem"
+tokens = "{count} tokens"
+
+
+[keybar]
+help      = "ajuda"
+persona   = "persona"
+copy      = "copiar"
+scroll    = "rolar"
+quit      = "sair"
+expand    = "expandir"
+quitAgain = "ainda em execução: Esc de novo para sair"
+cancel    = "cancelar"
+decline   = "recusar"
+close     = "fechar"
+clear     = "limpar"
+command   = "comando"
+
+
+[viewport]
+scrolledBack = "↑ {percent}% do histórico"
+
+
+[confirmCommand]
+yes          = "Sim, executar"
+no           = "Não, cancelar"
+running      = "Executando…"
+truncated    = "… mais {count} linhas"
+placeholder  = "Ou digite o que fazer em vez disso (isso pula esta etapa)"
+commandTitle = "Comando aguardando aprovação"
+requestTitle = "Requisição aguardando aprovação"
+toolRequest  = "{name} quer enviar esta requisição:"
+
+
+[hint]
+move     = "mover"
+pick     = "escolhe"
+tick     = "marca"
+continue = "continua"
+save     = "salva"
+
+
+[menu]
+filterPlaceholder = "digite para filtrar"
+noMatches         = "Nada corresponde."
+countTotal        = "{count} no total"
+countMatch        = "{count} correspondem"
+countTicked       = "{count} marcados"
+more              = "mais {count}"
+
+
+[secretPrompt]
+hint        = "um Enter vazio pula"
+checking    = "verificando"
+refusedHint = "Veja se há erro de digitação, ou Enter salva mesmo assim"
+
+
+[activity]
+thinking = "Pensando… {seconds}s decorridos, ainda raciocinando"
+tokens   = " · ~{tokens} tokens gerados até agora"
+
+
+[help]
+title    = "Ajuda"
+intro    = "Digite uma mensagem e pressione Enter para enviá-la. Esc sai."
+persona  = "Trocar de persona"
+copy     = "Copiar a última resposta (ou clique em qualquer resposta para copiá-la)"
+expand   = "Expandir ou recolher código longo"
+command  = "Mostrar o comando aguardando aprovação"
+help     = "Mostrar esta ajuda"
+scroll   = "Rolar o chat"
+newline  = "Nova linha na sua mensagem"
+openDocs = "Abrir a documentação"
+
+
+[persona]
+pickerTitle = "Escolha uma persona"
+
+
+[toolCall]
+webSearch     = "Pesquisando \"{query}\"..."
+fetchUrl      = "Buscando {url}..."
+currentTime   = "Verificando a hora{timezone}..."
+generateImage = "Gerando uma imagem: \"{prompt}\"..."
+listFiles     = "Listando arquivos em {path}..."
+readFile      = "Lendo {path}..."
+viewImage     = "Vendo {path}..."
+editImage     = "Editando uma imagem..."
+rememberNote  = "Lembrando \"{key}\"..."
+recallMemory  = "Recordando a memória{query}..."
+forgetNote    = "Esquecendo uma nota..."
+listNotes     = "Listando notas..."
+rerank        = "Classificando {n} resultados..."
+summarize     = "Resumindo..."
+loadSkill     = "Carregando a skill {name}..."
+loadSkillFile = "Lendo {file} da skill {name}..."
+
+
+[timeline]
+personaSwitch    = "Persona alterada: {label}"
+toolsUsed        = "Chamadas de ferramenta ({count}): {names}"
+compacted        = "Contexto compactado: {before} → {after} tokens"
+compactedDropped = "Contexto compactado: {before} → {after} tokens. Não foi possível escrever o resumo, então as mensagens mais antigas ficaram de fora."
+condensed        = "Saída de {tool} condensada: {before} → {after} tokens"
+nothingToCompact = "Ainda não há nada para compactar."
+computerStopped  = "Parado: todas as chamadas de ferramenta neste computador falharam {count} rodadas seguidas. Sua próxima mensagem continua."
+imageFailed      = "não carregou: {reason}"
+openImage        = "abrir"
+imageMissing     = "arquivo não encontrado"
+imageUnreachable = "sem conexão"
+imageUnreadable  = "não é uma imagem"
+
+
+[error]
+network = "Erro de rede"
+tool    = "A ferramenta falhou"
+agent   = "Algo deu errado"
+unknown = "Erro desconhecido"
+
+
+[doctor]
+envUnset               = "${env} não está definida neste ambiente"
+cwd                    = "Diretório: "
+gitOk                  = "git: {version}"
+gitBad                 = "git: "
+noModels               = "Nenhum modelo configurado"
+taskChat               = "Chat"
+taskTts                = "Texto para fala"
+taskStt                = "Fala para texto"
+taskEmbedding          = "Embedding"
+taskRerank             = "Rerank"
+taskImageGen           = "Geração de imagens"
+taskSummarize          = "Resumo"
+taskVision             = "Descrição de imagens"
+checking               = "Verificando modelos…"
+modelUp                = "ok"
+modelUpWindow          = "ok · {tokens} tokens, {source}"
+contextWindow_config   = "do models.toml"
+contextWindow_detected = "detectado"
+contextWindow_fallback = "presumido"
+modelDown              = "fora"
+modelSwitchTitle       = "O modelo de {task} {model} não funcionou: {reason}. Usar outro modelo de {task}?"
+modelSwitchKeep        = "Manter {model}"
+modelSwitched          = "agora {model} de {provider}"
+modelKept              = "{model} mantido"
+modelAlternativesDown  = "Nenhum outro modelo de {task} respondeu."
+mcpServers             = "Servidores MCP"
+mcpServerToolCount     = "({count} ferramentas)"
+mcpServerFailed        = "(falha ao conectar)"
+mcpServerNeeds         = "(off: instale {programs} para executá-lo)"
+mcpServerNoRoots       = "(off: nenhuma persona que o liste lhe dá roots, as pastas que ele pode usar)"
+tools                  = "Ferramentas"
+toolsOfficial          = "Oficial"
+toolsCommunity         = "Comunidade"
+toolsSkipped           = "Ignoradas"
+skippedReserved        = "nome reservado pelo Kaja"
+skippedTaken           = "nome usado por {source}"
+credentials            = "Chaves e tokens"
+itemProvider           = "{name} (provedor de modelos)"
+itemAbility            = "{name} (ability de ferramenta)"
+itemMcpAbility         = "{name} (ability MCP)"
+itemTelegram           = "Bot do Telegram"
+missing                = "ausente"
+askMissing             = "{label} precisa da chave ou do token{hint}."
+askFailing             = "{label} não funcionou: {reason}. Informe uma nova chave{hint}."
+askOff                 = "{label} fica off até ter uma chave{hint}. Informe uma, ou pule."
+askKeyless             = "{label} funciona sem chave, mas uma chave remove seus limites{hint}. Informe uma, ou pule para usar sem."
+keyless                = "funciona sem chave"
+keyWorks               = "chave válida"
+untested               = "definida, não testável"
+keyOff                 = "sem chave, off"
+noteOff                = "Off até ter uma chave{hint}."
+noteKeyless            = "Funciona sem chave; uma chave remove seus limites{hint}."
+savedWorking           = "salva, e funciona"
+savedUntested          = "salva (sem como testar)"
+savedFailing           = "salva, mas não funcionou: {reason}"
+allGood                = "Todas as chaves e tokens estão em ordem."
+todoTitle              = "Ainda a corrigir, em {path}:"
+todoUnreachable        = "Não foi possível alcançar — verifique se o serviço está em execução e a URL dele no models.toml:"
+todoRerun              = "Edite o arquivo, ou execute `kaja doctor` em um terminal para ser perguntado."
+checkModelFailed       = "{model} não respondeu ({error})"
+checkTimeout           = "sem resposta em 15 segundos"
+stats                  = "Sessões: {sessionCount} · Notas de memória: {memoryNoteCount}"
+yolo                   = "yolo está ativado em {path}: todo comando e chamada de ferramenta roda sem perguntar"
+
+
+[images]
+empty             = "Ainda não há imagens guardadas."
+totals            = "{count} imagens, {size}"
+descriptions      = "{described} descritas, {undescribed} sem descrição"
+added             = "{count} adicionadas nos últimos {days} dias ({size})"
+sitesTitle        = "De onde vieram:"
+sessionsTitle     = "Sessões com mais imagens:"
+sessionLine       = "{images} imagens, {size}  {title}"
+describeHint      = "Descreva o restante com `kaja --local images describe`."
+unknownAction     = "`kaja images {action}` desconhecido. Use `describe` ou `clean`."
+localOnly         = "`kaja images describe` e `clean` só funcionam no armazenamento local (`kaja --local images …`)."
+signInFirst       = "Sem login. Execute `kaja login` primeiro."
+cloudFailed       = "Não foi possível carregar suas imagens da nuvem (HTTP {status})."
+noVision          = "Não há modelo de visão no models.toml: adicione um com `vision` nas tarefas dele para descrever imagens."
+nothingToDescribe = "Toda imagem tem uma descrição (imagens tentadas três vezes são puladas; adicione --retry para incluí-las)."
+describing        = "Descrevendo {count} imagens com {model}…"
+noDescription     = "o modelo não deu descrição"
+described         = "{described} de {total} descritas."
+nothingToClean    = "Nada para limpar."
+removeAsk         = "Remover? [y/N]"
+removed           = "{count} removidas."
+removeHint        = "Execute em um terminal para ser perguntado, ou adicione --yes para remover todas."
+
+
+  [images.orphans]
+  files   = "{count} arquivos sem registro ({size}):"
+  rows    = "{count} registros cujo arquivo sumiu ({size}):"
+  unsaved = "{count} imagens de sessões nunca salvas, com mais de um dia ({size}):"
+
+
+[session]
+none      = "Ainda não há sessão salva para continuar."
+notFound  = "Nenhuma sessão com id {id}. Execute `kaja sessions` para listá-las."
+listEmpty = "Ainda não há sessões salvas."
+listHint  = "Retome uma com `kaja -s <id>`, ou a mais recente com `kaja -c`."
+
+
+[telegram]
+notConfigured        = "Salve um token de bot em `[telegram]` do secrets.toml (veja `kaja config paths` para o caminho do arquivo) para usar este comando."
+invalidToken         = "Token de bot do Telegram inválido — verifique `[telegram] bot_token` no secrets.toml."
+starting             = "Iniciando o bot do Telegram…"
+yolo                 = "YOLO está ativado: o bot aprova todo comando e chamada de ferramenta sem perguntar."
+ready                = "Bot do Telegram pronto, aguardando mensagens por long-polling."
+pairFirst            = """
+Ninguém está pareado com @{username} ainda, e ele não responde a ninguém até você estar.
+Abra https://t.me/{username}?start={code}
+ou envie: /start {code}"""
+pairAnother          = """
+Para parear mais uma pessoa com @{username}, ela abre https://t.me/{username}?start={code}
+ou envia: /start {code}"""
+pairedLog            = "{name} ({id}) pareado — salvo no secrets.toml."
+paired               = "✅ Pareado. Agora você pode conversar com o Kaja."
+newSession           = "🆕 Nova sessão iniciada."
+stillWorking         = "Ainda trabalhando na sua última mensagem…"
+pendingCommand       = "Há um comando ou requisição aguardando sua aprovação acima — toque em Aprovar ou Recusar primeiro."
+commandExpired       = "Este comando não está mais pendente."
+questionExpired      = "Esta pergunta já foi respondida."
+approved             = "Aprovado"
+approveSession       = "Aprovar para este chat"
+declined             = "Recusado"
+skipped              = "Ignorado: você escreveu em vez disso"
+welcome              = "👋 Você está pareado: envie uma mensagem para começar a conversar."
+photoFailed          = "⚠ Não foi possível obter essa imagem do Telegram — tente enviá-la de novo."
+emptyResponse        = "(resposta vazia)"
+noVision             = "⚠ Este modelo não consegue ver imagens, então a foto ficou de fora. Escolha um modelo que consiga, ou descreva-a em palavras."
+photoTooLarge        = "Essa imagem é grande demais — envie uma com menos de 10 MB."
+genericError         = "Algo deu errado ao processar isso — verifique os logs."
+abilitiesTitle       = "O que cada persona usa"
+abilitiesPersona     = "{persona}: {names}"
+abilitiesPersonaNone = "{persona}: só ferramentas nativas"
+abilitiesHint        = "A lista <code>abilities</code> de cada persona escolhe o que um chat usa; <code>kaja abilities</code> no seu computador mostra todas. Reinicie <code>kaja telegram</code> após uma mudança."
+commandNew           = "Iniciar uma nova conversa"
+commandAbilities     = "Mostrar as skills e ferramentas que este bot usa"
+commandCompact       = "Resumir a conversa até agora para liberar espaço"
+compacted            = "🗜 Conversa compactada: {before} → {after} tokens."
+compactedDropped     = "🗜 Conversa compactada: {before} → {after} tokens. Não foi possível escrever o resumo, então as mensagens mais antigas ficaram de fora."
+nothingToCompact     = "Ainda não há nada para compactar."
+
+
+[markdown]
+codeMore = "… mais {count} linhas (expanda para ver tudo)"

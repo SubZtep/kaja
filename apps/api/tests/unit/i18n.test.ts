@@ -46,7 +46,12 @@ test("a Telegram app language maps to a supported locale", () => {
   expect(localeFromTelegram("zh-hans")).toBe("zh-TW")
   expect(localeFromTelegram("en-us")).toBe("en-US")
   expect(localeFromTelegram("en")).toBe("en-GB")
-  expect(localeFromTelegram("de")).toBe("en-GB")
+  expect(localeFromTelegram("de")).toBe("de-DE")
+  expect(localeFromTelegram("es")).toBe("es-ES")
+  expect(localeFromTelegram("ja")).toBe("ja-JP")
+  expect(localeFromTelegram("ko")).toBe("ko-KR")
+  expect(localeFromTelegram("fr")).toBe("fr-FR")
+  expect(localeFromTelegram("pt-br")).toBe("pt-BR")
   expect(localeFromTelegram(undefined)).toBe("en-GB")
 })
 

@@ -55,6 +55,11 @@ const apiEnvFields = z.object({
     )
     .meta({ example: "localhost", section: "Turnstile" }),
 
+  GRAVATAR_API_KEY: trimmed
+    .optional()
+    .describe("Gravatar API key; sent as a bearer token when looking up profiles, lifting the keyless hourly limit")
+    .meta({ secret: true, section: "Gravatar" }),
+
   SMTP_HOST: trimmed.optional().describe("SMTP server hostname"),
   SMTP_PORT: positiveInt.optional().describe("SMTP server port").meta({ example: "1025" }),
   SMTP_SECURE: bool.default(false).describe("Use TLS for the SMTP connection"),

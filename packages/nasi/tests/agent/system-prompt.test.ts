@@ -32,6 +32,17 @@ test("returns a reply-language instruction for nan-TW", () => {
   expect(replyLanguageInstructionFor("nan-TW")).toContain("Taiwanese Hokkien")
 })
 
+test.each([
+  ["es-ES", "European Spanish"],
+  ["ja-JP", "Japanese"],
+  ["ko-KR", "Korean"],
+  ["de-DE", "German"],
+  ["fr-FR", "French"],
+  ["pt-BR", "Brazilian Portuguese"]
+])("returns a reply-language instruction for %s", (locale, language) => {
+  expect(replyLanguageInstructionFor(locale)).toContain(language)
+})
+
 test("returns undefined for an unknown language code", () => {
   expect(replyLanguageInstructionFor("xx")).toBeUndefined()
 })

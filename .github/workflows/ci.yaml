@@ -37,7 +37,7 @@ jobs:
         run: bun i --frozen-lockfile --ignore-scripts
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
+        uses: tombi-toml/setup-tombi@02117ea801cf3308a4b4260df55ea12ed0a6a92d # v1.9.4
 
       - name: Generate Paraglide messages
         run: bun --filter @kaja/web generate:paraglide

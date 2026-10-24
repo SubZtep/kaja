@@ -13,11 +13,17 @@ test("any other tag matches by its language alone", () => {
   expect(matchLocale("en-AU")).toBe("en-GB")
   expect(matchLocale("zh-Hant")).toBe("zh-TW")
   expect(matchLocale("zh_CN")).toBe("zh-TW")
+  expect(matchLocale("es")).toBe("es-ES")
+  expect(matchLocale("ja-JP")).toBe("ja-JP")
+  expect(matchLocale("ko")).toBe("ko-KR")
+  expect(matchLocale("de")).toBe("de-DE")
+  expect(matchLocale("fr")).toBe("fr-FR")
+  expect(matchLocale("pt_BR")).toBe("pt-BR")
   expect(matchLocale("nan")).toBe("nan-TW")
 })
 
 test("an unsupported or empty tag matches nothing", () => {
-  expect(matchLocale("de-DE")).toBeUndefined()
+  expect(matchLocale("xx-XX")).toBeUndefined()
   expect(matchLocale("")).toBeUndefined()
   expect(matchLocale(undefined)).toBeUndefined()
 })

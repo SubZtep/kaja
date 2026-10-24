@@ -97,7 +97,7 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   // Each name carries its code, so a language you can't read is still identifiable.
   expect(w.t.lastFrame()).toContain("English")
   expect(w.t.lastFrame()).toContain("en-GB")
-  expect(w.t.lastFrame()).toContain("nan-TW")
+  expect(w.t.lastFrame()).toContain("de-DE")
   // The first question has nothing to go back to: its hint says it can change later instead of offering Esc
   expect(w.t.lastFrame()).toContain("↑↓ move · Enter picks · change it later in settings.toml")
   expect(w.t.lastFrame()).not.toContain("Esc back")
@@ -651,6 +651,8 @@ test("picking a language switches the rest of the wizard into it", async () => {
   const w = renderWizard()
   await w.t.tick()
   await w.t.press(DOWN) // American English
+  await w.t.press(DOWN) // Español
+  await w.t.press(DOWN) // Français
   await w.t.press(DOWN) // Magyar
   await w.t.press(ENTER)
   await w.t.press(ENTER) // theme
