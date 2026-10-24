@@ -64,7 +64,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await sql`DELETE FROM catalog_provider WHERE slug LIKE ${`%${tag}`}`
-  await sql`DELETE FROM provider WHERE name = ${slug}`
   await sql`DELETE FROM "user" WHERE email = ANY(${[adminEmail, userEmail]})`
 })
 
@@ -101,6 +100,9 @@ describe("catalog", () => {
       body: JSON.stringify({ defaultTasks: ["chat", "vision"] })
     })
     expect(chat.status).toBe(200)
+
+    const one = await (await admin(`/catalog/providers/${await providerId()}`)).json()
+    expect(one).toMatchObject({ slug, listed: true, modelCount: 2, defaultTasks: ["chat", "vision"] })
 
     const provider = await publicProvider()
     expect(provider).toMatchObject({ kind: "hosted", base_url: "https://api.acme.test/v1", note: "Fast and cheap" })
@@ -172,18 +174,6 @@ describe("catalog", () => {
     expect(created.status).toBe(201)
     expect(await created.json()).toMatchObject({ source: "admin", kind: "self-hosted", listed: false })
     expect((await admin("/catalog/providers", { method: "POST", body: JSON.stringify(body) })).status).toBe(409)
-  })
-
-  test("add to fleet copies the model into the cloud's models, disabled, once", async () => {
-    const chat = await modelId("acme-chat")
-    const added = await admin(`/catalog/models/${chat}/fleet`, { method: "POST" })
-    expect(added.status).toBe(201)
-    const { modelId: fleetId } = await added.json()
-    const [row] = await sql`
-      SELECT m.model, m.enabled, m.free, p.base_url FROM model m JOIN provider p ON p.id = m.provider_id
-      WHERE m.id = ${fleetId}`
-    expect(row).toEqual({ model: "acme-chat", enabled: false, free: false, base_url: "https://eu.acme.test/v1" })
-    expect((await admin(`/catalog/models/${chat}/fleet`, { method: "POST" })).status).toBe(409)
   })
 })
 

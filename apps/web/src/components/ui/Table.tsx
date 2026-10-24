@@ -1,3 +1,4 @@
+import { modelTaskSchema } from "@kaja/schema/api"
 import { capitalized } from "@kaja/shared/text"
 import { cn } from "@kaja/shared/ui"
 import {
@@ -351,6 +352,24 @@ function Filter<TData extends RowData>({ column }: Readonly<{ column: Column<Fea
         </div>
       )
     }
+
+    case "task":
+      return (
+        <select
+          aria-label={m.table_any_task()}
+          // arrIncludes takes a list of wanted values, so the one picked goes in as [task].
+          value={(columnFilterValue as string[] | undefined)?.[0] ?? ""}
+          onChange={ev => column.setFilterValue(ev.target.value ? [ev.target.value] : undefined)}
+          className="bg-surface-2 text-fg focus:ring-neon rounded-lg px-3 py-1 outline-none focus:ring-1"
+        >
+          <option value="">{m.table_any_task()}</option>
+          {modelTaskSchema.options.map(task => (
+            <option key={task} value={task}>
+              {task}
+            </option>
+          ))}
+        </select>
+      )
 
     case "text":
     default:

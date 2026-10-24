@@ -6,7 +6,6 @@ import {
   type CatalogSyncStatus,
   type CreateCatalogModelRequest,
   type CreateCatalogProviderRequest,
-  type Model,
   type ModelTask,
   PUBLIC_CATALOG_VERSION,
   type PublicCatalog,
@@ -88,6 +87,14 @@ function toSyncedModel(raw: unknown): SyncedModel | undefined {
     images: model.modalities?.input.includes("image") ?? false,
     status: model.status === "deprecated" ? "deprecated" : null
   }
+}
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]"])
+
+/** A new synced provider's kind: one models.dev points at this machine (LM Studio and the like) runs on the user's own. */
+export function kindOf(apiUrl: string | null): CatalogProvider["kind"] {
+  if (!apiUrl || !URL.canParse(apiUrl)) return "hosted"
+  return LOCAL_HOSTS.has(new URL(apiUrl).hostname) ? "self-hosted" : "hosted"
 }
 
 const sameTasks = (a: readonly string[], b: readonly string[]) =>
@@ -192,14 +199,25 @@ export class CatalogService {
 
   async listProviders(): Promise<CatalogProvider[]> {
     const rows = await this.#db<ProviderRow[]>`
-      SELECT p.*,
-        (SELECT count(*)::int FROM catalog_model m WHERE m.provider_id = p.id AND m.status IS DISTINCT FROM 'removed')
-          AS model_count,
-        (SELECT COALESCE(array_agg(DISTINCT t), '{}') FROM catalog_model m, unnest(m.default_tasks) t
-          WHERE m.provider_id = p.id) AS default_tasks
-      FROM catalog_provider p
+      SELECT ${this.#providerColumns()} FROM catalog_provider p
       ORDER BY p.listed DESC, p.position, p.name`
     return rows.map(row => this.#rowToProvider(row))
+  }
+
+  async getProvider(id: string): Promise<CatalogProvider | null> {
+    const [row] = await this.#db<
+      ProviderRow[]
+    >`SELECT ${this.#providerColumns()} FROM catalog_provider p WHERE p.id = ${id}`
+    return row ? this.#rowToProvider(row) : null
+  }
+
+  // A provider row with its live model count and the tasks it has a default for.
+  #providerColumns() {
+    return this.#db`p.*,
+      (SELECT count(*)::int FROM catalog_model m WHERE m.provider_id = p.id AND m.status IS DISTINCT FROM 'removed')
+        AS model_count,
+      (SELECT COALESCE(array_agg(DISTINCT t), '{}') FROM catalog_model m, unnest(m.default_tasks) t
+        WHERE m.provider_id = p.id) AS default_tasks`
   }
 
   async createProvider(input: CreateCatalogProviderRequest): Promise<CatalogProvider | "taken"> {
@@ -228,7 +246,7 @@ export class CatalogService {
       RETURNING id`
     if (!row) return null
     this.#invalidate()
-    return (await this.listProviders()).find(provider => provider.id === id) ?? null
+    return this.getProvider(id)
   }
 
   /** A synced provider comes back (unlisted) on the next sync; an admin-added one is gone for good. */
@@ -298,33 +316,6 @@ export class CatalogService {
     return result.affectedRows > 0
   }
 
-  /**
-   * Copies a catalog model into the cloud's own fleet (`provider`/`model`), disabled and not free until the admin sets
-   * its key and switches it on. The fleet provider is found or made by the catalog slug.
-   */
-  async addToFleet(id: string): Promise<{ modelId: string } | "no_address" | "exists" | null> {
-    return this.#db.begin(async tx => {
-      const [row] = await tx<(ModelRow & { slug: string; address: string | null })[]>`
-        SELECT m.*, p.slug, COALESCE(p.base_url, p.api_url) AS address
-        FROM catalog_model m JOIN catalog_provider p ON p.id = m.provider_id
-        WHERE m.id = ${id}`
-      if (!row) return null
-      if (!row.address || !URL.canParse(row.address)) return "no_address"
-      const tasks: Model["tasks"] = row.tasks.length > 0 ? row.tasks : ["chat"]
-      const [provider] = await tx<{ id: string }[]>`
-        INSERT INTO provider (name, base_url) VALUES (${row.slug}, ${row.address})
-        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-        RETURNING id`
-      const [existing] = await tx`SELECT 1 FROM model WHERE provider_id = ${provider!.id} AND model = ${row.model}`
-      if (existing) return "exists"
-      const [model] = await tx<{ id: string }[]>`
-        INSERT INTO model (provider_id, model, tasks, enabled, free, context_window, images)
-        VALUES (${provider!.id}, ${row.model}, ${tasks}, false, false, ${row.context_window}, ${row.images})
-        RETURNING id`
-      return { modelId: model!.id }
-    })
-  }
-
   async syncStatus(): Promise<CatalogSyncStatus> {
     const [row] = await this.#db<{ synced_at: Date | null; error: string | null }[]>`
       SELECT synced_at, error FROM catalog_sync WHERE id = 1`
@@ -388,9 +379,9 @@ export class CatalogService {
         seenProviders.push(provider.id)
 
         const [row] = await tx<{ id: string; inserted: boolean; source: string }[]>`
-          INSERT INTO catalog_provider (slug, name, api_url, doc, npm, source, synced_at)
-          VALUES (${provider.id}, ${provider.name}, ${apiUrl}, ${provider.doc ?? null}, ${provider.npm ?? null},
-                  'modelsdev', NOW())
+          INSERT INTO catalog_provider (slug, name, kind, api_url, doc, npm, source, synced_at)
+          VALUES (${provider.id}, ${provider.name}, ${kindOf(apiUrl)}, ${apiUrl}, ${provider.doc ?? null},
+                  ${provider.npm ?? null}, 'modelsdev', NOW())
           ON CONFLICT (slug) DO UPDATE SET
             name = CASE WHEN catalog_provider.source = 'modelsdev' THEN EXCLUDED.name ELSE catalog_provider.name END,
             api_url = EXCLUDED.api_url, doc = EXCLUDED.doc, npm = EXCLUDED.npm, synced_at = NOW()

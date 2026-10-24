@@ -52,6 +52,20 @@ const createProviderRoute = createRoute({
   }
 })
 
+const getProviderRoute = createRoute({
+  method: "get",
+  path: "/catalog/providers/{id}",
+  tags: ["Admin"],
+  summary: "One catalog provider",
+  security: [{ bearerAuth: [] }],
+  request: { params: idParam },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: catalogProviderSchema } } },
+    ...authErrors,
+    404: notFoundError
+  }
+})
+
 const updateProviderRoute = createRoute({
   method: "patch",
   path: "/catalog/providers/{id}",
@@ -146,22 +160,6 @@ const deleteModelRoute = createRoute({
   }
 })
 
-const addToFleetRoute = createRoute({
-  method: "post",
-  path: "/catalog/models/{id}/fleet",
-  tags: ["Admin"],
-  summary: "Copy a catalog model into the cloud's own models, disabled until it has a key and is switched on",
-  security: [{ bearerAuth: [] }],
-  request: { params: idParam },
-  responses: {
-    201: { description: "Added", content: { "application/json": { schema: z.object({ modelId: z.string() }) } } },
-    400: { description: "Its provider has no address", content: { "application/json": { schema: errorSchema } } },
-    ...authErrors,
-    404: notFoundError,
-    409: { description: "Already in the fleet", content: { "application/json": { schema: errorSchema } } }
-  }
-})
-
 const syncStatusRoute = createRoute({
   method: "get",
   path: "/catalog/sync",
@@ -197,6 +195,12 @@ export function registerAdminCatalog(app: RouteRegProps) {
     return c.json(provider, 201)
   })
 
+  app.openapi(getProviderRoute, async c => {
+    const provider = await catalogService.getProvider(c.req.valid("param").id)
+    if (!provider) return notFound(c, "Provider not found")
+    return c.json(provider, 200)
+  })
+
   app.openapi(updateProviderRoute, async c => {
     const provider = await catalogService.updateProvider(c.req.valid("param").id, c.req.valid("json"))
     if (!provider) return notFound(c, "Provider not found")
@@ -229,14 +233,6 @@ export function registerAdminCatalog(app: RouteRegProps) {
   app.openapi(deleteModelRoute, async c => {
     if (!(await catalogService.deleteModel(c.req.valid("param").id))) return notFound(c, "Model not found")
     return c.json({ success: true }, 200)
-  })
-
-  app.openapi(addToFleetRoute, async c => {
-    const added = await catalogService.addToFleet(c.req.valid("param").id)
-    if (!added) return notFound(c, "Model not found")
-    if (added === "no_address") return badRequest(c, "no_address")
-    if (added === "exists") return conflict(c, "in_fleet")
-    return c.json(added, 201)
   })
 
   app.openapi(syncStatusRoute, async c => c.json(await catalogService.syncStatus(), 200))

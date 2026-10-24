@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { tasksFor } from "../../src/services/catalog"
+import { kindOf, tasksFor } from "../../src/services/catalog"
 
 describe("tasksFor", () => {
   test.each([
@@ -15,5 +15,17 @@ describe("tasksFor", () => {
     [{ id: "m", type: "realtime" }, []]
   ])("%j serves %j", (model, tasks) => {
     expect(tasksFor(model) as string[]).toEqual(tasks)
+  })
+})
+
+describe("kindOf", () => {
+  test.each([
+    ["https://api.fireworks.ai/inference/v1", "hosted"],
+    ["http://127.0.0.1:1234/v1", "self-hosted"],
+    ["http://localhost:8080/v1", "self-hosted"],
+    ["http://[::1]:8080/v1", "self-hosted"],
+    [null, "hosted"]
+  ])("%s is %s", (url, kind) => {
+    expect(kindOf(url)).toBe(kind as "hosted" | "self-hosted")
   })
 })
