@@ -16,13 +16,14 @@ icon: 🩺
 | `kaja config paths`  | print where every config file resolves on this machine. Start here when unsure which file Kaja reads                                                                   |
 | `kaja config wizard` | re-run the [setup wizard](/start/wizard)                                                                                                                               |
 | `kaja config diff`   | show what `fetch` would change, without writing anything                                                                                                               |
-| `kaja config fetch`  | rewrite `models.toml` and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none                                |
+| `kaja config fetch`  | update `models.toml` from the provider catalog and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none       |
 | `kaja config hooks`  | find a sound player, notifier and speech tool on this machine and write [`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events) from what it finds |
 | `kaja doctor`        | test every key, model and tool, see below                                                                                                                              |
 
-`kaja config fetch` takes `models.toml` and `commands.toml` from the Kaja server's defaults, or from the
-templates bundled in the binary when you're offline or pass `--offline`. Your own patterns in
-`commands.toml`'s `custom` survive a fetch. `secrets.toml` comes from the bundled template with every section
+`kaja config fetch` moves `models.toml` to the current defaults of the providers it uses, from Kaja's online
+provider catalog (see [models.toml](/config/models#writing-it)). Offline, or with `--offline`, it leaves
+`models.toml` alone. `commands.toml` comes from the template bundled in the binary, and your own patterns in its
+`custom` survive a fetch. `secrets.toml` comes from the bundled template with every section
 commented out, and is only written if you have none, so fetching never loses a key. `--only models`,
 `--only commands` or `--only secrets` limits it to one file. It never touches `settings.toml` or the
 `marketplace/` folder. Use it to pick up new defaults after an upgrade, or to recover a broken file.

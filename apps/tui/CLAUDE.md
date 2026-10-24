@@ -41,7 +41,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 
 - Every step opens on the current value (`readPrefill`), so Enter throughout keeps a machine unchanged. `--cloud`/`--local` skip the mode step; a prefilled mode does not
 - **Keys are typed in the wizard but saved by the credential pass**, so each is tested first. In `offered`, `null` means "asked and turned down" (`""` in `WizardResult`) versus `undefined` "never applied": losing that distinction brings back the double-ask
-- `refreshCatalog` swaps in the API's `/config/catalog` (bundled one on any failure); examples and `bun check:models` always use the bundled one
+- `refreshCatalog` loads the API's `/config/catalog` (the cached last good one when it can't); with neither, the providers checklist is skipped and the custom-provider steps ask everything, offering the models its `/models` lists
 - `appendTomlSection` appends so the templates' commented examples survive
 
 ## Abilities and personas (local)

@@ -1,5 +1,3 @@
-import type { ModelTask } from "@kaja/schema/config"
-import { file, TOML } from "bun"
 import { render } from "ink"
 import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
@@ -7,8 +5,8 @@ import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
-import { candidatesByTask, CATALOG, catalogProvider } from "../models/catalog"
-import { getModelsPath, writeModelsFromCatalog } from "../models/models"
+import { readCurrentModels } from "../models/current"
+import { writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
 import { refreshCatalog } from "../models/remote-catalog"
 
@@ -190,60 +188,28 @@ async function offerModelDownloads(print: (line: string) => void) {
   }
 }
 
-// models.toml as the wizard reads it back: loosely, since a hand-edited file needn't match the schema
-type LooseModelsFile = {
-  providers?: Record<string, { base_url?: string }>
-  models?: Record<string, { provider?: string; model: string; tasks?: ModelTask[] }>
-}
-
 /**
  * The providers models.toml already uses, where each local one listens, and which provider serves each task more than
- * one could — for re-offering what the machine already runs. Tolerant: nothing when the file is missing or
- * unparseable.
+ * one could, for re-offering what the machine already runs. The first provider the catalog doesn't know becomes the
+ * custom one the wizard asks about; any others are kept as they are. Nothing when the file is missing or unparseable.
  */
-async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom">> {
-  try {
-    const f = file(getModelsPath())
-    if (!(await f.exists())) return {}
-    const data = TOML.parse(await f.text()) as LooseModelsFile
-    const known = CATALOG.filter(provider => data?.providers?.[provider.id])
-
-    const addresses: Record<string, string> = {}
-    for (const provider of known) {
-      const url = data.providers?.[provider.id]?.base_url
-      if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
-    }
-
-    // A provider the catalog doesn't know is the user's own; the wizard can carry one, so a re-run keeps it.
-    const customName = Object.keys(data?.providers ?? {}).find(name => !catalogProvider(name))
-    const custom: NonNullable<WizardResult["custom"]> | undefined = customName
-      ? {
-          name: customName,
-          baseUrl: data.providers?.[customName]?.base_url,
-          models: Object.values(data.models ?? {})
-            .filter(entry => entry.provider === customName)
-            .flatMap(entry =>
-              (Array.isArray(entry.tasks) ? entry.tasks : []).map(task => ({ model: entry.model, task }))
-            )
-        }
-      : undefined
-
-    const providers = [...known.map(provider => provider.id), ...(custom ? ["custom"] : [])]
-    if (providers.length === 0) return {}
-
-    // Which provider serves each task more than one could, judged over everything the file holds.
-    const { chosenProviders } = await import("../../components/config-wizard")
-    const models: NonNullable<WizardResult["models"]> = {}
-    for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
-      // The first model in the file that lists the task is the one in use.
-      const active = Object.values(data?.models ?? {}).find(
-        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task as ModelTask)
-      )?.provider
-      if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
-    }
-    return { providers, addresses, models, ...(custom ? { custom } : {}) }
-  } catch {
-    return {}
+async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom" | "keep">> {
+  const current = await readCurrentModels()
+  if (!current) return {}
+  const [first, ...rest] = current.own
+  const custom = first && {
+    name: first.id,
+    baseUrl: first.baseUrl,
+    models: first.models.map(({ task, model }) => ({ model, task }))
+  }
+  const providers = [...current.providers, ...(custom ? ["custom"] : [])]
+  if (providers.length === 0) return {}
+  return {
+    providers,
+    addresses: current.addresses,
+    models: current.picks,
+    ...(custom ? { custom } : {}),
+    ...(rest.length > 0 ? { keep: rest } : {})
   }
 }
 
@@ -276,6 +242,14 @@ async function readSavedSecrets(): Promise<WizardSaved> {
   }
 }
 
+/** The custom provider's model ids, asked with the key just typed, else the one already saved for it. */
+async function listProviderModels(baseUrl: string, provider: string, key?: string): Promise<string[]> {
+  const { listModelIds } = await import("../models/list")
+  const { secrets } = await import("../config/secrets")
+  const apiKey = key ?? (await secrets()).providers[provider]?.api_key
+  return listModelIds(baseUrl, apiKey)
+}
+
 /**
  * Tests the models the wizard just wrote, the same pass `kaja doctor` runs, so a broken one is found now, while its
  * alternative is one keypress away. Nothing was tested while the questions were being answered: that kept them quick.
@@ -295,8 +269,9 @@ async function checkModels(): Promise<number> {
 
 /**
  * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config, so Enter at
- * every step keeps what is already set. Non-interactive stdin or `--headless` can't answer a prompt: it writes the
- * bundled templates untouched, no questions, same fallback as before.
+ * every step keeps what is already set. Without a provider catalog (offline) it asks for every detail of the user's own
+ * provider instead. Non-interactive stdin or `--headless` can't answer a prompt: it writes settings.toml's template, no
+ * questions.
  */
 export async function runConfigWizard({
   headless,
@@ -312,7 +287,7 @@ export async function runConfigWizard({
 
   const { ConfigWizard } = await import("../../components/config-wizard")
   // Before the prefill, which matches models.toml's providers against the catalog
-  await refreshCatalog()
+  if (!(await refreshCatalog())) console.log(statusLine("info", t("wizard.noCatalog")))
   const [prefill, saved] = await Promise.all([readPrefill(), readSavedSecrets()])
 
   const result = await new Promise<WizardResult | undefined>(resolve => {
@@ -321,6 +296,7 @@ export async function runConfigWizard({
         prefill={prefill}
         mode={mode}
         saved={saved}
+        listModels={listProviderModels}
         onDone={r => {
           unmount()
           resolve(r)

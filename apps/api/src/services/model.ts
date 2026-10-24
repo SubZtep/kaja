@@ -155,20 +155,6 @@ export class ModelService {
     )
   }
 
-  /** Enabled models with their provider, for rendering models.toml. */
-  async listEnabledWithProviders(): Promise<{ providers: Provider[]; models: Model[] }> {
-    const providerRows = await this.#db<ProviderRow[]>`
-      SELECT DISTINCT p.* FROM provider p
-      JOIN model m ON m.provider_id = p.id
-      WHERE m.enabled
-      ORDER BY p.created_at`
-    const modelRows = await this.#db<ModelRow[]>`SELECT * FROM model WHERE enabled ORDER BY created_at`
-    return {
-      providers: providerRows.map(row => this.#rowToProvider(row)),
-      models: modelRows.map(row => this.#rowToModel(row))
-    }
-  }
-
   // The first model matching `where` (in `order`), joined to its provider
   async #withProvider(
     where: SQL.Query<unknown>,

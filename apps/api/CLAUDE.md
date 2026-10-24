@@ -6,7 +6,7 @@ Hono REST API: Better Auth, the cloud agent (`/nasi`), abilities, sandboxes, wid
 
 Files in `migrations/` apply in lexicographic order and only create. Until v1.0 a schema change is edited into the file that creates the table, and existing databases are recreated.
 
-- `migrate.ts` stays in this folder (path-coupled to `./migrations` and the Dockerfile): it runs `applyMigrations` (`scripts/migrations.ts`), then the config seed; deploy, CI, `scripts/db_migration.sh` and the test database use it
+- `migrate.ts` stays in this folder (path-coupled to `./migrations` and the Dockerfile): it runs `applyMigrations` (`scripts/migrations.ts`); deploy, CI, `scripts/db_migration.sh` and the test database use it
 - `schema_migrations` records each file's checksum: new or (before v1.0) edited files apply, each in its own transaction; from v1.0 an edited file is refused
 - Compose runs the raw files on first Postgres init; an existing `pgdata` volume catches up with `scripts/db_migration.sh`
 
@@ -27,7 +27,7 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 
 ## Routes
 
-- `/config/*` is fail-closed (it would leak provider keys): it needs a non-empty `CONFIG_API_TOKEN` match. Public exceptions: `/config/catalog` (from the database, see Catalog), `/config/templates/<file>` (embedded from the repo's `config/` at build time) and `/config/schemas/<file>.json` (generated from `@kaja/schema`)
+- `/config/*` is fail-closed (it would leak provider keys): it needs a non-empty `CONFIG_API_TOKEN` match. Public exceptions: `/config/catalog` (from the database, see Catalog), `/config/schemas/<file>.json` (generated from `@kaja/schema`) and `/config/sounds`
 - Rate limits: global, `/auth/*` and `/nasi/turn(/stream)` (by user id); off under `bun test` or `RATE_LIMIT_ENABLED=false`
 - CSRF: cookie-session writes must come from `CORS_ORIGIN`
 - `/admin/*` needs a signed-in non-banned user; `providers`/`models`/`catalog`/`abilities`/`sandbox` also the `admin` role

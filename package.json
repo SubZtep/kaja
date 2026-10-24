@@ -9,7 +9,6 @@
   "scripts": {
     "check:env": "bun scripts/env.ts --check",
     "check:locales": "bun scripts/locales.ts --check",
-    "check:models": "bun scripts/models.ts --check",
     "clean:tui-temp": "bun run apps/tui/scripts/clean-temp.ts",
     "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:api": "bun run --filter @kaja/api dev",
@@ -21,9 +20,7 @@
     "dev:web": "bun run --filter @kaja/web dev",
     "generate:env": "bun scripts/env.ts",
     "generate:env-types": "bun scripts/env-types.ts",
-    "generate:models": "bun scripts/models.ts",
     "generate:schemas": "bun run packages/schema/tombi/generate.ts",
-    "seed:config": "bun run --filter @kaja/api seed:config",
     "session": "bun run apps/tui/scripts/session.ts",
     "sync:locales": "bun scripts/locales.ts",
     "tailwind:fix": "bun run --filter @kaja/web tailwind:fix",

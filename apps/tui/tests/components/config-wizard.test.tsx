@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test"
-import { ConfigWizard, type WizardResult } from "../../components/config-wizard"
+import { chosenProviders, ConfigWizard, type WizardResult } from "../../components/config-wizard"
 import { setLanguage } from "../../lib/i18n"
-import { CATALOG } from "../../lib/models/catalog"
+import { CATALOG, setCatalog } from "../../lib/models/catalog"
+import { TEST_CATALOG } from "../fixtures/catalog"
 import { renderForTest } from "../test-utils"
+
+setCatalog(TEST_CATALOG)
 
 const DOWN = "\x1b[B"
 const ESC = "\x1b"
@@ -574,4 +577,82 @@ test("a custom provider already in models.toml opens on its answers, and Enter k
   expect(w.result?.custom?.models).toEqual([{ model: "big-chat", task: "chat" }])
 
   await close(w)
+})
+
+test("without a catalog there is no checklist: the wizard goes straight to the user's own provider", async () => {
+  setCatalog(undefined)
+  try {
+    const w = await openProviders()
+    expect(w.t.lastFrame()).toContain("What should this provider be called?")
+    await type(w, "ollama")
+    await type(w, "http://localhost:11434/v1")
+    await w.t.press(ENTER) // key: skipped
+    await type(w, "qwen3.5:4b")
+    await w.t.press(ENTER) // chat
+    await w.t.press(ENTER) // that's all
+    await w.t.press(ENTER) // extras
+
+    expect(chosenProviders(w.result!)).toEqual([
+      {
+        id: "ollama",
+        name: "ollama",
+        kind: "hosted",
+        baseUrl: "http://localhost:11434/v1",
+        models: [{ model: "qwen3.5:4b", task: "chat" }]
+      }
+    ])
+    await close(w)
+  } finally {
+    setCatalog(TEST_CATALOG)
+  }
+})
+
+test("the models the custom server lists are offered to pick from, with typing one still possible", async () => {
+  const asked: unknown[] = []
+  const w = await openProviders({
+    listModels: async (...args) => {
+      asked.push(args)
+      return ["alpha", "beta"]
+    }
+  })
+  await tick(w, CUSTOM)
+  await type(w, "box")
+  await type(w, "http://box:8000/v1")
+  await type(w, "secret")
+  await w.t.tick()
+  expect(asked).toEqual([["http://box:8000/v1", "box", "secret"]])
+  expect(w.t.lastFrame()).toContain("Which box model should Kaja use?")
+  expect(w.t.lastFrame()).toContain("Type a model id myself")
+
+  await w.t.press(DOWN) // beta; the list opens on alpha, below the typing choice
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // chat
+  // alpha is still offered, beta isn't; "That's all" ends the list
+  expect(w.t.lastFrame()).toContain("Another box model?")
+  expect(w.t.lastFrame()).not.toContain("beta")
+  await w.t.press("\x1b[A") // up from alpha to "That's all"
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // extras
+
+  expect(w.result?.custom?.models).toEqual([{ model: "beta", task: "chat" }])
+  await close(w)
+})
+
+test("a server that lists no models falls back to typing the id", async () => {
+  const w = await openProviders({ listModels: async () => [] })
+  await tick(w, CUSTOM)
+  await type(w, "box")
+  await type(w, "http://box:8000/v1")
+  await w.t.press(ENTER) // key: skipped
+  await w.t.tick()
+  expect(w.t.lastFrame()).toContain("Type its id, as the provider names it.")
+  await close(w)
+})
+
+test("providers kept from models.toml are written back with the ticked ones", async () => {
+  const kept = { id: "other", name: "other", kind: "hosted" as const, baseUrl: "https://other.test/v1", models: [] }
+  expect(chosenProviders({ providers: ["ollama"], keep: [kept] }).map(provider => provider.id)).toEqual([
+    "ollama",
+    "other"
+  ])
 })

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
-import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
+import { PUBLIC_CATALOG_VERSION } from "@kaja/schema/api"
+import { ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { TOML } from "bun"
 import {
   buildModelsToml,
@@ -7,10 +8,12 @@ import {
   CATALOG,
   type CatalogProvider,
   catalogProvider,
-  EXAMPLES,
-  exampleToml,
+  setCatalog,
   TASK_ORDER
 } from "../../../lib/models/catalog"
+import { TEST_CATALOG } from "../../fixtures/catalog"
+
+setCatalog(TEST_CATALOG)
 
 const pick = (...ids: string[]): CatalogProvider[] => ids.map(id => catalogProvider(id)!)
 const parse = (text: string) => ModelsFileSchema.parse(TOML.parse(text))
@@ -24,41 +27,79 @@ const inUse = (parsed: Parsed, task: ModelTask) => {
   return id ? parsed.models[id] : undefined
 }
 
-// The examples are generated from the catalog (`bun generate:models`); a hand edit or a stale file fails here.
-// Content, not bytes: the file is tombi-formatted, which `bun check:models` checks exactly.
-test.each(EXAMPLES)("config/$file is what the catalog writes for it", async example => {
-  const text = await Bun.file(`${import.meta.dir}/../../../../../config/${example.file}`).text()
-  expect(TOML.parse(text)).toEqual(TOML.parse(exampleToml(example)))
-  parse(text)
-})
-
-test("an example's defaults follow catalog order, not the order it lists its providers in, unless it picks", () => {
-  const forward = parse(exampleToml({ file: "models.x.toml", providers: ["llama", "xai"] }))
-  const backward = parse(exampleToml({ file: "models.x.toml", providers: ["xai", "llama"] }))
-  expect(backward).toEqual(forward)
-  expect(inUse(forward, "chat")?.provider).toBe("llama")
-
-  const picked = parse(exampleToml({ file: "models.x.toml", providers: ["llama", "xai"], pick: { chat: "xai" } }))
-  expect(inUse(picked, "chat")?.provider).toBe("xai")
-})
-
-test("the catalog file rejects a pick outside the example, an unknown provider, and a missing default file", () => {
-  const provider = {
-    id: "a",
-    name: "A",
-    kind: "hosted",
-    base_url: "https://a.test",
-    models: [{ task: "chat", model: "m" }]
+test("each provider offers its default model per task, and nothing it isn't the default for", () => {
+  setCatalog({
+    version: PUBLIC_CATALOG_VERSION,
+    providers: [
+      {
+        id: "acme",
+        name: "Acme",
+        kind: "hosted",
+        base_url: "https://acme.test/v1",
+        note: "two\nlines",
+        doc: null,
+        models: [
+          {
+            model: "big",
+            name: null,
+            tasks: ["chat", "summarize"],
+            default_tasks: ["chat"],
+            context_window: 128000,
+            images: false
+          },
+          {
+            model: "small",
+            name: null,
+            tasks: ["chat", "summarize"],
+            default_tasks: ["summarize"],
+            context_window: null,
+            images: true
+          },
+          { model: "spare", name: null, tasks: ["chat"], default_tasks: [], context_window: null, images: true }
+        ]
+      }
+    ]
+  })
+  try {
+    expect(CATALOG[0]).toEqual({
+      id: "acme",
+      name: "Acme",
+      kind: "hosted",
+      baseUrl: "https://acme.test/v1",
+      note: "two lines",
+      models: [
+        { task: "chat", model: "big", contextWindow: 128000, images: false },
+        { task: "summarize", model: "small" }
+      ]
+    })
+    // What the catalog knows about a model goes into models.toml with it
+    const parsed = parse(buildModelsToml({ providers: [...CATALOG] }))
+    expect(parsed.models.big).toEqual({
+      model: "big",
+      provider: "acme",
+      tasks: ["chat"],
+      context_window: 128000,
+      images: false
+    })
+  } finally {
+    setCatalog(TEST_CATALOG)
   }
-  const ok = { file: "models.default.toml", providers: ["a"] }
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [ok] }).success).toBe(true)
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [] }).success).toBe(false)
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [{ ...ok, providers: ["b"] }] }).success).toBe(
-    false
-  )
-  expect(
-    CatalogFileSchema.safeParse({ providers: [provider], examples: [{ ...ok, pick: { chat: "b" } }] }).success
-  ).toBe(false)
+})
+
+test("a provider with no default model yet isn't offered: it would serve nothing", () => {
+  setCatalog({
+    ...TEST_CATALOG,
+    providers: [{ ...TEST_CATALOG.providers[0]!, id: "bare", models: [] }, TEST_CATALOG.providers[1]!]
+  })
+  expect(CATALOG.map(provider => provider.id)).toEqual(["ollama"])
+  setCatalog(TEST_CATALOG)
+})
+
+test("no catalog means no providers to offer", () => {
+  setCatalog(undefined)
+  expect(CATALOG).toEqual([])
+  setCatalog(TEST_CATALOG)
+  expect(CATALOG).toHaveLength(6)
 })
 
 test("every combination of providers writes a file the schema accepts, with a default per task", () => {
@@ -97,7 +138,7 @@ test("with two providers for one task, the picked one is the default and the oth
   const unpicked = parse(buildModelsToml({ providers }))
   expect(inUseId(unpicked, "chat")).toBe("minimax-m3")
   expect(unpicked.models["qwen3-5-4b"]?.provider).toBe("ollama")
-  // The examples leave the alternatives out: one model per task.
+  // Without alternatives: one model per task.
   const bare = parse(buildModelsToml({ providers, alternatives: false }))
   expect(bare.models["qwen3-5-4b"]).toBeUndefined()
   expect(inUse(bare, "chat")?.provider).toBe("fireworks")
@@ -179,7 +220,7 @@ test("a provider serving a task twice gets two entries, never a duplicate table"
 test("the comments that explain the file are written, and no placeholder for a task nobody serves", () => {
   const text = buildModelsToml({ providers: pick("ollama") })
   expect(text).toContain("# Kaja models")
-  expect(text).toContain("# Ollama requires an API key but ignores its value")
+  expect(text).toContain("# needs an api_key in secrets.toml, any value")
   expect(text).not.toContain("# [models.")
 
   const withSpeech = buildModelsToml({ providers: pick("speaches") })

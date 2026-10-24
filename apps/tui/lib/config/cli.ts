@@ -1,23 +1,27 @@
-import { existsSync } from "node:fs"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
-import { fetchModelsToml, getModelsPath } from "../models/models"
+import type { RefreshSkipped } from "../models/current"
 import { listPaths } from "../paths"
-import { pathForBundleKey, pickBundleFiles } from "./bundle"
 import { fetchCommandsToml } from "./commands"
 import { getConfigDir } from "./config"
-import { writeTemplateConfig } from "./fetch"
-import { fetchRemoteConfigBundle } from "./remote-fetch"
 import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean; kept?: boolean }
 
-function fetchResultLine({ path, backedUpTo, unchanged, kept }: FetchResult) {
+function fetchResultLine(result: FetchResult | RefreshSkipped) {
+  if ("skipped" in result) return statusLine("info", t(SKIPPED_KEY[result.skipped]))
+  const { path, backedUpTo, unchanged, kept } = result
   if (kept) return statusLine("info", t("config.fetchedKept", { path }))
   if (unchanged) return statusLine("info", t("config.fetchedUnchanged", { path }))
   if (backedUpTo) return statusLine("success", t("config.fetchedWithBackup", { path, backup: backedUpTo }))
   return statusLine("success", t("config.fetched", { path }))
+}
+
+const SKIPPED_KEY: Record<RefreshSkipped["skipped"], string> = {
+  "no-catalog": "config.fetchModelsNoCatalog",
+  "no-models": "config.fetchModelsNoFile",
+  "no-catalog-providers": "config.fetchModelsOwnOnly"
 }
 
 function matchesOnly(key: string, only: string | undefined): boolean {
@@ -28,25 +32,16 @@ function matchesOnly(key: string, only: string | undefined): boolean {
   return true
 }
 
-async function runFetchOffline(only?: string): Promise<FetchResult[]> {
-  const results: FetchResult[] = []
-  if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
-  if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
-  if (matchesOnly("commands.toml", only)) results.push(await fetchCommandsToml())
-  return results
-}
-
-async function runFetchOnline(only: string | undefined): Promise<FetchResult[] | undefined> {
-  // A 304 only means "same as the last download", not "same as what's on disk", so with no models.toml (the one file the bundle writes) ask for the full body. Not the config dir: fetching secrets.toml has just created it.
-  const bundle = await fetchRemoteConfigBundle(existsSync(getModelsPath()))
-  if ("unchanged" in bundle) return undefined
-
-  const entries = Object.entries(pickBundleFiles(bundle.files)).filter(([key]) => matchesOnly(key, only))
-  return Promise.all(
-    entries.map(([key, text]) =>
-      key === "commands.toml" ? fetchCommandsToml(text) : writeTemplateConfig(text, pathForBundleKey(key))
-    )
-  )
+/**
+ * Models.toml follows the online catalog (`--offline` leaves it alone); secrets.toml and commands.toml come from the
+ * templates this build carries.
+ */
+async function fetchModels(offline: boolean | undefined): Promise<FetchResult | RefreshSkipped> {
+  if (offline) return { skipped: "no-catalog" }
+  const { refreshCatalog } = await import("../models/remote-catalog")
+  await refreshCatalog()
+  const { refreshModelsToml } = await import("../models/current")
+  return refreshModelsToml()
 }
 
 function errorMessage(error: unknown): string {
@@ -54,33 +49,15 @@ function errorMessage(error: unknown): string {
 }
 
 async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number; text: string }> {
-  if (offline) {
-    try {
-      const results = await runFetchOffline(only)
-      return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (error) {
-      return { code: 1, text: errorMessage(error) }
-    }
-  }
-
   try {
-    // secrets.toml is never admin-managed (no user secrets on the server), so it's always fetched
-    // from the bundled local template rather than the remote bundle. Done before runFetchOnline:
-    // that call may read secrets(), which auto-writes a missing
-    // secrets.toml as a side effect — fetching it explicitly first keeps this status line accurate.
-    const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
-    const remoteResults = await runFetchOnline(only)
-    const results = [...secretsResult, ...(remoteResults ?? [])]
-    if (results.length === 0) return { code: 0, text: statusLine("success", t("config.fetchAllUpToDate")) }
+    // secrets.toml first: reading the config later can write a missing one as a side effect, and this line should say so
+    const results: (FetchResult | RefreshSkipped)[] = []
+    if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
+    if (matchesOnly("commands.toml", only)) results.push(await fetchCommandsToml())
+    if (matchesOnly("models.toml", only)) results.push(await fetchModels(offline))
     return { code: 0, text: results.map(fetchResultLine).join("\n") }
   } catch (error) {
-    console.log(statusLine("warning", t("config.fetchOfflineFallback", { message: errorMessage(error) })))
-    try {
-      const results = await runFetchOffline(only)
-      return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (fallbackError) {
-      return { code: 1, text: errorMessage(fallbackError) }
-    }
+    return { code: 1, text: errorMessage(error) }
   }
 }
 

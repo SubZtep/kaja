@@ -4,7 +4,7 @@ import { publicCatalogSchema } from "@kaja/schema/api"
 import { SoundsManifestSchema } from "@kaja/schema/config"
 import type { Context } from "hono"
 import { catalogService } from "../../services"
-import { defaultSchemas, defaultTemplates } from "../../services/config-defaults"
+import { defaultSchemas } from "../../services/config-defaults"
 import { soundFile, sounds } from "../../services/sounds"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
@@ -15,7 +15,7 @@ const etagOf = (text: string) => `"${createHash("sha256").update(text).digest("h
 
 const schemaEtags = new Map([...defaultSchemas].map(([file, schema]) => [file, etagOf(JSON.stringify(schema))]))
 
-// Same caching as /config/export; the catalog changes with a sync or an admin edit, the rest with a deploy.
+// The catalog changes with a sync or an admin edit, the rest with a deploy.
 function notModified(c: Context<RouteProps>, etag: string): boolean {
   c.header("Cache-Control", "public, max-age=300")
   c.header("ETag", etag)
@@ -30,23 +30,6 @@ const catalogRoute = createRoute({
   responses: {
     200: { description: "OK", content: { "application/json": { schema: publicCatalogSchema } } },
     304: { description: "Not modified" }
-  }
-})
-
-const templateRoute = createRoute({
-  method: "get",
-  path: "/templates/{file}",
-  tags: ["Config"],
-  summary: "A default config file (commands, hooks, model examples) as TOML text",
-  request: {
-    params: z.object({
-      file: z.string().openapi({ param: { name: "file", in: "path" }, example: "models.default.toml" })
-    })
-  },
-  responses: {
-    200: { description: "OK", content: { "text/plain": { schema: z.string() } } },
-    304: { description: "Not modified" },
-    404: { description: "Not found", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
@@ -78,7 +61,7 @@ const soundsRoute = createRoute({
   }
 })
 
-/** Public, unauthenticated: the same defaults the CLI bundles, so it carries no keys. */
+/** Public, unauthenticated: nothing here carries a key. */
 export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
   routes.openapi(soundsRoute, async c => {
     const { manifest } = await sounds()
@@ -103,15 +86,6 @@ export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
     const { body, etag } = await catalogService.publicCatalog()
     if (notModified(c, etag)) return c.body(null, 304)
     return c.json(body, 200)
-  })
-
-  routes.openapi(templateRoute, c => {
-    const { file } = c.req.valid("param")
-    const content = defaultTemplates.get(file)
-    if (content === undefined) return notFound(c, `Unknown template "${file}"`)
-
-    if (notModified(c, etagOf(content))) return c.body(null, 304)
-    return c.text(content, 200, { "Content-Type": "text/plain; charset=utf-8" })
   })
 
   routes.openapi(schemaRoute, c => {

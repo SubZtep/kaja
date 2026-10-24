@@ -31,6 +31,6 @@ Translations: edit only the en-GB locale files and leave every other language to
 ## Generated files and hooks
 
 - Lefthook runs lint, fmt and typecheck on commit, lint and typecheck on push (plus `bun test` and the headless `/translate` when pushing `main`). Let them catch issues; run them yourself only when you need feedback sooner
-- Model defaults: edit `config/catalog.toml`, run `bun generate:models`; `config/models.*.toml` are generated. Provider order in the catalog decides a contested task's default (an example can override with `pick`). `models.default.toml` is what `kaja config fetch --offline` writes and the API seed loads
+- Model defaults live in the API's database, not the repo: the provider catalog (`/admin/catalog`, synced daily from models.dev) is what the TUI wizard offers online and `kaja config fetch` updates models.toml from. Offline, the wizard asks for every detail of the user's own provider
 - Env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env` and `bun generate:env-types`; the api/web/sandbox `.env.example` are generated (tui's is hand-written)
-- `bun check:models` and `bun check:env` fail CI and pre-commit on drift
+- `bun check:env` fails CI and pre-commit on drift

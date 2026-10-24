@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
 import { PUBLIC_CATALOG_VERSION, publicCatalogSchema } from "@kaja/schema/api"
-import { ModelsFileSchema, SoundsManifestSchema } from "@kaja/schema/config"
+import { SoundsManifestSchema } from "@kaja/schema/config"
 import { tombiSchemas } from "@kaja/schema/tombi"
-import { TOML } from "bun"
 import { app } from "../../src/app"
 
 describe("config defaults (public)", () => {
@@ -13,27 +12,13 @@ describe("config defaults (public)", () => {
     expect(publicCatalogSchema.parse(await res.json()).version).toBe(PUBLIC_CATALOG_VERSION)
   })
 
-  test.each(["/config/catalog", "/config/templates/commands.toml", "/config/schemas/settings.json", "/config/sounds"])(
+  test.each(["/config/catalog", "/config/schemas/settings.json", "/config/sounds"])(
     "GET %s honours If-None-Match with a 304",
     async path => {
       const etag = (await app.request(path)).headers.get("etag")
       expect(etag).not.toBeNull()
       const res = await app.request(path, { headers: { "If-None-Match": etag! } })
       expect(res.status).toBe(304)
-    }
-  )
-
-  test("GET /config/templates/<file> returns plain TOML", async () => {
-    const res = await app.request("/config/templates/models.default.toml")
-    expect(res.status).toBe(200)
-    expect(res.headers.get("content-type")).toContain("text/plain")
-    expect(ModelsFileSchema.safeParse(TOML.parse(await res.text())).success).toBe(true)
-  })
-
-  test.each(["secrets.toml", "settings.toml", "catalog.toml", "constructor", "does-not-exist.toml"])(
-    "GET /config/templates/%s is 404",
-    async file => {
-      expect((await app.request(`/config/templates/${file}`)).status).toBe(404)
     }
   )
 

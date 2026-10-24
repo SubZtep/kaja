@@ -179,18 +179,12 @@ jobs:
       - name: Check .env.example files are up to date
         run: bun check:env
 
-      - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@e0db57b0c2dfee98ec48ee3f02beb983fba2aa09
-
-      - name: Check model example files are up to date
-        run: bun check:models
-
       - name: Create the storage bucket
         run: |
           docker run --rm --network host -v "$PWD/scripts/storage_init.sh:/storage_init.sh:ro" \
             --entrypoint sh rustfs/rc:v0.1.36 /storage_init.sh
 
-      - name: Migrate and seed like a deploy
+      - name: Migrate like a deploy
         run: bun apps/api/migrate.ts
 
       - name: Install secret-service backend

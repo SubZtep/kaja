@@ -1,5 +1,9 @@
 import { afterEach, beforeAll, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
+import { ModelsFileSchema } from "@kaja/schema/config"
+import { TOML } from "bun"
+import { setCatalog } from "../../../lib/models/catalog"
+import { TEST_CATALOG } from "../../fixtures/catalog"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
@@ -11,14 +15,14 @@ const { join } = await import("node:path")
 // Where an old install kept its own MCP servers; fetch must never write it.
 const getMcpPath = () => join(getConfigDir(), "mcp.toml")
 
-async function clearEtag() {
+async function clearCatalog() {
   const { $ } = await import("bun")
-  // fetchRemoteConfigBundle() caches the last seen ETag outside the config dir — clear it so tests don't leak a 304 into each other.
-  await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
+  // refreshCatalog() keeps the last catalog in the cache dir, which an unreachable server falls back to
+  await $`rm -f ${join(getPaths().cache, "catalog.json")}`.quiet().nothrow()
+  setCatalog()
 }
 
-// Also before the first test: the cache may hold an ETag from another test file or a real `kaja config fetch`
-beforeAll(clearEtag)
+beforeAll(clearCatalog)
 
 afterEach(async () => {
   const { $ } = await import("bun")
@@ -26,54 +30,7 @@ afterEach(async () => {
     .quiet()
     .nothrow()
   await $`rm -rf ${getConfigDir()} ${getConfigDir()}.bak ${getConfigDir()}.bak2`.quiet().nothrow()
-  await clearEtag()
-})
-
-test("fetch writes models.toml from the bundled template, and neither personas nor an mcp.toml", async () => {
-  const { code, text } = await runConfigCli(["fetch"])
-  expect(code).toBe(0)
-  expect(text).toContain(getModelsPath())
-  expect(text).not.toContain("personas")
-  expect(text).not.toContain(getMcpPath())
-  expect(await Bun.file(getModelsPath()).exists()).toBe(true)
-  // MCP servers are marketplace abilities now; there's no mcp.toml to write.
-  expect(await Bun.file(getMcpPath()).exists()).toBe(false)
-})
-
-test("fetch backs up an existing models.toml instead of overwriting it", async () => {
-  // Each fetch needs a fresh etag and body: a repeated etag yields a 304 ("all up to date")
-  // and identical content is a no-op, and neither writes the .bak.2.toml this asserts on.
-  let restore = mockBundleFetch({ "models.toml": "providers = {}\n" }, '"v1"')
-  try {
-    await Bun.write(getModelsPath(), "old content")
-
-    const first = await runConfigCli(["fetch"])
-    expect(first.code).toBe(0)
-    expect(first.text).toContain("models.bak.toml")
-    expect(await Bun.file(backup(getModelsPath())).text()).toBe("old content")
-    expect(await Bun.file(getModelsPath()).text()).not.toBe("old content")
-
-    await Bun.write(getModelsPath(), "newer content")
-    restore()
-    restore = mockBundleFetch({ "models.toml": 'label = "changed"\n' }, '"v2"')
-    const second = await runConfigCli(["fetch"])
-    expect(second.code).toBe(0)
-    expect(second.text).toContain("models.bak.2.toml")
-    expect(await Bun.file(backup(getModelsPath())).text()).toBe("old content")
-    expect(await Bun.file(backup(getModelsPath(), 2)).text()).toBe("newer content")
-  } finally {
-    restore()
-  }
-})
-
-test("fetch is a no-op (no new backup) when the file already matches the bundled template", async () => {
-  const { code: firstCode } = await runConfigCli(["fetch"])
-  expect(firstCode).toBe(0)
-
-  const { code, text } = await runConfigCli(["fetch"])
-  expect(code).toBe(0)
-  expect(text).not.toContain(".bak")
-  expect(await Bun.file(backup(getModelsPath())).exists()).toBe(false)
+  await clearCatalog()
 })
 
 test("unknown or missing subcommand prints usage and exits 1", async () => {
@@ -89,78 +46,119 @@ function backup(path: string, n?: number) {
   return path.replace(/\.toml$/, n ? `.bak.${n}.toml` : ".bak.toml")
 }
 
-function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
+/** Serves TEST_CATALOG at /config/catalog, and fails any other request. Returns a restore function. */
+function mockCatalogFetch() {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(input instanceof Request ? input.url : input)
-    expect(url.pathname).toBe("/config/export")
-    const ifNoneMatch = new Headers(init?.headers).get("if-none-match")
-    if (ifNoneMatch === etag) return new Response(null, { status: 304 })
-    return new Response(JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), files }), {
-      status: 200,
-      headers: { etag, "content-type": "application/json" }
-    })
+    expect(url.pathname).toBe("/config/catalog")
+    return Response.json(TEST_CATALOG)
   }) as typeof fetch
   return () => {
     globalThis.fetch = originalFetch
   }
 }
 
-test("fetch downloads the bundle from the server when reachable, leaving out personas and MCP servers", async () => {
-  const restore = mockBundleFetch({
-    "models.toml": 'label = "from-server"\n',
-    "mcp.toml": "servers = []\n",
-    "personas/default.toml": 'label = "server persona"\n'
-  })
+function failFetch(message: string) {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async () => {
+    throw new Error(message)
+  }) as unknown as typeof fetch
+  return () => {
+    globalThis.fetch = originalFetch
+  }
+}
+
+// An Ollama setup whose model the catalog has since replaced, beside a provider of the user's own
+const OUTDATED = `[providers.ollama]
+base_url = "http://box.local:11434/v1"
+
+[providers.box]
+base_url = "https://box.test/v1"
+
+[models.old]
+model = "old:model"
+provider = "ollama"
+tasks = ["chat"]
+
+[models.mine]
+model = "mine"
+provider = "box"
+tasks = ["embedding"]
+`
+
+test("fetch rebuilds models.toml from the catalog for the providers it uses, keeping the user's own", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = mockCatalogFetch()
   try {
     const { code, text } = await runConfigCli(["fetch"])
     expect(code).toBe(0)
-    expect(text).toContain(getModelsPath())
-    expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
-    // Personas and MCP servers come from the marketplace sync; a server that still sends them doesn't write them.
-    expect(await Bun.file(join(getConfigDir(), "personas", "default.toml")).exists()).toBe(false)
-    expect(await Bun.file(getMcpPath()).exists()).toBe(false)
+    expect(text).toContain("models.bak.toml")
   } finally {
     restore()
   }
+  const parsed = ModelsFileSchema.parse(TOML.parse(await Bun.file(getModelsPath()).text()))
+  expect(parsed.providers.ollama?.base_url).toBe("http://box.local:11434/v1")
+  expect(Object.values(parsed.models).find(entry => entry.tasks.includes("chat"))?.model).toBe("qwen3.5:4b")
+  expect(parsed.models.mine).toEqual({ model: "mine", provider: "box", tasks: ["embedding"] })
+  expect(await Bun.file(backup(getModelsPath())).text()).toBe(OUTDATED)
 })
 
-test("fetch with --offline never touches the network", async () => {
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = (async (_input: RequestInfo | URL, _init?: RequestInit) => {
-    throw new Error("network should not be used with --offline")
-  }) as unknown as typeof fetch
+test("a second fetch with nothing new changes nothing and backs nothing up", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = mockCatalogFetch()
   try {
-    const { code } = await runConfigCli(["fetch"], { offline: true })
-    expect(code).toBe(0)
-    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+    await runConfigCli(["fetch"])
+    const { text } = await runConfigCli(["fetch"])
+    expect(text).toContain(`${getModelsPath()} is already up to date`)
   } finally {
-    globalThis.fetch = originalFetch
+    restore()
   }
+  expect(await Bun.file(backup(getModelsPath(), 2)).exists()).toBe(false)
 })
 
-test("fetch falls back to bundled templates when the server is unreachable", async () => {
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = (async (_input: RequestInfo | URL, _init?: RequestInit) => {
-    throw new Error("connection refused")
-  }) as unknown as typeof fetch
+test("fetch without a models.toml points at the wizard, and writes neither models.toml nor an mcp.toml", async () => {
+  const restore = mockCatalogFetch()
   try {
     const { code, text } = await runConfigCli(["fetch"])
     expect(code).toBe(0)
-    expect(text).toContain(getModelsPath())
-    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+    expect(text).toContain("kaja config wizard")
   } finally {
-    globalThis.fetch = originalFetch
+    restore()
   }
+  expect(await Bun.file(getModelsPath()).exists()).toBe(false)
+  // MCP servers are marketplace abilities now; there's no mcp.toml to write.
+  expect(await Bun.file(getMcpPath()).exists()).toBe(false)
+})
+
+test("fetch with --offline never touches the network and leaves models.toml alone", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = failFetch("network should not be used with --offline")
+  try {
+    const { code, text } = await runConfigCli(["fetch"], { offline: true })
+    expect(code).toBe(0)
+    expect(text).toContain("there is no provider catalog")
+  } finally {
+    restore()
+  }
+  expect(await Bun.file(getModelsPath()).text()).toBe(OUTDATED)
+})
+
+test("fetch with the server unreachable and no cached catalog leaves models.toml alone", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = failFetch("connection refused")
+  try {
+    const { code, text } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(text).toContain("there is no provider catalog")
+  } finally {
+    restore()
+  }
+  expect(await Bun.file(getModelsPath()).text()).toBe(OUTDATED)
 })
 
 test("fetch writes secrets.toml from the bundled template, but never settings.toml", async () => {
-  const restore = mockBundleFetch({ "models.toml": 'label = "x"\n' })
-  try {
-    await runConfigCli(["fetch"])
-  } finally {
-    restore()
-  }
+  await runConfigCli(["fetch"], { offline: true })
   const { getSecretsPath } = await import("../../../lib/config/secrets")
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
@@ -194,18 +192,6 @@ test("wizard --headless writes default config without prompting", async () => {
   expect(await Bun.file(getConfigPath()).exists()).toBe(true)
 })
 
-test("fetch still writes a missing models.toml when the cached ETag would get a 304", async () => {
-  const restore = mockBundleFetch({ "models.toml": 'label = "fresh"\n' }, '"same"')
-  try {
-    await Bun.write(join(getPaths().temp, "kaja-config-fetch-etag"), '"same"')
-    const { code } = await runConfigCli(["fetch"])
-    expect(code).toBe(0)
-    expect(await Bun.file(getModelsPath()).text()).toContain("fresh")
-  } finally {
-    restore()
-  }
-})
-
 test("diff treats commands.toml as unchanged when only the user's custom patterns differ", async () => {
   await runConfigCli(["fetch", "--offline"], { offline: true })
   const path = join(getConfigDir(), "commands.toml")
@@ -214,4 +200,15 @@ test("diff treats commands.toml as unchanged when only the user's custom pattern
   expect(text).toContain(path)
   const line = text.split("\n").find(row => row.includes("commands.toml"))!
   expect(line).not.toMatch(/would update|update/i)
+})
+
+test("diff says models.toml would update when the catalog has moved on", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = mockCatalogFetch()
+  try {
+    const { text } = await runConfigCli(["diff"])
+    expect(text.split("\n").find(row => row.includes("models.toml"))).toContain("would update")
+  } finally {
+    restore()
+  }
 })

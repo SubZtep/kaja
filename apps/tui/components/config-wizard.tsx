@@ -57,6 +57,11 @@ export type WizardResult = {
    */
   providers?: string[]
   custom?: WizardCustom
+  /**
+   * Providers models.toml already has that the wizard doesn't ask about (the catalog doesn't know them, and the custom
+   * steps cover only one): written back as they are, so a re-run never drops them.
+   */
+  keep?: CatalogProvider[]
   /** Typed API keys by provider id; only hosted providers are asked. */
   keys?: Record<string, string>
   /** Where each local provider's server listens. */
@@ -94,15 +99,6 @@ type Step =
   | "extras"
   | "telegramToken"
   | "done"
-
-const PROVIDER_LABEL_KEY: Record<string, string> = {
-  fireworks: "wizard.providerFireworks",
-  xai: "wizard.providerXai",
-  openrouter: "wizard.providerOpenrouter",
-  ollama: "wizard.providerOllama",
-  llama: "wizard.providerLlama",
-  speaches: "wizard.providerSpeaches"
-}
 
 const TASK_LABEL_KEY: Record<ModelTask, string> = {
   chat: "wizard.taskChat",
@@ -144,10 +140,18 @@ function isWebAddress(value: string): boolean {
   }
 }
 
+/**
+ * The ticked providers. Without a catalog (offline) there is nothing to tick: the user's own provider is the only
+ * one, asked for detail by detail.
+ */
+function tickedProviders(result: WizardResult): string[] {
+  return CATALOG.length === 0 ? [CUSTOM] : (result.providers ?? [])
+}
+
 /** The custom provider as a catalog entry, once it has an address and at least one model with its task. */
 function customProvider(result: WizardResult): CatalogProvider | undefined {
   const custom = result.custom
-  if (!result.providers?.includes(CUSTOM) || !custom?.name || !custom.baseUrl) return undefined
+  if (!tickedProviders(result).includes(CUSTOM) || !custom?.name || !custom.baseUrl) return undefined
   const models = custom.models.flatMap(({ model, task }) => (task ? [{ model, task }] : []))
   if (models.length === 0) return undefined
   return { id: custom.name, name: custom.name, kind: "hosted", baseUrl: custom.baseUrl, models }
@@ -158,10 +162,14 @@ function catalogChoices(result: WizardResult): CatalogProvider[] {
   return CATALOG.filter(provider => result.providers?.includes(provider.id))
 }
 
-/** Every ticked provider, the custom one last. Exported for the runner, which writes models.toml from it. */
+/**
+ * Every ticked provider, then the custom one, then those kept from models.toml. Exported for the runner, which writes
+ * models.toml from it.
+ */
 export function chosenProviders(result: WizardResult): CatalogProvider[] {
   const custom = customProvider(result)
-  return custom ? [...catalogChoices(result), custom] : catalogChoices(result)
+  const keep = (result.keep ?? []).filter(provider => provider.id !== custom?.id)
+  return [...catalogChoices(result), ...(custom ? [custom] : []), ...keep]
 }
 
 /**
@@ -185,11 +193,11 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
   if (result.mode === "cloud") return [...steps, "done"]
 
-  steps.push("providers")
+  if (CATALOG.length > 0) steps.push("providers")
   for (const provider of catalogChoices(result)) {
     steps.push(provider.kind === "hosted" ? `key:${provider.id}` : `address:${provider.id}`)
   }
-  if (result.providers?.includes(CUSTOM)) {
+  if (tickedProviders(result).includes(CUSTOM)) {
     steps.push("custom-name", "custom-url", "custom-key")
     const models = result.custom?.models ?? []
     models.forEach((_, index) => {
@@ -326,6 +334,7 @@ export function ConfigWizard({
   prefill,
   mode,
   saved,
+  listModels,
   onDone,
   onCancel
 }: Readonly<{
@@ -334,6 +343,11 @@ export function ConfigWizard({
   mode?: KajaMode
   /** Secrets already on disk, so their step offers to keep them instead of demanding a new one. */
   saved?: WizardSaved
+  /**
+   * The model ids the custom provider's server lists, offered instead of typing one. `key` is the one just typed,
+   * if any. Without it, or when the server lists none, model ids are typed.
+   */
+  listModels?: (baseUrl: string, provider: string, key?: string) => Promise<string[]>
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -348,6 +362,23 @@ export function ConfigWizard({
   const [noProvider, setNoProvider] = useState(false)
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
   const [preview, setPreview] = useState<ThemeName>(initial.theme ?? "dark")
+  // The custom server's model ids, per address; `ids` is unset while it is being asked
+  const [probe, setProbe] = useState<{ url: string; ids?: string[] }>()
+  // The user chose to type a model id rather than pick a listed one
+  const [typing, setTyping] = useState(false)
+
+  // Asks the custom server for its models once its address and key are in, on the first model step
+  const probeUrl = step.startsWith("custom-model") ? result.custom?.baseUrl : undefined
+  const probedUrl = useRef<string>(undefined)
+  useEffect(() => {
+    if (!probeUrl || !listModels || probedUrl.current === probeUrl) return
+    probedUrl.current = probeUrl
+    setProbe({ url: probeUrl })
+    const name = result.custom?.name ?? ""
+    void listModels(probeUrl, name, result.keys?.[name] || undefined).then(ids => {
+      if (probedUrl.current === probeUrl) setProbe({ url: probeUrl, ids })
+    })
+  }, [probeUrl, listModels, result.custom?.name, result.keys])
 
   // The last answer finishes it: every answer is already on screen, and there's no step to go back to.
   const finished = useRef(false)
@@ -362,6 +393,7 @@ export function ConfigWizard({
     const line = answerLine(step, next, saved)
     if (line) setAnswered(list => [...list, { id: step, ...line }])
     setResult(next)
+    setTyping(false)
     setStep(nextStepAfter(step, next, mode))
   }
 
@@ -462,6 +494,37 @@ export function ConfigWizard({
       const index = Number(subject)
       // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
       const existing = custom.models[index]
+      const listed = probe?.url === custom.baseUrl ? probe : undefined
+      if (!existing && !typing && listed && !listed.ids) {
+        return <Text dimColor>{t("wizard.customModelSearching", { url: custom.baseUrl ?? "" })}</Text>
+      }
+      const offered = (listed?.ids ?? []).filter(id => !custom.models.some(entry => entry.model === id))
+      if (!existing && !typing && offered.length > 0) {
+        // Typing and finishing first, so they stay in reach above a long list
+        const actions = [t("wizard.customModelTypeOther"), ...(index > 0 ? [t("wizard.customModelEnough")] : [])]
+        return (
+          <Question
+            title={t(index === 0 ? "wizard.customModelPickTitle" : "wizard.customModelPickMoreTitle", {
+              provider: nameOf
+            })}
+          >
+            <SelectMenu
+              closeOnBackspace={false}
+              items={[...actions, ...offered]}
+              width={70}
+              initialIndex={actions.length}
+              onSelect={choice => {
+                if (choice === 0) return setTyping(true)
+                if (choice < actions.length) return advance({ custom: { ...custom, done: true } })
+                advance({
+                  custom: { ...custom, models: [...custom.models, { model: offered[choice - actions.length]! }] }
+                })
+              }}
+              onClose={onCancel}
+            />
+          </Question>
+        )
+      }
       return (
         <InputPrompt
           title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
@@ -577,7 +640,9 @@ export function ConfigWizard({
             <CheckMenu
               options={[
                 ...CATALOG.map(provider => ({
-                  label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
+                  label: t(provider.kind === "hosted" ? "wizard.providerHosted" : "wizard.providerSelfHosted", {
+                    name: provider.name
+                  }),
                   value: provider.id
                 })),
                 { label: t("wizard.providerCustom"), value: CUSTOM }

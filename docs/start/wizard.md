@@ -18,8 +18,8 @@ second run, the wizard starts from your previous answers.
 ## Before you start
 
 - **Kaja Cloud** needs nothing. You sign in with your browser after the wizard.
-- **Your own provider** needs its API key at hand (Fireworks, xAI, OpenRouter), or a running local
-  server (Ollama, llama.cpp, Speaches). You can skip a key and add it later.
+- **Your own provider** needs its API key at hand (a cloud provider such as Fireworks or OpenRouter), or a
+  running local server (Ollama, llama.cpp, Speaches). You can skip a key and add it later.
 
 ## Moving around
 
@@ -47,13 +47,14 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
 
    Starting with `kaja --cloud` or `kaja --local` answers this for you.
 
-4. **Providers.** Tick every provider you can use (at least one):
-   - **Fireworks**, **xAI** and **OpenRouter** run online, so you give an API key.
-   - **Ollama**, **llama.cpp** and **Speaches** run on your machine, so you confirm where the server
-     listens. Speaches handles speech in and out for [voice](/use/voice).
+4. **Providers.** Tick every provider you can use (at least one). The list comes from Kaja's online
+   catalog, each provider with a default model for every job it can do:
+   - **Cloud** providers run online, so you give an API key.
+   - **Self-hosted** ones run on your machine or server, so you confirm where they listen. Speaches
+     handles speech in and out for [voice](/use/voice).
    - **Custom** is any other OpenAI-compatible server (LM Studio, vLLM, a proxy). You give a name, an
-     address and a key, then each model's id and what it's for. <kbd>Enter</kbd> on an empty model id
-     ends the list.
+     address and a key, then pick each model from the list the server reports (or type its id), and say
+     what it's for.
 5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
 6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
@@ -112,8 +113,9 @@ Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 rewrite `models.toml` from your answers, so keep a copy of hand edits. It never touches the
 `marketplace/` folder.
 
-The provider list is built in, so the wizard works offline. Without a terminal (piped input, or
-`--headless`) it asks nothing and writes the default config files if you have none.
+Offline, with no provider list to show, the wizard goes straight to the custom provider questions, so you
+can still set up a local server such as Ollama. Without a terminal (piped input, or `--headless`) it asks
+nothing and writes the default config files if you have none.
 
 ---
 

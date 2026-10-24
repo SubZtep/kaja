@@ -1,11 +1,17 @@
-import { type CatalogFile, CatalogFileSchema, type ModelTask } from "@kaja/schema/config"
+import type { PublicCatalog } from "@kaja/schema/api"
+import type { ModelTask } from "@kaja/schema/config"
 import { uniqueModelSlug } from "@kaja/shared/text"
 import { groupTomlTables } from "@kaja/shared/toml"
-import { TOML } from "bun"
-import CATALOG_TOML from "../../../../config/catalog.toml" with { type: "text" }
 
 /** One model a provider serves, with the task it is used for. */
-export type CatalogModel = { task: ModelTask; model: string }
+export type CatalogModel = {
+  task: ModelTask
+  model: string
+  /** Tokens it takes in, when the catalog knows; written as `context_window`. */
+  contextWindow?: number
+  /** False for a text-only chat model; written as `images = false`. */
+  images?: boolean
+}
 
 /** A provider the setup wizard knows how to configure. */
 export type CatalogProvider = {
@@ -16,8 +22,6 @@ export type CatalogProvider = {
   /** `hosted` (someone else's server) is asked for an API key, `self-hosted` (the user's own server) for its address. */
   kind: "hosted" | "self-hosted"
   baseUrl: string
-  /** Comment lines written above its `[providers.<id>]` table, without the leading `# `. */
-  comment?: string[]
   /** A trailing comment on its `base_url` line. */
   note?: string
   /** What it can serve, in the order they are offered. */
@@ -36,33 +40,45 @@ export const TASK_ORDER: ModelTask[] = [
   "vision"
 ]
 
-const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
-
-function providersOf(file: CatalogFile): CatalogProvider[] {
-  return file.providers.map(({ base_url, ...provider }) => ({ ...provider, baseUrl: base_url }))
+// The API's catalog in the wizard's shape: each provider offers its default model for each task, no others.
+function providersOf(catalog: PublicCatalog): CatalogProvider[] {
+  return catalog.providers.map(toProvider).filter(provider => provider.models.length > 0)
 }
 
-// What this build ships; the generated examples and the drift check always use it, never the API's.
-const BUNDLED = providersOf(catalogFile)
+// A provider with no default model yet would serve nothing, so it isn't offered (see providersOf).
+function toProvider(provider: PublicCatalog["providers"][number]): CatalogProvider {
+  return {
+    id: provider.id,
+    name: provider.name,
+    kind: provider.kind,
+    baseUrl: provider.base_url,
+    // One line: it ends up as a TOML comment
+    ...(provider.note ? { note: provider.note.replace(/\s+/g, " ") } : {}),
+    models: TASK_ORDER.flatMap(task => {
+      const model = provider.models.find(entry => entry.default_tasks.includes(task))
+      if (!model) return []
+      return [
+        {
+          task,
+          model: model.model,
+          ...(model.context_window ? { contextWindow: model.context_window } : {}),
+          // Only a chat model is ever sent images
+          ...(model.images || !model.tasks.includes("chat") ? {} : { images: false })
+        }
+      ]
+    })
+  }
+}
 
 /**
- * The providers the wizard offers: `config/catalog.toml`'s, the one source of model defaults, until `setCatalog` swaps
- * in the API's. Swapped in place, so every importer keeps the one array.
+ * The providers the wizard offers: the API's catalog once `setCatalog` swaps it in, empty until then (offline, the
+ * wizard asks for every detail instead). Swapped in place, so every importer keeps the one array.
  */
-export const CATALOG: CatalogProvider[] = [...BUNDLED]
+export const CATALOG: CatalogProvider[] = []
 
-/** Makes `catalog` the one the wizard offers, or the bundled one again when it's undefined. */
-export function setCatalog(catalog?: CatalogFile): void {
-  CATALOG.splice(0, CATALOG.length, ...(catalog ? providersOf(catalog) : BUNDLED))
-}
-
-/** The generated example files in `config` (`bun generate:models`), each a mix of catalog providers. */
-export const EXAMPLES = catalogFile.examples
-
-/** An example's models.toml: its providers in catalog order, one model per task. */
-export function exampleToml(example: CatalogFile["examples"][number]): string {
-  const providers = BUNDLED.filter(provider => example.providers.includes(provider.id))
-  return buildModelsToml({ providers, pick: example.pick, alternatives: false })
+/** Makes `catalog` the one the wizard offers, or none when it's undefined. */
+export function setCatalog(catalog?: PublicCatalog): void {
+  CATALOG.splice(0, CATALOG.length, ...(catalog ? providersOf(catalog) : []))
 }
 
 /** The catalog entry named `id`, if there is one. */
@@ -71,14 +87,14 @@ export function catalogProvider(id: string): CatalogProvider | undefined {
 }
 
 /** One way to serve a task: a provider and the model it names. */
-export type ModelCandidate = { provider: string; model: string }
+export type ModelCandidate = { provider: string; model: string; contextWindow?: number; images?: boolean }
 
 /** Who can serve each task, in provider order. A task with more than one is what the wizard asks about. */
 export function candidatesByTask(providers: CatalogProvider[]): Partial<Record<ModelTask, ModelCandidate[]>> {
   const byTask: Partial<Record<ModelTask, ModelCandidate[]>> = {}
   for (const provider of providers) {
-    for (const { task, model } of provider.models) {
-      byTask[task] = [...(byTask[task] ?? []), { provider: provider.id, model }]
+    for (const { task, ...model } of provider.models) {
+      byTask[task] = [...(byTask[task] ?? []), { provider: provider.id, ...model }]
     }
   }
   return byTask
@@ -91,10 +107,7 @@ export type ModelsSelection = {
   pick?: Partial<Record<ModelTask, string>>
   /** Provider id to the address the user typed, replacing the catalog's default. */
   baseUrls?: Record<string, string>
-  /**
-   * Also write the candidates not picked, for pins and the doctor to switch to. Off for the examples, which show one
-   * model per task.
-   */
+  /** Also write the candidates not picked, for pins and the doctor to switch to. */
   alternatives?: boolean
 }
 
@@ -106,11 +119,18 @@ const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`pr
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 `
 
-type ModelEntry = { id: string; provider: string; model: string; tasks: ModelTask[] }
+type ModelEntry = {
+  id: string
+  provider: string
+  model: string
+  tasks: ModelTask[]
+  contextWindow?: number
+  images?: boolean
+}
 
-// A provider's [providers.<id>] table, under its comment lines.
+// A provider's [providers.<id>] table.
 function providerTable(provider: CatalogProvider, baseUrl: string): string {
-  const lines = [...(provider.comment ?? []).map(line => `# ${line}`), `[providers.${provider.id}]`]
+  const lines = [`[providers.${provider.id}]`]
   const note = provider.note ? `  # ${provider.note}` : ""
   lines.push(`base_url = ${JSON.stringify(baseUrl)}${note}`)
   return lines.join("\n")
@@ -168,7 +188,14 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternati
     if (!entry) {
       const id = uniqueModelSlug(taken, option.model, option.provider)
       taken.add(id)
-      entry = { id, provider: option.provider, model: option.model, tasks: [] }
+      entry = {
+        id,
+        provider: option.provider,
+        model: option.model,
+        tasks: [],
+        contextWindow: option.contextWindow,
+        images: option.images
+      }
       entries.set(key, entry)
     }
     return entry
@@ -185,7 +212,9 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternati
       `[models.${entry.id}]`,
       `model = ${JSON.stringify(entry.model)}`,
       `provider = "${entry.provider}"`,
-      `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`
+      `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`,
+      ...(entry.contextWindow ? [`context_window = ${entry.contextWindow}`] : []),
+      ...(entry.images === false ? ["images = false"] : [])
     ].join("\n")
   )
   const out = [HEADER.trimEnd()]

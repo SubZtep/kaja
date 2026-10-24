@@ -82,20 +82,17 @@ Ollama ignores the key but needs _some_ value, so set one in `secrets.toml`:
 api_key = "ollama"
 ```
 
-## Examples
+## Writing it
 
-Example files are served at `https://api.kaja.io/config/templates/<file>`. They're
-generated from [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/config/catalog.toml), the
-same provider catalog the setup wizard writes `models.toml` from. Each example shows one model per task, and
-the wizard also keeps the models it didn't pick, for pins and switching.
+You rarely write this file by hand. `kaja config wizard` writes it for you:
 
-| File                                                                                    | Providers                                                                       |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [`models.default.toml`](https://api.kaja.io/config/templates/models.default.toml)       | Fireworks, xAI, Speaches: every task. What `kaja config fetch --offline` writes |
-| [`models.ollama.toml`](https://api.kaja.io/config/templates/models.ollama.toml)         | Ollama, fully local                                                             |
-| [`models.llama.toml`](https://api.kaja.io/config/templates/models.llama.toml)           | llama.cpp's `llama-server`                                                      |
-| [`models.xai.toml`](https://api.kaja.io/config/templates/models.xai.toml)               | xAI, one hosted key                                                             |
-| [`models.openrouter.toml`](https://api.kaja.io/config/templates/models.openrouter.toml) | OpenRouter, one hosted key                                                      |
+- **Online**, it offers the providers Kaja keeps a catalog of, each with a default model per task. The catalog
+  follows the providers' own model lists, so `kaja config fetch` later moves your file to the current defaults,
+  keeping the address you gave a local server, the provider you picked for each task and any provider of your own.
+  The old file is backed up first.
+- **Offline**, it asks about your own provider: a name, its address, a key if it needs one, and each model with what
+  it's for. When the server lists its models (Ollama, llama.cpp, LM Studio and the hosted APIs do), you pick them
+  from that list instead of typing them.
 
 ---
 

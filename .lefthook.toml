@@ -34,15 +34,6 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:models && git add config/models.*.toml"
-      glob = [
-        "config/catalog.toml",
-        "apps/tui/lib/models/catalog.ts",
-        "config/models.*.toml"
-      ]
-
-
-      [[pre-commit.jobs.group.jobs]]
       run  = "bun sync:locales --stage"
       glob = [
         "apps/tui/locales/en-GB.toml",
@@ -120,7 +111,7 @@ piped = true
 
 
       [[pre-push.jobs.group.jobs]]
-      run = "bun check:env && bun check:models && bun check:locales"
+      run = "bun check:env && bun check:locales"
 
 
       [[pre-push.jobs.group.jobs]]

@@ -30,13 +30,6 @@ include = [
 
 
 [[schemas]]
-path    = "packages/schema/json/catalog.json"
-include = [
-  "config/catalog.toml"
-]
-
-
-[[schemas]]
 path    = "packages/schema/json/hooks.json"
 include = [
   "config/hooks.toml",
@@ -69,7 +62,6 @@ include = [
 [[schemas]]
 path    = "packages/schema/json/models.json"
 include = [
-  "config/models*.toml",
   "**/.config/kaja*/models.toml",
   "**/Library/Preferences/kaja*/models.toml",
   "**/kaja*/Config/models.toml",
