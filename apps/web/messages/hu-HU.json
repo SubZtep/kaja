@@ -51,6 +51,8 @@
   "google_continue": "Folytatás Google-fiókkal",
   "google_start": "Indulj pár másodperc alatt",
   "hero_run_locally": "vagy futtasd helyben",
+  "hero_signup_prompt": "Van már fiókod? A Google itt helyben bejelentkeztet. Új vagy itt?",
+  "hero_signup_link": "Előbb hozz létre egyet",
   "stamp_soon": "hamarosan",
   "stamp_one_click": "1 kattintás",
   "stamp_live": "élő",
