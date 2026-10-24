@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "maildev": {
-      "type": "http",
-      "url": "http://localhost:1080/mcp"
-    }
-  }
-}

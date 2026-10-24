@@ -64,6 +64,12 @@ The interface and the assistant's replies follow `preferences.locale`:
 | `hu-HU`  | Magyar                   |
 | `nan-TW` | 臺語 (Taiwanese Hokkien) |
 | `zh-TW`  | 繁體中文                 |
+| `es-ES`  | Español                  |
+| `ja-JP`  | 日本語                   |
+| `ko-KR`  | 한국어                   |
+| `de-DE`  | Deutsch                  |
+| `fr-FR`  | Français                 |
+| `pt-BR`  | Português (Brasil)       |
 
 The wizard asks first. With no saved value, your system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`),
 and anything unsupported becomes British English. In cloud mode your account's language is used.

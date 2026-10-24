@@ -51,7 +51,13 @@ const LANGUAGE_NAME: Record<string, string> = {
   "en-US": "American English",
   "hu-HU": "Hungarian",
   "nan-TW": "Taiwanese Hokkien",
-  "zh-TW": "Traditional Chinese (Taiwan)"
+  "zh-TW": "Traditional Chinese (Taiwan)",
+  "es-ES": "European Spanish",
+  "ja-JP": "Japanese",
+  "ko-KR": "Korean",
+  "de-DE": "German",
+  "fr-FR": "French",
+  "pt-BR": "Brazilian Portuguese"
 }
 
 /**

@@ -31,7 +31,13 @@ const OG_LOCALE: Record<Locale, string> = {
   "en-US": "en_US",
   "hu-HU": "hu_HU",
   "nan-TW": "nan_TW",
-  "zh-TW": "zh_TW"
+  "zh-TW": "zh_TW",
+  "es-ES": "es_ES",
+  "ja-JP": "ja_JP",
+  "ko-KR": "ko_KR",
+  "de-DE": "de_DE",
+  "fr-FR": "fr_FR",
+  "pt-BR": "pt_BR"
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({

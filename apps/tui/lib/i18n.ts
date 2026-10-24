@@ -2,10 +2,16 @@
 
 import { baseLocale, createMessages, type Locale, matchLocale } from "@kaja/shared/locale"
 import * as z from "zod"
+import deDe from "../locales/de-DE.toml"
 import enGb from "../locales/en-GB.toml"
 import enUs from "../locales/en-US.toml"
+import esEs from "../locales/es-ES.toml"
+import frFr from "../locales/fr-FR.toml"
 import huHu from "../locales/hu-HU.toml"
+import jaJp from "../locales/ja-JP.toml"
+import koKr from "../locales/ko-KR.toml"
 import nanTw from "../locales/nan-TW.toml"
+import ptBr from "../locales/pt-BR.toml"
 import zhTw from "../locales/zh-TW.toml"
 
 export type Language = Locale
@@ -16,7 +22,13 @@ const files: Record<Locale, Record<string, unknown>> = {
   "en-US": enUs,
   "hu-HU": huHu,
   "nan-TW": nanTw,
-  "zh-TW": zhTw
+  "zh-TW": zhTw,
+  "es-ES": esEs,
+  "ja-JP": jaJp,
+  "ko-KR": koKr,
+  "de-DE": deDe,
+  "fr-FR": frFr,
+  "pt-BR": ptBr
 }
 
 const messages = createMessages(files)
@@ -38,13 +50,19 @@ export function detectLanguage(): Language {
   return matchLocale(locale.split(/[.@]/)[0]) ?? baseLocale
 }
 
-// zod has no locale file for nan-TW, so validation messages fall back to its default (English).
+// Zod has no Taiwanese Hokkien locale, so validation messages fall back to English there.
 const ZOD_LOCALE: Record<Language, keyof typeof z.locales> = {
   "en-GB": "en",
   "en-US": "en",
   "hu-HU": "hu",
   "nan-TW": "en",
-  "zh-TW": "zhTW"
+  "zh-TW": "zhTW",
+  "es-ES": "es",
+  "ja-JP": "ja",
+  "ko-KR": "ko",
+  "de-DE": "de",
+  "fr-FR": "fr",
+  "pt-BR": "ptBR"
 }
 
 export function setLanguage(next: Language) {

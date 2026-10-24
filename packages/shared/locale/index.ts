@@ -1,4 +1,16 @@
-export const locales = ["en-GB", "en-US", "hu-HU", "nan-TW", "zh-TW"] as const
+export const locales = [
+  "en-GB",
+  "en-US",
+  "hu-HU",
+  "nan-TW",
+  "zh-TW",
+  "es-ES",
+  "ja-JP",
+  "ko-KR",
+  "de-DE",
+  "fr-FR",
+  "pt-BR"
+] as const
 
 export type Locale = (typeof locales)[number]
 
@@ -11,7 +23,13 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   "en-US": "American English",
   "hu-HU": "Magyar",
   "nan-TW": "臺語",
-  "zh-TW": "繁體中文"
+  "zh-TW": "繁體中文",
+  "es-ES": "Español",
+  "ja-JP": "日本語",
+  "ko-KR": "한국어",
+  "de-DE": "Deutsch",
+  "fr-FR": "Français",
+  "pt-BR": "Português (Brasil)"
 }
 
 /**
