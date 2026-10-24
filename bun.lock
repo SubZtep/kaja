@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.22.24",
+      "version": "0.22.25",
       "dependencies": {
         "@hono/bun": "^1.0.1",
         "@hono/zod-openapi": "^1.6.3",
@@ -46,7 +46,7 @@
     },
     "apps/sandbox": {
       "name": "@kaja/sandbox",
-      "version": "0.2.25",
+      "version": "0.2.26",
       "dependencies": {
         "@kaja/nasi": "workspace:*",
         "@kaja/schema": "workspace:*",
@@ -58,7 +58,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.30.25",
+      "version": "0.30.26",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
@@ -86,7 +86,7 @@
     },
     "apps/web": {
       "name": "@kaja/web",
-      "version": "0.24.27",
+      "version": "0.24.28",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
         "@fontsource-variable/inter": "^5.3.0",
@@ -123,7 +123,7 @@
     },
     "packages/nasi": {
       "name": "@kaja/nasi",
-      "version": "0.3.23",
+      "version": "0.3.24",
       "dependencies": {
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
@@ -140,7 +140,7 @@
     },
     "packages/schema": {
       "name": "@kaja/schema",
-      "version": "0.21.34",
+      "version": "0.21.35",
       "dependencies": {
         "@kaja/shared": "workspace:*",
         "zod": "^4.6.7",
@@ -148,7 +148,7 @@
     },
     "packages/shared": {
       "name": "@kaja/shared",
-      "version": "0.5.20",
+      "version": "0.5.21",
       "dependencies": {
         "clsx": "^2.1.1",
         "marked": "^18.1.1",
