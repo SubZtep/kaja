@@ -1,11 +1,14 @@
 import { Box, Text } from "ink"
 import { useState } from "react"
 import { useKey } from "../../hooks/use-key"
+import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
 import { InputFrame } from "./rail"
+import { FilterLine, matchesFilter, useFilter } from "./use-filter"
 
 /**
- * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
+ * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss. With
+ * `filterable`, typing narrows the rows (see {@link useFilter}); `onSelect` still gets the index in `items`.
  *
  * Rendered directly rather than through @inkjs/ui's `Select`, which can't open on a given option: its `defaultValue`
  * seeds the internal value but leaves the highlight on the first option, so returning on it either never fires (the
@@ -21,6 +24,7 @@ export function SelectMenu({
   visibleCount = 5,
   preview,
   closeOnBackspace = true,
+  filterable = false,
   active = true,
   onFocus,
   onSelect,
@@ -43,6 +47,8 @@ export function SelectMenu({
   preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean
+  /** Typing filters the rows: for a list too long to scroll through, like every model a provider serves. */
+  filterable?: boolean
   /** Takes keys; off while something else (a text field beside it) has them, and the rows dim to show it. */
   active?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
@@ -51,6 +57,9 @@ export function SelectMenu({
   /** Left out inside a Modal, which closes on Escape itself. */
   onClose?: () => void
 }>) {
+  const filter = useFilter(filterable)
+  // The rows on show, as indexes into `items`; `focused` and `from` are positions in this list
+  const shown = items.flatMap((item, index) => (matchesFilter(item, filter.query) ? [index] : []))
   const visible = visibleCount === undefined ? items.length : Math.max(visibleCount, 1)
   const start = Math.min(Math.max(initialIndex ?? 0, 0), Math.max(items.length - 1, 0))
   // Scrolls only far enough to keep the focused option on screen, so opening deep in a long list still shows it.
@@ -70,22 +79,28 @@ export function SelectMenu({
   function move(delta: number) {
     const next = focused + delta
     // No wrapping at either end, matching the list this replaces.
-    if (next < 0 || next >= items.length) return
+    if (next < 0 || next >= shown.length) return
     setFocused(next)
-    onFocus?.(next)
+    onFocus?.(shown[next]!)
     if (next < from) setFrom(next)
     else if (next >= from + visible) setFrom(next - visible + 1)
   }
 
   useKey(
-    (_input, key) => {
+    (input, key) => {
+      // A new filter starts the highlight over at its first match
+      if (filter.handle(input, key)) {
+        setFocused(0)
+        setFrom(0)
+        return
+      }
       if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
         onClose?.()
         return
       }
       if (key.downArrow) move(1)
       if (key.upArrow) move(-1)
-      if (key.return) onSelect(focused)
+      if (key.return && shown[focused] !== undefined) onSelect(shown[focused])
     },
     { isActive: active }
   )
@@ -93,17 +108,19 @@ export function SelectMenu({
   const { accent, previewRow, previewText } = useKajaTheme()
 
   // A scrolling list reserves an arrow slot between the cursor and the label, so the menu stays `visible` rows tall.
-  const scrolls = items.length > visible
+  const scrolls = shown.length > visible
   const hiddenAbove = from
-  const hiddenBelow = Math.max(0, items.length - from - visible)
+  const hiddenBelow = Math.max(0, shown.length - from - visible)
 
   return (
     // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only
     // `preview` paints it, in the theme's own colours).
     <InputFrame width={width} plain>
-      {items.slice(from, from + visible).map((item, offset) => {
-        const index = from + offset
-        const isFocused = index === focused
+      {filterable && <FilterLine query={filter.query} />}
+      {shown.length === 0 && <Text dimColor>{t("menu.noMatches")}</Text>}
+      {shown.slice(from, from + visible).map((index, offset) => {
+        const item = items[index]!
+        const isFocused = from + offset === focused
         const hint = hints?.[index]
         const accentRow = !isFocused && accented?.[index]
         let arrow = " "

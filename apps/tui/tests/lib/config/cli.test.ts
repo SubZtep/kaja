@@ -3,7 +3,6 @@ import { tmpdir } from "node:os"
 import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { setCatalog } from "../../../lib/models/catalog"
-import { TEST_CATALOG } from "../../fixtures/catalog"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
@@ -18,7 +17,8 @@ const getMcpPath = () => join(getConfigDir(), "mcp.toml")
 async function clearCatalog() {
   const { $ } = await import("bun")
   // refreshCatalog() keeps the last catalog in the cache dir, which an unreachable server falls back to
-  await $`rm -f ${join(getPaths().cache, "catalog.json")}`.quiet().nothrow()
+  const cache = getPaths().cache
+  await $`rm -f ${join(cache, "models-dev.json")} ${join(cache, "models-dev.etag")}`.quiet().nothrow()
   setCatalog()
 }
 
@@ -46,13 +46,31 @@ function backup(path: string, n?: number) {
   return path.replace(/\.toml$/, n ? `.bak.${n}.toml` : ".bak.toml")
 }
 
-/** Serves TEST_CATALOG at /config/catalog, and fails any other request. Returns a restore function. */
+// models.dev as the tests see it: Fireworks has moved to a new address, and now says how much its model reads
+const REGISTRY = {
+  "fireworks-ai": {
+    id: "fireworks-ai",
+    name: "Fireworks",
+    api: "https://api.fireworks.ai/inference/v1/",
+    env: ["FIREWORKS_API_KEY"],
+    models: {
+      "accounts/fireworks/models/minimax-m3": {
+        id: "accounts/fireworks/models/minimax-m3",
+        tool_call: true,
+        modalities: { input: ["text", "image"], output: ["text"] },
+        limit: { context: 196608 }
+      }
+    }
+  }
+}
+
+/** Serves REGISTRY as models.dev, and fails any other request. Returns a restore function. */
 function mockCatalogFetch() {
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(input instanceof Request ? input.url : input)
-    expect(url.pathname).toBe("/config/catalog")
-    return Response.json(TEST_CATALOG)
+    expect(url.href).toBe("https://models.dev/api.json")
+    return Response.json(REGISTRY)
   }) as typeof fetch
   return () => {
     globalThis.fetch = originalFetch
@@ -69,17 +87,17 @@ function failFetch(message: string) {
   }
 }
 
-// An Ollama setup whose model the catalog has since replaced, beside a provider of the user's own
-const OUTDATED = `[providers.ollama]
-base_url = "http://box.local:11434/v1"
+// A Fireworks setup from before the catalog moved on, beside a provider of the user's own
+const OUTDATED = `[providers.fireworks-ai]
+base_url = "https://old.fireworks.test/v1"
 
 [providers.box]
 base_url = "https://box.test/v1"
 
-[models.old]
-model = "old:model"
-provider = "ollama"
-tasks = ["chat"]
+[models.minimax-m3]
+model = "accounts/fireworks/models/minimax-m3"
+provider = "fireworks-ai"
+tasks = ["chat", "vision"]
 
 [models.mine]
 model = "mine"
@@ -87,7 +105,7 @@ provider = "box"
 tasks = ["embedding"]
 `
 
-test("fetch rebuilds models.toml from the catalog for the providers it uses, keeping the user's own", async () => {
+test("fetch brings models.toml's catalog providers up to date, keeping every pick and the user's own", async () => {
   await Bun.write(getModelsPath(), OUTDATED)
   const restore = mockCatalogFetch()
   try {
@@ -98,8 +116,13 @@ test("fetch rebuilds models.toml from the catalog for the providers it uses, kee
     restore()
   }
   const parsed = ModelsFileSchema.parse(TOML.parse(await Bun.file(getModelsPath()).text()))
-  expect(parsed.providers.ollama?.base_url).toBe("http://box.local:11434/v1")
-  expect(Object.values(parsed.models).find(entry => entry.tasks.includes("chat"))?.model).toBe("qwen3.5:4b")
+  expect(parsed.providers["fireworks-ai"]?.base_url).toBe("https://api.fireworks.ai/inference/v1")
+  expect(parsed.models["minimax-m3"]).toEqual({
+    model: "accounts/fireworks/models/minimax-m3",
+    provider: "fireworks-ai",
+    tasks: ["chat", "vision"],
+    context_window: 196608
+  })
   expect(parsed.models.mine).toEqual({ model: "mine", provider: "box", tasks: ["embedding"] })
   expect(await Bun.file(backup(getModelsPath())).text()).toBe(OUTDATED)
 })

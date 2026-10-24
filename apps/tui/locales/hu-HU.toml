@@ -142,7 +142,7 @@ themeHint                = "A ↑/↓ előnézetet mutat, az Enter kiválasztja.
 providerTitle            = "Mely modellszolgáltatókat tudod használni? (szóköz vált, Enter továbblép)"
 providerHosted           = "[hu-HU] lorem ipsum dolor sit {name}"
 providerSelfHosted       = "[hu-HU] lorem ipsum dolor sit amet consectetur {name}"
-providerHint             = "Annyit jelölj be, amennyit szeretnél, legalább egyet: a helyi módhoz modell kell a csevegéshez."
+providerHint             = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
 providerRequired         = "Jelölj be legalább egyet (szóköz). Helyi módban modell nélkül nem indulhat el; a kihagyáshoz futtasd a `kaja --cloud` parancsot."
 providerCustom           = "Egyéni (bármely más OpenAI-kompatibilis szerver)"
 customNameTitle          = "Mi legyen ennek a szolgáltatónak a neve?"
@@ -162,7 +162,13 @@ customModelTypeOther     = "[hu-HU] lorem ipsum dolor"
 customModelEnough        = "[hu-HU] lorem"
 customTaskTitle          = "Mire használod a(z) {model} modellt?"
 modelTitle               = "Melyik modellt használja a Kaja ehhez: {task}?"
-modelHint                = "Több szolgáltatód is tudja ezt — az Enter a kijelöltet választja."
+modelHint                = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksTitle               = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksHint                = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+tasksChatRequired        = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+tasksNoChat              = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+providerEnvSet           = "[hu-HU] lorem {env}"
+summaryTasks             = "[hu-HU] lorem"
 taskChat                 = "csevegés"
 taskEmbedding            = "beágyazás"
 taskRerank               = "újrarangsorolás"
@@ -333,6 +339,12 @@ placeholder  = "Vagy írd le, mit csináljon helyette (ezt kihagyja)"
 commandTitle = "Jóváhagyásra váró parancs"
 requestTitle = "Jóváhagyásra váró kérés"
 toolRequest  = "A(z) {name} ezt a kérést küldené:"
+
+
+[menu]
+filter            = "[hu-HU] lorem"
+filterPlaceholder = "[hu-HU] lorem ipsum dolor"
+noMatches         = "[hu-HU] lorem ipsum"
 
 
 [secretPrompt]

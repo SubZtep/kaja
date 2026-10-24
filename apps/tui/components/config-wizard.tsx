@@ -7,7 +7,15 @@ import { useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
-import { candidatesByTask, CATALOG, type CatalogProvider, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
+import {
+  candidatesByTask,
+  CATALOG,
+  type CatalogProvider,
+  catalogProvider,
+  type ModelPick,
+  resolvePicks,
+  TASK_ORDER
+} from "../lib/models/catalog"
 import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
 import { Answered, Question, RailLine } from "./elem/rail"
@@ -62,12 +70,14 @@ export type WizardResult = {
    * steps cover only one): written back as they are, so a re-run never drops them.
    */
   keep?: CatalogProvider[]
+  /** The tasks to set up; chat is always among them. */
+  tasks?: ModelTask[]
   /** Typed API keys by provider id; only hosted providers are asked. */
   keys?: Record<string, string>
   /** Where each local provider's server listens. */
   addresses?: Record<string, string>
-  /** The provider that serves each task more than one ticked provider could. */
-  models?: Partial<Record<ModelTask, string>>
+  /** The model picked for each task that had more than one to choose from; the rest take the best guess. */
+  models?: Partial<Record<ModelTask, ModelPick>>
   extras?: WizardExtra[]
   telegramToken?: string
 }
@@ -90,6 +100,7 @@ type Step =
   | "providers"
   | `key:${string}`
   | `address:${string}`
+  | "tasks"
   | `model:${ModelTask}`
   | "custom-name"
   | "custom-url"
@@ -112,7 +123,7 @@ const BLOCK_LABEL_KEY: Record<Block, string> = {
   extras: "wizard.blockExtras"
 }
 
-// By the step's kind, the part before any `:`. A custom provider's models are model choices, so they sit in Models.
+// By the step's kind, the part before any `:`. A custom provider's models say what its server has, so they sit in Providers.
 const BLOCK_OF_KIND: Record<string, Block> = {
   language: "basics",
   theme: "basics",
@@ -123,8 +134,9 @@ const BLOCK_OF_KIND: Record<string, Block> = {
   "custom-name": "providers",
   "custom-url": "providers",
   "custom-key": "providers",
-  "custom-model": "models",
-  "custom-task": "models",
+  "custom-model": "providers",
+  "custom-task": "providers",
+  tasks: "models",
   model: "models",
   extras: "extras",
   telegramToken: "extras"
@@ -186,9 +198,11 @@ function tickedProviders(result: WizardResult): string[] {
 function customProvider(result: WizardResult): CatalogProvider | undefined {
   const custom = result.custom
   if (!tickedProviders(result).includes(CUSTOM) || !custom?.name || !custom.baseUrl) return undefined
-  const models = custom.models.flatMap(({ model, task }) => (task ? [{ model, task }] : []))
-  if (models.length === 0) return undefined
-  return { id: custom.name, name: custom.name, kind: "hosted", baseUrl: custom.baseUrl, models }
+  const byModel = new Map<string, ModelTask[]>()
+  for (const { model, task } of custom.models) if (task) byModel.set(model, [...(byModel.get(model) ?? []), task])
+  if (byModel.size === 0) return undefined
+  const models = [...byModel].map(([model, tasks]) => ({ model, tasks }))
+  return { id: custom.name, name: custom.name, kind: "hosted", baseUrl: custom.baseUrl, models, own: true }
 }
 
 /** The ticked providers from the catalog, in catalog order. */
@@ -206,18 +220,35 @@ export function chosenProviders(result: WizardResult): CatalogProvider[] {
   return [...catalogChoices(result), ...(custom ? [custom] : []), ...keep]
 }
 
-/**
- * The tasks more than one ticked provider can serve: the only model questions worth asking (vision follows the chat
- * pick, see `buildModelsToml`).
- */
-function contestedTasks(result: WizardResult): ModelTask[] {
+/** Ticked on a first run: what a chat with memory and pictures needs. Voice and the rest are opt-in. */
+const DEFAULT_TASKS: ModelTask[] = ["chat", "embedding", "summarize", "vision"]
+
+/** The tasks some chosen provider has a model for, in models.toml's order. */
+function availableTasks(result: WizardResult): ModelTask[] {
   const candidates = candidatesByTask(chosenProviders(result))
-  return TASK_ORDER.filter(task => task !== "vision" && (candidates[task]?.length ?? 0) > 1)
+  return TASK_ORDER.filter(task => candidates[task]?.length)
+}
+
+/** The tasks being set up: the ones ticked (the defaults until asked) that some chosen provider can serve. */
+function selectedTasks(result: WizardResult): ModelTask[] {
+  const wanted = result.tasks ?? DEFAULT_TASKS
+  return availableTasks(result).filter(task => wanted.includes(task))
+}
+
+/** The selected tasks with more than one model to choose from: the only model questions worth asking. */
+function askedTasks(result: WizardResult): ModelTask[] {
+  const candidates = candidatesByTask(chosenProviders(result))
+  return selectedTasks(result).filter(task => (candidates[task]?.length ?? 0) > 1)
+}
+
+/** Each selected task's model: the one picked, else the best guess. Exported for the runner, which writes them. */
+export function chosenPicks(result: WizardResult): Partial<Record<ModelTask, ModelPick>> {
+  return resolvePicks(chosenProviders(result), selectedTasks(result), result.models)
 }
 
 /**
  * Every question this set of answers leads to, in order. Cloud needs no provider; a hosted provider is asked for a key
- * and a local one for an address; a model is asked about only where the ticked providers overlap; and each extra's
+ * and a local one for an address; then which tasks to set up, and a model for each that has a choice; and each extra's
  * follow-up only when that extra was ticked. Recomputed after every answer, so a skipped step never mounts just to
  * advance out of itself.
  */
@@ -241,7 +272,9 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
     if (!result.custom?.done && models.at(-1)?.task !== undefined) steps.push(`custom-model:${models.length}`)
     else if (models.length === 0) steps.push("custom-model:0")
   }
-  for (const task of contestedTasks(result)) steps.push(`model:${task}`)
+  // One task to choose from is no choice: chat alone is set up without asking.
+  if (availableTasks(result).length > 1) steps.push("tasks")
+  for (const task of askedTasks(result)) steps.push(`model:${task}`)
   // Every extra is a local-agent feature: the Telegram bot.
   steps.push("extras")
   if (result.extras?.includes("telegram")) steps.push("telegramToken")
@@ -315,9 +348,16 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
     ),
   address: (subject, result) =>
     lineIf(t("wizard.summaryAddress", { provider: providerName(subject) }), result.addresses?.[subject]),
+  tasks: (_, result) =>
+    lineIf(
+      t("wizard.summaryTasks"),
+      selectedTasks(result)
+        .map(task => t(TASK_LABEL_KEY[task]))
+        .join(", ")
+    ),
   model: (subject, result) => {
     const task = subject as ModelTask
-    const picked = candidatesByTask(chosenProviders(result))[task]?.find(c => c.provider === result.models?.[task])
+    const picked = chosenPicks(result)[task]
     return lineIf(
       capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
       picked && `${providerName(picked.provider)} (${picked.model})`
@@ -410,6 +450,7 @@ export function ConfigWizard({
   mode,
   saved,
   listModels,
+  env = process.env,
   onDone,
   onCancel
 }: Readonly<{
@@ -423,6 +464,8 @@ export function ConfigWizard({
    * if any. Without it, or when the server lists none, model ids are typed.
    */
   listModels?: (baseUrl: string, provider: string, key?: string) => Promise<string[]>
+  /** Where a provider's API key may already be set; the process's environment unless a test passes its own. */
+  env?: Record<string, string | undefined>
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -433,8 +476,8 @@ export function ConfigWizard({
   const [result, setResult] = useState<WizardResult>(initial)
   // The steps answered so far, in order: the trail is drawn from them, and Esc steps back through them
   const [history, setHistory] = useState<Step[]>([])
-  // Set when Enter was pressed on the providers checklist with nothing ticked.
-  const [noProvider, setNoProvider] = useState(false)
+  // Set when Enter was pressed on a checklist missing what it needs: no provider, or no chat task.
+  const [refused, setRefused] = useState(false)
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
   const [preview, setPreview] = useState<ThemeName>(initial.theme ?? "dark")
   // The custom server's model ids, per address; `ids` is unset while it is being asked
@@ -477,7 +520,7 @@ export function ConfigWizard({
     if (!previous) return onCancel()
     setHistory(list => list.slice(0, -1))
     setTyping(false)
-    setNoProvider(false)
+    setRefused(false)
     // The step that ended the custom model list is asked again, so the list isn't finished any more.
     if (previous.startsWith("custom-model")) {
       setResult(current =>
@@ -525,15 +568,23 @@ export function ConfigWizard({
     if (kind === "model") {
       const task = subject as ModelTask
       const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
-      const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
+      // Opens on the model in use, else the best guess (vision guesses the chat pick when it can see)
+      const guess = chosenPicks(result)[task]
+      const current = candidates.findIndex(c => c.provider === guess?.provider && c.model === guess.model)
       return (
         <Question title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}>
           <SelectMenu
             closeOnBackspace={false}
+            filterable
+            visibleCount={8}
             items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
+            hints={candidates.map(candidate => candidate.released ?? "")}
             width={70}
-            initialIndex={current >= 0 ? current : undefined}
-            onSelect={index => advance({ models: { ...result.models, [task]: candidates[index]!.provider } })}
+            initialIndex={Math.max(current, 0)}
+            onSelect={index => {
+              const chosen = candidates[index]!
+              advance({ models: { ...result.models, [task]: { provider: chosen.provider, model: chosen.model } } })
+            }}
             onClose={back}
           />
           <Text dimColor>{t("wizard.modelHint")}</Text>
@@ -732,30 +783,65 @@ export function ConfigWizard({
       }
 
       case "providers": {
+        // Your own server first, then what you already use or have a key for in the environment, then the rest by name
+        const envKey = (provider: CatalogProvider) => provider.env?.find(name => env[name])
+        const front = (provider: CatalogProvider) =>
+          result.providers?.includes(provider.id) || Boolean(envKey(provider))
+        const ordered = [...CATALOG.filter(front), ...CATALOG.filter(provider => !front(provider))]
         return (
           <Question title={t("wizard.providerTitle")}>
-            {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
+            {/* A re-run starts with the providers in models.toml ticked; a first run with those whose key is in the environment, and Enter won't continue until one is. */}
             <CheckMenu
+              filterable
+              visibleCount={10}
               options={[
-                ...CATALOG.map(provider => ({
-                  label: t(provider.kind === "hosted" ? "wizard.providerHosted" : "wizard.providerSelfHosted", {
+                { label: t("wizard.providerCustom"), value: CUSTOM },
+                ...ordered.map(provider => {
+                  const found = envKey(provider)
+                  const label = t(provider.kind === "hosted" ? "wizard.providerHosted" : "wizard.providerSelfHosted", {
                     name: provider.name
-                  }),
-                  value: provider.id
-                })),
-                { label: t("wizard.providerCustom"), value: CUSTOM }
+                  })
+                  return {
+                    label: found ? `${label} · ${t("wizard.providerEnvSet", { env: found })}` : label,
+                    value: provider.id
+                  }
+                })
               ]}
-              defaultValue={result.providers}
+              defaultValue={result.providers ?? CATALOG.filter(envKey).map(provider => provider.id)}
               onSubmit={providers => {
-                setNoProvider(providers.length === 0)
+                setRefused(providers.length === 0)
                 if (providers.length > 0) advance({ providers })
               }}
               onClose={back}
             />
-            {noProvider ? (
+            {refused ? (
               <Problem>{t("wizard.providerRequired")}</Problem>
             ) : (
               <Text dimColor>{t("wizard.providerHint")}</Text>
+            )}
+          </Question>
+        )
+      }
+
+      case "tasks": {
+        const available = availableTasks(result)
+        return (
+          <Question title={t("wizard.tasksTitle")}>
+            <CheckMenu
+              options={available.map(task => ({ label: capitalized(t(TASK_LABEL_KEY[task])), value: task }))}
+              defaultValue={selectedTasks(result)}
+              onSubmit={values => {
+                // Local mode can't start without something to chat with
+                const missingChat = !values.includes("chat")
+                setRefused(missingChat)
+                if (!missingChat) advance({ tasks: values as ModelTask[] })
+              }}
+              onClose={back}
+            />
+            {refused ? (
+              <Problem>{t(available.includes("chat") ? "wizard.tasksChatRequired" : "wizard.tasksNoChat")}</Problem>
+            ) : (
+              <Text dimColor>{t("wizard.tasksHint")}</Text>
             )}
           </Question>
         )

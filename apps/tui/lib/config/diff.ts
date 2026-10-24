@@ -7,7 +7,7 @@ import { getModelsPath } from "../models/models"
  * info line instead when it would do nothing.
  */
 export async function diffConfig(): Promise<string[]> {
-  const { refreshCatalog } = await import("../models/remote-catalog")
+  const { refreshCatalog } = await import("../models/modelsdev")
   await refreshCatalog()
   const { modelsTomlFromCatalog } = await import("../models/current")
   const next = await modelsTomlFromCatalog()

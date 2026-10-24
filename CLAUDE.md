@@ -31,6 +31,6 @@ Translations: edit only the en-GB locale files and leave every other language to
 ## Generated files and hooks
 
 - Lefthook runs lint, fmt and typecheck on commit, lint and typecheck on push (plus `bun test` and the headless `/translate` when pushing `main`). Let them catch issues; run them yourself only when you need feedback sooner
-- Model defaults live in the API's database, not the repo: the provider catalog (`/admin/catalog`, synced daily from models.dev) is what the TUI wizard offers online and `kaja config fetch` updates models.toml from. Offline, the wizard asks for every detail of the user's own provider
+- Model defaults live nowhere in the repo: the TUI wizard reads [models.dev](https://models.dev) directly (`apps/tui/lib/models/modelsdev.ts`, cached with its ETag) and `kaja config fetch` refreshes models.toml from it. Offline, the wizard asks for every detail of the user's own provider
 - Env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env` and `bun generate:env-types`; the api/web/sandbox `.env.example` are generated (tui's is hand-written)
 - `bun check:env` fails CI and pre-commit on drift

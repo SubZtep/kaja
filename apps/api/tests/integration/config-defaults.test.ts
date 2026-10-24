@@ -1,18 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { PUBLIC_CATALOG_VERSION, publicCatalogSchema } from "@kaja/schema/api"
 import { SoundsManifestSchema } from "@kaja/schema/config"
 import { tombiSchemas } from "@kaja/schema/tombi"
 import { app } from "../../src/app"
 
 describe("config defaults (public)", () => {
-  test("GET /config/catalog requires no auth and returns the versioned catalog", async () => {
-    const res = await app.request("/config/catalog")
-    expect(res.status).toBe(200)
-    expect(publicCatalogSchema.parse(await res.json()).version).toBe(PUBLIC_CATALOG_VERSION)
-  })
-
-  test.each(["/config/catalog", "/config/schemas/settings.json", "/config/sounds"])(
+  test.each(["/config/schemas/settings.json", "/config/sounds"])(
     "GET %s honours If-None-Match with a 304",
     async path => {
       const etag = (await app.request(path)).headers.get("etag")

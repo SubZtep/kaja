@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto"
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi"
-import { publicCatalogSchema } from "@kaja/schema/api"
 import { SoundsManifestSchema } from "@kaja/schema/config"
 import type { Context } from "hono"
-import { catalogService } from "../../services"
 import { defaultSchemas } from "../../services/config-defaults"
 import { soundFile, sounds } from "../../services/sounds"
 import type { RouteProps } from "../../types"
@@ -15,23 +13,12 @@ const etagOf = (text: string) => `"${createHash("sha256").update(text).digest("h
 
 const schemaEtags = new Map([...defaultSchemas].map(([file, schema]) => [file, etagOf(JSON.stringify(schema))]))
 
-// The catalog changes with a sync or an admin edit, the rest with a deploy.
+// The content only changes with a deploy.
 function notModified(c: Context<RouteProps>, etag: string): boolean {
   c.header("Cache-Control", "public, max-age=300")
   c.header("ETag", etag)
   return c.req.header("if-none-match") === etag
 }
-
-const catalogRoute = createRoute({
-  method: "get",
-  path: "/catalog",
-  tags: ["Config"],
-  summary: "The listed providers and their models, which the setup wizard builds models.toml from",
-  responses: {
-    200: { description: "OK", content: { "application/json": { schema: publicCatalogSchema } } },
-    304: { description: "Not modified" }
-  }
-})
 
 const schemaRoute = createRoute({
   method: "get",
@@ -80,12 +67,6 @@ export function registerConfigDefaults(routes: OpenAPIHono<RouteProps>) {
     return new Response(file, {
       headers: { "Content-Type": file.type, "Cache-Control": "public, max-age=300", ETag: etag }
     })
-  })
-
-  routes.openapi(catalogRoute, async c => {
-    const { body, etag } = await catalogService.publicCatalog()
-    if (notModified(c, etag)) return c.body(null, 304)
-    return c.json(body, 200)
   })
 
   routes.openapi(schemaRoute, c => {

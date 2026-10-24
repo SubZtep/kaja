@@ -86,10 +86,11 @@ api_key = "ollama"
 
 You rarely write this file by hand. `kaja config wizard` writes it for you:
 
-- **Online**, it offers the providers Kaja keeps a catalog of, each with a default model per task. The catalog
-  follows the providers' own model lists, so `kaja config fetch` later moves your file to the current defaults,
-  keeping the address you gave a local server, the provider you picked for each task and any provider of your own.
-  The old file is backed up first.
+- **Online**, it offers every provider [models.dev](https://models.dev) lists, with each provider's models and what
+  they can do. You tick the tasks you want and pick a model for each, the newest tool-calling one highlighted.
+  `kaja config fetch` later refreshes what models.dev says about the models in your file (a hosted provider's
+  address, how much a model reads, whether it takes images), keeping every model you picked and any provider of
+  your own. The old file is backed up first.
 - **Offline**, it asks about your own provider: a name, its address, a key if it needs one, and each model with what
   it's for. When the server lists its models (Ollama, llama.cpp, LM Studio and the hosted APIs do), you pick them
   from that list instead of typing them.

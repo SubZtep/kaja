@@ -1,17 +1,12 @@
 import type { ModelTask } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { writeTemplateConfig } from "../config/fetch"
-import { buildModelsToml, candidatesByTask, CATALOG, type CatalogModel, type CatalogProvider } from "./catalog"
+import { buildModelsToml, CATALOG, type CatalogModel, type CatalogProvider, type ModelPick } from "./catalog"
 import { getModelsPath } from "./models"
 
 // models.toml read loosely: a hand-edited file needn't match the schema to be re-offered
-type LooseModelsFile = {
-  providers?: Record<string, { base_url?: unknown }>
-  models?: Record<
-    string,
-    { provider?: unknown; model?: unknown; tasks?: unknown; context_window?: unknown; images?: unknown }
-  >
-}
+type LooseEntry = { provider?: unknown; model?: unknown; tasks?: unknown; context_window?: unknown; images?: unknown }
+type LooseModelsFile = { providers?: Record<string, { base_url?: unknown }>; models?: Record<string, LooseEntry> }
 
 /** What models.toml already sets up, split into what the catalog knows and what it doesn't. */
 export type CurrentModels = {
@@ -21,80 +16,114 @@ export type CurrentModels = {
   addresses: Record<string, string>
   /** Providers the catalog doesn't know, with their models as written, in file order. */
   own: CatalogProvider[]
-  /** The provider in use for each task more than one of these providers could serve. */
-  picks: Partial<Record<ModelTask, string>>
+  /** The model in use for each task: the first entry listing it. */
+  picks: Partial<Record<ModelTask, ModelPick>>
 }
 
-// One own provider's models: each entry once per task it lists, keeping what it says about itself.
-function ownModels(entries: NonNullable<LooseModelsFile["models"]>, provider: string): CatalogModel[] {
-  return Object.values(entries)
-    .filter(entry => entry.provider === provider && typeof entry.model === "string")
-    .flatMap(entry =>
-      (Array.isArray(entry.tasks) ? (entry.tasks as ModelTask[]) : []).map(task => ({
-        task,
-        model: entry.model as string,
-        ...(typeof entry.context_window === "number" ? { contextWindow: entry.context_window } : {}),
-        ...(entry.images === false ? { images: false } : {})
-      }))
-    )
+const tasksOf = (entry: LooseEntry) => (Array.isArray(entry.tasks) ? (entry.tasks as ModelTask[]) : [])
+
+/** One provider's models as written, one per model id, each with its listed tasks; `known` fills in what it knows. */
+function fileModels(entries: LooseEntry[], provider: string, known?: CatalogProvider): CatalogModel[] {
+  const models = new Map<string, CatalogModel>()
+  for (const entry of entries) {
+    if (entry.provider !== provider || typeof entry.model !== "string") continue
+    const existing = models.get(entry.model)
+    if (existing) {
+      existing.tasks = [...new Set([...existing.tasks, ...tasksOf(entry)])]
+      continue
+    }
+    const catalog = known?.models.find(model => model.model === entry.model)
+    const contextWindow = catalog ? catalog.contextWindow : entry.context_window
+    const images = catalog ? catalog.images : entry.images
+    models.set(entry.model, {
+      model: entry.model,
+      tasks: tasksOf(entry),
+      ...(typeof contextWindow === "number" ? { contextWindow } : {}),
+      ...(images === false ? { images: false } : {})
+    })
+  }
+  return [...models.values()]
+}
+
+async function readModelsFile(): Promise<LooseModelsFile | undefined> {
+  try {
+    const f = file(getModelsPath())
+    if (!(await f.exists())) return undefined
+    return TOML.parse(await f.text()) as LooseModelsFile
+  } catch {
+    return undefined
+  }
 }
 
 /** Reads models.toml against the current catalog. Undefined when it is missing or unparseable. */
 export async function readCurrentModels(): Promise<CurrentModels | undefined> {
-  try {
-    const f = file(getModelsPath())
-    if (!(await f.exists())) return undefined
-    const data = TOML.parse(await f.text()) as LooseModelsFile
-    const tables = data.providers ?? {}
-    const entries = data.models ?? {}
+  const data = await readModelsFile()
+  if (!data) return undefined
+  const tables = data.providers ?? {}
+  const entries = Object.values(data.models ?? {})
 
-    const known = CATALOG.filter(provider => tables[provider.id])
-    const addresses: Record<string, string> = {}
-    for (const provider of known) {
-      const url = tables[provider.id]?.base_url
-      if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
-    }
-
-    const own: CatalogProvider[] = Object.entries(tables)
-      .filter(([id, table]) => !CATALOG.some(provider => provider.id === id) && typeof table?.base_url === "string")
-      .map(([id, table]) => ({
-        id,
-        name: id,
-        kind: "hosted",
-        baseUrl: table.base_url as string,
-        models: ownModels(entries, id)
-      }))
-
-    // The first model in the file that lists a task is the one in use.
-    const picks: CurrentModels["picks"] = {}
-    for (const [task, options] of Object.entries(candidatesByTask([...known, ...own]))) {
-      const active = Object.values(entries).find(
-        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task)
-      )?.provider
-      if (options.length > 1 && typeof active === "string") picks[task as ModelTask] = active
-    }
-    return { providers: known.map(provider => provider.id), addresses, own, picks }
-  } catch {
-    return undefined
+  const known = CATALOG.filter(provider => tables[provider.id])
+  const addresses: Record<string, string> = {}
+  for (const provider of known) {
+    const url = tables[provider.id]?.base_url
+    if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
   }
+
+  const own: CatalogProvider[] = Object.entries(tables)
+    .filter(([id, table]) => !catalogHas(id) && typeof table?.base_url === "string")
+    .map(([id, table]) => ({
+      id,
+      name: id,
+      kind: "hosted",
+      baseUrl: table.base_url as string,
+      models: fileModels(entries, id),
+      own: true
+    }))
+
+  return { providers: known.map(provider => provider.id), addresses, own, picks: picksOf(entries) }
+}
+
+const catalogHas = (id: string) => CATALOG.some(provider => provider.id === id)
+
+// The first model in the file that lists a task is the one in use.
+function picksOf(entries: LooseEntry[]): Partial<Record<ModelTask, ModelPick>> {
+  const picks: Partial<Record<ModelTask, ModelPick>> = {}
+  for (const entry of entries) {
+    if (typeof entry.provider !== "string" || typeof entry.model !== "string") continue
+    for (const task of tasksOf(entry)) picks[task] ??= { provider: entry.provider, model: entry.model }
+  }
+  return picks
 }
 
 /** Why `refreshModelsToml` wrote nothing. */
 export type RefreshSkipped = { skipped: "no-catalog" | "no-models" | "no-catalog-providers" }
 
 /**
- * The models.toml `kaja config fetch` would write: rebuilt from the catalog for the catalog providers the file already
- * uses, so their default models follow it. The user's own providers, self-hosted addresses and each contested task's
- * pick stay as they are. Needs the catalog loaded.
+ * The models.toml `kaja config fetch` would write: the same providers, models and picks, with what the catalog now says
+ * about them (a hosted provider's address, each model's context window and image support). Needs the catalog loaded.
  */
 export async function modelsTomlFromCatalog(): Promise<string | RefreshSkipped> {
   if (CATALOG.length === 0) return { skipped: "no-catalog" }
-  const current = await readCurrentModels()
-  if (!current) return { skipped: "no-models" }
-  if (current.providers.length === 0) return { skipped: "no-catalog-providers" }
+  const data = await readModelsFile()
+  if (!data) return { skipped: "no-models" }
+  const tables = data.providers ?? {}
+  if (!Object.keys(tables).some(catalogHas)) return { skipped: "no-catalog-providers" }
 
-  const known = CATALOG.filter(provider => current.providers.includes(provider.id))
-  return buildModelsToml({ providers: [...known, ...current.own], pick: current.picks, baseUrls: current.addresses })
+  const entries = Object.values(data.models ?? {})
+  const baseUrls: Record<string, string> = {}
+  const providers: CatalogProvider[] = []
+  for (const [id, table] of Object.entries(tables)) {
+    if (typeof table?.base_url !== "string") continue
+    const known = CATALOG.find(provider => provider.id === id)
+    // A self-hosted address is the user's; a hosted one follows the catalog
+    if (!known || known.kind === "self-hosted") baseUrls[id] = table.base_url
+    providers.push({
+      ...(known ?? { id, name: id, kind: "hosted", baseUrl: table.base_url }),
+      models: fileModels(entries, id, known),
+      own: true
+    })
+  }
+  return buildModelsToml({ providers, picks: picksOf(entries), baseUrls })
 }
 
 /** Writes {@link modelsTomlFromCatalog}'s file, backing up a differing one first. */

@@ -1,3 +1,4 @@
+import type { ModelTask } from "@kaja/schema/config"
 import { render } from "ink"
 import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
@@ -7,8 +8,8 @@ import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { readCurrentModels } from "../models/current"
 import { writeModelsFromCatalog } from "../models/models"
+import { refreshCatalog } from "../models/modelsdev"
 import type { PullProgress } from "../models/pull"
-import { refreshCatalog } from "../models/remote-catalog"
 
 /**
  * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API for speech-to-text
@@ -46,11 +47,11 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   }
 
   // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
-  const { chosenProviders } = await import("../../components/config-wizard")
+  const { chosenPicks, chosenProviders } = await import("../../components/config-wizard")
   const providers = chosenProviders(result)
   if (providers.length === 0) return
 
-  await writeModelsFromCatalog({ providers, pick: result.models, baseUrls: result.addresses })
+  await writeModelsFromCatalog({ providers, picks: chosenPicks(result), baseUrls: result.addresses })
   // Speaches is the one provider that also lives in settings.toml: its address is where voice goes.
   const speaches = providers.find(provider => provider.id === "speaches")
   if (speaches) await applySpeachesUrl(result.addresses?.speaches ?? speaches.baseUrl, print)
@@ -185,24 +186,27 @@ async function offerModelDownloads(print: (line: string) => void) {
 }
 
 /**
- * The providers models.toml already uses, where each local one listens, and which provider serves each task more than
- * one could, for re-offering what the machine already runs. The first provider the catalog doesn't know becomes the
+ * The providers models.toml already uses, where each local one listens, and the model in use for each task, for
+ * re-offering what the machine already runs. The first provider the catalog doesn't know becomes the
  * custom one the wizard asks about; any others are kept as they are. Nothing when the file is missing or unparseable.
  */
-async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom" | "keep">> {
+async function currentModels(): Promise<
+  Pick<WizardResult, "providers" | "addresses" | "tasks" | "models" | "custom" | "keep">
+> {
   const current = await readCurrentModels()
   if (!current) return {}
   const [first, ...rest] = current.own
   const custom = first && {
     name: first.id,
     baseUrl: first.baseUrl,
-    models: first.models.map(({ task, model }) => ({ model, task }))
+    models: first.models.flatMap(({ model, tasks }) => tasks.map(task => ({ model, task })))
   }
   const providers = [...current.providers, ...(custom ? ["custom"] : [])]
   if (providers.length === 0) return {}
   return {
     providers,
     addresses: current.addresses,
+    tasks: Object.keys(current.picks) as ModelTask[],
     models: current.picks,
     ...(custom ? { custom } : {}),
     ...(rest.length > 0 ? { keep: rest } : {})

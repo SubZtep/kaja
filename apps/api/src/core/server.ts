@@ -3,7 +3,7 @@ import { setWarnHandler } from "@kaja/nasi"
 import { app } from "../app"
 import { cloudDescriber } from "../features/nasi/chat"
 import { createTelegramBotService } from "../features/telegram"
-import { catalogService, marketplaceService, sandboxService } from "../services"
+import { marketplaceService, sandboxService } from "../services"
 import { CronService } from "./cron"
 import { env } from "./env"
 import { reportError } from "./report"
@@ -22,8 +22,6 @@ await sandboxService.markAllOffline().catch(err => reportError("Couldn't reset t
 
 // Sync the ability catalog once at startup without holding up the server; failures are logged and recorded in its status.
 marketplaceService.sync().catch(() => {})
-// Same for the provider catalog (models.dev answers 304 when nothing changed).
-catalogService.sync().catch(() => {})
 
 if (!env.USER_SECRET_KEY) {
   console.warn("USER_SECRET_KEY isn't set: admins can't save ability keys, and tools that need one are hidden")

@@ -142,7 +142,7 @@ themeHint                = "↑/↓ 逐个預覽，Enter 揀。以後會當佇 s
 providerTitle            = "你會當用佗寡模型供應商？（空白鍵切換，Enter 繼續）"
 providerHosted           = "[nan-TW] lorem ipsum dolor {name}"
 providerSelfHosted       = "[nan-TW] lorem ipsum dolor sit amet consectetur {name}"
-providerHint             = "愛揀若干个就若干个，至少一个：本機模式需要模型來開講。"
+providerHint             = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
 providerRequired         = "至少愛揀一个（空白鍵）。本機模式無模型就起袂來；欲跳過，執行 `kaja --cloud` 就好。"
 providerCustom           = "家己个（任何其他 OpenAI 相容个伺服器）"
 customNameTitle          = "這个供應商欲叫啥物名？"
@@ -162,7 +162,13 @@ customModelTypeOther     = "[nan-TW] lorem ipsum dolor"
 customModelEnough        = "[nan-TW] lorem"
 customTaskTitle          = "{model} 是欲用來做啥？"
 modelTitle               = "Kaja 欲用啥物个 {task} 模型？"
-modelHint                = "你个供應商有幾若个會當做這个 — Enter 就揀反白彼个。"
+modelHint                = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksTitle               = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksHint                = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksChatRequired        = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+tasksNoChat              = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+providerEnvSet           = "[nan-TW] lorem {env}"
+summaryTasks             = "[nan-TW] lorem"
 taskChat                 = "聊天"
 taskEmbedding            = "嵌入"
 taskRerank               = "重新排序"
@@ -333,6 +339,12 @@ placeholder  = "抑是拍欲改做啥物（會略過這个）"
 commandTitle = "咧等核准个指令"
 requestTitle = "咧等核准个請求"
 toolRequest  = "{name} 想欲送這个請求："
+
+
+[menu]
+filter            = "[nan-TW] lorem"
+filterPlaceholder = "[nan-TW] lorem ipsum dolor"
+noMatches         = "[nan-TW] lorem ipsum"
 
 
 [secretPrompt]

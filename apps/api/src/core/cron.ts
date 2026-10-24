@@ -1,5 +1,5 @@
 import type { Describer } from "@kaja/nasi"
-import { catalogService, imageService, marketplaceService, sandboxService } from "../services"
+import { imageService, marketplaceService, sandboxService } from "../services"
 import { reportError } from "./report"
 
 /** An anonymous sandbox offline this long is gone for good (one restarted without a volume comes back as a new row). */
@@ -39,11 +39,6 @@ export class CronService {
         })
         if (describer)
           await imageService.sweep(describer).catch(err => reportError("The image description sweep failed", err))
-      }),
-      // Daily provider catalog from models.dev; a 304 when it hasn't changed.
-      Bun.cron("45 3 * * *", async () => {
-        // sync() reports and records its own failure before rethrowing
-        await catalogService.sync().catch(() => {})
       }),
       Bun.cron("30 * * * *", async () => {
         await sandboxService

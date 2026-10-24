@@ -12,17 +12,20 @@ const ESC = "\x1b"
 const ENTER = "\r"
 const SPACE = " "
 
-// The providers in the order the checklist shows them.
-const at = (id: string) => CATALOG.findIndex(provider => provider.id === id)
+// The providers in the order the checklist shows them: your own server first, then the catalog's.
+const at = (id: string) => 1 + CATALOG.findIndex(provider => provider.id === id)
 const FIREWORKS = at("fireworks")
 const OLLAMA = at("ollama")
 const SPEACHES = at("speaches")
-const CUSTOM = CATALOG.length
+const CUSTOM = 0
 
 function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
   let result: WizardResult | undefined
   let cancelled = false
-  const t = renderForTest(<ConfigWizard onDone={r => (result = r)} onCancel={() => (cancelled = true)} {...props} />)
+  // No env by default, so a key set on this machine can't tick anything
+  const t = renderForTest(
+    <ConfigWizard env={{}} onDone={r => (result = r)} onCancel={() => (cancelled = true)} {...props} />
+  )
   return {
     t,
     get result() {
@@ -55,10 +58,16 @@ async function openProviders(props: Partial<Parameters<typeof ConfigWizard>[0]> 
   return w
 }
 
-/** Ticks Ollama and keeps its default address: the least a local setup can answer on the providers step. */
+/** Enter through the tasks and model questions, taking what each opens on, up to the extras. */
+async function acceptModels(w: Wizard) {
+  for (let step = 0; step < 10 && !w.t.lastFrame()?.includes("Anything else?"); step++) await w.t.press(ENTER)
+}
+
+/** Ticks Ollama, keeps its default address and the default tasks: the least a local setup can answer. */
 async function pickOllama(w: Wizard) {
   await tick(w, OLLAMA)
   await w.t.press(ENTER) // address: the default
+  await acceptModels(w)
 }
 
 async function close(w: Wizard) {
@@ -132,6 +141,23 @@ test("a forced mode skips the mode step, but never the language one", async () =
   await close(w)
 })
 
+test("providers whose key is in the environment come first and ticked; typing filters the list", async () => {
+  const w = await openProviders({ env: { XAI_API_KEY: "sk-env" } })
+  const frame = w.t.lastFrame()!
+  expect(frame).toContain("[✔] xAI (cloud, needs an API key) · $XAI_API_KEY is set")
+  expect(frame.indexOf("xAI")).toBeLessThan(frame.indexOf("Fireworks"))
+
+  await w.t.press("olla")
+  expect(w.t.lastFrame()).toContain("Ollama")
+  expect(w.t.lastFrame()).not.toContain("Fireworks")
+  await w.t.press(SPACE) // ticks Ollama, the one row left
+  await w.t.press(ENTER)
+  expect(w.result).toBeUndefined()
+  expect(w.t.output()).toContain("✓  Providers: xAI, Ollama")
+
+  await close(w)
+})
+
 test("the providers step won't continue with nothing ticked: local mode needs a model", async () => {
   const w = await openProviders()
   await w.t.press(ENTER) // nothing ticked
@@ -154,6 +180,7 @@ test("a hosted provider is asked for its key, and a typed one is carried out of 
 
   await w.t.press("sk-typed-here")
   await w.t.press(ENTER)
+  await acceptModels(w)
   await w.t.press(ENTER) // extras: nothing ticked
   // Collected, not saved: the credential pass tests it before it reaches secrets.toml.
   expect(w.result).toMatchObject({ providers: ["fireworks"], keys: { fireworks: "sk-typed-here" } })
@@ -167,6 +194,7 @@ test("skipping a key is recorded as empty, not as never having been asked", asyn
   const w = await openProviders()
   await tick(w, FIREWORKS)
   await w.t.press(ENTER) // key: nothing typed
+  await acceptModels(w)
   await w.t.press(ENTER) // extras
 
   expect(w.result?.keys).toEqual({ fireworks: "" })
@@ -181,6 +209,7 @@ test("a local provider is asked where it listens, never for a key", async () => 
 
   // Submitting the prefilled default keeps it, rather than storing an empty URL.
   await w.t.press(ENTER)
+  await acceptModels(w)
   await w.t.press(ENTER) // extras
   expect(w.result).toMatchObject({ providers: ["ollama"], addresses: { ollama: "http://localhost:11434/v1" } })
   expect(w.result?.keys).toBeUndefined()
@@ -202,38 +231,65 @@ test("each ticked provider gets its own question, in the order shown", async () 
   await close(w)
 })
 
-test("a task two ticked providers can serve asks which one to use, and only that task", async () => {
+test("the tasks step offers what the ticked providers can do, with chat, memory, summaries and vision ticked", async () => {
+  const w = await openProviders()
+  await tick(w, FIREWORKS)
+  await w.t.press(ENTER) // key: skipped
+  expect(w.t.lastFrame()).toContain("What should Kaja be able to do?")
+  const frame = w.t.lastFrame()!
+  expect(frame).toContain("[✔] Chat")
+  expect(frame).toMatch(/\[ \] Rerank/i)
+  // Nobody ticked serves voice, so it isn't offered
+  expect(frame).not.toMatch(/speech/i)
+
+  await w.t.press(SPACE) // untick chat
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("Chat is needed")
+  await close(w)
+})
+
+test("each ticked task with more than one model asks which, newest tool-calling one first", async () => {
   const w = await openProviders()
   await tick(w, FIREWORKS, OLLAMA)
   await w.t.press(ENTER) // Fireworks key: skipped
   await w.t.press(ENTER) // Ollama address: default
+  await w.t.press(ENTER) // tasks: the defaults
 
-  // Both serve chat and embedding; only Fireworks serves reranking, so that is never asked.
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
-  expect(w.t.lastFrame()).toContain("Fireworks — accounts/fireworks/models/minimax-m3")
+  expect(w.t.lastFrame()).toContain("❯ Fireworks — accounts/fireworks/models/minimax-m3")
   expect(w.t.lastFrame()).toContain("Ollama — qwen3.5:4b")
 
-  await w.t.press(DOWN) // Ollama
+  await w.t.press("qwen") // filter down to Ollama's
+  expect(w.t.lastFrame()).not.toContain("minimax")
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Which embedding model should Kaja use?")
   await w.t.press(ENTER) // the highlighted first one: Fireworks
+  expect(w.t.lastFrame()).toContain("Which summarising model should Kaja use?")
+  await w.t.press(ENTER)
+  // Vision opens on the chat pick, which can see
+  expect(w.t.lastFrame()).toContain("❯ Ollama — qwen3.5:4b")
+  await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // extras
-  expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
-  const trail = w.t.output()
-  expect(trail).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
-  expect(trail).not.toContain("Reranking model")
+  expect(w.result?.models).toEqual({
+    chat: { provider: "ollama", model: "qwen3.5:4b" },
+    embedding: { provider: "fireworks", model: "accounts/fireworks/models/qwen3-embedding-8b" },
+    summarize: { provider: "fireworks", model: "accounts/fireworks/models/minimax-m3" },
+    vision: { provider: "ollama", model: "qwen3.5:4b" }
+  })
+  expect(w.t.output()).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
 
   await close(w)
 })
 
-test("one provider that serves everything asks no model questions", async () => {
+test("a task with one model to choose from isn't asked", async () => {
   const w = await openProviders()
-  await tick(w, FIREWORKS)
-  await w.t.press(ENTER) // key: skipped
+  await tick(w, OLLAMA)
+  await w.t.press(ENTER) // address
+  await w.t.press(ENTER) // tasks
   expect(w.t.lastFrame()).toContain("Anything else?")
-  expect(w.t.lastFrame()).not.toContain("model should Kaja use")
+  expect(w.t.output()).not.toContain("model should Kaja use")
 
   await close(w)
 })
@@ -271,6 +327,7 @@ test("the trail says what became of each key, without showing it", async () => {
   await tick(w, FIREWORKS)
   await w.t.press("fw-secret-value")
   await w.t.press(ENTER)
+  await acceptModels(w)
   await w.t.press(SPACE) // tick Telegram
   await w.t.press(ENTER)
   await w.t.press(ENTER) // telegram token: skipped
@@ -348,16 +405,18 @@ test("each step opens on the prefilled value", async () => {
   expect(w.t.lastFrame()).toContain("box.local:9090")
 
   await w.t.press(ENTER) // keeps that address
+  await acceptModels(w)
   await w.t.press(ENTER) // extras: nothing ticked
   expect(w.result).toMatchObject(prefill)
 
   await close(w)
 })
 
-test("a model question opens on the provider already in use", async () => {
+test("a model question opens on the model already in use", async () => {
+  const qwen = { provider: "ollama", model: "qwen3.5:4b" }
   const w = renderWizard({
     mode: "local",
-    prefill: { providers: ["fireworks", "ollama"], models: { chat: "ollama", embedding: "fireworks" } }
+    prefill: { providers: ["fireworks", "ollama"], tasks: ["chat"], models: { chat: qwen } }
   })
   await w.t.tick()
   await w.t.press(ENTER) // language
@@ -365,12 +424,15 @@ test("a model question opens on the provider already in use", async () => {
   await w.t.press(ENTER) // providers: both still ticked
   await w.t.press(ENTER) // Fireworks key: skipped
   await w.t.press(ENTER) // Ollama address: default
-  expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
+  // Only chat was set up before, so only chat is ticked
+  expect(w.t.lastFrame()).toContain("[ ] Embedding")
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("❯ Ollama — qwen3.5:4b")
 
   await w.t.press(ENTER) // keeps Ollama, not the first option
-  await w.t.press(ENTER) // embedding: keeps Fireworks
   await w.t.press(ENTER) // extras
-  expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
+  expect(w.result?.models).toEqual({ chat: qwen })
+  expect(w.result?.tasks).toEqual(["chat"])
 
   await close(w)
 })
@@ -418,6 +480,7 @@ test("going back keeps the answers, and a changed one replaces its line", async 
   await tick(w, FIREWORKS)
   await w.t.press(ESC) // back to the checklist, Fireworks still ticked
   expect(w.t.lastFrame()).toContain("[✔] Fireworks")
+  await w.t.press(DOWN) // Fireworks
   await w.t.press(DOWN) // Ollama
   await w.t.press(SPACE)
   await w.t.press(ENTER)
@@ -432,9 +495,10 @@ test("a key typed earlier is kept when you come back past it", async () => {
   await tick(w, FIREWORKS)
   await w.t.press("fw-secret")
   await w.t.press(ENTER)
-  await w.t.press(ESC) // back from extras to the key
+  await w.t.press(ESC) // back from the tasks to the key
   expect(w.t.lastFrame()).toContain("You typed one already")
   await w.t.press(ENTER)
+  await acceptModels(w)
   await w.t.press(ENTER) // extras
 
   expect(w.result?.keys).toEqual({ fireworks: "fw-secret" })
@@ -567,6 +631,7 @@ test("models are listed until an empty answer, each with its own task", async ()
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Another vllm model?")
   await w.t.press(ENTER) // done
+  await acceptModels(w)
   await w.t.press(ENTER) // extras
 
   expect(w.result?.custom?.models).toEqual([
@@ -590,7 +655,7 @@ test("a name the catalog already uses gets a suffix, so it can't shadow a built-
 
 test("a custom model that overlaps a built-in provider joins the model question", async () => {
   const w = await openProviders()
-  await tick(w, OLLAMA, CUSTOM)
+  await tick(w, CUSTOM, OLLAMA)
   await w.t.press(ENTER) // Ollama address: default
   await type(w, "vllm")
   await type(w, "http://box:8000/v1")
@@ -598,6 +663,7 @@ test("a custom model that overlaps a built-in provider joins the model question"
   await type(w, "big-chat")
   await w.t.press(ENTER) // chat
   await w.t.press(ENTER) // that's all
+  await w.t.press(ENTER) // tasks: the defaults
 
   // Ollama and the custom provider both serve chat, so the user is asked which one Kaja should use.
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
@@ -608,7 +674,7 @@ test("a custom model that overlaps a built-in provider joins the model question"
   // Only chat overlaps: Ollama serves embedding too, but the custom provider does not.
   expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras
-  expect(w.result?.models).toEqual({ chat: "vllm" })
+  expect(w.result?.models).toEqual({ chat: { provider: "vllm", model: "big-chat" } })
 
   await close(w)
 })
@@ -659,7 +725,8 @@ test("without a catalog there is no checklist: the wizard goes straight to the u
         name: "ollama",
         kind: "hosted",
         baseUrl: "http://localhost:11434/v1",
-        models: [{ model: "qwen3.5:4b", task: "chat" }]
+        models: [{ model: "qwen3.5:4b", tasks: ["chat"] }],
+        own: true
       }
     ])
     await close(w)

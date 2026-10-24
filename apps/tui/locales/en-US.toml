@@ -142,7 +142,7 @@ themeHint                = "↑/↓ previews each one, Enter picks it. Change it
 providerTitle            = "Which model providers can you use? (space toggles, Enter continues)"
 providerHosted           = "[en-US] lorem ipsum dolor sit {name}"
 providerSelfHosted       = "[en-US] lorem ipsum dolor sit amet consectetur {name}"
-providerHint             = "Check as many as you like, at least one: local mode needs a model to chat with."
+providerHint             = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
 providerRequired         = "Check at least one (space). Local mode can't start without a model; to skip this, run `kaja --cloud` instead."
 providerCustom           = "Custom (any other OpenAI-compatible server)"
 customNameTitle          = "What should this provider be called?"
@@ -162,7 +162,13 @@ customModelTypeOther     = "[en-US] lorem ipsum dolor"
 customModelEnough        = "[en-US] lorem"
 customTaskTitle          = "What is {model} used for?"
 modelTitle               = "Which {task} model should Kaja use?"
-modelHint                = "More than one of your providers can do this — Enter picks the highlighted one."
+modelHint                = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksTitle               = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
+tasksHint                = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+tasksChatRequired        = "[en-US] lorem ipsum dolor sit amet consectetur"
+tasksNoChat              = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+providerEnvSet           = "[en-US] lorem {env}"
+summaryTasks             = "[en-US] lorem"
 taskChat                 = "chat"
 taskEmbedding            = "embedding"
 taskRerank               = "reranking"
@@ -333,6 +339,12 @@ placeholder  = "Or type what to do instead (it skips this)"
 commandTitle = "Command waiting for approval"
 requestTitle = "Request waiting for approval"
 toolRequest  = "{name} wants to send this request:"
+
+
+[menu]
+filter            = "[en-US] lorem"
+filterPlaceholder = "[en-US] lorem ipsum dolor"
+noMatches         = "[en-US] lorem ipsum"
 
 
 [secretPrompt]

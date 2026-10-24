@@ -28,7 +28,7 @@ function errorMessage(error: unknown): string {
 /** Moves models.toml to the online catalog's current defaults for the providers it uses. */
 async function runFetch(): Promise<{ code: number; text: string }> {
   try {
-    const { refreshCatalog } = await import("../models/remote-catalog")
+    const { refreshCatalog } = await import("../models/modelsdev")
     await refreshCatalog()
     const { refreshModelsToml } = await import("../models/current")
     return { code: 0, text: fetchResultLine(await refreshModelsToml()) }

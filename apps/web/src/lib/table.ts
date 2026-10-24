@@ -22,7 +22,7 @@ import {
 
 type ColumnMeta = {
   /** `task` is a select of model tasks, matched against an array of them (`filterFn: "arrIncludes"`). */
-  filterVariant?: "text" | "role" | "period" | "task"
+  filterVariant?: "text" | "role" | "period"
   /** Per-row callbacks/data an actions cell needs, so its cell renderer can stay a top-level component. */
   actions?: unknown
 }

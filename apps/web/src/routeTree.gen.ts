@@ -28,8 +28,6 @@ import { Route as AdminDashboardStatsRouteImport } from './routes/_admin/dashboa
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
 import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
-import { Route as AdminAdminCatalogIndexRouteImport } from './routes/_admin/admin/catalog/index'
-import { Route as AdminAdminCatalogProviderIdRouteImport } from './routes/_admin/admin/catalog/$providerId'
 import { Route as AdminAdminDashboardIndexRouteImport } from './routes/_admin/admin/dashboard/index'
 import { Route as AdminAdminImagesIndexRouteImport } from './routes/_admin/admin/images/index'
 import { Route as AdminAdminModelsIndexRouteImport } from './routes/_admin/admin/models/index'
@@ -129,17 +127,6 @@ const PublicDeviceDoneRoute = PublicDeviceDoneRouteImport.update({
   path: '/done',
   getParentRoute: () => PublicDeviceRoute,
 } as any)
-const AdminAdminCatalogIndexRoute = AdminAdminCatalogIndexRouteImport.update({
-  id: '/catalog/',
-  path: '/catalog/',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
-const AdminAdminCatalogProviderIdRoute =
-  AdminAdminCatalogProviderIdRouteImport.update({
-    id: '/catalog/$providerId',
-    path: '/catalog/$providerId',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
 const AdminAdminDashboardIndexRoute =
   AdminAdminDashboardIndexRouteImport.update({
     id: '/dashboard/',
@@ -185,9 +172,7 @@ export interface FileRoutesByFullPath {
   '/agent/': typeof AdminAgentIndexRoute
   '/dashboard/': typeof AdminDashboardIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
-  '/admin/catalog/$providerId': typeof AdminAdminCatalogProviderIdRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
-  '/admin/catalog/': typeof AdminAdminCatalogIndexRoute
   '/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
   '/admin/images/': typeof AdminAdminImagesIndexRoute
   '/admin/models/': typeof AdminAdminModelsIndexRoute
@@ -207,9 +192,7 @@ export interface FileRoutesByTo {
   '/agent': typeof AdminAgentIndexRoute
   '/dashboard': typeof AdminDashboardIndexRoute
   '/device': typeof PublicDeviceIndexRoute
-  '/admin/catalog/$providerId': typeof AdminAdminCatalogProviderIdRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
-  '/admin/catalog': typeof AdminAdminCatalogIndexRoute
   '/admin/dashboard': typeof AdminAdminDashboardIndexRoute
   '/admin/images': typeof AdminAdminImagesIndexRoute
   '/admin/models': typeof AdminAdminModelsIndexRoute
@@ -236,9 +219,7 @@ export interface FileRoutesById {
   '/_admin/agent/': typeof AdminAgentIndexRoute
   '/_admin/dashboard/': typeof AdminDashboardIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
-  '/_admin/admin/catalog/$providerId': typeof AdminAdminCatalogProviderIdRoute
   '/_admin/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
-  '/_admin/admin/catalog/': typeof AdminAdminCatalogIndexRoute
   '/_admin/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
   '/_admin/admin/images/': typeof AdminAdminImagesIndexRoute
   '/_admin/admin/models/': typeof AdminAdminModelsIndexRoute
@@ -264,9 +245,7 @@ export interface FileRouteTypes {
     | '/agent/'
     | '/dashboard/'
     | '/device/'
-    | '/admin/catalog/$providerId'
     | '/admin/users/$userId'
-    | '/admin/catalog/'
     | '/admin/dashboard/'
     | '/admin/images/'
     | '/admin/models/'
@@ -286,9 +265,7 @@ export interface FileRouteTypes {
     | '/agent'
     | '/dashboard'
     | '/device'
-    | '/admin/catalog/$providerId'
     | '/admin/users/$userId'
-    | '/admin/catalog'
     | '/admin/dashboard'
     | '/admin/images'
     | '/admin/models'
@@ -314,9 +291,7 @@ export interface FileRouteTypes {
     | '/_admin/agent/'
     | '/_admin/dashboard/'
     | '/_public/device/'
-    | '/_admin/admin/catalog/$providerId'
     | '/_admin/admin/users/$userId'
-    | '/_admin/admin/catalog/'
     | '/_admin/admin/dashboard/'
     | '/_admin/admin/images/'
     | '/_admin/admin/models/'
@@ -463,20 +438,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicDeviceDoneRouteImport
       parentRoute: typeof PublicDeviceRoute
     }
-    '/_admin/admin/catalog/': {
-      id: '/_admin/admin/catalog/'
-      path: '/catalog'
-      fullPath: '/admin/catalog/'
-      preLoaderRoute: typeof AdminAdminCatalogIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/_admin/admin/catalog/$providerId': {
-      id: '/_admin/admin/catalog/$providerId'
-      path: '/catalog/$providerId'
-      fullPath: '/admin/catalog/$providerId'
-      preLoaderRoute: typeof AdminAdminCatalogProviderIdRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/_admin/admin/dashboard/': {
       id: '/_admin/admin/dashboard/'
       path: '/dashboard'
@@ -517,9 +478,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
-  AdminAdminCatalogProviderIdRoute: typeof AdminAdminCatalogProviderIdRoute
   AdminAdminUsersUserIdRoute: typeof AdminAdminUsersUserIdRoute
-  AdminAdminCatalogIndexRoute: typeof AdminAdminCatalogIndexRoute
   AdminAdminDashboardIndexRoute: typeof AdminAdminDashboardIndexRoute
   AdminAdminImagesIndexRoute: typeof AdminAdminImagesIndexRoute
   AdminAdminModelsIndexRoute: typeof AdminAdminModelsIndexRoute
@@ -528,9 +487,7 @@ interface AdminAdminRouteChildren {
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
-  AdminAdminCatalogProviderIdRoute: AdminAdminCatalogProviderIdRoute,
   AdminAdminUsersUserIdRoute: AdminAdminUsersUserIdRoute,
-  AdminAdminCatalogIndexRoute: AdminAdminCatalogIndexRoute,
   AdminAdminDashboardIndexRoute: AdminAdminDashboardIndexRoute,
   AdminAdminImagesIndexRoute: AdminAdminImagesIndexRoute,
   AdminAdminModelsIndexRoute: AdminAdminModelsIndexRoute,

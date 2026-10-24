@@ -52,16 +52,19 @@ answers.
 
    Starting with `kaja --cloud` or `kaja --local` answers this for you.
 
-4. **Providers.** Tick every provider you can use (at least one). The list comes from Kaja's online
-   catalog, each provider with a default model for every job it can do:
+4. **Providers.** Tick every provider you can use (at least one). The list comes from
+   [models.dev](https://models.dev); type to narrow it. Providers whose API key is already in your
+   environment (`OPENAI_API_KEY` and the like) come first, ticked.
    - **Cloud** providers run online, so you give an API key.
-   - **Self-hosted** ones run on your machine or server, so you confirm where they listen. Speaches
-     handles speech in and out for [voice](/use/voice).
-   - **Custom** is any other OpenAI-compatible server (LM Studio, vLLM, a proxy). You give a name, an
-     address and a key, then pick each model from the list the server reports (or type its id), and say
-     what it's for.
-5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
-6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
+   - **Self-hosted** ones run on your machine or server, so you confirm where they listen.
+   - **Custom** is any other OpenAI-compatible server (Ollama, llama.cpp, vLLM, a proxy). You give a name,
+     an address and a key, then pick each model from the list the server reports (or type its id), and say
+     what it's for. Without internet, this is the only choice.
+5. **Tasks.** Tick what Kaja should be able to do: chat (always), memory search (embedding), summaries and
+   pictures (vision) are ticked to start with; speech, reranking and image generation are yours to add.
+6. **Which model.** For each ticked task with more than one model to choose from, pick one. The newest
+   model that can use tools is highlighted, and typing filters the list.
+7. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
 
 After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
