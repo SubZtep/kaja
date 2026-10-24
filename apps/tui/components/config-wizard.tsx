@@ -23,6 +23,7 @@ import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
 import { KeyHint, LABEL_WIDTH, padLabel, Question, RailLine, RecentAnswer, textWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
+import { emote, Monster, monsterWidth } from "./layout/monster"
 import { InputPrompt, type LiveCheck, Problem } from "./secret-prompt"
 import { themeFor, useKajaTheme } from "./theme"
 
@@ -644,14 +645,12 @@ export function fitParts(parts: string[], width: number): string {
 }
 
 /**
- * Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count. The
- * mascot goes when it doesn't fit.
+ * Where the wizard is: the monster, then each block, done ones ticked and the open one with its question count. The
+ * monster goes when it doesn't fit.
  */
 function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
   const { success, accent } = useKajaTheme()
   const reached = current ? blocks.indexOf(current) : blocks.length
-  // Smiles once every block is done
-  const mascot = current ? "༼☉ω⊙༽🪄" : "༼^ω^༽🪄"
   const count = t("wizard.progressCount", { at, of })
   const crumbs = blocks
     .map(
@@ -660,11 +659,17 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
     )
     .join(" › ")
   const room = textWidth() + 1
-  const showMascot = Bun.stringWidth(`${mascot} ${crumbs}`) <= room
+  // The monster smiles once every block is done
+  const showMonster = monsterWidth(true) + 3 + Bun.stringWidth(crumbs) <= room
   return (
     <Box paddingLeft={1} width={room + 1}>
       <Text wrap="truncate-end">
-        {showMascot ? `${mascot} ` : ""}
+        {showMonster ? (
+          <Text>
+            <Monster wand mood={current ? undefined : "worked"} />
+            {"   "}
+          </Text>
+        ) : null}
         {blocks.map((block, index) => (
           <Text key={block}>
             {index > 0 ? <Text dimColor> › </Text> : null}
@@ -824,16 +829,24 @@ export function ConfigWizard({
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
+    emote("worked")
     setHistory(list => [...list, step])
     setResult(next)
     setTyping(false)
     setStep(nextStepAfter(step, next, mode, hookPrograms, gitReady))
   }
 
+  // Enter on a checklist missing what it needs: the hint says why
+  function refuse(missing: boolean) {
+    setRefused(missing)
+    if (missing) emote("problem")
+  }
+
   // Esc: the previous question opens again on its answer; on the first one it cancels the wizard.
   function back() {
     const previous = history.at(-1)
     if (!previous) return onCancel()
+    emote("asking")
     setHistory(list => list.slice(0, -1))
     setTyping(false)
     setRefused(false)
@@ -911,9 +924,15 @@ export function ConfigWizard({
     )
   }
 
-  // The `check` an InputPrompt gets for `target`, or none without a probe
+  // The `check` an InputPrompt gets for `target`, or none without a probe; the monster looks on and frowns at a refusal
   function checkWith(target: (value: string) => ProbeTarget) {
-    return probe ? (value: string, signal: AbortSignal) => probe(target(value), signal) : undefined
+    if (!probe) return undefined
+    return async (value: string, signal: AbortSignal) => {
+      emote("checking")
+      const verdict = await probe(target(value), signal)
+      if (verdict?.tone === "bad" && !signal.aborted) emote("problem")
+      return verdict
+    }
   }
 
   function stepView() {
@@ -1293,7 +1312,7 @@ export function ConfigWizard({
                 ]
               }
               onSubmit={providers => {
-                setRefused(providers.length === 0)
+                refuse(providers.length === 0)
                 if (providers.length > 0) advance({ providers })
               }}
               onClose={back}
@@ -1321,7 +1340,7 @@ export function ConfigWizard({
               onSubmit={values => {
                 // Local mode can't start without something to chat with
                 const missingChat = !values.includes("chat")
-                setRefused(missingChat)
+                refuse(missingChat)
                 if (!missingChat) advance({ tasks: values as ModelTask[] })
               }}
               onClose={back}
@@ -1428,8 +1447,8 @@ export function ConfigWizard({
   return (
     <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
-        {/* Blank lines set the header, the folded blocks and the open block apart */}
-        <Box marginBottom={1}>
+        {/* Blank lines keep the header off the shell prompt and set the folded blocks and the open block apart */}
+        <Box marginY={1}>
           <Progress blocks={blocks} current={current} at={at} of={of} />
         </Box>
         {folded.length > 0 ? (

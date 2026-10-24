@@ -2,6 +2,7 @@ import { homedir } from "node:os"
 import { type ModelTask, providerKey } from "@kaja/schema/config"
 import { Box, render, renderToString, Text } from "ink"
 import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
+import { Monster } from "../../components/layout/monster"
 import type { LiveCheck } from "../../components/secret-prompt"
 import { create, getConfigDir, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
@@ -75,12 +76,14 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
   invalidateConfigCache()
 }
 
-// The last line printed: the mascot that closed the wizard's header, then what's next
+// The last line printed: the monster that closed the wizard's header, then what's next
 function readyLine(text: string): string {
   return renderToString(
     <Box paddingLeft={1}>
       <Text>
-        ༼^ω^༽🪄 <Text bold>{text}</Text>
+        <Monster wand mood="worked" />
+        {"   "}
+        <Text bold>{text}</Text>
       </Text>
     </Box>,
     { columns: 80 }
@@ -404,7 +407,8 @@ export async function runConfigWizard({
     )
   })
 
-  if (!result) return { code: 0, text: t("wizard.cancelled") }
+  // A blank line keeps it off the wizard's last frame
+  if (!result) return { code: 0, text: `\n${t("wizard.cancelled")}` }
   // The prompts and progress bars after the wizard follow the theme just picked
   if (result.theme) {
     const { setConsoleTheme } = await import("../terminal-background")

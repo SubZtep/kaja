@@ -5,7 +5,7 @@ import { join } from "node:path"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-hooks`
 
-const { fireHook, getHooksPath, loadHooks, resetHooks, runHook } = await import("../../../lib/config/hooks")
+const { fireHook, getHooksPath, loadHooks, onHook, resetHooks, runHook } = await import("../../../lib/config/hooks")
 const { getConfigDir } = await import("../../../lib/config/config")
 const { getLanguage } = await import("../../../lib/i18n")
 const { write, file } = await import("bun")
@@ -143,4 +143,14 @@ test("cancel = true stops an earlier run of the same command only", async () => 
 
 test("a command that fails to run is only logged", () => {
   expect(() => runHook("message", { run: "exit 3" }, { text: "hi" })).not.toThrow()
+})
+
+test("onHook hears every fired event without a hooks.toml, until unsubscribed", async () => {
+  await reset()
+  const heard: unknown[] = []
+  const off = onHook((name, event) => heard.push([name, event]))
+  fireHook("error", { text: "boom" })
+  off()
+  fireHook("copy")
+  expect(heard).toEqual([["error", { text: "boom" }]])
 })

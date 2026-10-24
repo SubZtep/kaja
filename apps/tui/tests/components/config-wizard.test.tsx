@@ -244,6 +244,22 @@ test("the providers step won't continue with nothing ticked or highlighted: loca
   await close(w)
 })
 
+test("the monster smiles at an answer, wonders at Esc and frowns at a refusal", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language: English
+  expect(w.t.lastFrame()).toContain("༼^ω^༽🪄")
+  await w.t.press(ESC)
+  expect(w.t.lastFrame()).toContain("༼☉ω⊙༽🪄")
+  await w.t.press(ENTER) // language again
+  await w.t.press(ENTER) // theme
+  await w.t.press("zzz") // filters every provider away
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("༼°ω°༽🪄")
+
+  await close(w)
+})
+
 test("a hosted provider is asked for its key, and a typed one is carried out of the wizard", async () => {
   const w = await openProviders()
   await tick(w, FIREWORKS)
@@ -899,6 +915,21 @@ test("a key is tested against its provider while it's typed, never with the key 
   expect(w.t.lastFrame()).toContain("✓ Accepted: it lists 3 models.")
   expect(w.t.lastFrame()).not.toContain("fw-live")
   expect(targets).toEqual([{ kind: "key", baseUrl: "https://api.fireworks.ai/inference/v1", key: "fw-live" }])
+  await close(w)
+})
+
+test("the monster checks while a key is tested and frowns when it's refused", async () => {
+  const { promise: answer, resolve } = Promise.withResolvers<{ tone: "bad"; note: string }>()
+  const w = await openProviders({ probe: () => answer })
+  await tick(w, FIREWORKS)
+  await w.t.press("fw-wrong")
+  const waitFor = async (text: string) => {
+    for (let i = 0; i < 100 && !w.t.lastFrame()?.includes(text); i++) await Bun.sleep(50)
+    return w.t.lastFrame()
+  }
+  expect(await waitFor("༼•ω•༽")).toContain("༼•ω•༽🪄")
+  resolve({ tone: "bad", note: "Refused" })
+  expect(await waitFor("༼°ω°༽")).toContain("༼°ω°༽🪄")
   await close(w)
 })
 

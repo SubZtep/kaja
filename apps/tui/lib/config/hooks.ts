@@ -104,8 +104,22 @@ export function runHook(name: HookName, command: HookCommand, { text = "", title
   }
 }
 
-/** Runs every command hooks.toml lists for `name` (read on first use), all at once. No such hook: nothing happens. */
+const listeners = new Set<(name: HookName, event: HookEvent) => void>()
+
+/** Calls `listener` on every {@link fireHook}, whether hooks.toml has commands for it or not. Returns the unsubscribe. */
+export function onHook(listener: (name: HookName, event: HookEvent) => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/**
+ * Tells every {@link onHook} listener, then runs every command hooks.toml lists for `name` (read on first use), all at
+ * once. No such hook: no command runs.
+ */
 export function fireHook(name: HookName, event: HookEvent = {}) {
+  for (const listener of listeners) listener(name, event)
   loaded ??= loadHooks()
   for (const command of loaded[name] ?? []) runHook(name, command, event)
 }
