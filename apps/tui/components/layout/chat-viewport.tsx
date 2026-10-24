@@ -13,7 +13,6 @@ import { type DisplayEvent, foldToolCalls } from "../../lib/tool-summary"
 import { uiEvents } from "../../lib/ui-events"
 import { Activity } from "../activity"
 import { PartialMessage } from "../elem/partial-message"
-import { TitleRule } from "../elem/rule"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
 import { itemShows, TimelineItem } from "../timeline"
 
@@ -41,23 +40,20 @@ function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbos
 const SAID: ReadonlySet<DisplayEvent["type"]> = new Set(["message", "final", "ask_user"])
 
 /**
- * How each item sits: a user message after a blank line; the agent's first item after it under a rule naming the
- * persona (`turn`, the persona in effect then), spaced above the rule; then each of the agent's words after a blank
- * line (except straight under the reasoning that led to them), so tool calls and notices stack without gaps. Reasoning
- * hidden by `thinking` doesn't count.
+ * How each item sits: a user message after a blank line; then each of the agent's words after a blank line (except
+ * straight under the reasoning that led to them), and the agent's first item of a turn always, so tool calls and
+ * notices stack without gaps. Reasoning hidden by `thinking` doesn't count.
  */
-function layout(items: DisplayEvent[], thinking: boolean, startPersona: string) {
+function layout(items: DisplayEvent[], thinking: boolean) {
   let previous: DisplayEvent["type"] | undefined
-  let persona = startPersona
   return items.map(item => {
-    const turn = previous === "user" && item.type !== "user" && itemShows(item, thinking) ? persona : undefined
+    const turn = previous === "user" && item.type !== "user" && itemShows(item, thinking)
     const spaced =
       item.type === "user"
         ? previous !== undefined
-        : turn === undefined && SAID.has(item.type) && previous !== undefined && previous !== "reasoning"
-    if (item.type === "persona_switch") persona = item.label
+        : turn || (SAID.has(item.type) && previous !== undefined && previous !== "reasoning")
     if (itemShows(item, thinking)) previous = item.type
-    return { spaced, turn, persona }
+    return spaced
   })
 }
 
@@ -103,7 +99,6 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
 export function ChatViewport({
-  persona,
   events,
   thinking,
   partial,
@@ -113,8 +108,6 @@ export function ChatViewport({
   toolDisplay = "minimal",
   currentTool
 }: Readonly<{
-  /** The active persona's name, for the rule over each of the agent's turns. */
-  persona: string
   events: TimelineEvent[]
   thinking: boolean
   partial: PartialMessageData | null
@@ -142,10 +135,6 @@ export function ChatViewport({
   const [topPad, setTopPad] = useState(0)
   const { columns, rows } = useWindowSize()
   const { stdout } = useStdout()
-  // The persona the conversation began with: turns before the first switch were its
-  const [startPersona, setStartPersona] = useState(persona)
-  if (startPersona !== persona && !events.some(event => event.type === "persona_switch")) setStartPersona(persona)
-  const ruleWidth = Math.max(0, columns - 2)
 
   useMouseTracking(true)
 
@@ -319,36 +308,21 @@ export function ChatViewport({
   const showAffordance = canScroll && !stuckToBottom
 
   // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
-  const {
-    timelineItems,
-    lastShown,
-    persona: turnPersona
-  } = useMemo(() => {
+  const { timelineItems, lastShown } = useMemo(() => {
     const items = visibleEvents(events, toolDisplay, pending)
-    const placed = layout(items, thinking, startPersona)
+    const placed = layout(items, thinking)
     return {
-      timelineItems: items.flatMap((item, i) => {
+      timelineItems: items.map((item, i) => {
         const key = item.type === "tool_summary" ? `summary-${idFor(item.last)}` : idFor(item)
-        const { spaced, turn } = placed[i]!
-        return [
-          ...(turn === undefined
-            ? []
-            : [
-                <Box key={`turn-${key}`} marginTop={1}>
-                  <TitleRule title={turn} width={ruleWidth} />
-                </Box>
-              ]),
-          <TimelineItem key={key} item={item} thinking={thinking} spaced={spaced} />
-        ]
+        return <TimelineItem key={key} item={item} thinking={thinking} spaced={placed[i]!} />
       }),
-      lastShown: items.findLast(item => itemShows(item, thinking))?.type,
-      persona: placed.at(-1)?.persona ?? startPersona
+      lastShown: items.findLast(item => itemShows(item, thinking))?.type
     }
-  }, [events, thinking, toolDisplay, pending, startPersona, ruleWidth])
+  }, [events, thinking, toolDisplay, pending])
   const partialShows = !!partial?.content || (thinking && !!partial?.reasoning)
-  // The turn under way gets its rule as soon as it starts, before anything has arrived
+  // The turn under way is set apart as soon as it starts, before anything has arrived
   const turnOpen = lastShown === "user" && (pending || partialShows)
-  // The agent's words a blank line apart, except straight under the rule or the reasoning; the spinner sits right under it
+  // The agent's words a blank line apart, except where the turn's opening gap or the reasoning already sits above; the spinner sits right under it
   const partialSpaced =
     partialShows && !turnOpen && !!partial?.content && lastShown !== undefined && lastShown !== "reasoning"
 
@@ -390,11 +364,7 @@ export function ChatViewport({
         */}
         {topPad > 0 ? <Box key="top-pad" height={topPad} flexShrink={0} width="100%" /> : null}
         {timelineItems.length === 0 && startupPanel ? <Box key="startup">{startupPanel}</Box> : timelineItems}
-        {turnOpen ? (
-          <Box key="turn-open" marginTop={1}>
-            <TitleRule title={turnPersona} width={ruleWidth} />
-          </Box>
-        ) : null}
+        {turnOpen ? <Box key="turn-open" height={1} /> : null}
         <Box key="partial" flexDirection="column" marginTop={partialSpaced ? 1 : 0}>
           <PartialMessage partial={partial} thinking={thinking} />
         </Box>

@@ -279,7 +279,6 @@ function Chrome({
             />
             <DashedRule width={columns} />
             <ChatViewport
-              persona={personaLabel}
               events={events}
               thinking={thinking}
               partial={partial}
