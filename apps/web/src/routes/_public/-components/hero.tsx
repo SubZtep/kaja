@@ -1,4 +1,5 @@
 import { cn } from "@kaja/shared/ui"
+import { Link } from "@tanstack/react-router"
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { CaptchaAlert, useTurnstile } from "../../../hooks/turnstile"
@@ -41,13 +42,19 @@ function greeting(part: DayPart | null, name: string | undefined) {
   return (part ? greet[part] : m.hero_greeting)()
 }
 
-// Its own component so the Turnstile check only runs for a visitor who can use the button, not a signed-in user.
+// Its own component so only a signed-out visitor gets the check; lazy, so it runs on the click, not on every landing visit.
 function GoogleSignIn() {
-  const captcha = useTurnstile()
+  const captcha = useTurnstile({ lazy: true })
   return (
     <div>
       <CaptchaAlert captcha={captcha} />
       <GoogleButton label={m.google_start()} captcha={captcha} />
+      <p className="text-muted mt-3 mb-0 max-w-sm text-[13.5px]">
+        {m.hero_signup_prompt()}{" "}
+        <Link to="/signup" className="text-neon hover:underline">
+          {m.hero_signup_link()}
+        </Link>
+      </p>
       <a
         href={`#${WAYS_IN_ID}`}
         className="font-stamp text-muted hover:text-neon mt-3 inline-block text-[11px] uppercase"

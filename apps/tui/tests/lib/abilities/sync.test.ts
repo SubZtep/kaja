@@ -30,23 +30,23 @@ afterEach(() => {
 
 test("first sync copies the folders into a missing folder and writes the lock, leaving top-level files out", async () => {
   put(upstream, "abilities/a/SKILL.md", "a1")
-  put(upstream, "README.md", "readme")
+  put(upstream, "notes.md", "notes")
   const report = await syncMarketplace(upstream, local, { url: "u", ref: "main", commit: "c1" })
   expect(report.added).toEqual(["abilities/a/SKILL.md"])
   expect(read("abilities/a/SKILL.md")).toBe("a1")
-  expect(existsSync(join(local, "README.md"))).toBe(false)
+  expect(existsSync(join(local, "notes.md"))).toBe(false)
   const lock = await readSyncLock(local)
   expect(lock?.source).toEqual({ url: "u", ref: "main", commit: "c1" })
   expect(Object.keys(lock!.files)).toEqual(["abilities/a/SKILL.md"])
 })
 
 test("a top-level file an earlier sync wrote is removed", async () => {
-  put(local, "README.md", "readme")
-  put(local, LOCK_FILE, JSON.stringify({ files: { "README.md": hash("readme") } }))
-  put(upstream, "README.md", "readme")
+  put(local, "notes.md", "notes")
+  put(local, LOCK_FILE, JSON.stringify({ files: { "notes.md": hash("notes") } }))
+  put(upstream, "notes.md", "notes")
   const report = await syncMarketplace(upstream, local)
-  expect(report.removed).toEqual(["README.md"])
-  expect(existsSync(join(local, "README.md"))).toBe(false)
+  expect(report.removed).toEqual(["notes.md"])
+  expect(existsSync(join(local, "notes.md"))).toBe(false)
 })
 
 test("an untouched file follows upstream without a backup", async () => {

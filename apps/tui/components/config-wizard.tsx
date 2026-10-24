@@ -3,7 +3,7 @@ import type { ModelTask } from "@kaja/schema/config"
 import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
 import { Box, Text } from "ink"
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { BackendKind } from "../lib/hooks/detect"
 import type { WantedHooks } from "../lib/hooks/templates"
@@ -23,6 +23,7 @@ import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
 import { KeyHint, LABEL_WIDTH, padLabel, Question, RailLine, RecentAnswer, textWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
+import { emote, Monster, monsterWidth } from "./layout/monster"
 import { InputPrompt, type LiveCheck, Problem } from "./secret-prompt"
 import { themeFor, useKajaTheme } from "./theme"
 
@@ -460,9 +461,22 @@ function keyPlaceholder(typed: string | undefined, alreadySaved: boolean | undef
   return tail ? t(`wizard.keyKeeps${which}Tail`, { tail }) : t(`wizard.keyKeeps${which}`)
 }
 
+// False on the first question, where Esc cancels instead, so its hint offers no "back"
+const CanGoBack = createContext(true)
+
+/**
+ * A wizard question's hint: its keys, then "Esc back", then `note`; the first question says it can all change later
+ * instead of Esc.
+ */
+function WizardHint({ keys, note }: Readonly<{ keys: [key: string, action: string][]; note?: string }>) {
+  const canGoBack = useContext(CanGoBack)
+  if (!canGoBack) return <KeyHint keys={keys} note={note ?? t("wizard.themeHint")} />
+  return <KeyHint keys={[...keys, ["Esc", t("wizard.back")]]} note={note} />
+}
+
 /** A key step's hint: Enter saves, and how the key is handled. */
 function keyHint() {
-  return <KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.keyNote")} />
+  return <WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.keyNote")} />
 }
 
 /** One answered step, kept on screen above the next question. */
@@ -639,14 +653,12 @@ export function fitParts(parts: string[], width: number): string {
 }
 
 /**
- * Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count, and
- * "Esc back" at the right. What doesn't fit goes, "Esc back" first and then the mascot.
+ * Where the wizard is: the monster, then each block, done ones ticked and the open one with its question count. The
+ * monster goes when it doesn't fit.
  */
 function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
   const { success, accent } = useKajaTheme()
   const reached = current ? blocks.indexOf(current) : blocks.length
-  // Smiles once every block is done
-  const mascot = current ? "༼☉ω⊙༽🪄" : "༼^ω^༽🪄"
   const count = t("wizard.progressCount", { at, of })
   const crumbs = blocks
     .map(
@@ -654,15 +666,18 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
         (index < reached ? "✓ " : "") + t(BLOCK_LABEL_KEY[block]) + (index === reached ? ` ${count}` : "")
     )
     .join(" › ")
-  const esc = `Esc ${t("wizard.back")}`
   const room = textWidth() + 1
-  const withMascot = Bun.stringWidth(`${mascot} ${crumbs}`)
-  const showEsc = current !== undefined && withMascot + 2 + Bun.stringWidth(esc) <= room
-  const showMascot = withMascot <= room
+  // The monster smiles once every block is done
+  const showMonster = monsterWidth(true) + 3 + Bun.stringWidth(crumbs) <= room
   return (
-    <Box paddingLeft={1} width={room + 1} justifyContent="space-between">
+    <Box paddingLeft={1} width={room + 1}>
       <Text wrap="truncate-end">
-        {showMascot ? `${mascot} ` : ""}
+        {showMonster ? (
+          <Text>
+            <Monster wand mood={current ? undefined : "worked"} />
+            {"   "}
+          </Text>
+        ) : null}
         {blocks.map((block, index) => (
           <Text key={block}>
             {index > 0 ? <Text dimColor> › </Text> : null}
@@ -683,24 +698,22 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
           </Text>
         ))}
       </Text>
-      {showEsc ? (
-        <Text>
-          Esc <Text dimColor>{t("wizard.back")}</Text>
-        </Text>
-      ) : null}
     </Box>
   )
 }
 
-/** A model id as the list shows it: Fireworks' "accounts/<org>/models/" prefix says nothing the provider column doesn't. */
+/**
+ * A model id as the list shows it: Fireworks' "accounts/<org>/" (and "models/") prefix says nothing the provider column
+ * doesn't.
+ */
 function modelLabel(model: string): string {
-  return model.replace(/^accounts\/[^/]+\/models\//, "")
+  return model.replace(/^accounts\/[^/]+\/(models\/)?/, "")
 }
 
 /** The keys of a list you pick one from, then `note`. */
 function pickHint(note?: string) {
   return (
-    <KeyHint
+    <WizardHint
       keys={[
         ["↑↓", t("hint.move")],
         ["Enter", t("hint.pick")]
@@ -713,7 +726,7 @@ function pickHint(note?: string) {
 /** The keys of a checklist, then `note`. */
 function tickHint(note?: string) {
   return (
-    <KeyHint
+    <WizardHint
       keys={[
         ["Space", t("hint.tick")],
         ["Enter", t("hint.continue")]
@@ -824,16 +837,24 @@ export function ConfigWizard({
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
+    emote("worked")
     setHistory(list => [...list, step])
     setResult(next)
     setTyping(false)
     setStep(nextStepAfter(step, next, mode, hookPrograms, gitReady))
   }
 
+  // Enter on a checklist missing what it needs: the hint says why
+  function refuse(missing: boolean) {
+    setRefused(missing)
+    if (missing) emote("problem")
+  }
+
   // Esc: the previous question opens again on its answer; on the first one it cancels the wizard.
   function back() {
     const previous = history.at(-1)
     if (!previous) return onCancel()
+    emote("asking")
     setHistory(list => list.slice(0, -1))
     setTyping(false)
     setRefused(false)
@@ -911,9 +932,15 @@ export function ConfigWizard({
     )
   }
 
-  // The `check` an InputPrompt gets for `target`, or none without a probe
+  // The `check` an InputPrompt gets for `target`, or none without a probe; the monster looks on and frowns at a refusal
   function checkWith(target: (value: string) => ProbeTarget) {
-    return probe ? (value: string, signal: AbortSignal) => probe(target(value), signal) : undefined
+    if (!probe) return undefined
+    return async (value: string, signal: AbortSignal) => {
+      emote("checking")
+      const verdict = await probe(target(value), signal)
+      if (verdict?.tone === "bad" && !signal.aborted) emote("problem")
+      return verdict
+    }
   }
 
   function stepView() {
@@ -955,7 +982,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.baseUrlHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.baseUrlHint")} />}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
           onSubmit={value => advance({ addresses: { ...result.addresses, [provider.id]: value || provider.baseUrl } })}
@@ -981,10 +1008,7 @@ export function ConfigWizard({
             filterable
             visibleCount={listRows}
             items={candidates.map(candidate => modelLabel(candidate.model))}
-            columns={candidates.map(candidate => [
-              providerName(candidate.provider, result),
-              candidate.released?.slice(0, 7) ?? ""
-            ])}
+            columns={candidates.map(candidate => [providerName(candidate.provider, result)])}
             tags={candidates.map((_, index) => (index === Math.max(current, 0) ? openTag : undefined))}
             width={70}
             initialIndex={Math.max(current, 0)}
@@ -1011,7 +1035,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customNameTitle")}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customNameHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customNameHint")} />}
           defaultValue={custom.name}
           validate={value => (customId(value) ? undefined : t("wizard.customNameInvalid"))}
           onSubmit={value => advance({ custom: { ...custom, name: customId(value) } })}
@@ -1024,7 +1048,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customUrlTitle")}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customUrlHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customUrlHint")} />}
           defaultValue={custom.baseUrl}
           validate={value => (isWebAddress(value) ? undefined : t("wizard.customUrlInvalid"))}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
@@ -1157,7 +1181,7 @@ export function ConfigWizard({
         title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
           provider: nameOf
         })}
-        hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
+        hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
         defaultValue={existing?.model}
         // The first model is required, or the provider would serve nothing.
         validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
@@ -1216,7 +1240,7 @@ export function ConfigWizard({
 
       case "theme": {
         return (
-          <Question title={t("wizard.themeTitle")} hint={pickHint(t("wizard.themeHint"))}>
+          <Question title={t("wizard.themeTitle")} hint={pickHint()}>
             <SelectMenu
               closeOnBackspace={false}
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
@@ -1296,7 +1320,7 @@ export function ConfigWizard({
                 ]
               }
               onSubmit={providers => {
-                setRefused(providers.length === 0)
+                refuse(providers.length === 0)
                 if (providers.length > 0) advance({ providers })
               }}
               onClose={back}
@@ -1324,7 +1348,7 @@ export function ConfigWizard({
               onSubmit={values => {
                 // Local mode can't start without something to chat with
                 const missingChat = !values.includes("chat")
-                setRefused(missingChat)
+                refuse(missingChat)
                 if (!missingChat) advance({ tasks: values as ModelTask[] })
               }}
               onClose={back}
@@ -1420,18 +1444,30 @@ export function ConfigWizard({
   const hidden = Math.max(0, recent.length - OPEN_BLOCK_LINES)
   const folded = blocks.filter(block => block !== current && trail.some(line => line.block === block))
   // A list gets what the terminal has left after everything else on screen, 5 to 10 rows
-  const around = 1 + folded.length + Math.min(recent.length, OPEN_BLOCK_LINES) + (hidden > 0 ? 1 : 0) + 10
+  const around =
+    2 +
+    (folded.length > 0 ? folded.length + 1 : 0) +
+    Math.min(recent.length, OPEN_BLOCK_LINES) +
+    (hidden > 0 ? 1 : 0) +
+    10
   listRows = Math.min(10, Math.max(5, (process.stdout.rows || 24) - around))
 
   return (
     <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
-        <Progress blocks={blocks} current={current} at={at} of={of} />
-        {blocks.map(block =>
-          folded.includes(block) ? (
-            <FoldedBlock key={block} block={block} parts={FOLDS[block](result, asked, saved)} />
-          ) : null
-        )}
+        {/* Blank lines keep the header off the shell prompt and set the folded blocks and the open block apart */}
+        <Box marginY={1}>
+          <Progress blocks={blocks} current={current} at={at} of={of} />
+        </Box>
+        {folded.length > 0 ? (
+          <Box flexDirection="column" marginBottom={1}>
+            {blocks.map(block =>
+              folded.includes(block) ? (
+                <FoldedBlock key={block} block={block} parts={FOLDS[block](result, asked, saved)} />
+              ) : null
+            )}
+          </Box>
+        ) : null}
         {hidden > 0 ? (
           <RailLine marker={<Text dimColor>⋮</Text>}>
             <Text dimColor>{t("wizard.moreAnswers", { count: hidden })}</Text>
@@ -1457,7 +1493,7 @@ export function ConfigWizard({
         ) : null}
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
         <Box key={step} flexDirection="column">
-          {stepView()}
+          <CanGoBack value={history.length > 0}>{stepView()}</CanGoBack>
         </Box>
       </Box>
     </ThemeProvider>

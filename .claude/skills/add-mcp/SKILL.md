@@ -27,13 +27,14 @@ It may also be a `claude mcp add ...` command line, or prose with a URL; read th
 - **Never write a real key into a manifest.** If the input holds one, leave it out and tell the user that it belongs in `secrets.toml` under `[abilities.<name>]`, and that they should rotate it, since it was pasted.
 - **Never overwrite** an existing `marketplace/abilities/<name>/mcp.toml` without asking (a folder that already holds other parts, like a SKILL.md, is fine to add to).
 - **Tools come from the server**, not guesses: list them live (step 3), or from the server's own docs when that's impossible, and say which.
+- **Keep pinned versions in step with the sandbox**: when `apps/sandbox/Dockerfile` preinstalls the server (its `*_VERSION` args), the manifest's `package` pins the same version.
 - **Don't commit**; the user reviews and commits.
 
 ## 1. Learn the format
 
 Read these before writing anything:
 
-- `marketplace/README.md`, the MCP bullets
+- `docs/abilities/mcp.md`, the manifest format
 - `packages/schema/abilities/mcp.ts`: `McpAbilitySchema` is the source of truth. It generates `packages/schema/json/mcp-ability.json`, which tombi applies to `marketplace/abilities/*/mcp.toml`.
 - every existing `marketplace/abilities/*/mcp.toml`, as style examples
 

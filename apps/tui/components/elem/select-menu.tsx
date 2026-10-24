@@ -37,7 +37,7 @@ export function SelectMenu({
   hints?: string[]
   /**
    * Dim columns after each row's label, lined up across the rows on show (on a question's rail only): a model's
-   * provider and release date. Typing matches them too.
+   * provider. Typing matches them too.
    */
   columns?: string[][]
   /** A word at the end of a row, e.g. "best guess": plain while focused, dim otherwise. */
@@ -157,13 +157,13 @@ export function SelectMenu({
             const tag = tags?.[index]
             return (
               <MenuRow key={index} focused={isFocused} dim={!active}>
-                <Box width={widths.label + 2} flexShrink={0}>
+                <Box width={widths.label} marginRight={2} flexShrink={0}>
                   <Text wrap="truncate-middle">
                     <Matched text={items[index]!} query={filter.query} bold={isFocused} />
                   </Text>
                 </Box>
                 {(columns[index] ?? []).map((text, column) => (
-                  <Box key={column} width={(widths.columns[column] ?? 0) + 2} flexShrink={0}>
+                  <Box key={column} width={widths.columns[column] ?? 0} marginRight={2} flexShrink={0}>
                     {/* On the highlight the whole row is plain, so it reads as one choice */}
                     <Text dimColor={!isFocused} wrap="truncate-end">
                       {text}

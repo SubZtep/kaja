@@ -91,7 +91,8 @@ type = "string"
 - `auth` puts the key in a header or query parameter (`in`), with an optional `prefix`. Locally the key
   lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is off
   (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional
-  `check` request lets Kaja test a key before saving it.
+  `check` request lets Kaja test a key before saving it. The same key serves every part of the ability.
+- Tool names are what the model calls, so keep them specific (`weather_forecast`, not `get`).
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
   approval, like a shell command. In Telegram you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so

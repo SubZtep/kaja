@@ -51,6 +51,8 @@
   "google_continue": "使用 Google 繼續",
   "google_start": "幾秒鐘就能開始",
   "hero_run_locally": "或在本機執行",
+  "hero_signup_prompt": "已有帳號？在這裡用 Google 就能登入。第一次來？",
+  "hero_signup_link": "先建立一個帳號",
   "stamp_soon": "即將推出",
   "stamp_one_click": "一鍵",
   "stamp_live": "已上線",

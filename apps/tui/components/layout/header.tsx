@@ -5,12 +5,12 @@ import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
-import { MonsterMate } from "./monster"
+import { Monster, monsterWidth } from "./monster"
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
-// The mascot's width plus the gap after it
-const MASCOT_COLS = 6
+// The monster's width plus the gap after it
+const MONSTER_COLS = monsterWidth() + 1
 // Past this share of the window, the header gives the full count, not just the percent
 const FULL_COUNT_FROM = 50
 const TAG_GAP = 3
@@ -37,7 +37,7 @@ export function infoParts(model: string, provider: string | undefined, usage: st
 }
 
 /**
- * Live top bar on one row: the mascot and the persona (accent, bold) on the left; on the right, dim, the model,
+ * Live top bar on one row: the monster and the persona (accent, bold) on the left; on the right, dim, the model,
  * provider and how full the context is (or the tool running, when `currentTool` is set), then where the agent runs as a
  * dim tag, with YOLO in the warning colour while every approval is skipped. What doesn't fit drops (the provider, then
  * the model), and the persona's name truncates last.
@@ -77,9 +77,9 @@ export function Header({
   const tag = [t(`header.${mode}`), profile].filter(Boolean).join(" · ")
   const yoloTag = yolo ? "YOLO" : ""
   const tags = [yoloTag, tag].filter(Boolean).join("  ")
-  // What's left for the right side once the mascot, a short persona and the tags have their place
+  // What's left for the right side once the monster, a short persona and the tags have their place
   const personaCols = Math.min(Bun.stringWidth(persona), 16)
-  const room = Math.max(0, width - 2 - MASCOT_COLS - personaCols - TAG_GAP - Bun.stringWidth(tags) - TAG_GAP)
+  const room = Math.max(0, width - 2 - MONSTER_COLS - personaCols - TAG_GAP - Bun.stringWidth(tags) - TAG_GAP)
   const info = currentTool
     ? ""
     : infoParts(
@@ -93,7 +93,7 @@ export function Header({
     <Box width={width} flexShrink={0} paddingX={1} columnGap={TAG_GAP}>
       <Box gap={1} flexShrink={1} minWidth={0} overflow="hidden">
         <Box flexShrink={0}>
-          <MonsterMate />
+          <Monster />
         </Box>
         <Box overflow="hidden" flexShrink={1} minWidth={0}>
           <Text {...accent()} bold wrap="truncate-end">

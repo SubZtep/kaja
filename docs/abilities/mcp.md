@@ -33,6 +33,8 @@ tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the 
 approval = "never"                  # never | writes | always
 ```
 
+- Keep `tools` to the ones the model needs: every listed tool costs context, and the cloud leaves out a
+  server without the list.
 - A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
   var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
 
@@ -52,7 +54,8 @@ approval = "never"                  # never | writes | always
   Kaja tries them in that order. When none is installed, the ability is left out, and `kaja abilities` and
   `kaja doctor` say what to install. A server that isn't a package takes a `command` (with `args` and `env`)
   instead, and is left out the same way when that command isn't installed. `kaja abilities` shows what each
-  one runs on your machine.
+  one runs on your machine. Prefer `package`, pinned to an exact version or digest, so the server runs
+  with whatever you have; with a `command`, say in a comment what it needs.
 
 - `requires` names a program the server drives besides its runner. Today that's `chrome`, Google Chrome, which
   `chrome-devtools` opens (its stable channel, where Chrome installs itself on each OS). Without it the ability
@@ -139,7 +142,7 @@ requests go out through one too. In the terminal you can send one to your own co
 [Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode). That can be:
 
 - Kaja's own sandbox;
-- one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
+- one you [run yourself](/use/sandbox) (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
 - if you turn on **Use shared sandboxes**, one someone else shares. Whoever runs it can see what runs there.
 
 Each user gets their own copy of the server, started on first use and kept warm between messages (a browser

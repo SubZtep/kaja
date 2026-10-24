@@ -98,8 +98,13 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   expect(w.t.lastFrame()).toContain("English")
   expect(w.t.lastFrame()).toContain("en-GB")
   expect(w.t.lastFrame()).toContain("nan-TW")
+  // The first question has nothing to go back to: its hint says it can change later instead of offering Esc
+  expect(w.t.lastFrame()).toContain("↑↓ move · Enter picks · change it later in settings.toml")
+  expect(w.t.lastFrame()).not.toContain("Esc back")
 
   await w.t.press(ENTER) // keep English
+  // Esc sits with the other keys on the hint line, not in the header
+  expect(w.t.lastFrame()).toContain("↑↓ move · Enter picks · Esc back")
   await w.t.press(ENTER) // theme: keep the highlighted one
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
 
@@ -242,6 +247,22 @@ test("the providers step won't continue with nothing ticked or highlighted: loca
   await close(w)
 })
 
+test("the monster smiles at an answer, wonders at Esc and frowns at a refusal", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language: English
+  expect(w.t.lastFrame()).toContain("༼^ω^༽🪄")
+  await w.t.press(ESC)
+  expect(w.t.lastFrame()).toContain("༼☉ω⊙༽🪄")
+  await w.t.press(ENTER) // language again
+  await w.t.press(ENTER) // theme
+  await w.t.press("zzz") // filters every provider away
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("༼°ω°༽🪄")
+
+  await close(w)
+})
+
 test("a hosted provider is asked for its key, and a typed one is carried out of the wizard", async () => {
   const w = await openProviders()
   await tick(w, FIREWORKS)
@@ -326,7 +347,7 @@ test("each ticked task with more than one model asks which, newest tool-calling 
 
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
   // The model first, the Fireworks prefix dropped, then its provider and release month; the opening row says why
-  expect(w.t.lastFrame()).toMatch(/❯ minimax-m3\s+Fireworks\s+2026-09\s+best guess/)
+  expect(w.t.lastFrame()).toMatch(/❯ minimax-m3\s+Fireworks\s+best guess/)
   expect(w.t.lastFrame()).toMatch(/qwen3\.5:4b\s+Ollama/)
 
   await w.t.press("qwen") // filter down to Ollama's
@@ -525,7 +546,7 @@ test("a model question opens on the model already in use", async () => {
   expect(w.t.lastFrame()).toContain("○ Embedding")
   await w.t.press(ENTER)
   // The model from models.toml, tagged as in use
-  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama\s+2026-03\s+in use/)
+  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama\s+in use/)
 
   await w.t.press(ENTER) // keeps Ollama, not the first option
   await w.t.press(ENTER) // extras
@@ -897,6 +918,21 @@ test("a key is tested against its provider while it's typed, never with the key 
   expect(w.t.lastFrame()).toContain("✓ Accepted: it lists 3 models.")
   expect(w.t.lastFrame()).not.toContain("fw-live")
   expect(targets).toEqual([{ kind: "key", baseUrl: "https://api.fireworks.ai/inference/v1", key: "fw-live" }])
+  await close(w)
+})
+
+test("the monster checks while a key is tested and frowns when it's refused", async () => {
+  const { promise: answer, resolve } = Promise.withResolvers<{ tone: "bad"; note: string }>()
+  const w = await openProviders({ probe: () => answer })
+  await tick(w, FIREWORKS)
+  await w.t.press("fw-wrong")
+  const waitFor = async (text: string) => {
+    for (let i = 0; i < 100 && !w.t.lastFrame()?.includes(text); i++) await Bun.sleep(50)
+    return w.t.lastFrame()
+  }
+  expect(await waitFor("༼•ω•༽")).toContain("༼•ω•༽🪄")
+  resolve({ tone: "bad", note: "Refused" })
+  expect(await waitFor("༼°ω°༽")).toContain("༼°ω°༽🪄")
   await close(w)
 })
 

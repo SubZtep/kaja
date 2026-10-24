@@ -66,7 +66,7 @@ function loadTurnstile(): Promise<TurnstileApi> {
  * a background check.
  */
 export type Captcha = {
-  /** The first check has passed (or no site key is configured), and the last one didn't fail. */
+  /** The first check has passed (or no site key, or a lazy check not yet started), and the last one didn't fail. */
   ready: boolean
   /** The first check is still running. */
   checking: boolean
@@ -86,10 +86,12 @@ export type Captcha = {
 
 /**
  * One Turnstile widget per page, shared by every auth action on it, in its own element on `<body>`; show `<CaptchaAlert
- * captcha={…}>` above the page's auth controls.
+ * captcha={…}>` above the page's auth controls. `lazy` holds Cloudflare's script back until the first token is asked
+ * for, so a page that merely offers sign-in (the landing) doesn't load it, or its console noise, for every visitor.
  */
-export function useTurnstile(): Captcha {
+export function useTurnstile({ lazy = false }: Readonly<{ lazy?: boolean }> = {}): Captcha {
   const { turnstileSiteKey: siteKey } = useLoaderData({ from: "__root__" })
+  const [started, setStarted] = useState(!lazy)
   const [token, setToken] = useState<string | null>(null)
   const [verified, setVerified] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -111,7 +113,7 @@ export function useTurnstile(): Captcha {
   }, [store])
 
   useEffect(() => {
-    if (!siteKey) return
+    if (!siteKey || !started) return
     const host = document.createElement("div")
     host.className = HOST_CLASS
     document.body.append(host)
@@ -150,16 +152,16 @@ export function useTurnstile(): Captcha {
       widgetId.current = null
       host.remove()
     }
-  }, [siteKey, attempt, store, recheck])
+  }, [siteKey, started, attempt, store, recheck])
 
   // The invisible widget shows nothing while it works, so a check that never ends has to surface here.
   useEffect(() => {
-    if (!siteKey || token || failed) return
+    if (!siteKey || !started || token || failed) return
     const timer = setTimeout(() => setFailed(true), STUCK_MS)
     return () => clearTimeout(timer)
-  }, [siteKey, token, failed])
+  }, [siteKey, started, token, failed])
 
-  const checking = !!siteKey && !verified && !failed
+  const checking = !!siteKey && started && !verified && !failed
 
   // Only the first check shows: later ones run while the page stays usable. A loading toast can't be closed by hand; it goes when the check ends either way.
   useEffect(() => {
@@ -189,7 +191,10 @@ export function useTurnstile(): Captcha {
     if (!siteKey) return undefined
     let solved = tokenRef.current
     if (solved) recheck()
-    else solved = await new Promise<string>(resolve => waiters.current.push(resolve))
+    else {
+      setStarted(true)
+      solved = await new Promise<string>(resolve => waiters.current.push(resolve))
+    }
     return { headers: { "x-captcha-response": solved } }
   }, [siteKey, recheck])
 
@@ -200,7 +205,7 @@ export function useTurnstile(): Captcha {
   }, [store])
 
   return {
-    ready: !siteKey || (verified && !failed),
+    ready: !siteKey || !started || (verified && !failed),
     checking,
     failed: !!siteKey && failed,
     fetchOptions,

@@ -21,16 +21,20 @@ export function formatDeviceUserCode(userCode: string) {
   return userCode.length > 4 ? `${userCode.slice(0, 4)}-${userCode.slice(4)}` : userCode
 }
 
+// A version with "p" for the dot, e.g. "m3p1", "5p3"; needs letters or an earlier word before it
+const P_VERSION = /^([a-z]*\d+)p(\d+)$/i
+
 /**
- * Title-cases a hyphen/underscore/space-separated label or top bar
+ * Title-cases a hyphen/underscore/space-separated label for the top bar, reading "p" in a version as a dot
  *
  * @example
- *   "my/kimi-k2" → "Kimi K2".
+ *   "my/kimi-k2" → "Kimi K2", "minimax-m3p1" → "Minimax M3.1", "glm-5p3" → "Glm 5.3".
  */
 export function titleCase(label?: string) {
   if (label == null) return null
   return (label.split("/").pop() ?? label)
     .split(/[-_\s]+/)
+    .map((word, i) => (i > 0 || /^[a-z]/i.test(word) ? word.replace(P_VERSION, "$1.$2") : word))
     .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
     .join(" ")
 }
