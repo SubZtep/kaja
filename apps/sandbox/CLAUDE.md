@@ -2,7 +2,7 @@
 
 Runs stdio MCP servers for cloud turns (which can't start commands on the API host) and sends every tool request out (`fetch_url`, HTTP tools, remote MCP), so the API never connects to a tool's host. Anyone can run one (`subztep/kaja-sandbox`): it dials the API's WebSocket (`/sandbox/connect`) and serves what the API tunnels to it.
 
-[README.md](./README.md) is the human overview (request flow, warm servers, egress proxy); keep it in step with changes here.
+[docs/use/sandbox.md](../../docs/use/sandbox.md) is the operator guide (running one, request flow, warm servers, egress proxy); keep it in step with changes here.
 
 ## How it fits
 

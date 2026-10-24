@@ -1,6 +1,6 @@
 # @kaja/nasi
 
-The agent brain: OpenAI-compatible tool loop, the store interface and `createSqlStore` (SQLite in the TUI, Postgres in the API), built-in tools, and `Nasi`, the cloud turn wrapper. `@kaja/nasi/client` is the TUI's cloud mode: a thin SSE client, no store or loop.
+The agent brain: OpenAI-compatible tool loop, the store interface and `createSqlStore` (SQLite in the TUI, Postgres in the API), built-in tools, and `Nasi`, the cloud turn wrapper. `@kaja/nasi/client` is the TUI's cloud mode: a thin SSE client, no store or loop. What it does for users is in [docs/abilities/nasi.md](../../docs/abilities/nasi.md).
 
 Hosts inject the store, model client, prompt context and `includeLocalTools` (files, shell, MCP; default false). This package never reads `settings.toml`, opens a database or runs DDL (it exports `SQLITE_SCHEMA` for the TUI), and has no Ink, Hono, Better Auth, `bun:sqlite` or pg.
 

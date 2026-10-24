@@ -1,12 +1,15 @@
 # The ask_user contract (questions must go through the ask_user tool) is
 # injected by the app itself, so instructions shouldn't restate it.
 
-label     = "Helpful assistant"
-when      = "no other persona clearly fits the conversation"
+label             = "Helpful assistant"
+when              = "no other persona clearly fits the conversation"
+top_k             = 40
+frequency_penalty = 0
+presence_penalty  = 0
 # The opt-in builtins, and every marketplace ability but filesystem (its folders belong in a persona of your
 # own), hyprland (the config-hyprland persona's) and time (the builtin current_time covers it); one that needs a key
 # you haven't saved is left out.
-abilities = [
+abilities         = [
   "fetch-url",
   "generate-image",
   "edit-image",

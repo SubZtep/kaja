@@ -139,7 +139,7 @@ requests go out through one too. In the terminal you can send one to your own co
 [Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode). That can be:
 
 - Kaja's own sandbox;
-- one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
+- one you [run yourself](/use/sandbox) (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
 - if you turn on **Use shared sandboxes**, one someone else shares. Whoever runs it can see what runs there.
 
 Each user gets their own copy of the server, started on first use and kept warm between messages (a browser
