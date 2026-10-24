@@ -689,6 +689,11 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
   )
 }
 
+/** A model id as the list shows it: Fireworks' "accounts/<org>/models/" prefix says nothing the provider column doesn't. */
+function modelLabel(model: string): string {
+  return model.replace(/^accounts\/[^/]+\/models\//, "")
+}
+
 /** The keys of a list you pick one from, then `note`. */
 function pickHint(note?: string) {
   return (
@@ -958,6 +963,8 @@ export function ConfigWizard({
       // Opens on the model in use, else the best guess (vision guesses the chat pick when it can see)
       const guess = chosenPicks(result)[task]
       const current = candidates.findIndex(c => c.provider === guess?.provider && c.model === guess.model)
+      // The row it opens on says why: the model already in use, or the best guess
+      const openTag = t(result.models?.[task] ? "wizard.modelInUse" : "wizard.modelBestGuess")
       return (
         <Question
           title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}
@@ -967,8 +974,12 @@ export function ConfigWizard({
             closeOnBackspace={false}
             filterable
             visibleCount={listRows}
-            items={candidates.map(candidate => `${providerName(candidate.provider, result)} — ${candidate.model}`)}
-            hints={candidates.map(candidate => candidate.released ?? "")}
+            items={candidates.map(candidate => modelLabel(candidate.model))}
+            columns={candidates.map(candidate => [
+              providerName(candidate.provider, result),
+              candidate.released?.slice(0, 7) ?? ""
+            ])}
+            tags={candidates.map((_, index) => (index === Math.max(current, 0) ? openTag : undefined))}
             width={70}
             initialIndex={Math.max(current, 0)}
             onSelect={index => {

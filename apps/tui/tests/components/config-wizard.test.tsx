@@ -325,8 +325,9 @@ test("each ticked task with more than one model asks which, newest tool-calling 
   await w.t.press(ENTER) // tasks: the defaults
 
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
-  expect(w.t.lastFrame()).toContain("❯ Fireworks — accounts/fireworks/models/minimax-m3")
-  expect(w.t.lastFrame()).toContain("Ollama — qwen3.5:4b")
+  // The model first, the Fireworks prefix dropped, then its provider and release month; the opening row says why
+  expect(w.t.lastFrame()).toMatch(/❯ minimax-m3\s+Fireworks\s+2026-09\s+best guess/)
+  expect(w.t.lastFrame()).toMatch(/qwen3\.5:4b\s+Ollama/)
 
   await w.t.press("qwen") // filter down to Ollama's
   expect(w.t.lastFrame()).not.toContain("minimax")
@@ -336,7 +337,7 @@ test("each ticked task with more than one model asks which, newest tool-calling 
   expect(w.t.lastFrame()).toContain("Which summarising model should Kaja use?")
   await w.t.press(ENTER)
   // Vision opens on the chat pick, which can see
-  expect(w.t.lastFrame()).toContain("❯ Ollama — qwen3.5:4b")
+  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama/)
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Anything else?")
 
@@ -523,7 +524,8 @@ test("a model question opens on the model already in use", async () => {
   // Only chat was set up before, so only chat is ticked
   expect(w.t.lastFrame()).toContain("○ Embedding")
   await w.t.press(ENTER)
-  expect(w.t.lastFrame()).toContain("❯ Ollama — qwen3.5:4b")
+  // The model from models.toml, tagged as in use
+  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama\s+2026-03\s+in use/)
 
   await w.t.press(ENTER) // keeps Ollama, not the first option
   await w.t.press(ENTER) // extras
@@ -762,8 +764,8 @@ test("a custom model that overlaps a built-in provider joins the model question"
 
   // Ollama and the custom provider both serve chat, so the user is asked which one Kaja should use.
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
-  expect(w.t.lastFrame()).toContain("Ollama — qwen3.5:4b")
-  expect(w.t.lastFrame()).toContain("vllm — big-chat")
+  expect(w.t.lastFrame()).toMatch(/qwen3\.5:4b\s+Ollama/)
+  expect(w.t.lastFrame()).toMatch(/big-chat\s+vllm/)
   await w.t.press(DOWN)
   await w.t.press(ENTER)
   // Only chat overlaps: Ollama serves embedding too, but the custom provider does not.

@@ -18,6 +18,8 @@ import { FilterLine, Matched, matchesFilter, useFilter } from "./use-filter"
 export function SelectMenu({
   items,
   hints,
+  columns,
+  tags,
   accented,
   width = 32,
   initialIndex,
@@ -33,6 +35,13 @@ export function SelectMenu({
   items: string[]
   /** Dimmed note pinned to the right edge of each row, e.g. a locale's code beside its name. */
   hints?: string[]
+  /**
+   * Dim columns after each row's label, lined up across the rows on show (on a question's rail only): a model's
+   * provider and release date. Typing matches them too.
+   */
+  columns?: string[][]
+  /** A word at the end of a row, e.g. "best guess": plain while focused, dim otherwise. */
+  tags?: (string | undefined)[]
   /** Rows drawn in the accent colour while not focused, e.g. your own personas in the persona picker. */
   accented?: boolean[]
   width?: number
@@ -59,7 +68,9 @@ export function SelectMenu({
 }>) {
   const filter = useFilter(filterable)
   // The rows on show, as indexes into `items`; `focused` and `from` are positions in this list
-  const shown = items.flatMap((item, index) => (matchesFilter(item, filter.query) ? [index] : []))
+  const shown = items.flatMap((item, index) =>
+    matchesFilter([item, ...(columns?.[index] ?? [])].join(" "), filter.query) ? [index] : []
+  )
   const visible = visibleCount === undefined ? items.length : Math.max(visibleCount, 1)
   const start = Math.min(Math.max(initialIndex ?? 0, 0), Math.max(items.length - 1, 0))
   // Scrolls only far enough to keep the focused option on screen, so opening deep in a long list still shows it.
@@ -113,6 +124,17 @@ export function SelectMenu({
   const hiddenAbove = from
   const hiddenBelow = Math.max(0, shown.length - from - visible)
 
+  // Column widths from the rows on show: a label at most 34 wide, so the columns after it stay on screen
+  const onShow = shown.slice(from, from + visible)
+  const widths = {
+    label: Math.min(34, Math.max(0, ...onShow.map(index => Bun.stringWidth(items[index]!)))),
+    columns: onShow.reduce<number[]>((all, index) => {
+      for (const [column, text] of (columns?.[index] ?? []).entries())
+        all[column] = Math.max(all[column] ?? 0, Bun.stringWidth(text))
+      return all
+    }, [])
+  }
+
   if (inRail) {
     // On a question's rail: the focused row a band to column 78, rows out of view counted above and below
     const count = filter.query
@@ -131,6 +153,27 @@ export function SelectMenu({
           const isFocused = from + offset === focused
           const hint = hints?.[index]
           const previewing = isFocused && preview
+          if (columns) {
+            const tag = tags?.[index]
+            return (
+              <MenuRow key={index} focused={isFocused} dim={!active}>
+                <Box width={widths.label + 2} flexShrink={0}>
+                  <Text wrap="truncate-middle">
+                    <Matched text={items[index]!} query={filter.query} bold={isFocused} />
+                  </Text>
+                </Box>
+                {(columns[index] ?? []).map((text, column) => (
+                  <Box key={column} width={(widths.columns[column] ?? 0) + 2} flexShrink={0}>
+                    {/* On the highlight the whole row is plain, so it reads as one choice */}
+                    <Text dimColor={!isFocused} wrap="truncate-end">
+                      {text}
+                    </Text>
+                  </Box>
+                ))}
+                {tag ? <Text dimColor={!isFocused}>{tag}</Text> : null}
+              </MenuRow>
+            )
+          }
           return (
             <MenuRow key={index} focused={isFocused} dim={!active} {...(previewing ? { band: previewRow() } : {})}>
               <Box justifyContent="space-between" flexGrow={1} paddingRight={1}>
