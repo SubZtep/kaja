@@ -314,12 +314,13 @@ export class WidgetService {
 
   async #linkIds(widgetIds: string[]): Promise<Map<string, string[]>> {
     const map = new Map<string, string[]>(widgetIds.map(id => [id, []]))
-    if (widgetIds.length === 0) return map
-    const rows = await this.#db<{ from_widget_id: string; to_widget_id: string }[]>`
-      SELECT from_widget_id, to_widget_id FROM widget_link
-      WHERE from_widget_id = ANY(${widgetIds}::uuid[])
-      ORDER BY to_widget_id`
-    for (const row of rows) map.get(row.from_widget_id)?.push(row.to_widget_id)
+    if (widgetIds.length > 0) {
+      const rows = await this.#db<{ from_widget_id: string; to_widget_id: string }[]>`
+        SELECT from_widget_id, to_widget_id FROM widget_link
+        WHERE from_widget_id = ANY(${widgetIds}::uuid[])
+        ORDER BY to_widget_id`
+      for (const row of rows) map.get(row.from_widget_id)?.push(row.to_widget_id)
+    }
     return map
   }
 }

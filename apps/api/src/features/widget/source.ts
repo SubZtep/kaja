@@ -9,7 +9,7 @@ export function sourceProblem(source: string): string | undefined {
 
 /** The first fenced block, or the whole reply when it already looks like source. */
 export function extractSource(reply: string, kind: "browser" | "server"): string | undefined {
-  const fence = /```(?:html|javascript|js)?\s*([\s\S]*?)```/i.exec(reply)
+  const fence = /```(?:html|javascript|js)?([\s\S]*?)```/i.exec(reply)
   const body = (fence?.[1] ?? reply).trim()
   if (!body) return undefined
   if (kind === "browser" && (body.startsWith("<") || fence)) return body

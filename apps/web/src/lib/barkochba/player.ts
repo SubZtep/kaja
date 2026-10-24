@@ -11,7 +11,7 @@ const messagesSchema = z
   .array(z.object({ role: z.enum(["system", "user", "assistant"]), content: z.string().min(1).max(16_000) }))
   .max(40)
 
-const HARNESS = `
+const HARNESS = String.raw`
 const pending = new Map()
 self.onmessage = async (event) => {
   const data = event.data
@@ -40,8 +40,8 @@ self.onmessage = async (event) => {
     }
   }
   try {
-    const source = String(data.source).replace(/export\\s+((?:async\\s+)?function\\s+play)/, "$1")
-    const play = new Function("history", "locale", "maxQuestions", "ai", source + "\\nreturn play({ history, locale, maxQuestions, ai })")
+    const source = String(data.source).replace(/export\s+((?:async\s+)?function\s+play)/, "$1")
+    const play = new Function("history", "locale", "maxQuestions", "ai", source + "\nreturn play({ history, locale, maxQuestions, ai })")
     const result = await play(data.history, data.locale, data.maxQuestions, ai)
     self.postMessage({ type: "result", result })
   } catch (error) {

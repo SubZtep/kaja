@@ -13,7 +13,7 @@ function draftConfigHash(widget: Widget): string {
         intent: widget.intent,
         model: widget.model,
         target: widget.target,
-        links: [...widget.links].sort(),
+        links: [...widget.links].sort((a, b) => a.localeCompare(b)),
         promptVersion: WIDGET_PROMPT_VERSION
       })
     )
@@ -34,11 +34,10 @@ async function writeDraft(userId: string, widgetId: string, force: boolean): Pro
   const hash = draftConfigHash(widget)
   if (!force && (await widgetService.draftHash(widgetId)) === hash) return widget
 
-  const links = []
-  for (const linkId of widget.links) {
-    const linked = await widgetService.get(userId, linkId)
-    if (linked) links.push({ label: linked.label, intent: linked.intent, target: linked.target })
-  }
+  const linked = await Promise.all(widget.links.map(linkId => widgetService.get(userId, linkId)))
+  const links = linked
+    .filter(link => link !== null)
+    .map(link => ({ label: link.label, intent: link.intent, target: link.target }))
   let source = ""
   let error: string | null
   try {
@@ -64,6 +63,6 @@ async function writeDraft(userId: string, widgetId: string, force: boolean): Pro
 
 /** Regenerates this widget and every widget that links to it, so a changed intent reaches both sides. */
 export async function regenerateAffected(userId: string, widgetId: string): Promise<void> {
-  await generateDraft(userId, widgetId, true)
-  for (const fromId of await widgetService.inbound(userId, widgetId)) await generateDraft(userId, fromId, true)
+  const inbound = await widgetService.inbound(userId, widgetId)
+  await Promise.all([widgetId, ...inbound].map(id => generateDraft(userId, id, true)))
 }

@@ -64,12 +64,11 @@ function ModelCell(info: CellContext<typeof tableFeaturesConfig, Widget, string>
 
 function GenerationCell(info: CellContext<typeof tableFeaturesConfig, Widget, unknown>) {
   const widget = info.row.original
-  const label = widget.published ? m.widget_published() : widget.draft ? m.widget_draft() : m.widget_generation_none()
-  return (
-    <span className="text-muted text-xs">
-      {widget.draft && widget.published ? `${label} + ${m.widget_draft()}` : label}
-    </span>
-  )
+  let label: string = m.widget_generation_none()
+  if (widget.published && widget.draft) label = `${m.widget_published()} + ${m.widget_draft()}`
+  else if (widget.published) label = m.widget_published()
+  else if (widget.draft) label = m.widget_draft()
+  return <span className="text-muted text-xs">{label}</span>
 }
 
 function EnabledCell(info: CellContext<typeof tableFeaturesConfig, Widget, boolean>) {

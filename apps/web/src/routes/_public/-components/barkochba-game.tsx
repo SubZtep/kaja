@@ -125,7 +125,8 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (event.source !== frame.current?.contentWindow) return
+      // A sandboxed iframe without allow-same-origin posts from the opaque origin "null"
+      if (event.origin !== "null" || event.source !== frame.current?.contentWindow) return
       const data = event.data as { type?: string; value?: string }
       if (
         data?.type === "answer" &&
