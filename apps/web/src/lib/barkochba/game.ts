@@ -55,16 +55,23 @@ const UNAVAILABLE: BarkochbaResponse = {
 
 const RATE_WINDOW_MS = 10 * 60 * 1000
 const RATE_MAX = 30
+// Dropping the cookie resets the per-visitor count, so all visitors share one ceiling too
+const GLOBAL_RATE_MAX = 300
 const hits = new Map<string, number[]>()
+let globalHits: number[] = []
 const tails = new Map<string, Promise<unknown>>()
 // Published source never changes under one generation id
 const sourceCache = new Map<string, string>()
 
 function limited(visitorId: string): boolean {
   const now = Date.now()
+  globalHits = globalHits.filter(at => now - at < RATE_WINDOW_MS)
+  // Forget visitors whose window has passed so the map can't grow without bound
+  for (const [id, times] of hits) if (now - times[times.length - 1]! >= RATE_WINDOW_MS) hits.delete(id)
   const recent = (hits.get(visitorId) ?? []).filter(at => now - at < RATE_WINDOW_MS)
-  if (recent.length >= RATE_MAX) return true
+  if (recent.length >= RATE_MAX || globalHits.length >= GLOBAL_RATE_MAX) return true
   recent.push(now)
+  globalHits.push(now)
   hits.set(visitorId, recent)
   return false
 }

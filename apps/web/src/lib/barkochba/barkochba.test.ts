@@ -214,4 +214,14 @@ describe("homepage game action", () => {
     expect(view.error).toBe("unavailable")
     expect(calls.map(call => call.path)).toEqual(["/widget/me", "/widget/me"])
   })
+
+  test("fresh visitors share a global ceiling", async () => {
+    const { api } = fakeApi([playerId])
+    let limited = 0
+    for (let i = 0; i < 320; i++) {
+      const view = await handleBarkochba({ type: "giveup" }, host(api))
+      if (view.error === "rate") limited++
+    }
+    expect(limited).toBeGreaterThan(0)
+  })
 })
