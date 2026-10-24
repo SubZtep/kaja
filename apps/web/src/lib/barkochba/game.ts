@@ -67,7 +67,7 @@ function limited(visitorId: string): boolean {
   const now = Date.now()
   globalHits = globalHits.filter(at => now - at < RATE_WINDOW_MS)
   // Forget visitors whose window has passed so the map can't grow without bound
-  for (const [id, times] of hits) if (now - times[times.length - 1]! >= RATE_WINDOW_MS) hits.delete(id)
+  for (const [id, times] of hits) if (now - (times.at(-1) ?? 0) >= RATE_WINDOW_MS) hits.delete(id)
   const recent = (hits.get(visitorId) ?? []).filter(at => now - at < RATE_WINDOW_MS)
   if (recent.length >= RATE_MAX || globalHits.length >= GLOBAL_RATE_MAX) return true
   recent.push(now)
