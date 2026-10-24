@@ -1,5 +1,4 @@
 import { cn } from "@kaja/shared/ui"
-import { useLoaderData } from "@tanstack/react-router"
 import { RotateCw } from "lucide-react"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
@@ -9,7 +8,6 @@ import { useUser } from "../../../hooks/user"
 import { detectInstallOs, INSTALL_CMD, type InstallOs } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
 import { SectionTitle } from "./section-title"
-import { openChatWidget } from "./showcase"
 import { Sticker } from "./sticker"
 import { TelegramConnectCta } from "./telegram-connect-cta"
 
@@ -143,7 +141,6 @@ export const WAYS_IN_ID = "ways-in"
 /** Where to talk to it: local or cloud, the terminal, or Telegram. */
 export function Channels() {
   const user = useUser()
-  const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
 
   return (
     <section id={WAYS_IN_ID} className="scroll-mt-16">
@@ -153,13 +150,6 @@ export function Channels() {
           {user ? (
             <ChannelCard label={m.channel_browser_label()} title={m.channel_browser_title()} sticker={m.stamp_wip()}>
               <p className="font-crt text-muted m-0 text-sm">{m.channel_browser_body()}</p>
-              <button
-                type="button"
-                className={cn(ACTION, "cursor-pointer")}
-                onClick={() => openChatWidget(apiUrl, chatWidgetKey)}
-              >
-                {m.channel_browser_action()} →
-              </button>
             </ChannelCard>
           ) : (
             <GuestBrowserCard />

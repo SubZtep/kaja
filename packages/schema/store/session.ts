@@ -91,11 +91,6 @@ export function telegramOwner(userId: number): string {
   return `telegram:${userId}`
 }
 
-/** Owner string for one widget embed's visitor — namespaced by key id so two embeds (or a revoked key) never collide. */
-export function widgetVisitorOwner(keyId: string, visitorId: string): string {
-  return `widget:${keyId}:${visitorId}`
-}
-
 /** Where a session came from, by its owner's prefix (no owner is the web app or the terminal). */
 export function channelOf(owner: string | null): "web" | "telegram" | "widget" {
   const prefix = owner?.split(":", 1)[0]

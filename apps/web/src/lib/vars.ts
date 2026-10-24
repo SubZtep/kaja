@@ -4,8 +4,7 @@ import { env } from "../env/server"
 export const getRootEnv = createServerFn().handler(() => {
   return {
     apiUrl: env.VITE_API_URL,
-    barkochbaWidgetKey: env.VITE_WIDGET_BARKOCHBA_KEY,
-    chatWidgetKey: env.VITE_WIDGET_CHAT_KEY,
+    barkochbaReady: Boolean(env.BARKOCHBA_BOARD_TOKEN && env.BARKOCHBA_PLAYER_TOKEN),
     turnstileSiteKey: env.VITE_TURNSTILE_SITE_KEY
   }
 })

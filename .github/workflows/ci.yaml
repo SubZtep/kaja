@@ -109,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: bun i --frozen-lockfile --ignore-scripts
 
-      - name: Build API (with the widget) and its migrate script
+      - name: Build API and its migrate script
         run: |
           bun --filter @kaja/api build
           bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/migrate.ts

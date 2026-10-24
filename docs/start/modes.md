@@ -17,7 +17,7 @@ The two modes differ in _where the agent loop runs_, and so in which tools it ca
 | `kaja telegram`                               | your machine | SQLite   | ✓                                                              |
 | `kaja`, cloud mode                            | the API      | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
 | cloud [Telegram bot](/use/telegram#cloud-bot) | the API      | Postgres | ✗                                                              |
-| Website [widget](/use/widget)                 | the API      | Postgres | ✗                                                              |
+| Homepage [widget](/use/widget)                | your program | Postgres | ✗ (it only calls the model)                                    |
 
 ## Which mode a launch uses
 
@@ -82,7 +82,7 @@ the cloud only their results:
 
 They ask first exactly as in local mode. Your own personas, and local-only ones like `config-hyprland`,
 join the persona picker. Nothing of this is stored in the cloud beyond the conversation itself. The cloud
-Telegram bot and the widget have no computer behind them, so they never get these tools.
+Telegram bot has no computer behind it, so it never gets these tools. A [widget](/use/widget) is not a nasi turn: it calls the model gateway and runs its own source.
 
 ## Local mode
 

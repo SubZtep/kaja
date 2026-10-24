@@ -1,33 +1,31 @@
-import type { WidgetConfig } from "@kaja/schema/api"
 import { createMiddleware } from "hono/factory"
 import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
-import { forbidden, unauthorized } from "../../types/errors"
+import type { ResolvedWidget } from "../../services/widget"
+import { unauthorized } from "../../types/errors"
 
-export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: string[]; config: WidgetConfig }
+export type WidgetVariables = { widget: ResolvedWidget }
 
-export type WidgetVariables = { widgetKey: ResolvedWidgetKey }
+const TOKEN_PREFIX = "kwt_"
+
+/** The raw widget token from `Authorization: Bearer kwt_…`, or undefined when this request is not one. */
+export function widgetBearer(header: string | undefined): string | undefined {
+  if (!header?.startsWith(`Bearer ${TOKEN_PREFIX}`)) return undefined
+  return header.slice("Bearer ".length).trim()
+}
 
 /**
- * Authenticates a widget request via the `X-Kaja-Widget-Key` header (deliberately not `Authorization: Bearer`, to avoid
- * confusion with Better Auth bearer tokens in logs/proxies). The key itself is not secret — it's visible in the
- * embedding page's source — so the real security boundary is the Origin check against the key's stored allowlist, not
- * key secrecy.
+ * Authenticates a widget principal. The token is a secret (it is never placed in a page) and is distinct from a
+ * Better Auth bearer, which uses no `kwt_` prefix.
  */
-export const widgetKeyAuthMiddleware = createMiddleware<{ Variables: WidgetVariables }>(async (c, next) => {
-  const rawKey = c.req.header("x-kaja-widget-key")
-  if (!rawKey) return unauthorized(c)
-
-  const resolved = await widgetService.resolveByRawKey(rawKey)
-  if (!resolved) return unauthorized(c)
-
-  const origin = c.req.header("origin")
-  if (!origin || !resolved.allowedOrigins.includes(origin)) return forbidden(c, "Origin not allowed for this key")
-
-  c.set("widgetKey", resolved)
-  void widgetService
-    .touchLastUsed(resolved.id)
-    .catch(error => reportError("widget touchLastUsed failed", error, { widgetKeyId: resolved.id }))
-
+export const widgetTokenAuth = createMiddleware<{ Variables: WidgetVariables }>(async (c, next) => {
+  const rawToken = widgetBearer(c.req.header("authorization"))
+  if (!rawToken) return unauthorized(c)
+  const widget = await widgetService.resolveByRawToken(rawToken)
+  if (!widget) return unauthorized(c)
+  c.set("widget", widget)
+  void widgetService.touchLastUsed(widget.id).catch(error => {
+    reportError("widget touchLastUsed failed", error, { widgetId: widget.id })
+  })
   await next()
 })

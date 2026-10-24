@@ -74,7 +74,7 @@ const apiEnvFields = z.object({
     .describe("Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile"),
   RATE_LIMIT_ENABLED: bool
     .default(true)
-    .describe("Set false to disable global + auth + nasi/widget turn rate limiters")
+    .describe("Set false to disable global, auth, nasi, and widget chat rate limiters")
     .meta({ section: "Rate Limiting" }),
   RATE_LIMIT_WINDOW_MS: positiveInt
     .default(15 * 60 * 1000)
@@ -100,21 +100,13 @@ const apiEnvFields = z.object({
     .default(1000)
     .describe("Max turns per window per user")
     .meta({ section: "Rate Limiting" }),
-  WIDGET_TURN_RATE_LIMIT_WINDOW_MS: positiveInt
-    .default(10 * 60 * 1000)
-    .describe("/widget/turn rate limit window (ms)")
-    .meta({ section: "Rate Limiting" }),
-  WIDGET_TURN_RATE_LIMIT_MAX: positiveInt
-    .default(300)
-    .describe("Max turns per window per (widget key, IP) pair")
-    .meta({ section: "Rate Limiting" }),
   WIDGET_KEY_RATE_LIMIT_WINDOW_MS: positiveInt
     .default(10 * 60 * 1000)
-    .describe("/widget/turn spend-ceiling window (ms)")
+    .describe("/ai/chat spend-ceiling window (ms)")
     .meta({ section: "Rate Limiting" }),
   WIDGET_KEY_RATE_LIMIT_MAX: positiveInt
     .default(3000)
-    .describe("Max turns per window per widget key, regardless of visitor/IP")
+    .describe("Max chat completions per window per widget")
     .meta({ section: "Rate Limiting" }),
 
   NASI_STUB_MODEL: trimmed

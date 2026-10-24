@@ -23,8 +23,8 @@ you.
 
 ## Where it runs
 
-On your machine in local mode (and `kaja telegram`), and on the Kaja API for cloud mode, the cloud Telegram
-bot and the widget. It's the same brain either way; the cloud one gets a smaller toolset because it serves
+On your machine in local mode (and `kaja telegram`), and on the Kaja API for cloud mode and the cloud Telegram
+bot. It's the same brain either way; the cloud one gets a smaller toolset because it serves
 many people. [Cloud or local](/start/modes) has the full comparison.
 
 ## What it knows when a conversation starts
@@ -32,7 +32,7 @@ many people. [Cloud or local](/start/modes) has the full comparison.
 Nasi begins a conversation by writing itself a brief, the system prompt, from whatever applies:
 
 1. the active [persona](/abilities/personas)’s instructions (`default` when none is picked);
-2. where it runs: your OS in the terminal, or the channel (Telegram, widget);
+2. where it runs: your OS in the terminal, or the channel (Telegram);
 3. how to use the tools that need care: asking you questions, running shell commands, keeping notes;
 4. the other personas it may switch to, and when;
 5. the names and descriptions of the persona's [skills](/abilities/skills), and the full text of its sticky ones;
@@ -41,7 +41,7 @@ Nasi begins a conversation by writing itself a brief, the system prompt, from wh
 7. your sticky [memory notes](/abilities/memory#notes);
 8. the language to reply in ([Voice & language](/use/voice#language)).
 
-Anything that isn't set up is left out, so a cloud or widget conversation sees a subset of what a local one
+Anything that isn't set up is left out, so a cloud conversation sees a subset of what a local one
 does. A change to a persona's abilities applies from your next message, even mid-conversation.
 
 ## How a turn works

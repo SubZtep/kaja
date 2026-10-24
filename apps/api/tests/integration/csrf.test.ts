@@ -36,12 +36,12 @@ describe("cross-site protection", () => {
     expect(preflight.headers.get("access-control-allow-origin")).not.toBe(attacker)
   })
 
-  test("widget turn preflight still reflects any origin", async () => {
-    const res = await app.request("/widget/turn", {
+  test("a widget token route does not reflect a foreign origin", async () => {
+    const res = await app.request("/ai/chat", {
       method: "OPTIONS",
       headers: { origin: attacker, "access-control-request-method": "POST" }
     })
-    expect(res.headers.get("access-control-allow-origin")).toBe(attacker)
+    expect(res.headers.get("access-control-allow-origin")).not.toBe(attacker)
   })
 
   test("a cookie-authenticated write from another site is refused", async () => {

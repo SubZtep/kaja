@@ -76,7 +76,7 @@ function errorLine(error: unknown, t: Translate): string {
  * Cloud counterpart to apps/tui/lib/telegram/driver.ts. Each Telegram user must link their own Kaja account first (see
  * bot.ts's /start handler); the owning `userId` is resolved fresh per message via `resolveLinkedUser`, never fixed.
  * `telegramOwner(userId)` is still used as the `owner` within that account's Postgres partition, so a linked user's bot
- * conversations stay separate from their web/lite ones (same mechanism widget visitors use — see runWidgetTurn). No
+ * conversations stay separate from their web/lite ones. No
  * per-user Agent cache: `openNasiFor` is called fresh per turn, same as every HTTP /nasi/turn call — state round-trips
  * through Postgres via the session id instead of living in memory.
  */

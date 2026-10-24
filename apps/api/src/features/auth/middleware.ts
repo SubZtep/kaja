@@ -35,14 +35,15 @@ function toSessionUser(
 
 /**
  * Sets `user` from the request's session: its bearer token when it sends one (the TUI, the web's API calls), else its
- * session cookie. Without either there's nothing to look up, so public traffic (health checks, widget scripts, the
- * sandbox socket) costs no database query.
+ * session cookie. A widget token (`kwt_`) is not a user session, so it is left for the widget routes. Without either
+ * there's nothing to look up, so public traffic (health checks, the sandbox socket) costs no database query.
  */
 export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   const authHeader = c.req.header("authorization")
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader : undefined
+  const widgetToken = bearer?.startsWith("Bearer kwt_")
   let user: AuthSessionUser | null = null
-  if (bearer || getSessionCookie(c.req.raw.headers, { cookiePrefix: AUTH_COOKIE_PREFIX })) {
+  if (!widgetToken && (bearer || getSessionCookie(c.req.raw.headers, { cookiePrefix: AUTH_COOKIE_PREFIX }))) {
     const session = await auth.api.getSession({
       headers: bearer ? new Headers({ authorization: bearer }) : c.req.raw.headers
     })

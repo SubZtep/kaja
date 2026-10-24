@@ -188,7 +188,7 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("stdio servers are offered, keyed or not, running in an MCP sandbox", async () => {
-    const offered = await createPostgresAbilityStore({ userId: "any" }).listMcpAbilities()
+    const offered = await createPostgresAbilityStore().listMcpAbilities()
     expect(offered.find(ability => ability.name === `stdio-${tag}`)).toMatchObject({ transport: "stdio", tools: ["x"] })
     expect(offered.find(ability => ability.name === `stdio-keyed-${tag}`)).toMatchObject({ transport: "stdio" })
   })

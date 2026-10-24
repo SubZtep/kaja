@@ -6,7 +6,7 @@ import { z } from "zod"
 import { app } from "../../src/app"
 import { sql } from "../../src/core/db"
 import { nasiStore } from "../../src/features/nasi/store"
-import { signUpAndSignIn } from "./helpers"
+import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // The moment everything below points at: 00:30 UTC on 20 Sep 2026 (09:30 in Tokyo, 17:30 the day before in Los Angeles).
 const INSTANT = new Date("2026-09-20T00:30:00Z")
@@ -114,29 +114,38 @@ describe("the API hands times out as UTC", () => {
   const email = faker.internet.email()
   let token: string
   let userId: string
+  let providerId: string
+  let modelName: string
 
   beforeAll(async () => {
     token = await signUpAndSignIn(email, "Zone Tester")
     userId = (await sql`SELECT id FROM "user" WHERE email = ${email.toLowerCase()}`)[0].id
+    ;({ providerId, modelName } = await seedModel("zone-widget"))
   })
 
   afterAll(async () => {
     await sql`DELETE FROM "user" WHERE id = ${userId}`
+    await cleanupModel(providerId)
   })
 
   test("a stored instant reaches the client as one UTC ISO string and parses back to the same moment", async () => {
     const created = await app.request("/widget/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Zone widget", allowedOrigins: ["https://example-site.test"] })
+      body: JSON.stringify({
+        label: "Zone widget",
+        intent: "Ask one question.",
+        model: modelName,
+        target: { kind: "server" }
+      })
     })
     expect(created.status).toBe(201)
     const { id } = await created.json()
     await sql`UPDATE widget SET created_at = ${INSTANT} WHERE id = ${id}`
 
     const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
-    const { keys } = await list.json()
-    const key = keys.find((k: { id: string }) => k.id === id)
+    const { widgets } = await list.json()
+    const key = widgets.find((k: { id: string }) => k.id === id)
     expect(key.createdAt).toBe("2026-09-20T00:30:00.000Z")
     expect(z.coerce.date().parse(key.createdAt).getTime()).toBe(INSTANT.getTime())
   })

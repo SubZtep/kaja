@@ -26,8 +26,8 @@ The agent writes a note whenever it learns something lasting about you or your w
 Each note has a **key** (a stable id like `user:communication-style`), the **content**, an **importance** of
 `low`, `medium` or `high` that weights recall ranking, optional **tags**, and a **sticky** flag.
 
-Notes belong to whoever is talking. The terminal, each Telegram user and, in the cloud, each widget visitor
-have separate sets, so a visitor's notes never reach your chats or another visitor.
+Notes belong to whoever is talking. The terminal and each Telegram user have separate sets, so one person's
+notes never reach another's chats.
 
 ```mermaid
 ---

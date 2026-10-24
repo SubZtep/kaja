@@ -1,4 +1,3 @@
-import type { NasiTurnResponse, WidgetTurnRequest } from "@kaja/schema/nasi"
 import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import {
@@ -14,16 +13,13 @@ import {
   Wand,
   X
 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { toast } from "react-toastify"
+import { useEffect, useRef, useState } from "react"
+import type { BarkochbaAction } from "../../../lib/barkochba/game"
+import { BARKOCHBA_MAX_QUESTIONS } from "../../../lib/barkochba/rules"
+import { type BarkochbaResponse, playBarkochba } from "../../../lib/barkochba/server"
 import { m } from "../../../paraglide/messages.js"
 import { getLocale } from "../../../paraglide/runtime.js"
 
-// `value` stays a fixed English literal ("Yes"/"No"/...) regardless of display language —
-// the model is instructed (via the `language` field below) to reply in the UI language
-// regardless of what language the user writes in, so translating these isn't needed.
-// Read via functions (not module-scope constants) so labels re-evaluate per render —
-// `m.*()` calls captured at module load can go stale across the SSR/hydration boundary.
 const getAnswers = () =>
   [
     { label: m.barkochba_answer_yes(), value: "Yes", icon: Check },
@@ -40,9 +36,6 @@ const getExampleThings = () =>
     { label: m.barkochba_example_dice(), icon: Dices }
   ] as const
 
-const MAX_QUESTIONS = 20
-const STATE_STORAGE_KEY = "kaja-barkochba-state"
-
 const DOT_VARIANTS = {
   won: { colors: ["bg-ice", "bg-ice", "bg-ice"], pulseMs: 1200 },
   thinking: { colors: ["bg-neon", "bg-neon", "bg-neon"], pulseMs: 1000 },
@@ -52,83 +45,10 @@ const DOT_VARIANTS = {
 
 type DotVariant = keyof typeof DOT_VARIANTS
 
-function dotVariantFor(won: boolean, pending: boolean, phase: GameState["phase"]): DotVariant {
-  if (won) return "won"
+function dotVariantFor(phase: BarkochbaResponse["phase"], pending: boolean): DotVariant {
+  if (phase === "won") return "won"
   if (pending) return "thinking"
   return phase === "idle" ? "idle" : "playing"
-}
-
-type GameState = {
-  phase: "idle" | "playing"
-  visitorId?: string
-  session?: string
-  current: string
-  aside: string
-  questionCount: number
-  won: boolean
-}
-
-const IDLE_STATE: GameState = {
-  phase: "idle",
-  visitorId: undefined,
-  session: undefined,
-  current: "",
-  aside: "",
-  questionCount: 0,
-  won: false
-}
-
-function loadState(): GameState {
-  try {
-    const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
-    if (!raw) return IDLE_STATE
-    return { ...IDLE_STATE, ...(JSON.parse(raw) as Partial<GameState>) }
-  } catch {
-    return IDLE_STATE
-  }
-}
-
-function saveState(state: GameState) {
-  try {
-    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // sessionStorage can be blocked
-  }
-}
-
-/** A failed turn whose message is already in the visitor's language. */
-class GameError extends Error {}
-
-/** POSTs one turn to `/widget/turn`, same as the embeddable widget bundle does. */
-async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTurnRequest): Promise<NasiTurnResponse> {
-  const res = await fetch(`${baseUrl}/widget/turn`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
-    body: JSON.stringify(body)
-  })
-  if (res.status === 429) throw new GameError(m.barkochba_error_rate_limited())
-  // The server's own reason is English and technical; the visitor gets the status in their language.
-  if (!res.ok) throw new GameError(m.barkochba_error_request_failed({ status: res.status }))
-  return res.json() as Promise<NasiTurnResponse>
-}
-
-/**
- * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring match, so it works
- * for any language — then drops a short trailing label left behind by a removal (e.g. "Question 2:"), identified purely
- * by length/punctuation, not vocabulary.
- */
-function withoutQuestion(content: string, question: string): string {
-  if (!question) return content.trim()
-  const index = content.toLowerCase().indexOf(question.toLowerCase())
-  const withoutMatch = index === -1 ? content : content.slice(0, index) + content.slice(index + question.length)
-  const collapsed = withoutMatch.replace(/\s+/g, " ").trim()
-  return collapsed.replace(/(?:^|[.!?]\s+)\S{1,20}(?:\s\S{1,20}){0,2}:$/u, "").trim()
-}
-
-function StatusIcon({ won, aside }: Readonly<{ won: boolean; aside: string }>) {
-  if (won) return <Sparkles className="text-ice size-5" />
-  if (aside) return <span className="text-muted text-xs italic">{aside}</span>
-  return <Wand className="text-neon size-5" />
 }
 
 const DOT_POSITIONS = ["first", "second", "third"] as const
@@ -148,92 +68,95 @@ function TitleBarDots({ variant }: Readonly<{ variant: DotVariant }>) {
   )
 }
 
+const IDLE_VIEW: BarkochbaResponse = {
+  ready: true,
+  phase: "idle",
+  question: "",
+  questionCount: 0,
+  pendingGuess: false,
+  source: null
+}
+
+function errorText(code: BarkochbaResponse["error"]): string {
+  if (code === "rate") return m.barkochba_error_rate_limited()
+  if (code) return m.barkochba_error_generic()
+  return ""
+}
+
+/** The homepage Barkochba board. The browser never holds a widget token; the server action does. */
 export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
-  const { apiUrl, barkochbaWidgetKey } = useLoaderData({ from: "__root__" })
-  const [phase, setPhase] = useState<GameState["phase"]>(IDLE_STATE.phase)
-  const [visitorId] = useState(() => loadState().visitorId ?? crypto.randomUUID())
-  const [session, setSession] = useState<string | undefined>(IDLE_STATE.session)
-  const [current, setCurrent] = useState(IDLE_STATE.current)
-  const [aside, setAside] = useState(IDLE_STATE.aside)
-  const [questionCount, setQuestionCount] = useState(IDLE_STATE.questionCount)
-  const [won, setWon] = useState(IDLE_STATE.won)
+  const { barkochbaReady } = useLoaderData({ from: "__root__" })
+  const frame = useRef<HTMLIFrameElement>(null)
+  const [view, setView] = useState<BarkochbaResponse>(IDLE_VIEW)
   const [pending, setPending] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
+  // The source the iframe has loaded; until then (or after a new publish) the shell shows the question itself
+  const [loadedSource, setLoadedSource] = useState<string | null>(null)
+  const frameReady = Boolean(view.source) && loadedSource === view.source
 
-  // Resume from sessionStorage only after mount — reading it during the initial
-  // render would desync from the server-rendered idle markup and trigger a hydration error.
   useEffect(() => {
-    if (!barkochbaWidgetKey) {
-      try {
-        sessionStorage.removeItem(STATE_STORAGE_KEY)
-      } catch {
-        // sessionStorage can be blocked
-      }
-      setHydrated(true)
-      return
+    if (!barkochbaReady) return
+    let cancelled = false
+    void playBarkochba({ data: { type: "sync" } })
+      .then(next => {
+        if (!cancelled) setView(next)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
-    const stored = loadState()
-    setPhase(stored.phase)
-    setSession(stored.session)
-    setCurrent(stored.current)
-    setAside(stored.aside)
-    setQuestionCount(stored.questionCount)
-    setWon(stored.won)
-    setHydrated(true)
-  }, [barkochbaWidgetKey])
+  }, [barkochbaReady])
 
   useEffect(() => {
-    if (hydrated) saveState({ phase, visitorId, session, current, aside, questionCount, won })
-  }, [hydrated, phase, visitorId, session, current, aside, questionCount, won])
+    const target = frame.current?.contentWindow
+    if (!target || !frameReady) return
+    target.postMessage(
+      {
+        type: "state",
+        phase: view.phase,
+        question: view.question,
+        aside: "",
+        questionCount: view.questionCount,
+        maxQuestions: BARKOCHBA_MAX_QUESTIONS,
+        answers: getAnswers().map(({ value, label }) => ({ value, label }))
+      },
+      "*"
+    )
+  }, [view, frameReady])
 
-  async function sendMessage(message: string) {
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      // A sandboxed iframe without allow-same-origin posts from the opaque origin "null"
+      if (event.origin !== "null" || event.source !== frame.current?.contentWindow) return
+      const data = event.data as { type?: string; value?: string }
+      if (
+        data?.type === "answer" &&
+        (data.value === "Yes" || data.value === "No" || data.value === "Sometimes" || data.value === "Unknown")
+      )
+        void act({ type: "answer", value: data.value, locale: getLocale() })
+      if (data?.type === "start") void act({ type: "start", locale: getLocale() })
+      if (data?.type === "giveup") void act({ type: "giveup" })
+      if (data?.type === "restart") void act({ type: "restart" })
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  })
+
+  async function act(data: BarkochbaAction) {
+    if (!barkochbaReady) return
     setPending(true)
     try {
-      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", {
-        session,
-        message,
-        visitorId,
-        language: getLocale()
-      })
-      setSession(data.session)
-      setCurrent(data.message)
-      const askStep = data.steps.find(step => step.type === "ask_user")
-      if (askStep) setQuestionCount(count => count + 1)
-      setWon(!askStep && data.status === "completed")
-      const note = askStep?.type === "ask_user" ? askStep.note : undefined
-      const messageStep = data.steps.find(step => step.type === "message")
-      const fallback = messageStep?.type === "message" ? withoutQuestion(messageStep.content, data.message) : ""
-      setAside(note ?? fallback)
-    } catch (error) {
-      setCurrent(error instanceof GameError ? error.message : m.barkochba_error_generic())
-      setAside("")
+      setView(await playBarkochba({ data }))
+    } catch {
+      setView(current => ({ ...current, error: "play" }))
     } finally {
       setPending(false)
     }
   }
 
-  function start() {
-    if (!barkochbaWidgetKey) {
-      toast.info(m.carousel_demo_missing())
-      return
-    }
-    setPhase("playing")
-    setCurrent("")
-    setAside("")
-    setSession(undefined)
-    setQuestionCount(0)
-    setWon(false)
-    void sendMessage("Let's play!")
-  }
-
-  function playAgain() {
-    setPhase("idle")
-    setCurrent("")
-    setAside("")
-    setSession(undefined)
-    setQuestionCount(0)
-    setWon(false)
-  }
+  const phase = view.phase
+  const shown = view.error ? errorText(view.error) : view.question
+  const won = phase === "won"
+  const showFrame = frameReady && !pending && !view.error
 
   return (
     <div
@@ -243,14 +166,13 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
       )}
     >
       <div className="border-border bg-surface flex items-center gap-2 border-b px-3.5 py-2.5">
-        <TitleBarDots variant={dotVariantFor(won, pending, phase)} />
+        <TitleBarDots variant={dotVariantFor(phase, pending)} />
         <span className="text-muted ml-1.5 font-mono text-xs">{m.barkochba_title_bar()}</span>
       </div>
-
       <div className="flex min-h-65 flex-col justify-between p-5 font-mono text-[13.5px] leading-[1.9]">
         {phase === "idle" ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-            <p className="text-muted">{m.barkochba_idle_prompt({ maxQuestions: MAX_QUESTIONS })}</p>
+            <p className="text-muted">{m.barkochba_idle_prompt({ maxQuestions: BARKOCHBA_MAX_QUESTIONS })}</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {getExampleThings().map(({ label, icon: Icon }) => (
                 <span
@@ -265,7 +187,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             </div>
             <button
               type="button"
-              onClick={start}
+              onClick={() => act({ type: "start", locale: getLocale() })}
               className="border-neon bg-neon/10 text-neon cursor-pointer rounded-md border px-5 py-2 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
             >
               {m.barkochba_start()}
@@ -274,29 +196,44 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
         ) : (
           <>
             <div className="mb-3 flex items-center justify-center gap-1">
-              {Array.from({ length: MAX_QUESTIONS }, (_, i) => (
+              {Array.from({ length: BARKOCHBA_MAX_QUESTIONS }, (_, i) => (
                 <span
                   key={`q-${i + 1}`}
-                  className={`size-1.5 rounded-full ${i < questionCount ? "bg-neon" : "bg-border"}`}
+                  className={`size-1.5 rounded-full ${i < view.questionCount ? "bg-neon" : "bg-border"}`}
                 />
               ))}
             </div>
-            <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+            {view.source ? (
+              <iframe
+                ref={frame}
+                title={m.barkochba_title_bar()}
+                sandbox="allow-scripts"
+                srcDoc={view.source}
+                onLoad={() => setLoadedSource(view.source)}
+                className={cn("h-24 w-full border-0", !showFrame && "hidden")}
+              />
+            ) : null}
+            <div
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center gap-1.5 text-center",
+                showFrame && "hidden"
+              )}
+            >
               {pending ? (
                 <span className="text-muted flex items-center gap-1">
                   <BrainCircuit size={18} /> {m.barkochba_thinking()}
                 </span>
               ) : (
                 <>
-                  <StatusIcon won={won} aside={aside} />
-                  <span className="text-fg">{current}</span>
+                  {won ? <Sparkles className="text-ice size-5" /> : <Wand className="text-neon size-5" />}
+                  <span className="text-fg">{shown}</span>
                 </>
               )}
             </div>
-            {won ? (
+            {won || phase === "lost" ? (
               <button
                 type="button"
-                onClick={playAgain}
+                onClick={() => act({ type: "restart" })}
                 className="border-neon bg-neon/10 text-neon mt-4 cursor-pointer self-center rounded-md border px-5 py-2 text-sm font-semibold"
               >
                 {m.barkochba_play_again()}
@@ -309,7 +246,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
                       key={value}
                       type="button"
                       disabled={pending}
-                      onClick={() => sendMessage(value)}
+                      onClick={() => act({ type: "answer", value, locale: getLocale() })}
                       className="border-border bg-surface text-fg hover:border-neon/60 hover:bg-neon/10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Icon className="size-3.5" />
@@ -319,7 +256,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
                 </div>
                 <button
                   type="button"
-                  onClick={playAgain}
+                  onClick={() => act({ type: "giveup" })}
                   className="text-muted hover:text-fg mt-3 cursor-pointer self-center text-xs underline underline-offset-2 transition-colors duration-200 hover:underline-offset-0"
                 >
                   {m.barkochba_give_up()}

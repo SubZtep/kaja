@@ -20,7 +20,7 @@ By creating an account or using Kaja, you agree to these Terms. If you do not ag
 
 ## The Service
 
-Kaja is an AI assistant. These Terms cover the **cloud** service — the API, the website, cloud terminal chat, the Kaja Telegram bot, and the embeddable website widget — which is currently offered for free.
+Kaja is an AI assistant. These Terms cover the **cloud** service — the API, the website, cloud terminal chat, the Kaja Telegram bot, and widgets — which is currently offered for free.
 
 Kaja is also open-source software you can run entirely on your own machine. Running it locally is governed by its licence, not by these Terms, and needs no account.
 
@@ -38,21 +38,21 @@ Abilities you use can call outside services (for example a weather API or a docu
 
 ## Widgets
 
-If you embed a Kaja widget on a site you operate, conversations from your visitors are stored against your account, and you are responsible for telling your visitors that the chat is powered by an AI assistant and for having a lawful basis to process what they type. Keep your widget key's allowed-origins list limited to sites you control.
+If you run a Kaja widget, visitor state it stores sits on your account. You are responsible for telling visitors that a model is involved and for having a lawful basis to process what they submit. The widget token is a secret: do not put it in a page.
 
 ## Data Processing For Widgets
 
-When you create a widget key, you are the **controller** of your visitors' personal data and Kaja is your **processor**. These terms are the contract Article 28 of the UK GDPR (and EU GDPR) requires between you and Kaja, and they apply automatically whenever you use a widget.
+When you create a widget, you are the **controller** of your visitors' personal data and Kaja is your **processor**. These terms are the contract Article 28 of the UK GDPR (and EU GDPR) requires between you and Kaja, and they apply automatically whenever you use a widget.
 
-- **What is processed:** what your visitors type into the widget, the assistant's replies and tool calls, memory notes and dataset answers made during those conversations, and a random visitor id. The visitors are the data subjects.
-- **Purpose and duration:** only to run the widget chat on your site, for as long as your widget key or your account exists.
-- **Your instructions:** Kaja processes this data only as your widget configuration (persona, skills, allowed origins) and these Terms direct, unless the law requires otherwise; Kaja will tell you if it believes an instruction breaks data protection law.
+- **What is processed:** the JSON state your widget stores for a visitor (for the homepage game: the transcript and a random visitor id) and the model calls made with the widget token. The visitors are the data subjects.
+- **Purpose and duration:** only to run that widget, for as long as the widget or your account exists.
+- **Your instructions:** Kaja processes this data only as your widget's intent, target, and published source and these Terms direct, unless the law requires otherwise; Kaja will tell you if it believes an instruction breaks data protection law.
 - **Confidentiality and security:** only the operator has access to it, and it is protected by the measures described in the [Privacy Policy](/privacy#security).
 - **Sub-processors:** you authorise the providers listed under "Sharing Data" in the [Privacy Policy](/privacy#sharing-data). Kaja will update that list before adding or replacing one, and you can object by email or stop using widgets. Kaja passes these same data protection obligations on to them.
 - **Transfers:** data leaves the UK and EU only as described under "International Transfers" in the Privacy Policy.
 - **Helping you:** Kaja will help you answer your visitors' requests to exercise their rights, and with any data protection impact assessment or regulator consultation, as far as it reasonably can.
 - **Breaches:** Kaja will tell you without undue delay after becoming aware of a personal data breach affecting your visitors' data.
-- **Deletion:** revoking a widget key stops the widget; deleting your account deletes all of your visitors' conversations straight away.
+- **Deletion:** revoking a widget stops it; deleting your account deletes its source and visitor state straight away.
 - **Audits:** Kaja will give you the information you reasonably need to show these obligations are met, and allow for audits by you or an auditor you choose, on reasonable notice.
 
 You are responsible for telling visitors about the processing (for example in your own privacy policy), and for any special category data (such as health information) your visitors share through your widget.

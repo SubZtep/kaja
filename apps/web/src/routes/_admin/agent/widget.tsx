@@ -1,14 +1,8 @@
-import type {
-  CreateWidgetKeyResponse,
-  ListWidgetKeysResponse,
-  UpdateWidgetKeyRequest,
-  WidgetKey
-} from "@kaja/schema/api"
-import { widgetKeySchema, widgetTypeSchema } from "@kaja/schema/api"
-import { type NasiPersonasResponse, NasiPersonasResponseSchema } from "@kaja/schema/nasi"
+import type { CreateWidgetResponse, ListWidgetsResponse, UpdateWidgetRequest, Widget } from "@kaja/schema/api"
+import { widgetSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useLoaderData } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
 import { Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
@@ -29,7 +23,7 @@ import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 import { m } from "../../../paraglide/messages.js"
-import { EditWidgetDialog, parseOrigins } from "./-components/EditWidgetDialog"
+import { EditWidgetDialog } from "./-components/EditWidgetDialog"
 
 export const Route = createFileRoute("/_admin/agent/widget")({
   component: WidgetPage,
@@ -39,30 +33,45 @@ export const Route = createFileRoute("/_admin/agent/widget")({
 
 const createFormSchema = z.object({
   label: z.string().min(1, m.validation_required()),
-  allowedOrigins: z.string().min(1, m.validation_required()),
-  widgetType: widgetTypeSchema,
-  persona: z.string()
+  intent: z.string().min(1, m.validation_required()),
+  model: z.string().min(1, m.validation_required()),
+  kind: z.enum(["browser", "server"]),
+  selector: z.string().min(1, m.validation_required())
 })
 
-const AUTO_SELECT_PERSONA = ""
-const DEFAULT_WIDGET_TYPE = widgetTypeSchema.options[0]
-const WIDGET_TYPE_OPTIONS = widgetTypeSchema.options.map(value => ({ value, label: value }))
+const columnHelper = tableColumnHelper<Widget>()
 
-const columnHelper = tableColumnHelper<WidgetKey>()
-
-function LabelCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string>) {
+function LabelCell(info: CellContext<typeof tableFeaturesConfig, Widget, string>) {
   return <span className="text-fg font-bold">{info.getValue()}</span>
 }
 
-function KeyPrefixCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string>) {
+function TokenCell(info: CellContext<typeof tableFeaturesConfig, Widget, string>) {
   return <span className="text-muted font-mono text-xs">{info.getValue()}…</span>
 }
 
-function OriginsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string[]>) {
-  return <span className="text-muted font-mono text-xs">{info.getValue().join(", ")}</span>
+function TargetCell(info: CellContext<typeof tableFeaturesConfig, Widget, Widget["target"]>) {
+  const target = info.getValue()
+  return (
+    <span className="text-muted font-mono text-xs">
+      {target.kind === "browser" ? target.selector : m.widget_target_server()}
+    </span>
+  )
 }
 
-function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, boolean>) {
+function ModelCell(info: CellContext<typeof tableFeaturesConfig, Widget, string>) {
+  return <span className="text-muted font-mono text-xs">{info.getValue()}</span>
+}
+
+function GenerationCell(info: CellContext<typeof tableFeaturesConfig, Widget, unknown>) {
+  const widget = info.row.original
+  let label: string = m.widget_generation_none()
+  if (widget.published && widget.draft) label = `${m.widget_published()} + ${m.widget_draft()}`
+  else if (widget.published) label = m.widget_published()
+  else if (widget.draft) label = m.widget_draft()
+  return <span className="text-muted text-xs">{label}</span>
+}
+
+function EnabledCell(info: CellContext<typeof tableFeaturesConfig, Widget, boolean>) {
   return (
     <span className={info.getValue() ? "text-neon" : "text-muted"}>
       {info.getValue() ? m.widget_status_active() : m.widget_status_revoked()}
@@ -70,33 +79,43 @@ function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, bo
   )
 }
 
-function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date>) {
+function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Widget, Date>) {
   return <span className="text-muted font-mono text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
-function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date | null>) {
+function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Widget, Date | null>) {
   const value = info.getValue()
   return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
 type WidgetActionsMeta = Readonly<{
-  personas: NasiPersonasResponse["personas"]
+  widgets: Widget[]
   isSaving: boolean
-  onSave: (id: string, payload: UpdateWidgetKeyRequest) => Promise<unknown>
+  onSave: (id: string, payload: UpdateWidgetRequest) => Promise<unknown>
+  onPublish: (id: string) => Promise<unknown>
+  onDiscard: (id: string) => Promise<unknown>
+  onGenerate: (id: string) => Promise<unknown>
+  onLink: (id: string, to: string) => Promise<unknown>
+  onUnlink: (id: string, to: string) => Promise<unknown>
   onRevoke: (id: string) => void
 }>
 
-function ActionsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, unknown>) {
-  const widgetKey = info.row.original
-  const { personas, isSaving, onSave, onRevoke } = cellActions<WidgetActionsMeta>(info.column.columnDef.meta)
-  if (!widgetKey.enabled) return null
+function ActionsCell(info: CellContext<typeof tableFeaturesConfig, Widget, unknown>) {
+  const widget = info.row.original
+  const actions = cellActions<WidgetActionsMeta>(info.column.columnDef.meta)
+  if (!widget.enabled) return null
   return (
     <div className="flex justify-end gap-1">
       <EditWidgetDialog
-        widgetKey={widgetKey}
-        personas={personas}
-        isPending={isSaving}
-        onSave={payload => onSave(widgetKey.id, payload)}
+        widget={widget}
+        widgets={actions.widgets}
+        isPending={actions.isSaving}
+        onSave={payload => actions.onSave(widget.id, payload)}
+        onPublish={() => actions.onPublish(widget.id)}
+        onDiscard={() => actions.onDiscard(widget.id)}
+        onGenerate={() => actions.onGenerate(widget.id)}
+        onLink={to => actions.onLink(widget.id, to)}
+        onUnlink={to => actions.onUnlink(widget.id, to)}
       >
         <IconButton aria-label={m.widget_edit_title()}>
           <Pencil size={18} />
@@ -104,9 +123,9 @@ function ActionsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, un
       </EditWidgetDialog>
       <ConfirmDialog
         title={m.widget_revoke_confirm_title()}
-        description={m.widget_revoke_confirm_description({ label: widgetKey.label })}
+        description={m.widget_revoke_confirm_description({ label: widget.label })}
         confirm={m.widget_revoke_confirm_button()}
-        onConfirm={() => onRevoke(widgetKey.id)}
+        onConfirm={() => actions.onRevoke(widget.id)}
       >
         <IconButton variant="danger" aria-label={m.widget_revoke_confirm_button()}>
           <Trash2 size={18} />
@@ -116,13 +135,11 @@ function ActionsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, un
   )
 }
 
-function EmbedSnippet({ apiUrl, rawKey }: Readonly<{ apiUrl: string; rawKey: string }>) {
-  const snippet = `<script async src="${apiUrl}/widget/${rawKey}.js"></script>`
+function TokenNotice({ rawToken }: Readonly<{ rawToken: string }>) {
   return (
     <div className="border-border bg-surface mt-4 rounded-lg border p-4">
       <p className="text-fg mb-2 text-sm">{m.widget_embed_notice()}</p>
-      <p className="text-neon mb-3 font-mono text-sm break-all">{rawKey}</p>
-      <pre className="text-muted overflow-x-auto rounded-md bg-black/40 p-3 font-mono text-xs">{snippet}</pre>
+      <p className="text-neon font-mono text-sm break-all">{rawToken}</p>
     </div>
   )
 }
@@ -130,81 +147,112 @@ function EmbedSnippet({ apiUrl, rawKey }: Readonly<{ apiUrl: string; rawKey: str
 function WidgetPage() {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
-  const { apiUrl } = useLoaderData({ from: "__root__" })
-  const [justCreated, setJustCreated] = useState<CreateWidgetKeyResponse | null>(null)
+  const [justCreated, setJustCreated] = useState<string | null>(null)
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["widget-keys"],
-    queryFn: () => apiFetch<ListWidgetKeysResponse>("/widget/admin").then(r => z.array(widgetKeySchema).parse(r.keys))
-  })
-
-  // Not /admin/personas: that's admin-only, and every signed-in user can make widget keys.
-  const { data: personas, error: personasError } = useQuery({
-    queryKey: ["nasi", "personas"],
+    queryKey: ["widgets"],
     queryFn: () =>
-      apiFetch<NasiPersonasResponse>("/nasi/personas").then(r => NasiPersonasResponseSchema.parse(r).personas)
+      apiFetch<ListWidgetsResponse>("/widget/admin").then(body => z.array(widgetSchema).parse(body.widgets))
   })
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widgets"] })
+  const saved = (message: string) => {
+    invalidate()
+    toast.success(message)
+  }
 
-  const createKey = useMutation({
-    mutationFn: (payload: {
-      label: string
-      allowedOrigins: string[]
-      config?: { widgetType?: string; persona?: string }
-    }) => apiFetch<CreateWidgetKeyResponse>("/widget/admin", payload),
+  const createWidget = useMutation({
+    mutationFn: (payload: { label: string; intent: string; model: string; target: Widget["target"] }) =>
+      apiFetch<CreateWidgetResponse>("/widget/admin", payload),
     onSuccess: response => {
       invalidate()
-      setJustCreated(response)
+      setJustCreated(response.rawToken)
       toast.success(m.widget_success_created())
     },
     onError: (err: Error) => toast.error(err.message || m.widget_error_create_failed())
   })
 
-  const updateKey = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateWidgetKeyRequest }) =>
-      apiFetch(`/widget/admin/${id}`, payload, { method: "PATCH" }).then(r => widgetKeySchema.parse(r)),
-    onSuccess: () => {
-      invalidate()
-      toast.success(m.widget_success_updated())
-    },
+  const updateWidget = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateWidgetRequest }) =>
+      apiFetch(`/widget/admin/${id}`, payload, { method: "PATCH" }).then(body => widgetSchema.parse(body)),
+    onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
-  const revokeKey = useMutation({
+  const publishWidget = useMutation({
+    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/publish`, undefined, { method: "POST" }),
+    onSuccess: () => saved(m.widget_success_published()),
+    onError: (err: Error) => toast.error(err.message || m.widget_error_publish_failed())
+  })
+
+  const discardDraft = useMutation({
+    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/draft`, undefined, { method: "DELETE" }),
+    onSuccess: () => saved(m.widget_success_updated()),
+    onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
+  })
+
+  const generateWidget = useMutation({
+    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/generate`, undefined, { method: "POST" }),
+    onSuccess: () => saved(m.widget_success_updated()),
+    onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
+  })
+
+  const linkWidget = useMutation({
+    mutationFn: ({ id, to }: { id: string; to: string }) => apiFetch(`/widget/admin/${id}/links`, { to }),
+    onSuccess: () => saved(m.widget_success_updated()),
+    onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
+  })
+
+  const unlinkWidget = useMutation({
+    mutationFn: ({ id, to }: { id: string; to: string }) =>
+      apiFetch(`/widget/admin/${id}/links/${to}`, undefined, { method: "DELETE" }),
+    onSuccess: () => saved(m.widget_success_updated()),
+    onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
+  })
+
+  const revokeWidget = useMutation({
     mutationFn: (id: string) => apiFetch(`/widget/admin/${id}`, undefined, { method: "DELETE" }),
-    onSuccess: () => {
-      invalidate()
-      toast.success(m.widget_success_revoked())
-    },
+    onSuccess: () => saved(m.widget_success_revoked()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_revoke_failed())
   })
 
   const form = useAppForm({
-    defaultValues: { label: "", allowedOrigins: "", widgetType: DEFAULT_WIDGET_TYPE, persona: AUTO_SELECT_PERSONA },
+    defaultValues: {
+      label: "",
+      intent: "",
+      model: "",
+      kind: "server" as "browser" | "server",
+      selector: "#kaja-barkochba"
+    },
     validators: { onSubmit: createFormSchema },
     onSubmit: async ({ value, formApi }) => {
-      await createKey.mutateAsync({
-        label: value.label,
-        allowedOrigins: parseOrigins(value.allowedOrigins),
-        config: { widgetType: value.widgetType, persona: value.persona || undefined }
+      await createWidget.mutateAsync({
+        label: value.label.trim(),
+        intent: value.intent.trim(),
+        model: value.model.trim(),
+        target:
+          value.kind === "browser"
+            ? { kind: "browser", page: "home", selector: value.selector.trim() }
+            : { kind: "server" }
       })
       formApi.reset()
     }
   })
 
+  const busy =
+    updateWidget.isPending ||
+    publishWidget.isPending ||
+    discardDraft.isPending ||
+    generateWidget.isPending ||
+    linkWidget.isPending ||
+    unlinkWidget.isPending
+
   const columns = columnHelper.columns([
     columnHelper.accessor("label", { header: m.widget_column_label(), cell: LabelCell }),
-    columnHelper.accessor("keyPrefix", {
-      header: m.widget_column_key(),
-      cell: KeyPrefixCell,
-      enableColumnFilter: false
-    }),
-    columnHelper.accessor("allowedOrigins", {
-      header: m.widget_column_allowed_origins(),
-      cell: OriginsCell,
-      enableColumnFilter: false
-    }),
+    columnHelper.accessor("tokenPrefix", { header: m.widget_column_key(), cell: TokenCell, enableColumnFilter: false }),
+    columnHelper.accessor("target", { header: m.widget_column_target(), cell: TargetCell, enableColumnFilter: false }),
+    columnHelper.accessor("model", { header: m.widget_column_model(), cell: ModelCell, enableColumnFilter: false }),
+    columnHelper.display({ id: "generation", header: m.widget_column_generation(), cell: GenerationCell }),
     columnHelper.accessor("enabled", {
       header: m.widget_column_status(),
       cell: EnabledCell,
@@ -225,10 +273,15 @@ function WidgetPage() {
       header: "",
       meta: {
         actions: {
-          personas: personas ?? [],
-          isSaving: updateKey.isPending,
-          onSave: (id, payload) => updateKey.mutateAsync({ id, payload }),
-          onRevoke: id => revokeKey.mutate(id)
+          widgets: data ?? [],
+          isSaving: busy,
+          onSave: (id, payload) => updateWidget.mutateAsync({ id, payload }),
+          onPublish: id => publishWidget.mutateAsync(id),
+          onDiscard: id => discardDraft.mutateAsync(id),
+          onGenerate: id => generateWidget.mutateAsync(id),
+          onLink: (id, to) => linkWidget.mutateAsync({ id, to }),
+          onUnlink: (id, to) => unlinkWidget.mutateAsync({ id, to }),
+          onRevoke: id => revokeWidget.mutate(id)
         } satisfies WidgetActionsMeta
       },
       cell: ActionsCell
@@ -236,27 +289,22 @@ function WidgetPage() {
   ])
 
   if (isLoading) return <Loader />
-
-  const keys = data ?? []
-  const activeCount = keys.filter(k => k.enabled).length
+  const widgets = data ?? []
 
   return (
     <>
       <PageHeader title={m.widget_title()} description={m.widget_description()}>
         <ValueBox label={m.widget_total()} variant="neon">
-          {keys.length}
+          {widgets.length}
         </ValueBox>
-        <ValueBox label={m.widget_active()}>{activeCount}</ValueBox>
+        <ValueBox label={m.widget_active()}>{widgets.filter(widget => widget.enabled).length}</ValueBox>
       </PageHeader>
-
       <ErrorNotice error={error} />
-      <ErrorNotice error={personasError} />
-
       <Section className="mb-4" title={m.widget_create_title()}>
         <form
           noValidate
-          onSubmit={e => {
-            e.preventDefault()
+          onSubmit={event => {
+            event.preventDefault()
             form.handleSubmit()
           }}
           className="grid gap-4 sm:grid-cols-2"
@@ -266,38 +314,49 @@ function WidgetPage() {
               <field.TextField label={m.widget_field_label()} placeholder={m.widget_field_label_placeholder()} />
             )}
           </form.AppField>
-          <form.AppField name="allowedOrigins">
+          <form.AppField name="model">
             {field => (
-              <field.TextField
-                label={m.widget_field_allowed_origins()}
-                placeholder={m.widget_field_allowed_origins_placeholder()}
+              <field.TextField label={m.widget_field_model()} placeholder={m.widget_field_model_placeholder()} />
+            )}
+          </form.AppField>
+          <form.AppField name="intent">
+            {field => (
+              <field.TextAreaField
+                label={m.widget_field_intent()}
+                placeholder={m.widget_field_intent_placeholder()}
+                rows={3}
               />
             )}
           </form.AppField>
-          <form.AppField name="widgetType">
-            {field => <field.SelectField label={m.widget_field_type()} options={WIDGET_TYPE_OPTIONS} />}
-          </form.AppField>
-          <form.AppField name="persona">
+          <form.AppField name="kind">
             {field => (
               <field.SelectField
-                label={m.widget_field_persona()}
+                label={m.widget_field_target()}
                 options={[
-                  { value: AUTO_SELECT_PERSONA, label: m.widget_field_persona_auto() },
-                  ...(personas ?? []).map(p => ({ value: p.id, label: p.label }))
+                  { value: "server", label: m.widget_target_server() },
+                  { value: "browser", label: m.widget_target_browser() }
                 ]}
               />
             )}
           </form.AppField>
-          <Button type="submit" className="justify-self-start sm:col-span-2" loading={createKey.isPending}>
+          <form.Subscribe selector={state => state.values.kind}>
+            {kind =>
+              kind === "browser" && (
+                <form.AppField name="selector">
+                  {field => <field.TextField label={m.widget_field_selector()} />}
+                </form.AppField>
+              )
+            }
+          </form.Subscribe>
+          <Button type="submit" className="justify-self-start sm:col-span-2" loading={createWidget.isPending}>
             {m.widget_create_button()}
           </Button>
         </form>
-        {justCreated && <EmbedSnippet apiUrl={apiUrl} rawKey={justCreated.rawKey} />}
+        {justCreated && <TokenNotice rawToken={justCreated} />}
       </Section>
-
       <Section padded={false}>
         <div className="px-5.5 py-5 sm:px-6">
-          <Table columns={columns} data={keys} showFilters={false} />
+          <Table columns={columns} data={widgets} showFilters={false} />
         </div>
       </Section>
     </>

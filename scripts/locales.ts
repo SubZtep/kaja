@@ -5,7 +5,7 @@ import { baseLocale, locales } from "../packages/shared/locale"
 
 // Syncs every non-en-GB locale file to en-GB: same keys in the same order; a key that is new or whose English changed since HEAD gets a lorem ipsum placeholder tagged with the language code, unless that translation was itself edited in the working tree. `--stage` git-adds the files it rewrote; `--check` fails on drift or leftover placeholders; `--todo` lists the placeholders as JSON and `--apply <file>` writes their translations back (the /translate skill).
 
-const LOCALE_DIRS = ["apps/tui/locales", "apps/api/locales", "apps/api/widgets/locales", "apps/web/messages"]
+const LOCALE_DIRS = ["apps/tui/locales", "apps/api/locales", "apps/web/messages"]
 const SOURCE = baseLocale
 // The web's inlang project lists its languages in JSON, so the sync keeps them in step with @kaja/shared/locale
 const INLANG_SETTINGS = "apps/web/project.inlang/settings.json"

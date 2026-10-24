@@ -76,33 +76,22 @@ const nasiTurnRateLimiterInner = rateLimiter({
 })
 
 /**
- * Per-visitor rate limiter for /widget/turn — keyed on the widget key plus IP, since there's no authenticated user id
- * for an anonymous widget visitor.
+ * Spend ceiling for `POST /ai/chat`, per widget id. The browser never calls this route; the web server does, so a
+ * per-IP bucket would count every visitor as one host.
  *
- * Default: 300 requests per 10 minutes per (key, IP) pair.
+ * Default: 3000 requests per 10 minutes per widget.
  */
-const widgetTurnRateLimiterInner = rateLimiter({
-  windowMs: env.WIDGET_TURN_RATE_LIMIT_WINDOW_MS,
-  limit: env.WIDGET_TURN_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  keyGenerator: (c: Context) => `${c.req.header("x-kaja-widget-key") ?? "none"}:${clientIp(c)}`
-})
-
-/**
- * Per-key spend ceiling for /widget/turn, independent of visitor/IP diversity — protects the owning account's
- * model-provider spend regardless of how many distinct visitors or IPs are hitting one widget.
- *
- * Default: 3000 requests per 10 minutes per key.
- */
-const widgetKeyRateLimiterInner = rateLimiter({
+const widgetSpendLimiterInner = rateLimiter({
   windowMs: env.WIDGET_KEY_RATE_LIMIT_WINDOW_MS,
   limit: env.WIDGET_KEY_RATE_LIMIT_MAX,
   standardHeaders: true,
-  keyGenerator: (c: Context) => c.req.header("x-kaja-widget-key") ?? "none"
+  keyGenerator: (c: Context) => {
+    const widget = c.get("widget" as never) as { id: string } | undefined
+    return widget?.id ?? "none"
+  }
 })
 
 export const globalRateLimiter = skipWhenDisabled(globalRateLimiterInner)
 export const authRateLimiter = skipWhenDisabled(authRateLimiterInner)
 export const nasiTurnRateLimiter = skipWhenDisabled(nasiTurnRateLimiterInner)
-export const widgetTurnRateLimiter = skipWhenDisabled(widgetTurnRateLimiterInner)
-export const widgetKeyRateLimiter = skipWhenDisabled(widgetKeyRateLimiterInner)
+export const widgetSpendLimiter = skipWhenDisabled(widgetSpendLimiterInner)

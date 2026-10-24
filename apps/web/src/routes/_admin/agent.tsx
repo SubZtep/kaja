@@ -6,7 +6,7 @@ export const Route = createFileRoute("/_admin/agent")({
   component: AgentLayout
 })
 
-/** What the agent can do and where it runs: abilities, widget keys, sandboxes. */
+/** What the agent can do and where it runs: abilities, widgets, sandboxes. */
 function AgentLayout() {
   return (
     <>

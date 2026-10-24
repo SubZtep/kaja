@@ -24,7 +24,7 @@ export class StatsService {
     // Sessions active in the range
     const active = db`s.user_id = ${userId} AND s.updated_at >= ${since}`
 
-    const [perDay, totals, channels, calls, approvals, personas, models, images] = await Promise.all([
+    const [perDay, totals, channels, calls, approvals, widgetSpend, personas, models, images] = await Promise.all([
       db<UsageStatsResponse["perDay"]>`
         WITH days AS (
           SELECT generate_series((${since}::timestamptz AT TIME ZONE ${timeZone})::date,
@@ -75,6 +75,11 @@ export class StatsService {
         WHERE ${active} AND tc.approval IS NOT NULL
         GROUP BY 1
         `,
+      db<{ prompt_tokens: number; completion_tokens: number }[]>`
+        SELECT COALESCE(SUM(c.prompt_tokens), 0)::float8 AS prompt_tokens,
+          COALESCE(SUM(c.completion_tokens), 0)::float8 AS completion_tokens
+        FROM widget_call c JOIN widget w ON w.id = c.widget_id
+        WHERE w.user_id = ${userId} AND c.created_at >= ${since}`,
       db`
         SELECT COALESCE(m.persona, 'default') AS persona, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
@@ -134,8 +139,8 @@ export class StatsService {
         sessions: totals[0]?.sessions ?? 0,
         messages: totals[0]?.messages ?? 0,
         toolCalls: ranked.reduce((sum, entry) => sum + entry.calls, 0),
-        promptTokens: totals[0]?.prompt_tokens ?? 0,
-        completionTokens: totals[0]?.completion_tokens ?? 0,
+        promptTokens: (totals[0]?.prompt_tokens ?? 0) + (widgetSpend[0]?.prompt_tokens ?? 0),
+        completionTokens: (totals[0]?.completion_tokens ?? 0) + (widgetSpend[0]?.completion_tokens ?? 0),
         avgLatencyMs: totals[0]?.avg_latency_ms ?? null
       },
       perDay: [...perDay],
