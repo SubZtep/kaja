@@ -1,15 +1,15 @@
 export const locales = [
+  "de-DE",
   "en-GB",
   "en-US",
-  "hu-HU",
-  "nan-TW",
-  "zh-TW",
   "es-ES",
+  "fr-FR",
+  "hu-HU",
   "ja-JP",
   "ko-KR",
-  "de-DE",
-  "fr-FR",
-  "pt-BR"
+  "nan-TW",
+  "pt-BR",
+  "zh-TW"
 ] as const
 
 export type Locale = (typeof locales)[number]

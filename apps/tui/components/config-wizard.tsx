@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
-import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
+import { baseLocale, LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
 import { Box, Text } from "ink"
 import { createContext, useContext, useEffect, useRef, useState } from "react"
@@ -1224,7 +1224,7 @@ export function ConfigWizard({
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
               hints={[...locales]}
-              initialIndex={result.language ? locales.indexOf(result.language) : undefined}
+              initialIndex={locales.indexOf(result.language ?? baseLocale)}
               onSelect={index => {
                 const language = locales[index]!
                 // Switching the process language here is the whole point of asking first: every step

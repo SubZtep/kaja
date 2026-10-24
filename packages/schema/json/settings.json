@@ -129,7 +129,7 @@
         "locale": {
           "description": "Language for the chat and application",
           "type": "string",
-          "enum": ["en-GB", "en-US", "hu-HU", "nan-TW", "zh-TW", "es-ES", "ja-JP", "ko-KR", "de-DE", "fr-FR", "pt-BR"]
+          "enum": ["de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "hu-HU", "ja-JP", "ko-KR", "nan-TW", "pt-BR", "zh-TW"]
         },
         "mode": {
           "description": "Which backend `kaja` starts: the cloud API, or the local agent against your own provider",
