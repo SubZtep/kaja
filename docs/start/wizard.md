@@ -74,14 +74,16 @@ answers.
 6. **Which model.** For each ticked task with more than one model to choose from, pick one. The newest
    model that can use tools is highlighted, and typing filters the list.
 7. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
-   Press <kbd>Enter</kbd> with nothing ticked to skip.
+   Press <kbd>Enter</kbd> with nothing ticked to skip. Then, when `git` is installed: whether to use the
+   online [marketplace](/abilities) of skills, personas and tools, and whether to keep it up to date on its own
+   ([`[marketplace]`](/config/settings#marketplace)). Without `git` it stays off.
 8. **Sounds.** Sound effects, desktop notifications and reading replies aloud
    ([`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events)), each asked only when Kaja
    found a program for it on your computer. A later run opens on what `hooks.toml` has. `kaja config hooks`
    asks just these again.
 
-After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
-your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
+After the last answer the header says **Finishing up** and the wizard carries on by itself: fetching the
+marketplace, any model downloads and a check of your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
 before it's saved.
 
 ## After the last question
@@ -92,20 +94,17 @@ tells you how to install a sound player, notification tool or speech tool it cou
 With **Kaja Cloud** that's it. The first time, Kaja goes straight on to sign you in. After a later
 `kaja config wizard`, run `kaja` to sign in.
 
-With **your own provider**, Kaja finishes setting up first and may ask a few more things:
+With **your own provider**, Kaja fetches the marketplace (if you said yes) and may ask a few more things:
 
-1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and tools
-   (needs `git`), and whether to keep it up to date on its own
-   ([`[marketplace]`](/config/settings#marketplace)).
-2. **Abilities that can't run here.** An [MCP ability](/abilities/mcp) a persona uses that's missing what it
+1. **Abilities that can't run here.** An [MCP ability](/abilities/mcp) a persona uses that's missing what it
    needs on this machine (`uv` for a Python package, Chrome for `chrome-devtools`) is offered three ways out:
    install it (uv's official installer runs; for Chrome, its download page opens), run it on a
    [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode) instead (signing you in to Kaja cloud if you
    aren't yet), or skip it and see how to install it yourself.
-3. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
-4. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
+2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
+3. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
-5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/config/commands#checking-keys-and-models)
+4. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/config/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
 
 The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.

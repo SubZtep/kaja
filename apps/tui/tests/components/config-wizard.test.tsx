@@ -432,6 +432,33 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
   await close(w)
 })
 
+test("with git, the marketplace is asked in Extras, and auto-update only while it's on", async () => {
+  const w = await openProviders({ gitReady: true })
+  await pickOllama(w)
+  await w.t.press(ENTER) // extras: nothing ticked
+  expect(w.t.lastFrame()).toContain("Extras 2/3")
+  expect(w.t.lastFrame()).toContain("Use the online marketplace")
+  await w.t.press(DOWN) // No, stay offline
+  await w.t.press(ENTER)
+  // Off, so there's nothing to keep up to date: that was the last question
+  expect(w.result).toMatchObject({ marketplace: false })
+  expect(w.t.output()).toContain("Marketplace No")
+
+  await close(w)
+})
+
+test("the marketplace questions open on the current settings", async () => {
+  const w = await openProviders({ gitReady: true, prefill: { marketplace: true, autoFetch: false } })
+  await pickOllama(w)
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // marketplace: kept on
+  expect(w.t.lastFrame()).toContain("Keep the marketplace up to date")
+  await w.t.press(ENTER) // auto-update: kept off
+  expect(w.result).toMatchObject({ marketplace: true, autoFetch: false })
+
+  await close(w)
+})
+
 test("a ticked extra is asked for what it needs", async () => {
   const w = await openProviders()
   await pickOllama(w)

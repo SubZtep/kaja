@@ -119,6 +119,10 @@ export type WizardResult = {
   models?: Partial<Record<ModelTask, ModelPick>>
   extras?: WizardExtra[]
   telegramToken?: string
+  /** Use the online marketplace (on unless turned off); fetched after the wizard, when git can. */
+  marketplace?: boolean
+  /** Pull the marketplace at startup when it's a day old; asked only with the marketplace on. */
+  autoFetch?: boolean
   /** Sounds, notifications and speech, each asked only when this machine has a program for it. */
   hooks?: Partial<WantedHooks>
 }
@@ -186,6 +190,8 @@ type Step =
   | `custom-task:${number}`
   | "extras"
   | "telegramToken"
+  | "marketplace"
+  | "autoFetch"
   | HookStep
   | "done"
 
@@ -220,6 +226,8 @@ const BLOCK_OF_KIND: Record<string, Block> = {
   model: "models",
   extras: "extras",
   telegramToken: "extras",
+  marketplace: "extras",
+  autoFetch: "extras",
   sounds: "sounds",
   notifications: "sounds",
   speech: "sounds"
@@ -340,7 +348,7 @@ export function chosenPicks(result: WizardResult): Partial<Record<ModelTask, Mod
  * follow-up only when that extra was ticked. Recomputed after every answer, so a skipped step never mounts just to
  * advance out of itself.
  */
-function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPrograms = {}): Step[] {
+function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPrograms = {}, git = false): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
   // setting being re-offered, which the user is here to change.
   const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
@@ -372,12 +380,23 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPro
   // Every extra is a local-agent feature: the Telegram bot.
   steps.push("extras")
   if (result.extras?.includes("telegram")) steps.push("telegramToken")
+  // Personas and abilities come from the marketplace, which only the local agent loads, and only git can fetch
+  if (git) {
+    steps.push("marketplace")
+    if (result.marketplace !== false) steps.push("autoFetch")
+  }
   steps.push(...hooks, "done")
   return steps
 }
 
-function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode, programs?: HookPrograms): Step {
-  const steps = stepsFor(result, forcedMode, programs)
+function nextStepAfter(
+  step: Step,
+  result: WizardResult,
+  forcedMode?: KajaMode,
+  programs?: HookPrograms,
+  git?: boolean
+): Step {
+  const steps = stepsFor(result, forcedMode, programs, git)
   const at = steps.indexOf(step)
   if (at !== -1) return steps[at + 1] ?? "done"
   // The step that just ended the custom model list is no longer in the list, so carry on after the custom ones.
@@ -500,6 +519,10 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
       result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined
     ),
   telegramToken: (_, result, saved) => keyLine(t("wizard.summaryKeyTelegram"), result.telegramToken, saved?.telegram),
+  marketplace: (_, result) =>
+    lineIf(t("wizard.summaryMarketplace"), t(result.marketplace === false ? "hooks.no" : "hooks.yes")),
+  autoFetch: (_, result) =>
+    lineIf(t("wizard.summaryAutoFetch"), t(result.autoFetch === false ? "hooks.no" : "hooks.yes")),
   ...Object.fromEntries(
     HOOK_STEPS.map(hook => [
       hook.step,
@@ -538,7 +561,17 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
             {index > reached ? <Text dimColor>{t(BLOCK_LABEL_KEY[block])}</Text> : null}
           </Text>
         ))}
-        {current ? <Text dimColor>{`  ${t("wizard.escBack")}`}</Text> : null}
+        {/* The last frame stays on screen above what the runner prints next: saving, the marketplace, key checks */}
+        {current ? (
+          <Text dimColor>{`  ${t("wizard.escBack")}`}</Text>
+        ) : (
+          <Text>
+            <Text dimColor> › </Text>
+            <Text bold color="magenta">
+              {t("wizard.blockFinishing")}
+            </Text>
+          </Text>
+        )}
       </Text>
     </RailLine>
   )
@@ -583,6 +616,7 @@ export function ConfigWizard({
   listModels,
   probe,
   hookPrograms,
+  gitReady,
   env = process.env,
   onDone,
   onCancel
@@ -601,6 +635,8 @@ export function ConfigWizard({
   probe?: (target: ProbeTarget, signal: AbortSignal) => Promise<LiveCheck | undefined>
   /** The sound player, notifier and speech program found here; each one found is asked about. */
   hookPrograms?: HookPrograms
+  /** Git works here, so the marketplace can be fetched: only then is it asked about. */
+  gitReady?: boolean
   /** Where a provider's API key may already be set; the process's environment unless a test passes its own. */
   env?: Record<string, string | undefined>
   onDone: (result: WizardResult) => void
@@ -648,7 +684,7 @@ export function ConfigWizard({
     setHistory(list => [...list, step])
     setResult(next)
     setTyping(false)
-    setStep(nextStepAfter(step, next, mode, hookPrograms))
+    setStep(nextStepAfter(step, next, mode, hookPrograms, gitReady))
   }
 
   // Esc: the previous question opens again on its answer; on the first one it cancels the wizard.
@@ -697,6 +733,35 @@ export function ConfigWizard({
           onClose={back}
         />
         <Text dimColor>{t("wizard.keyEnvHint")}</Text>
+      </Question>
+    )
+  }
+
+  // A yes/no question, "yes" first, opening on the current answer
+  function yesNo({
+    title,
+    items,
+    hint = "",
+    on,
+    onPick
+  }: {
+    title: string
+    items: [string, string]
+    hint?: string
+    on: boolean
+    onPick: (on: boolean) => void
+  }) {
+    return (
+      <Question title={title}>
+        <SelectMenu
+          closeOnBackspace={false}
+          items={items}
+          hints={[hint, ""]}
+          width={70}
+          initialIndex={on ? 0 : 1}
+          onSelect={index => onPick(index === 0)}
+          onClose={back}
+        />
       </Question>
     )
   }
@@ -1112,25 +1177,37 @@ export function ConfigWizard({
         )
       }
 
+      case "marketplace": {
+        return yesNo({
+          title: t("wizard.marketplaceTitle"),
+          items: [t("wizard.marketplaceYes"), t("wizard.marketplaceNo")],
+          on: result.marketplace !== false,
+          onPick: marketplace => advance({ marketplace })
+        })
+      }
+
+      case "autoFetch": {
+        return yesNo({
+          title: t("wizard.autoFetchTitle"),
+          items: [t("wizard.autoFetchYes"), t("wizard.autoFetchNo")],
+          on: result.autoFetch !== false,
+          onPick: autoFetch => advance({ autoFetch })
+        })
+      }
+
       case "sounds":
       case "notifications":
       case "speech": {
         const hook = HOOK_STEPS.find(candidate => candidate.step === step)!
-        const on = result.hooks?.[hook.step] ?? hook.on
-        return (
-          <Question title={t(hook.title, { program: hookPrograms?.[hook.kind] ?? "" })}>
-            <SelectMenu
-              closeOnBackspace={false}
-              items={[t("hooks.yes"), t("hooks.no")]}
-              // Speech names its program in the question already
-              hints={[hook.step === "speech" ? "" : (hookPrograms?.[hook.kind] ?? ""), ""]}
-              width={70}
-              initialIndex={on ? 0 : 1}
-              onSelect={index => advance({ hooks: { ...result.hooks, [hook.step]: index === 0 } })}
-              onClose={back}
-            />
-          </Question>
-        )
+        const program = hookPrograms?.[hook.kind] ?? ""
+        return yesNo({
+          title: t(hook.title, { program }),
+          items: [t("hooks.yes"), t("hooks.no")],
+          // Speech names its program in the question already
+          hint: hook.step === "speech" ? "" : program,
+          on: result.hooks?.[hook.step] ?? hook.on,
+          onPick: on => advance({ hooks: { ...result.hooks, [hook.step]: on } })
+        })
       }
 
       default:
@@ -1139,7 +1216,7 @@ export function ConfigWizard({
     }
   }
 
-  const steps = stepsFor(result, mode, hookPrograms)
+  const steps = stepsFor(result, mode, hookPrograms, gitReady)
   const blocks = BLOCK_ORDER.filter(block => steps.some(candidate => blockOf(candidate) === block))
   const current = blockOf(step)
   const inBlock = steps.filter(candidate => blockOf(candidate) === current)
