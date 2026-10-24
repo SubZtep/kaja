@@ -75,15 +75,15 @@ test("groups models by task in the order the report lists them", () => {
 
 test("a working model is listed and nothing is asked", async () => {
   const r = await run([FIREWORKS_CHAT, EMBEDDING], {})
-  expect(r.lines).toContain("  ✔ minimax-m3 (up · 32,768 tokens, assumed)")
-  expect(r.lines).toContain("  ✔ qwen3-embedding (up)")
+  expect(r.lines).toContain(" ✓ Chat          minimax-m3 (up · 32,768 tokens, assumed)")
+  expect(r.lines).toContain(" ✓ Embedding     qwen3-embedding (up)")
   expect(r.asked).toEqual([])
   expect(r.outcomes.map(o => o.ok)).toEqual([true, true])
 })
 
 test("a failing model says why", async () => {
   const r = await run([FIREWORKS_CHAT], { "minimax-m3": "401 The API key you provided is invalid." })
-  expect(r.lines).toContain("  ✘ minimax-m3 (down): 401 The API key you provided is invalid.")
+  expect(r.lines).toContain(" ✗ Chat          minimax-m3 (down): 401 The API key you provided is invalid.")
   expect(r.outcomes).toMatchObject([{ task: "chat", ok: false }])
 })
 
@@ -142,7 +142,7 @@ test("a working first model is never offered a switch, even with others after it
 
 test("a broken later model alone does not fail the task", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "llama3.2:1b": "down" })
-  expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
+  expect(r.lines).toContain(" ✗               llama3.2:1b (down): down")
   expect(r.outcomes).toHaveLength(1)
   expect(r.outcomes[0]).toMatchObject({ task: "chat", ok: true })
 })

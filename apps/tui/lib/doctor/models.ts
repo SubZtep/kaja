@@ -86,13 +86,15 @@ async function probeTask(
   contextWindow: typeof resolveContextWindow
 ): Promise<ProbeResult[]> {
   const results: ProbeResult[] = []
-  for (const model of entries) {
+  for (const [index, model] of entries.entries()) {
     const result = await probe(model)
     results.push({ model, result })
+    // The task names the first of its models; the ones after it, its alternatives, line up beneath
+    const subject = { subject: index === 0 ? t(TASK_HEADING_KEY[model.task]) : " " }
     print(
       result.ok
-        ? statusLine("success", `${model.model} (${await upLabel(model, contextWindow)})`)
-        : statusLine("error", `${model.model} (${t("doctor.modelDown")}): ${result.error}`)
+        ? statusLine("success", `${model.model} (${await upLabel(model, contextWindow)})`, subject)
+        : statusLine("error", `${model.model} (${t("doctor.modelDown")}): ${result.error}`, subject)
     )
   }
   return results
@@ -121,7 +123,6 @@ export async function runModelPass(
   const dropped: string[] = []
 
   for (const [task, entries] of groupModelsByTask(models)) {
-    print(t(TASK_HEADING_KEY[task]))
     const results = await probeTask(entries, print, probe, contextWindow)
 
     const active = results[0]!

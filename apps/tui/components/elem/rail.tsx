@@ -67,7 +67,9 @@ export function Question({
   return (
     <Box flexDirection="column">
       <RailLine marker={<Text {...accent()}>◆</Text>}>
-        <Text bold>{title}</Text>
+        <Box width={textWidth()}>
+          <Text bold>{title}</Text>
+        </Box>
       </RailLine>
       <Box {...RAIL} flexDirection="column" gap={1}>
         <InRail value>{children}</InRail>

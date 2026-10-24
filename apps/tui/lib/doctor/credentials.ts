@@ -262,26 +262,26 @@ async function testAndSave(item: CredentialItem, value: string): Promise<Credent
   return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
-/** One result line, e.g. " ✔ github (ability): saved and working" or " ✘ telegram bot: missing". */
+/** One result line on the setup grid, e.g. " ✓ github (ability) saved, and it works" or " ✗ telegram bot missing". */
 export function outcomeLine(outcome: CredentialOutcome): string {
-  const { label } = outcome.item
+  const subject = { subject: outcome.item.label }
   switch (outcome.status) {
     case "ok":
-      return statusLine("success", label)
+      return statusLine("success", t("doctor.keyWorks"), subject)
     case "keyless":
-      return statusLine("success", `${label}: ${t("doctor.keyless")}`)
+      return statusLine("success", t("doctor.keyless"), subject)
     case "untested":
-      return statusLine("info", `${label}: ${t("doctor.untested")}`)
+      return statusLine("info", t("doctor.untested"), subject)
     case "off":
-      return statusLine("info", `${label}: ${t("doctor.keyOff")}`)
+      return statusLine("info", t("doctor.keyOff"), subject)
     case "saved":
-      return statusLine("success", `${label}: ${t("doctor.savedWorking")}`)
+      return statusLine("success", t("doctor.savedWorking"), subject)
     case "saved-untested":
-      return statusLine("info", `${label}: ${t("doctor.savedUntested")}`)
+      return statusLine("info", t("doctor.savedUntested"), subject)
     case "saved-failing":
-      return statusLine("error", `${label}: ${t("doctor.savedFailing", { reason: outcome.reason })}`)
+      return statusLine("error", t("doctor.savedFailing", { reason: outcome.reason }), subject)
     default:
-      return statusLine("error", `${label}: ${outcome.reason}`)
+      return statusLine("error", outcome.reason, subject)
   }
 }
 

@@ -83,7 +83,7 @@ answers.
    found a program for it on your computer. A later run opens on what `hooks.toml` has. `kaja config hooks`
    asks just these again.
 
-After the last answer the header says **Finishing up** and the wizard carries on by itself: fetching the
+After the last answer the wizard says **All set**, and under a **Finishing up** line carries on by itself: fetching the
 marketplace, any model downloads and a check of your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
 before it's saved.
 

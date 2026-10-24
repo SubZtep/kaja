@@ -123,7 +123,7 @@ test("a missing value is asked for, tested, then saved", async () => {
   expect(titles).toEqual(["thing needs its key or token (header X-Key)."])
   expect(saved).toEqual(["good"])
   expect(outcomes[0]!.status).toBe("saved")
-  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toBe("  ✔ thing: saved, and it works")
+  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toBe(" ✓ thing         saved, and it works")
 })
 
 test("a failing saved value asks for a new one with the reason", async () => {
@@ -163,7 +163,7 @@ test("a missing ability key is offered (Enter skips), and without it the ability
   const outcomes = await resolveCredentials([skipped.item], prompts)
   expect(titles).toEqual(["thing is off until it has a key. Enter one, or skip."])
   expect(outcomes[0]!.status).toBe("off")
-  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toContain("thing: no key, off")
+  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toContain("ℹ thing         no key, off")
   expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
 
   const entered = ability()

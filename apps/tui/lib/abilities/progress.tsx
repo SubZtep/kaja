@@ -1,17 +1,23 @@
-import { ProgressBar } from "@inkjs/ui"
-import { Box, render, Text } from "ink"
-import { ConsoleTheme } from "../../components/theme"
+import { render, Text } from "ink"
+import { padLabel, RailLine } from "../../components/elem/rail"
+import { ConsoleTheme, useKajaTheme } from "../../components/theme"
 
-const BAR_WIDTH = 30
+const BAR_WIDTH = 36
 
+/** A step bar on the setup grid: "⠋" while running (✓ when full), the label to the value column, ━ done and ─ to go. */
 function StepProgress({ label, value }: Readonly<{ label: string; value: number }>) {
+  const { accent, success } = useKajaTheme()
+  const done = value >= 100
+  const filled = Math.max(0, Math.round((Math.min(value, 100) / 100) * BAR_WIDTH))
   return (
-    <Box gap={1}>
-      <Text>{label}</Text>
-      <Box width={BAR_WIDTH}>
-        <ProgressBar value={value} />
-      </Box>
-    </Box>
+    <RailLine marker={done ? <Text {...success()}>✓</Text> : <Text dimColor>⠋</Text>}>
+      <Text>
+        {padLabel(label)}
+        <Text {...(done ? success() : accent())}>{"━".repeat(filled)}</Text>
+        <Text dimColor>{"─".repeat(Math.max(0, BAR_WIDTH - filled))}</Text>
+        {done ? null : <Text dimColor> {Math.round(value)}%</Text>}
+      </Text>
+    </RailLine>
   )
 }
 

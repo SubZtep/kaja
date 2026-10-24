@@ -1,11 +1,12 @@
+import { homedir } from "node:os"
 import { type ModelTask, providerKey } from "@kaja/schema/config"
 import { render } from "ink"
 import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
 import type { LiveCheck } from "../../components/secret-prompt"
-import { create, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
+import { create, getConfigDir, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
-import { statusLine } from "../doctor/status"
+import { sectionRule, statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { type CatalogProvider, catalogProvider } from "../models/catalog"
 import { readCurrentModels } from "../models/current"
@@ -73,6 +74,12 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
   const { setTomlValue } = await import("../config/toml")
   await setTomlValue(getConfigPath(), "marketplace", key, String(value))
   invalidateConfigCache()
+}
+
+// A path under the home folder as people write it: ~/.config/kaja
+function tildePath(path: string): string {
+  const home = homedir()
+  return path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
 type GitCheck = Awaited<ReturnType<typeof import("../abilities/fetch").checkGit>>
@@ -333,7 +340,6 @@ async function checkModels(): Promise<number> {
   if (models.length === 0) return 0
 
   const { defaultModelIo, runModelPass } = await import("../doctor/models")
-  console.log(t("wizard.checkingModels"))
   const outcomes = await runModelPass(models, line => console.log(line), await defaultModelIo())
   console.log()
   return outcomes.filter(outcome => !outcome.ok).length
@@ -376,6 +382,7 @@ export async function runConfigWizard({
         prefill={{ ...prefill, ...(hooks.current ? { hooks: hooks.current } : {}), ...marketplace }}
         hookPrograms={hooks.programs}
         gitReady={git.ok}
+        configDir={tildePath(getConfigDir())}
         mode={mode}
         saved={saved}
         listModels={listProviderModels}
@@ -398,6 +405,8 @@ export async function runConfigWizard({
     const { setConsoleTheme } = await import("../terminal-background")
     setConsoleTheme(result.theme)
   }
+  console.log()
+  console.log(sectionRule(t("wizard.blockFinishing")))
   await applyResult(result, line => console.log(line))
   // Cloud chat has the same hooks, so this comes before the mode split
   await applyHooks(chosenHooks(result, hooks.programs), line => console.log(line))
@@ -418,7 +427,7 @@ export async function runConfigWizard({
   for (const [id, key] of Object.entries(result.keys ?? {})) {
     Object.assign(providerKeys, offer(`[providers.${id}] api_key`, key))
   }
-  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra, {
+  const outcomes = await runCredentialPass(line => console.log(line), undefined, extra, {
     ...providerKeys,
     ...offered
   })

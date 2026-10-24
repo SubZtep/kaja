@@ -752,6 +752,7 @@ export function ConfigWizard({
   probe,
   hookPrograms,
   gitReady,
+  configDir,
   env = process.env,
   onDone,
   onCancel
@@ -772,6 +773,8 @@ export function ConfigWizard({
   hookPrograms?: HookPrograms
   /** Git works here, so the marketplace can be fetched: only then is it asked about. */
   gitReady?: boolean
+  /** Where the answers are saved, as the closing line names it (`~/.config/kaja`). */
+  configDir?: string
   /** Where a provider's API key may already be set; the process's environment unless a test passes its own. */
   env?: Record<string, string | undefined>
   onDone: (result: WizardResult) => void
@@ -1392,6 +1395,7 @@ export function ConfigWizard({
     }
   }
 
+  const { success } = useKajaTheme()
   const steps = stepsFor(result, mode, hookPrograms, gitReady)
   const blocks = BLOCK_ORDER.filter(block => steps.some(candidate => blockOf(candidate) === block))
   const current = blockOf(step)
@@ -1431,6 +1435,15 @@ export function ConfigWizard({
         {recent.slice(hidden).map(line => (
           <RecentAnswer key={line.id} label={line.label} value={line.value} />
         ))}
+        {/* The last frame closes the record of what was chosen; the runner's Finishing up follows below it */}
+        {current ? null : (
+          <RailLine marker={<Text {...success()}>✓</Text>}>
+            <Text>
+              <Text bold>{t("wizard.allSet")}</Text>
+              {configDir ? <Text dimColor> {t("wizard.savedTo", { path: configDir })}</Text> : null}
+            </Text>
+          </RailLine>
+        )}
         {/* The rail runs from the recent answers into the question */}
         {recent.length > 0 && current ? (
           <RailLine marker={<Text dimColor>│</Text>}>
