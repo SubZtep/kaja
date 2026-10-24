@@ -243,7 +243,8 @@ function localProviders(servers: DetectedServer[]): CatalogProvider[] {
   return servers.map(server => {
     const provider = detectedProvider(server)
     let id = catalogProvider(provider.id) ? `${provider.id}-local` : provider.id
-    for (let n = 2; taken.has(id); n++) id = `${provider.id}-${n}`
+    let n = 2
+    while (taken.has(id)) id = `${provider.id}-${n++}`
     taken.add(id)
     return { ...provider, id }
   })

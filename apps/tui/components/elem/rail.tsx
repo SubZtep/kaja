@@ -1,5 +1,5 @@
 import { Box, type BoxProps, Text } from "ink"
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react"
+import { createContext, Fragment, type ReactElement, type ReactNode, useContext, useEffect, useState } from "react"
 import { useKajaTheme } from "../theme"
 
 /**
@@ -103,7 +103,7 @@ export function Question({
 
 /** A hint line: each key plain and what it does dim, joined by a dim "·", then an optional note, dim. */
 export function KeyHint({ keys = [], note }: Readonly<{ keys?: [key: string, action: string][]; note?: string }>) {
-  const parts: ReactNode[] = keys.map(([key, action]) => (
+  const parts: ReactElement[] = keys.map(([key, action]) => (
     <Text key={key}>
       {key} <Text dimColor>{action}</Text>
     </Text>
@@ -116,16 +116,12 @@ export function KeyHint({ keys = [], note }: Readonly<{ keys?: [key: string, act
     )
   return (
     <Text wrap="truncate-end">
-      {parts.flatMap((part, index) =>
-        index > 0
-          ? [
-              <Text key={`dot${index}`} dimColor>
-                {" · "}
-              </Text>,
-              part
-            ]
-          : [part]
-      )}
+      {parts.map((part, index) => (
+        <Fragment key={part.key}>
+          {index > 0 && <Text dimColor>{" · "}</Text>}
+          {part}
+        </Fragment>
+      ))}
     </Text>
   )
 }

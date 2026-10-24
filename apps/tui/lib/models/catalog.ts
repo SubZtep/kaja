@@ -188,16 +188,16 @@ export function buildModelsToml({ providers, picks, baseUrls = {} }: ModelsSelec
     const pick = picks[task]
     return pick ? [...entries.values()].indexOf(entryFor(pick.provider, pick.model)) : -1
   }
-  for (const provider of providers.filter(candidate => candidate.own)) {
-    for (const model of provider.models) {
-      const entry = entryFor(provider.id, model.model)
-      const at = [...entries.values()].indexOf(entry)
-      for (const task of model.tasks) {
-        // Never a task that's off, and never above that task's pick, where it would win
-        if (entry.tasks.includes(task) || pickedAt(task) === -1 || at < pickedAt(task)) continue
-        entry.tasks.push(task)
-      }
+  const addTasks = (entry: ModelEntry, tasks: readonly ModelTask[]) => {
+    const at = [...entries.values()].indexOf(entry)
+    for (const task of tasks) {
+      // Never a task that's off, and never above that task's pick, where it would win
+      if (entry.tasks.includes(task) || pickedAt(task) === -1 || at < pickedAt(task)) continue
+      entry.tasks.push(task)
     }
+  }
+  for (const provider of providers.filter(candidate => candidate.own)) {
+    for (const model of provider.models) addTasks(entryFor(provider.id, model.model), model.tasks)
   }
 
   const modelTables = [...entries.values()]

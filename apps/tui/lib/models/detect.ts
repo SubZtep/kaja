@@ -1,10 +1,11 @@
 import type { ModelTask } from "@kaja/schema/config"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import type { CatalogProvider } from "./catalog"
 import { probeModels } from "./list"
 
 /** Whether two addresses name the same server: `localhost` and `127.0.0.1` alike, a trailing slash ignored. */
 export function sameAddress(a: string, b: string): boolean {
-  const normal = (url: string) => url.replace("://localhost", "://127.0.0.1").replace(/\/+$/, "")
+  const normal = (url: string) => trimTrailingSlashes(url.replace("://localhost", "://127.0.0.1"))
   return normal(a) === normal(b)
 }
 
@@ -31,8 +32,9 @@ function envAddress(value: string | undefined, defaultPort: number): string | un
     const url = new URL(/^https?:\/\//.test(value) ? value : `http://${value}`)
     if (url.hostname === "0.0.0.0" || url.hostname === "") url.hostname = "127.0.0.1"
     if (!url.port) url.port = String(defaultPort)
-    const path = url.pathname.replace(/\/+$/, "")
-    return `${url.origin}${path.endsWith("/v1") ? path : `${path}/v1`}`
+    const path = trimTrailingSlashes(url.pathname)
+    const v1Path = path.endsWith("/v1") ? path : `${path}/v1`
+    return `${url.origin}${v1Path}`
   } catch {
     return undefined
   }
@@ -46,7 +48,8 @@ export function envCandidates(env: Record<string, string | undefined>): Candidat
   const ollama = envAddress(env.OLLAMA_HOST, 11434)
   if (ollama) found.push({ id: "ollama", name: "Ollama", baseUrl: ollama })
   const llamaHost = env.LLAMA_ARG_HOST ?? (env.LLAMA_ARG_PORT ? "127.0.0.1" : undefined)
-  const llama = envAddress(llamaHost && `${llamaHost}${env.LLAMA_ARG_PORT ? `:${env.LLAMA_ARG_PORT}` : ""}`, 8080)
+  const llamaPort = env.LLAMA_ARG_PORT ? `:${env.LLAMA_ARG_PORT}` : ""
+  const llama = envAddress(llamaHost && `${llamaHost}${llamaPort}`, 8080)
   if (llama) found.push({ id: "llama", name: "llama.cpp", baseUrl: llama })
   // Only a server on this machine or the LAN: a hosted API there is a provider, not a detected server
   for (const name of ["OPENAI_BASE_URL", "OPENAI_API_BASE"]) {
@@ -54,7 +57,7 @@ export function envCandidates(env: Record<string, string | undefined>): Candidat
     if (!value) continue
     try {
       if (PRIVATE_HOST.test(new URL(value).hostname))
-        found.push({ id: "local", name: "OpenAI-compatible", baseUrl: value.replace(/\/+$/, "") })
+        found.push({ id: "local", name: "OpenAI-compatible", baseUrl: trimTrailingSlashes(value) })
     } catch {
       // not an address
     }

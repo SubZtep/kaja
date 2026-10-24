@@ -375,20 +375,7 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPro
   for (const provider of catalogChoices(result)) {
     steps.push(provider.kind === "hosted" ? `key:${provider.id}` : `address:${provider.id}`)
   }
-  if (tickedProviders(result).includes(CUSTOM)) {
-    steps.push("custom-name", "custom-url", "custom-key")
-    const custom = result.custom
-    const models = custom?.models ?? []
-    // A saved provider's models are reviewed in one list; only the ones added after it are asked one by one
-    if (custom?.saved) steps.push("custom-review")
-    const first = custom?.saved ? (custom.reviewed ?? models.length) : 0
-    for (let index = first; index < models.length; index++) {
-      steps.push(`custom-model:${index}`, `custom-task:${index}`)
-    }
-    // Ask for another model until the user ends the list, but never while the last one still needs its task.
-    if (!result.custom?.done && models.at(-1)?.task !== undefined) steps.push(`custom-model:${models.length}`)
-    else if (models.length === 0) steps.push("custom-model:0")
-  }
+  if (tickedProviders(result).includes(CUSTOM)) steps.push(...customSteps(result.custom))
   // One task to choose from is no choice: chat alone is set up without asking.
   if (availableTasks(result).length > 1) steps.push("tasks")
   for (const task of askedTasks(result)) steps.push(`model:${task}`)
@@ -401,6 +388,22 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPro
     if (result.marketplace !== false) steps.push("autoFetch")
   }
   steps.push(...hooks, "done")
+  return steps
+}
+
+// The custom provider's steps: name, address, key, then its models one by one
+function customSteps(custom: WizardCustom | undefined): Step[] {
+  const steps: Step[] = ["custom-name", "custom-url", "custom-key"]
+  const models = custom?.models ?? []
+  // A saved provider's models are reviewed in one list; only the ones added after it are asked one by one
+  if (custom?.saved) steps.push("custom-review")
+  const first = custom?.saved ? (custom.reviewed ?? models.length) : 0
+  for (let index = first; index < models.length; index++) {
+    steps.push(`custom-model:${index}`, `custom-task:${index}`)
+  }
+  // Ask for another model until the user ends the list, but never while the last one still needs its task.
+  if (!custom?.done && models.at(-1)?.task !== undefined) steps.push(`custom-model:${models.length}`)
+  else if (models.length === 0) steps.push("custom-model:0")
   return steps
 }
 
@@ -452,8 +455,8 @@ const tailOf = (key: string | undefined) => (key && key.length >= 12 ? key.slice
 // A key step's empty field: Enter keeps a key typed earlier (you came back to it) or one already saved, else skips
 function keyPlaceholder(typed: string | undefined, alreadySaved: boolean | undefined, savedTail?: string): string {
   const tail = typed ? tailOf(typed) : savedTail
-  const which = typed ? "Typed" : alreadySaved ? "Saved" : undefined
-  if (!which) return t("wizard.keySkips")
+  if (!typed && !alreadySaved) return t("wizard.keySkips")
+  const which = typed ? "Typed" : "Saved"
   return tail ? t(`wizard.keyKeeps${which}Tail`, { tail }) : t(`wizard.keyKeeps${which}`)
 }
 
@@ -1083,64 +1086,7 @@ export function ConfigWizard({
       )
     }
 
-    if (kind === "custom-model") {
-      const index = Number(subject)
-      // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
-      const existing = custom.models[index]
-      const listed = listing?.url === custom.baseUrl ? listing : undefined
-      if (!existing && !typing && listed && !listed.ids) {
-        return <Text dimColor>{t("wizard.customModelSearching", { url: custom.baseUrl ?? "" })}</Text>
-      }
-      const offered = (listed?.ids ?? []).filter(id => !custom.models.some(entry => entry.model === id))
-      if (!existing && !typing && offered.length > 0) {
-        // Typing and finishing first, so they stay in reach above a long list
-        const actions = [t("wizard.customModelTypeOther"), ...(index > 0 ? [t("wizard.customModelEnough")] : [])]
-        return (
-          <Question
-            title={t(index === 0 ? "wizard.customModelPickTitle" : "wizard.customModelPickMoreTitle", {
-              provider: nameOf
-            })}
-            hint={pickHint()}
-          >
-            <SelectMenu
-              closeOnBackspace={false}
-              items={[...actions, ...offered]}
-              width={70}
-              initialIndex={actions.length}
-              onSelect={choice => {
-                if (choice === 0) return setTyping(true)
-                if (choice < actions.length) return advance({ custom: { ...custom, done: true } })
-                advance({
-                  custom: { ...custom, models: [...custom.models, { model: offered[choice - actions.length]! }] }
-                })
-              }}
-              onClose={back}
-            />
-          </Question>
-        )
-      }
-      return (
-        <InputPrompt
-          onBack={back}
-          title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
-            provider: nameOf
-          })}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
-          defaultValue={existing?.model}
-          // The first model is required, or the provider would serve nothing.
-          validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
-          onSubmit={value => {
-            if (existing) {
-              const models = custom.models.map((m, i) => (i === index && value ? { ...m, model: value } : m))
-              return advance({ custom: { ...custom, models } })
-            }
-            advance({
-              custom: value ? { ...custom, models: [...custom.models, { model: value }] } : { ...custom, done: true }
-            })
-          }}
-        />
-      )
-    }
+    if (kind === "custom-model") return customModelView(Number(subject), custom, nameOf)
 
     if (kind === "custom-task") {
       const index = Number(subject)
@@ -1167,6 +1113,65 @@ export function ConfigWizard({
     }
 
     return undefined
+  }
+
+  // One custom model: picked from what the server lists, else typed; empty ends the list.
+  function customModelView(index: number, custom: WizardCustom, nameOf: string) {
+    // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
+    const existing = custom.models[index]
+    const listed = listing?.url === custom.baseUrl ? listing : undefined
+    if (!existing && !typing && listed && !listed.ids) {
+      return <Text dimColor>{t("wizard.customModelSearching", { url: custom.baseUrl ?? "" })}</Text>
+    }
+    const offered = (listed?.ids ?? []).filter(id => !custom.models.some(entry => entry.model === id))
+    if (!existing && !typing && offered.length > 0) {
+      // Typing and finishing first, so they stay in reach above a long list
+      const actions = [t("wizard.customModelTypeOther"), ...(index > 0 ? [t("wizard.customModelEnough")] : [])]
+      return (
+        <Question
+          title={t(index === 0 ? "wizard.customModelPickTitle" : "wizard.customModelPickMoreTitle", {
+            provider: nameOf
+          })}
+          hint={pickHint()}
+        >
+          <SelectMenu
+            closeOnBackspace={false}
+            items={[...actions, ...offered]}
+            width={70}
+            initialIndex={actions.length}
+            onSelect={choice => {
+              if (choice === 0) return setTyping(true)
+              if (choice < actions.length) return advance({ custom: { ...custom, done: true } })
+              advance({
+                custom: { ...custom, models: [...custom.models, { model: offered[choice - actions.length]! }] }
+              })
+            }}
+            onClose={back}
+          />
+        </Question>
+      )
+    }
+    return (
+      <InputPrompt
+        onBack={back}
+        title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
+          provider: nameOf
+        })}
+        hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
+        defaultValue={existing?.model}
+        // The first model is required, or the provider would serve nothing.
+        validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
+        onSubmit={value => {
+          if (existing) {
+            const models = custom.models.map((m, i) => (i === index && value ? { ...m, model: value } : m))
+            return advance({ custom: { ...custom, models } })
+          }
+          advance({
+            custom: value ? { ...custom, models: [...custom.models, { model: value }] } : { ...custom, done: true }
+          })
+        }}
+      />
+    )
   }
 
   // The steps asked once: language, theme, mode, providers, extras and the Telegram token.

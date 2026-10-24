@@ -32,7 +32,7 @@
     "@commitlint/config-conventional": "^21.2.4",
     "@faker-js/faker": "^10.6.0",
     "@types/bun": "^1.4.4",
-    "nitro": "npm:nitro-nightly@3.0.1-20261023-052727-7e9a0481",
+    "nitro": "npm:nitro-nightly@3.0.1-20261024-005652-6bccaad1",
     "typescript": "^7.0.2",
     "zod": "^4.6.7"
   },

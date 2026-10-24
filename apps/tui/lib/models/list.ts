@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import { KAJA_USER_AGENT } from "../auth/user-agent"
 
 /** What `GET {baseUrl}/models` said: the ids it lists, or why there are none (`status` when the server answered). */
@@ -13,7 +14,7 @@ export async function probeModels(
   { timeoutMs = 3000, signal }: { timeoutMs?: number; signal?: AbortSignal } = {}
 ): Promise<ModelsProbe> {
   try {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/models`, {
+    const res = await fetch(`${trimTrailingSlashes(baseUrl)}/models`, {
       headers: { "User-Agent": KAJA_USER_AGENT, ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs)
     })

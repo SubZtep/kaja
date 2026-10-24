@@ -34,7 +34,7 @@ export function useFilter(enabled: boolean) {
       key.meta ||
       key.return ||
       key.tab ||
-      Array.from({ length: input.length }, (_, at) => input.charCodeAt(at)).some(code => code < 32 || code === 127)
+      Array.from(input, char => char.codePointAt(0)!).some(code => code < 32 || code === 127)
     )
       return false
     setQuery(query + input)
@@ -81,16 +81,16 @@ export function Matched({ text, query, bold }: Readonly<{ text: string; query: s
       marked.fill(true, at, at + word.length)
   }
   // Runs of marked and unmarked characters
-  const runs: { text: string; marked: boolean }[] = []
+  const runs: { start: number; text: string; marked: boolean }[] = []
   for (let at = 0; at < text.length; at++) {
     const last = runs.at(-1)
     if (last && last.marked === marked[at]) last.text += text[at]
-    else runs.push({ text: text[at]!, marked: marked[at]! })
+    else runs.push({ start: at, text: text[at]!, marked: marked[at]! })
   }
   return (
     <Text {...style}>
-      {runs.map((run, index) => (
-        <Text key={index} underline={run.marked}>
+      {runs.map(run => (
+        <Text key={run.start} underline={run.marked}>
           {run.text}
         </Text>
       ))}

@@ -64,7 +64,10 @@ function LiveMark({ result }: Readonly<{ result?: LiveCheck }>) {
 // Printable text only: a paste can carry line breaks and other control characters
 const printable = (input: string) =>
   Array.from(input)
-    .filter(char => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127)
+    .filter(char => {
+      const code = char.codePointAt(0)!
+      return code >= 32 && code !== 127
+    })
     .join("")
 
 /**

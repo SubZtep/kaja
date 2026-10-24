@@ -156,7 +156,10 @@ export function withoutShownImages(text: string, shown: ReadonlySet<string>): st
   if (![...text.matchAll(STORED_IMAGE)].some(([, , ref]) => shown.has(ref!))) return text
   const replaced = (keepAlt: boolean) =>
     text
-      .replace(STORED_IMAGE, (link, alt: string, ref: string) => (shown.has(ref) ? (keepAlt ? alt : "") : link))
+      .replace(STORED_IMAGE, (link, alt: string, ref: string) => {
+        if (!shown.has(ref)) return link
+        return keepAlt ? alt : ""
+      })
       .replace(/\n{3,}/g, "\n\n")
       .trim()
   return replaced(false) || replaced(true)

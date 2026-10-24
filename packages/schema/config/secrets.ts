@@ -13,7 +13,7 @@ const SecretsProviderSchema = z.union([
   z.object({
     api_key_env: z
       .string()
-      .regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
+      .regex(/^[A-Za-z_]\w*$/)
       .describe(
         "The environment variable holding the key, e.g. OPENAI_API_KEY: read when Kaja starts, never copied here"
       )

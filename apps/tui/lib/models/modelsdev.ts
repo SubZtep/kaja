@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import type { ModelTask } from "@kaja/schema/config"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import { file, write } from "bun"
 import { z } from "zod"
 import { KAJA_USER_AGENT } from "../auth/user-agent"
@@ -97,7 +98,8 @@ function toProvider(raw: unknown): CatalogProvider | undefined {
   const parsed = providerSchema.safeParse(raw)
   if (!parsed.success) return undefined
   const provider = parsed.data
-  const baseUrl = (provider.api ?? KNOWN_BASE_URLS[provider.id])?.replace(/\/+$/, "")
+  const api = provider.api ?? KNOWN_BASE_URLS[provider.id]
+  const baseUrl = api && trimTrailingSlashes(api)
   if (!baseUrl) return undefined
   const kind = LOCAL_HOST.test(baseUrl) ? "self-hosted" : "hosted"
   // A key is never sent over plain http to someone else's server
@@ -170,7 +172,7 @@ export async function refreshCatalog({ url = MODELS_DEV_URL, timeoutMs = 8000 } 
       log.warn("The cached models.dev catalog is unusable", { error: cacheError })
     }
     log.warn("No models.dev catalog", { error })
-    setCatalog(undefined)
+    setCatalog()
     return false
   }
 }
