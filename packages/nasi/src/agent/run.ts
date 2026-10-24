@@ -41,7 +41,8 @@ import {
   sessionImagesFor,
   storeImage,
   storeRemoteImages,
-  withoutImageParts
+  withoutImageParts,
+  withoutShownImages
 } from "./images"
 import { personaTools, syncPersonaTools } from "./persona-tools"
 import { runShellCommand } from "./run-command"
@@ -826,7 +827,12 @@ export async function* run(
 ): AsyncGenerator<AgentEvent, void, void> {
   const stored = sessionImagesFor(agent, session)
   try {
-    for await (const event of runTurn(agent, prompt, session, owner, images)) yield placeImageLinks(event, stored)
+    // Filled as tool images pass, before runTurn resumes, so a later round's reply can leave them out
+    const shown = new Set<string>()
+    for await (const event of runTurn(agent, prompt, session, owner, images, shown)) {
+      if (event.type === "tool_image") shown.add(event.ref)
+      yield placeImageLinks(event, stored)
+    }
     // A blind model's session waits for its descriptions; one that sees takes those written so far, the rest next turn.
     yield* described(await applyDescriptions(session, !seesImages(agent)))
   } finally {
@@ -856,7 +862,8 @@ async function* runTurn(
   prompt: string | undefined,
   session: Session,
   owner: string | null,
-  images: PromptImage[]
+  images: PromptImage[],
+  shown: ReadonlySet<string>
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
   await syncPersonaTools(agent)
@@ -885,7 +892,8 @@ async function* runTurn(
       continue
     }
 
-    if (typeof message.content === "string") message.content = await storeRemoteImages(agent, session, message.content)
+    if (typeof message.content === "string")
+      message.content = withoutShownImages(await storeRemoteImages(agent, session, message.content), shown)
     messages.push(message)
     recordRound(agent, session, round)
 

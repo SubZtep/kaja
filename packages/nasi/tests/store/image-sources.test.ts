@@ -139,3 +139,42 @@ test("a late description replaces only its own image's label in saved parts", ()
   ])
   expect(relabeledParts([parts[2]], LINK, { width: 1, height: 1 }, "A dot.")).toBeUndefined()
 })
+
+test("a reply leaves out an image its turn's tool already showed, even linked by its web URL", async () => {
+  setToolDeps({
+    fetchSend: async () => new Response(new Uint8Array(TINY_PNG), { headers: { "content-type": "image/png" } })
+  })
+  const fetchUrl = tool({
+    name: "fetch_url",
+    description: "Fetches",
+    schema: z.object({}),
+    execute: async () => ({ text: "A page", images: [{ data: TINY_PNG, mimeType: "image/png" }] })
+  })
+  const replies = [
+    {
+      role: "assistant",
+      content: null,
+      tool_calls: [{ id: "c1", type: "function", function: { name: "fetch_url", arguments: "{}" } }]
+    },
+    { role: "assistant", content: "Here it is\n\n![a square](https://img.example/a.png)" }
+  ]
+  const client = {
+    chat: {
+      completions: {
+        stream: () => {
+          const message = replies.shift()
+          return {
+            async *[Symbol.asyncIterator]() {},
+            finalChatCompletion: async () => ({ choices: [{ message }] })
+          }
+        }
+      }
+    }
+  }
+  const agent = new Agent({ model: "m", client: client as never, tools: [fetchUrl], store: createMemoryStore() })
+  const events: { type: string; content?: string | null }[] = []
+  for await (const event of run(agent, "show one", createSession())) events.push(event)
+  setToolDeps({})
+  expect(events.filter(event => event.type === "tool_image")).toHaveLength(1)
+  expect(events.find(event => event.type === "final")?.content).toBe("Here it is")
+})
