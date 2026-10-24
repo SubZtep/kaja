@@ -692,9 +692,12 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
   )
 }
 
-/** A model id as the list shows it: Fireworks' "accounts/<org>/models/" prefix says nothing the provider column doesn't. */
+/**
+ * A model id as the list shows it: Fireworks' "accounts/<org>/" (and "models/") prefix says nothing the provider column
+ * doesn't.
+ */
 function modelLabel(model: string): string {
-  return model.replace(/^accounts\/[^/]+\/models\//, "")
+  return model.replace(/^accounts\/[^/]+\/(models\/)?/, "")
 }
 
 /** The keys of a list you pick one from, then `note`. */
@@ -981,10 +984,7 @@ export function ConfigWizard({
             filterable
             visibleCount={listRows}
             items={candidates.map(candidate => modelLabel(candidate.model))}
-            columns={candidates.map(candidate => [
-              providerName(candidate.provider, result),
-              candidate.released?.slice(0, 7) ?? ""
-            ])}
+            columns={candidates.map(candidate => [providerName(candidate.provider, result)])}
             tags={candidates.map((_, index) => (index === Math.max(current, 0) ? openTag : undefined))}
             width={70}
             initialIndex={Math.max(current, 0)}

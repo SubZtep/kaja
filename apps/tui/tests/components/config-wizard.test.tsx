@@ -326,7 +326,7 @@ test("each ticked task with more than one model asks which, newest tool-calling 
 
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
   // The model first, the Fireworks prefix dropped, then its provider and release month; the opening row says why
-  expect(w.t.lastFrame()).toMatch(/❯ minimax-m3\s+Fireworks\s+2026-09\s+best guess/)
+  expect(w.t.lastFrame()).toMatch(/❯ minimax-m3\s+Fireworks\s+best guess/)
   expect(w.t.lastFrame()).toMatch(/qwen3\.5:4b\s+Ollama/)
 
   await w.t.press("qwen") // filter down to Ollama's
@@ -525,7 +525,7 @@ test("a model question opens on the model already in use", async () => {
   expect(w.t.lastFrame()).toContain("○ Embedding")
   await w.t.press(ENTER)
   // The model from models.toml, tagged as in use
-  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama\s+2026-03\s+in use/)
+  expect(w.t.lastFrame()).toMatch(/❯ qwen3\.5:4b\s+Ollama\s+in use/)
 
   await w.t.press(ENTER) // keeps Ollama, not the first option
   await w.t.press(ENTER) // extras
