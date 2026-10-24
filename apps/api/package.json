@@ -1,6 +1,6 @@
 {
   "name": "@kaja/api",
-  "version": "0.22.23",
+  "version": "0.22.24",
   "private": true,
   "scripts": {
     "build": "bun build --minify --target bun --outfile dist/server.js src/core/server.ts",
