@@ -352,7 +352,9 @@ export async function runConfigWizard({
     return { code: 0, text: t("wizard.headlessDone") }
   }
 
-  const { ConfigWizard } = await import("../../components/config-wizard")
+  const { ConfigWizard, chosenHooks } = await import("../../components/config-wizard")
+  const { applyHooks, hooksPrefill } = await import("../hooks/offer")
+  const hooks = hooksPrefill()
   // Before the prefill, which matches models.toml's providers against the catalog and the servers running here
   const [hasCatalog, servers] = await Promise.all([refreshCatalog(), detectLocalServers()])
   if (!hasCatalog) console.log(statusLine("info", t("wizard.noCatalog")))
@@ -361,7 +363,8 @@ export async function runConfigWizard({
   const result = await new Promise<WizardResult | undefined>(resolve => {
     const { unmount } = render(
       <ConfigWizard
-        prefill={prefill}
+        prefill={hooks.current ? { ...prefill, hooks: hooks.current } : prefill}
+        hookPrograms={hooks.programs}
         mode={mode}
         saved={saved}
         listModels={listProviderModels}
@@ -386,8 +389,7 @@ export async function runConfigWizard({
   }
   await applyResult(result, line => console.log(line))
   // Cloud chat has the same hooks, so this comes before the mode split
-  const { offerHooks } = await import("../hooks/offer")
-  await offerHooks(line => console.log(line))
+  await applyHooks(chosenHooks(result, hooks.programs), line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await offerMarketplace(line => console.log(line))

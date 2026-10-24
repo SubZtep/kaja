@@ -1,5 +1,11 @@
 import { expect, test } from "bun:test"
-import { chosenProviders, ConfigWizard, type WizardResult } from "../../components/config-wizard"
+import {
+  chosenHooks,
+  chosenProviders,
+  ConfigWizard,
+  rankedProviders,
+  type WizardResult
+} from "../../components/config-wizard"
 import { setLanguage } from "../../lib/i18n"
 import { CATALOG, setCatalog } from "../../lib/models/catalog"
 import { TEST_CATALOG } from "../fixtures/catalog"
@@ -12,8 +18,8 @@ const ESC = "\x1b"
 const ENTER = "\r"
 const SPACE = " "
 
-// The providers in the order the checklist shows them: your own server first, then the catalog's.
-const at = (id: string) => 1 + CATALOG.findIndex(provider => provider.id === id)
+// The providers in the order the checklist shows them: your own server first, then the catalog's, popular ones first.
+const at = (id: string) => 1 + rankedProviders(CATALOG, () => false).findIndex(provider => provider.id === id)
 const FIREWORKS = at("fireworks")
 const OLLAMA = at("ollama")
 const SPEACHES = at("speaches")
@@ -39,10 +45,10 @@ function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
 
 type Wizard = ReturnType<typeof renderWizard>
 
-/** Ticks the providers at these checklist positions (in ascending order) and continues. */
+/** Ticks the providers at these checklist positions and continues. */
 async function tick(w: Wizard, ...positions: number[]) {
   let row = 0
-  for (const position of positions) {
+  for (const position of positions.toSorted((a, b) => a - b)) {
     for (; row < position; row++) await w.t.press(DOWN)
     await w.t.press(SPACE)
   }
@@ -93,6 +99,40 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   await w.t.press(ENTER)
   expect(w.result).toMatchObject({ mode: "cloud", language: "en-GB" })
   expect(w.result?.providers).toBeUndefined()
+
+  await close(w)
+})
+
+test("sounds, notifications and speech are a last block, asked only for the programs found", async () => {
+  const w = renderWizard({ mode: "cloud", hookPrograms: { player: "paplay", speaker: "espeak-ng" } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme
+  expect(w.t.lastFrame()).toContain("Sounds 1/2")
+  expect(w.t.lastFrame()).toContain("Play sound effects")
+  await w.t.press(ENTER) // sounds: yes
+  // No notifier was found, so speech is next; it starts on No
+  expect(w.t.lastFrame()).toContain("Read the assistant's messages aloud with espeak-ng?")
+  await w.t.press(ENTER)
+  expect(w.t.output()).toContain("Sounds · Sound effects Yes · Read aloud No")
+  expect(chosenHooks(w.result!, { player: "paplay", speaker: "espeak-ng" })).toEqual({
+    sounds: true,
+    notifications: false,
+    speech: false
+  })
+
+  await close(w)
+})
+
+test("a re-run opens the sound questions on what hooks.toml has", async () => {
+  const programs = { player: "paplay", notifier: "notify-send" }
+  const w = renderWizard({ mode: "cloud", hookPrograms: programs, prefill: { hooks: { sounds: false } } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme
+  await w.t.press(ENTER) // sounds: kept off
+  await w.t.press(ENTER) // notifications: on by default
+  expect(chosenHooks(w.result!, programs)).toEqual({ sounds: false, notifications: true, speech: false })
 
   await close(w)
 })
@@ -158,11 +198,32 @@ test("providers whose key is in the environment come first and ticked; typing fi
   await close(w)
 })
 
-test("the providers step won't continue with nothing ticked: local mode needs a model", async () => {
+test("well-known providers come before the rest of the catalog", async () => {
   const w = await openProviders()
-  await w.t.press(ENTER) // nothing ticked
+  const frame = w.t.lastFrame()!
+  // xAI and OpenRouter are popular; Fireworks (as the test catalog names it) is not
+  expect(frame.indexOf("xAI")).toBeLessThan(frame.indexOf("Fireworks"))
+  expect(frame.indexOf("OpenRouter")).toBeLessThan(frame.indexOf("Fireworks"))
+
+  await close(w)
+})
+
+test("Enter with nothing ticked takes the highlighted provider", async () => {
+  const w = await openProviders()
+  await w.t.press(ENTER) // Custom is highlighted
+  expect(w.t.output()).toContain("✓  Providers: Custom")
+  expect(w.t.lastFrame()).toContain("What should this provider be called?")
+
+  await close(w)
+})
+
+test("the providers step won't continue with nothing ticked or highlighted: local mode needs a model", async () => {
+  const w = await openProviders()
+  await w.t.press("zzz") // filters every row away
+  await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Which model providers can you use?")
   expect(w.t.lastFrame()).toContain("Tick at least one")
+  for (let i = 0; i < 3; i++) await w.t.press("\x7f") // clear the filter
 
   await pickOllama(w)
   expect(w.t.lastFrame()).toContain("Anything else?")
@@ -480,9 +541,8 @@ test("going back keeps the answers, and a changed one replaces its line", async 
   await tick(w, FIREWORKS)
   await w.t.press(ESC) // back to the checklist, Fireworks still ticked
   expect(w.t.lastFrame()).toContain("[✔] Fireworks")
-  await w.t.press(DOWN) // Fireworks
-  await w.t.press(DOWN) // Ollama
-  await w.t.press(SPACE)
+  for (let row = 0; row < OLLAMA; row++) await w.t.press(DOWN)
+  await w.t.press(SPACE) // Ollama
   await w.t.press(ENTER)
 
   expect(w.t.lastFrame()).toContain("✓  Providers: Fireworks, Ollama")

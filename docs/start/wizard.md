@@ -38,7 +38,8 @@ Answers are checked as you type. A key is tried against its provider a moment af
 address is asked whether a server answers there (✓ fine, ! worth knowing, ✗ refused). A refused key takes a
 second <kbd>Enter</kbd> to keep anyway.
 
-The questions come in blocks: **Basics**, **Providers**, **Models** and **Extras**. The top line shows
+The questions come in blocks: **Basics**, **Providers**, **Models**, **Extras** and **Sounds** (Kaja Cloud
+asks only Basics and Sounds). The top line shows
 which block you're in and how many questions it has. A finished block folds into one ✓ line with your
 answers.
 
@@ -60,7 +61,8 @@ answers.
    [models.dev](https://models.dev); type to narrow it. Model servers already running on your machine
    (Ollama, LM Studio, llama.cpp, vLLM, Jan, KoboldCpp, text-generation-webui, Speaches, or wherever
    `OLLAMA_HOST` points) come first, ticked, with their models. Next come providers whose API key is
-   already in your environment (`OPENAI_API_KEY` and the like), also ticked.
+   already in your environment (`OPENAI_API_KEY` and the like), also ticked, then the best-known providers
+   and the rest by name. <kbd>Enter</kbd> with nothing ticked takes the highlighted one.
    - **Cloud** providers run online, so you give an API key. If it's already in your environment, you
      choose between reading it from there each time (nothing is saved) and copying it into secrets.toml.
    - **Self-hosted** ones run on your machine or server, so you confirm where they listen.
@@ -73,6 +75,10 @@ answers.
    model that can use tools is highlighted, and typing filters the list.
 7. **Extras.** Tick **Telegram bot** to chat from [Telegram](/use/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
+8. **Sounds.** Sound effects, desktop notifications and reading replies aloud
+   ([`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events)), each asked only when Kaja
+   found a program for it on your computer. A later run opens on what `hooks.toml` has. `kaja config hooks`
+   asks just these again.
 
 After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
 your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
@@ -80,10 +86,8 @@ before it's saved.
 
 ## After the last question
 
-Either way, Kaja first looks for a sound player, a notification tool and a speech tool on your computer and
-offers sound effects, desktop notifications and reading replies aloud
-([`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events)). What it can't find, it tells you
-how to install. `kaja config hooks` runs just this part again.
+Either way, Kaja writes `hooks.toml` from your **Sounds** answers (left as it is when nothing changed) and
+tells you how to install a sound player, notification tool or speech tool it couldn't find.
 
 With **Kaja Cloud** that's it. The first time, Kaja goes straight on to sign you in. After a later
 `kaja config wizard`, run `kaja` to sign in.

@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { HooksFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { detectBackends } from "../../../lib/hooks/detect"
-import { buildHooksToml } from "../../../lib/hooks/templates"
+import { buildHooksToml, currentHooks } from "../../../lib/hooks/templates"
 
 const linux = detectBackends("linux", program => `/usr/bin/${program}`)
 const windows = detectBackends("win32", program => `C:\\${program}`)
@@ -49,4 +49,10 @@ test("the Windows PowerShell commands, with their quotes, survive being written 
   const hooks = parse(text)
   expect(hooks.message?.[0]?.run).toContain("Media.SoundPlayer")
   expect(hooks.persona_switch?.map(command => command.run).join("\n")).toContain("ToastNotificationManager")
+})
+
+test("a written file reads back as what was switched on, so a re-run opens on it", () => {
+  for (const wanted of [all, { sounds: false, notifications: true, speech: false }, { ...all, notifications: false }])
+    expect(currentHooks(parse(buildHooksToml(linux, wanted)))).toEqual(wanted)
+  expect(currentHooks({})).toEqual({ sounds: false, notifications: false, speech: false })
 })

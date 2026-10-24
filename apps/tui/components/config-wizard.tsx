@@ -5,6 +5,8 @@ import { capitalized } from "@kaja/shared/text"
 import { Box, Text } from "ink"
 import { useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
+import type { BackendKind } from "../lib/hooks/detect"
+import type { WantedHooks } from "../lib/hooks/templates"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import {
@@ -48,6 +50,34 @@ export type WizardCustom = {
   reviewed?: number
 }
 
+/** Offered right after what's in use or found, in this order: a first run shouldn't open on 230 names A to Z. */
+const POPULAR_PROVIDERS = [
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "xai",
+  "mistral",
+  "deepseek",
+  "groq",
+  "fireworks-ai",
+  "togetherai"
+]
+
+/** The checklist's order: `front` ones (in use, key in the environment), the popular ones, then the rest by name. */
+export function rankedProviders(
+  providers: CatalogProvider[],
+  front: (provider: CatalogProvider) => boolean
+): CatalogProvider[] {
+  const rank = (provider: CatalogProvider) => {
+    if (front(provider)) return 0
+    const popular = POPULAR_PROVIDERS.indexOf(provider.id)
+    return popular === -1 ? POPULAR_PROVIDERS.length + 1 : popular + 1
+  }
+  // A stable sort: same-rank providers keep the catalog's order, by name
+  return providers.toSorted((a, b) => rank(a) - rank(b))
+}
+
 /** What the checklist stores for "a provider that isn't listed". */
 const CUSTOM = "custom"
 
@@ -89,6 +119,37 @@ export type WizardResult = {
   models?: Partial<Record<ModelTask, ModelPick>>
   extras?: WizardExtra[]
   telegramToken?: string
+  /** Sounds, notifications and speech, each asked only when this machine has a program for it. */
+  hooks?: Partial<WantedHooks>
+}
+
+/** The program found for each kind of hook, e.g. `paplay` for sounds: a kind without one isn't asked about. */
+export type HookPrograms = Partial<Record<BackendKind, string>>
+
+type HookStep = keyof WantedHooks
+
+const HOOK_STEPS: { step: HookStep; kind: BackendKind; title: string; label: string; on: boolean }[] = [
+  { step: "sounds", kind: "player", title: "hooks.soundsTitle", label: "wizard.summarySounds", on: true },
+  {
+    step: "notifications",
+    kind: "notifier",
+    title: "hooks.notificationsTitle",
+    label: "wizard.summaryNotifications",
+    on: true
+  },
+  // Reading every message aloud surprises more people than it helps, so it's off unless asked for
+  { step: "speech", kind: "speaker", title: "hooks.speechTitle", label: "wizard.summarySpeech", on: false }
+]
+
+/** Each kind of hook switched on or off: the answer, else its default, and always off without a program for it. */
+export function chosenHooks(result: WizardResult, programs: HookPrograms = {}): WantedHooks {
+  const pick = ({ step, kind, on }: (typeof HOOK_STEPS)[number]) =>
+    Boolean(programs[kind]) && (result.hooks?.[step] ?? on)
+  return {
+    sounds: pick(HOOK_STEPS[0]!),
+    notifications: pick(HOOK_STEPS[1]!),
+    speech: pick(HOOK_STEPS[2]!)
+  }
 }
 
 /** An answer the runner can test while it's typed: a key against its provider, an address, a bot token. */
@@ -125,18 +186,20 @@ type Step =
   | `custom-task:${number}`
   | "extras"
   | "telegramToken"
+  | HookStep
   | "done"
 
 /** The parts the questions are grouped in, in the order they are asked; the header shows where you are among them. */
-type Block = "basics" | "providers" | "models" | "extras"
+type Block = "basics" | "providers" | "models" | "extras" | "sounds"
 
-const BLOCK_ORDER: Block[] = ["basics", "providers", "models", "extras"]
+const BLOCK_ORDER: Block[] = ["basics", "providers", "models", "extras", "sounds"]
 
 const BLOCK_LABEL_KEY: Record<Block, string> = {
   basics: "wizard.blockBasics",
   providers: "wizard.blockProviders",
   models: "wizard.blockModels",
-  extras: "wizard.blockExtras"
+  extras: "wizard.blockExtras",
+  sounds: "wizard.blockSounds"
 }
 
 // By the step's kind, the part before any `:`. A custom provider's models say what its server has, so they sit in Providers.
@@ -156,7 +219,10 @@ const BLOCK_OF_KIND: Record<string, Block> = {
   tasks: "models",
   model: "models",
   extras: "extras",
-  telegramToken: "extras"
+  telegramToken: "extras",
+  sounds: "sounds",
+  notifications: "sounds",
+  speech: "sounds"
 }
 
 function blockOf(step: Step): Block | undefined {
@@ -274,11 +340,13 @@ export function chosenPicks(result: WizardResult): Partial<Record<ModelTask, Mod
  * follow-up only when that extra was ticked. Recomputed after every answer, so a skipped step never mounts just to
  * advance out of itself.
  */
-function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
+function stepsFor(result: WizardResult, forcedMode?: KajaMode, programs: HookPrograms = {}): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
   // setting being re-offered, which the user is here to change.
   const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
-  if (result.mode === "cloud") return [...steps, "done"]
+  // Cloud chat plays the same sounds, so these are asked in both modes, last
+  const hooks = HOOK_STEPS.filter(hook => programs[hook.kind]).map(hook => hook.step)
+  if (result.mode === "cloud") return [...steps, ...hooks, "done"]
 
   if (CATALOG.length > 0 || result.local?.length) steps.push("providers")
   for (const provider of catalogChoices(result)) {
@@ -304,12 +372,12 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // Every extra is a local-agent feature: the Telegram bot.
   steps.push("extras")
   if (result.extras?.includes("telegram")) steps.push("telegramToken")
-  steps.push("done")
+  steps.push(...hooks, "done")
   return steps
 }
 
-function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
-  const steps = stepsFor(result, forcedMode)
+function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode, programs?: HookPrograms): Step {
+  const steps = stepsFor(result, forcedMode, programs)
   const at = steps.indexOf(step)
   if (at !== -1) return steps[at + 1] ?? "done"
   // The step that just ended the custom model list is no longer in the list, so carry on after the custom ones.
@@ -431,7 +499,14 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
       t("wizard.summaryExtras"),
       result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined
     ),
-  telegramToken: (_, result, saved) => keyLine(t("wizard.summaryKeyTelegram"), result.telegramToken, saved?.telegram)
+  telegramToken: (_, result, saved) => keyLine(t("wizard.summaryKeyTelegram"), result.telegramToken, saved?.telegram),
+  ...Object.fromEntries(
+    HOOK_STEPS.map(hook => [
+      hook.step,
+      (_: string, result: WizardResult) =>
+        lineIf(t(hook.label), t((result.hooks?.[hook.step] ?? hook.on) ? "hooks.yes" : "hooks.no"))
+    ])
+  )
 }
 
 /**
@@ -507,6 +582,7 @@ export function ConfigWizard({
   saved,
   listModels,
   probe,
+  hookPrograms,
   env = process.env,
   onDone,
   onCancel
@@ -523,6 +599,8 @@ export function ConfigWizard({
   listModels?: (baseUrl: string, provider: string, key?: string) => Promise<string[]>
   /** Tests a typed answer once typing pauses; the wizard does no I/O itself. Without it, nothing is tested live. */
   probe?: (target: ProbeTarget, signal: AbortSignal) => Promise<LiveCheck | undefined>
+  /** The sound player, notifier and speech program found here; each one found is asked about. */
+  hookPrograms?: HookPrograms
   /** Where a provider's API key may already be set; the process's environment unless a test passes its own. */
   env?: Record<string, string | undefined>
   onDone: (result: WizardResult) => void
@@ -570,7 +648,7 @@ export function ConfigWizard({
     setHistory(list => [...list, step])
     setResult(next)
     setTyping(false)
-    setStep(nextStepAfter(step, next, mode))
+    setStep(nextStepAfter(step, next, mode, hookPrograms))
   }
 
   // Esc: the previous question opens again on its answer; on the first one it cancels the wizard.
@@ -923,7 +1001,7 @@ export function ConfigWizard({
       }
 
       case "providers": {
-        // Your own server first, then what you already use or have a key for in the environment, then the rest by name
+        // Your own server first, then what you already use or have a key for in the environment, the well-known ones, then the rest by name
         const envKey = (provider: CatalogProvider) => provider.env?.find(name => env[name])
         const front = (provider: CatalogProvider) =>
           result.providers?.includes(provider.id) || Boolean(envKey(provider))
@@ -932,12 +1010,13 @@ export function ConfigWizard({
         const sameServer = (provider: CatalogProvider) =>
           local.some(server => sameAddress(server.baseUrl, provider.baseUrl))
         const listed = CATALOG.filter(provider => !sameServer(provider))
-        const ordered = [...listed.filter(front), ...listed.filter(provider => !front(provider))]
+        const ordered = rankedProviders(listed, front)
         return (
           <Question title={t("wizard.providerTitle")}>
             {/* A re-run starts with the providers in models.toml ticked; a first run with those whose key is in the environment, and Enter won't continue until one is. */}
             <CheckMenu
               filterable
+              enterPicksFocused
               visibleCount={10}
               options={[
                 { label: t("wizard.providerCustom"), value: CUSTOM },
@@ -1033,13 +1112,34 @@ export function ConfigWizard({
         )
       }
 
+      case "sounds":
+      case "notifications":
+      case "speech": {
+        const hook = HOOK_STEPS.find(candidate => candidate.step === step)!
+        const on = result.hooks?.[hook.step] ?? hook.on
+        return (
+          <Question title={t(hook.title, { program: hookPrograms?.[hook.kind] ?? "" })}>
+            <SelectMenu
+              closeOnBackspace={false}
+              items={[t("hooks.yes"), t("hooks.no")]}
+              // Speech names its program in the question already
+              hints={[hook.step === "speech" ? "" : (hookPrograms?.[hook.kind] ?? ""), ""]}
+              width={70}
+              initialIndex={on ? 0 : 1}
+              onSelect={index => advance({ hooks: { ...result.hooks, [hook.step]: index === 0 } })}
+              onClose={back}
+            />
+          </Question>
+        )
+      }
+
       default:
         // Nothing to draw: the answers are on screen, and the setup carries on below once onDone fires.
         return null
     }
   }
 
-  const steps = stepsFor(result, mode)
+  const steps = stepsFor(result, mode, hookPrograms)
   const blocks = BLOCK_ORDER.filter(block => steps.some(candidate => blockOf(candidate) === block))
   const current = blockOf(step)
   const inBlock = steps.filter(candidate => blockOf(candidate) === current)

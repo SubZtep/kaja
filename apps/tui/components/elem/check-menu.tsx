@@ -18,6 +18,7 @@ export function CheckMenu({
   width = 70,
   visibleCount,
   filterable = false,
+  enterPicksFocused = false,
   onSubmit,
   onClose
 }: Readonly<{
@@ -29,6 +30,8 @@ export function CheckMenu({
   visibleCount?: number
   /** Typing filters the rows, for a list too long to scroll through. */
   filterable?: boolean
+  /** Return with nothing ticked submits the highlighted row, for a list where one answer is the usual case. */
+  enterPicksFocused?: boolean
   onSubmit: (values: string[]) => void
   onClose?: () => void
 }>) {
@@ -64,7 +67,11 @@ export function CheckMenu({
     } else if (key.escape) onClose?.()
     else if (key.downArrow) move(1)
     else if (key.upArrow) move(-1)
-    else if (key.return) onSubmit(options.filter(option => ticked.has(option.value)).map(option => option.value))
+    else if (key.return) {
+      const values = options.filter(option => ticked.has(option.value)).map(option => option.value)
+      const focusedValue = shown[focused]?.value
+      onSubmit(values.length === 0 && enterPicksFocused && focusedValue !== undefined ? [focusedValue] : values)
+    }
   })
 
   const { success } = useKajaTheme()
