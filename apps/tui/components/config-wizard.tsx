@@ -460,9 +460,14 @@ function keyPlaceholder(typed: string | undefined, alreadySaved: boolean | undef
   return tail ? t(`wizard.keyKeeps${which}Tail`, { tail }) : t(`wizard.keyKeeps${which}`)
 }
 
+/** A wizard question's hint: its keys, then "Esc back", then `note`. */
+function WizardHint({ keys, note }: Readonly<{ keys: [key: string, action: string][]; note?: string }>) {
+  return <KeyHint keys={[...keys, ["Esc", t("wizard.back")]]} note={note} />
+}
+
 /** A key step's hint: Enter saves, and how the key is handled. */
 function keyHint() {
-  return <KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.keyNote")} />
+  return <WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.keyNote")} />
 }
 
 /** One answered step, kept on screen above the next question. */
@@ -639,8 +644,8 @@ export function fitParts(parts: string[], width: number): string {
 }
 
 /**
- * Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count, and
- * "Esc back" at the right. What doesn't fit goes, "Esc back" first and then the mascot.
+ * Where the wizard is: the mascot, then each block, done ones ticked and the open one with its question count. The
+ * mascot goes when it doesn't fit.
  */
 function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
   const { success, accent } = useKajaTheme()
@@ -654,13 +659,10 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
         (index < reached ? "✓ " : "") + t(BLOCK_LABEL_KEY[block]) + (index === reached ? ` ${count}` : "")
     )
     .join(" › ")
-  const esc = `Esc ${t("wizard.back")}`
   const room = textWidth() + 1
-  const withMascot = Bun.stringWidth(`${mascot} ${crumbs}`)
-  const showEsc = current !== undefined && withMascot + 2 + Bun.stringWidth(esc) <= room
-  const showMascot = withMascot <= room
+  const showMascot = Bun.stringWidth(`${mascot} ${crumbs}`) <= room
   return (
-    <Box paddingLeft={1} width={room + 1} justifyContent="space-between">
+    <Box paddingLeft={1} width={room + 1}>
       <Text wrap="truncate-end">
         {showMascot ? `${mascot} ` : ""}
         {blocks.map((block, index) => (
@@ -683,11 +685,6 @@ function Progress({ blocks, current, at, of }: Readonly<{ blocks: Block[]; curre
           </Text>
         ))}
       </Text>
-      {showEsc ? (
-        <Text>
-          Esc <Text dimColor>{t("wizard.back")}</Text>
-        </Text>
-      ) : null}
     </Box>
   )
 }
@@ -703,7 +700,7 @@ function modelLabel(model: string): string {
 /** The keys of a list you pick one from, then `note`. */
 function pickHint(note?: string) {
   return (
-    <KeyHint
+    <WizardHint
       keys={[
         ["↑↓", t("hint.move")],
         ["Enter", t("hint.pick")]
@@ -716,7 +713,7 @@ function pickHint(note?: string) {
 /** The keys of a checklist, then `note`. */
 function tickHint(note?: string) {
   return (
-    <KeyHint
+    <WizardHint
       keys={[
         ["Space", t("hint.tick")],
         ["Enter", t("hint.continue")]
@@ -958,7 +955,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.baseUrlHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.baseUrlHint")} />}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
           onSubmit={value => advance({ addresses: { ...result.addresses, [provider.id]: value || provider.baseUrl } })}
@@ -1011,7 +1008,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customNameTitle")}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customNameHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customNameHint")} />}
           defaultValue={custom.name}
           validate={value => (customId(value) ? undefined : t("wizard.customNameInvalid"))}
           onSubmit={value => advance({ custom: { ...custom, name: customId(value) } })}
@@ -1024,7 +1021,7 @@ export function ConfigWizard({
         <InputPrompt
           onBack={back}
           title={t("wizard.customUrlTitle")}
-          hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customUrlHint")} />}
+          hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customUrlHint")} />}
           defaultValue={custom.baseUrl}
           validate={value => (isWebAddress(value) ? undefined : t("wizard.customUrlInvalid"))}
           check={checkWith(baseUrl => ({ kind: "address", baseUrl }))}
@@ -1157,7 +1154,7 @@ export function ConfigWizard({
         title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
           provider: nameOf
         })}
-        hint={<KeyHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
+        hint={<WizardHint keys={[["Enter", t("hint.save")]]} note={t("wizard.customModelHint")} />}
         defaultValue={existing?.model}
         // The first model is required, or the provider would serve nothing.
         validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
@@ -1420,18 +1417,30 @@ export function ConfigWizard({
   const hidden = Math.max(0, recent.length - OPEN_BLOCK_LINES)
   const folded = blocks.filter(block => block !== current && trail.some(line => line.block === block))
   // A list gets what the terminal has left after everything else on screen, 5 to 10 rows
-  const around = 1 + folded.length + Math.min(recent.length, OPEN_BLOCK_LINES) + (hidden > 0 ? 1 : 0) + 10
+  const around =
+    2 +
+    (folded.length > 0 ? folded.length + 1 : 0) +
+    Math.min(recent.length, OPEN_BLOCK_LINES) +
+    (hidden > 0 ? 1 : 0) +
+    10
   listRows = Math.min(10, Math.max(5, (process.stdout.rows || 24) - around))
 
   return (
     <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
-        <Progress blocks={blocks} current={current} at={at} of={of} />
-        {blocks.map(block =>
-          folded.includes(block) ? (
-            <FoldedBlock key={block} block={block} parts={FOLDS[block](result, asked, saved)} />
-          ) : null
-        )}
+        {/* Blank lines set the header, the folded blocks and the open block apart */}
+        <Box marginBottom={1}>
+          <Progress blocks={blocks} current={current} at={at} of={of} />
+        </Box>
+        {folded.length > 0 ? (
+          <Box flexDirection="column" marginBottom={1}>
+            {blocks.map(block =>
+              folded.includes(block) ? (
+                <FoldedBlock key={block} block={block} parts={FOLDS[block](result, asked, saved)} />
+              ) : null
+            )}
+          </Box>
+        ) : null}
         {hidden > 0 ? (
           <RailLine marker={<Text dimColor>⋮</Text>}>
             <Text dimColor>{t("wizard.moreAnswers", { count: hidden })}</Text>

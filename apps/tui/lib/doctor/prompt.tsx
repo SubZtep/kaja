@@ -1,4 +1,4 @@
-import { render } from "ink"
+import { Box, render } from "ink"
 import type { ReactNode } from "react"
 import { Answered } from "../../components/elem/rail"
 import { ConsoleTheme } from "../../components/theme"
@@ -19,18 +19,20 @@ function ask<T>(
   return new Promise(resolve => {
     const instance = render(
       <ConsoleTheme>
-        {prompt((value, answer) => {
-          // Erasing rather than drawing nothing: an empty frame still leaves a blank line behind
-          if (quiet) instance.clear()
-          else
-            instance.rerender(
-              <ConsoleTheme>
-                <Answered label={title} value={answer} />
-              </ConsoleTheme>
-            )
-          instance.unmount()
-          resolve(value)
-        })}
+        <Box marginTop={1} flexDirection="column">
+          {prompt((value, answer) => {
+            // Erasing rather than drawing nothing: an empty frame still leaves a blank line behind
+            if (quiet) instance.clear()
+            else
+              instance.rerender(
+                <ConsoleTheme>
+                  <Answered label={title} value={answer} />
+                </ConsoleTheme>
+              )
+            instance.unmount()
+            resolve(value)
+          })}
+        </Box>
       </ConsoleTheme>
     )
   })

@@ -412,6 +412,7 @@ export async function runConfigWizard({
   }
   console.log()
   console.log(sectionRule(t("wizard.blockFinishing")))
+  console.log()
   await applyResult(result, line => console.log(line))
   // Cloud chat has the same hooks, so this comes before the mode split
   await applyHooks(chosenHooks(result, hooks.programs), line => console.log(line))

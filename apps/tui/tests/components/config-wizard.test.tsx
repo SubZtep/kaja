@@ -98,6 +98,8 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   expect(w.t.lastFrame()).toContain("English")
   expect(w.t.lastFrame()).toContain("en-GB")
   expect(w.t.lastFrame()).toContain("nan-TW")
+  // Esc sits with the other keys on the hint line, not in the header
+  expect(w.t.lastFrame()).toContain("↑↓ move · Enter picks · Esc back")
 
   await w.t.press(ENTER) // keep English
   await w.t.press(ENTER) // theme: keep the highlighted one
