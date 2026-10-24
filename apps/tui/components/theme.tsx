@@ -153,14 +153,39 @@ export function paletteFrom(scheme: Scheme, base: Scheme = scheme): Palette {
 const darkPalette = paletteFrom(darkScheme)
 const lightPalette = paletteFrom(lightScheme)
 
+/** Whether the user asked for no colour (no-color.org: `NO_COLOR` set and not empty); chalk itself ignores it. */
+export function noColour(): boolean {
+  return Boolean(Bun.env.NO_COLOR)
+}
+
+// Every role empty, which Ink and paint() take as "no colour": bold, dim, underline and inverse are what's left
+const monoPalette: Palette = {
+  accent: "",
+  frame: "",
+  user: "",
+  muted: "",
+  success: "",
+  warning: "",
+  danger: "",
+  info: "",
+  code: "",
+  foreground: "",
+  background: "",
+  tint: () => ""
+}
+
 // App-wide colours that aren't an @inkjs/ui component, registered as a custom "Kaja" component so they ride the same ThemeProvider
 type KajaComponentTheme = {
   palette: Palette
   styles: ReturnType<typeof kajaStyles>
 } & ComponentTheme
 
-function kajaStyles(p: Palette) {
+function kajaStyles(p: Palette, mono = false) {
   return {
+    /** A focused row's name: bold, and inverse without colour, where the highlight band can't show. */
+    focusText: (): TextProps => ({ bold: true, ...(mono ? { inverse: true } : {}) }),
+    /** Text on the highlight band: inverse without colour, so the band still reads. */
+    bandText: (): TextProps => (mono ? { inverse: true } : {}),
     /** The theme step's highlighted row: a band in the theme's colours, so the choice previews itself. */
     previewRow: (): BoxProps => ({ backgroundColor: p.tint("magenta", 0.3) }),
     previewText: (): TextProps => ({ color: p.foreground, bold: true }),
@@ -193,16 +218,16 @@ function kajaStyles(p: Palette) {
 
 type KajaStyles = ReturnType<typeof kajaStyles>
 
-function kajaTheme(palette: Palette): KajaComponentTheme {
-  return { palette, styles: kajaStyles(palette) }
+function kajaTheme(palette: Palette, mono = false): KajaComponentTheme {
+  return { palette, styles: kajaStyles(palette, mono) }
 }
 
 const statusColor = (p: Palette) => ({ success: p.success, error: p.danger, warning: p.warning, info: p.info })
 
-function buildTheme(p: Palette): Theme {
+function buildTheme(p: Palette, mono = false): Theme {
   return extendTheme(defaultTheme, {
     components: {
-      Kaja: kajaTheme(p),
+      Kaja: kajaTheme(p, mono),
       Spinner: { styles: { frame: (): TextProps => ({ color: p.info }) } },
       ProgressBar: { styles: { completed: (): TextProps => ({ color: p.frame }) } },
       StatusMessage: {
@@ -220,6 +245,8 @@ const palettes: Record<Brightness, Palette> = { dark: darkPalette, light: lightP
 
 /** Chalk for a palette colour, which is a hex code or one of chalk's colour names. */
 export function paint(colour: string) {
+  // No colour: chalk itself, which styles nothing but still chains bold, dim and the rest
+  if (!colour) return chalk
   return colour.startsWith("#") ? chalk.hex(colour) : chalk[colour as ForegroundColorName]
 }
 
@@ -250,13 +277,17 @@ function terminalTheme() {
   return terminal
 }
 
-/** A theme's raw colours, for output printed outside Ink (console lines). */
+const monoTheme = buildTheme(monoPalette, true)
+
+/** A theme's raw colours, for output printed outside Ink (console lines); none at all under `NO_COLOR`. */
 export function paletteFor(name: ThemeName): Palette {
+  if (noColour()) return monoPalette
   return name === "terminal" ? terminalTheme().palette : palettes[name]
 }
 
-/** The @inkjs/ui theme for a resolved `preferences.theme`. */
+/** The @inkjs/ui theme for a resolved `preferences.theme`; colourless under `NO_COLOR`, whatever the name. */
 export function themeFor(name: ThemeName): Theme {
+  if (noColour()) return monoTheme
   return name === "terminal" ? terminalTheme().theme : themes[name]
 }
 

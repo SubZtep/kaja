@@ -1,7 +1,18 @@
 import { expect, test } from "bun:test"
 import { type StatusMessageProps, ThemeProvider, useComponentTheme } from "@inkjs/ui"
+import chalk from "chalk"
 import { Text } from "ink"
-import { mix, paletteFrom, schemes, terminalScheme, themes, useKajaTheme } from "../../components/theme"
+import {
+  mix,
+  paint,
+  paletteFor,
+  paletteFrom,
+  schemes,
+  terminalScheme,
+  themeFor,
+  themes,
+  useKajaTheme
+} from "../../components/theme"
 import { renderForTest } from "../test-utils"
 
 function Probe() {
@@ -94,4 +105,32 @@ test("a named colour is mixed as the base scheme's", () => {
   const palette = paletteFrom(terminalScheme(null, "light"), schemes.light)
   expect(palette.danger).toBe("red")
   expect(palette.tint("red", 0.5)).toBe(mix(schemes.light.background, schemes.light.red, 0.5))
+})
+
+test("NO_COLOR drops every colour but keeps the styles, and a focused name or your message turns inverse", () => {
+  const saved = Bun.env.NO_COLOR
+  Bun.env.NO_COLOR = "1"
+  try {
+    function MonoProbe() {
+      const { accent, focusText, bandText, highlightRow } = useKajaTheme()
+      return <Text>{JSON.stringify([accent(), focusText(), bandText(), highlightRow()])}</Text>
+    }
+    const t = renderForTest(
+      <ThemeProvider theme={themeFor("dark")}>
+        <MonoProbe />
+      </ThemeProvider>,
+      { columns: 300 }
+    )
+    expect(JSON.parse(t.lastFrame())).toEqual([
+      { color: "" },
+      { bold: true, inverse: true },
+      { inverse: true },
+      { backgroundColor: "" }
+    ])
+    t.unmount()
+    expect(paint(paletteFor("light").accent).bold("x")).toBe(chalk.bold("x"))
+  } finally {
+    if (saved === undefined) delete Bun.env.NO_COLOR
+    else Bun.env.NO_COLOR = saved
+  }
 })

@@ -146,6 +146,9 @@ any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for 
 too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
 change the terminal's scheme, restart Kaja so the tints follow.
 
+Set [`NO_COLOR`](https://no-color.org/) (to anything but an empty string) and Kaja uses no colour at all, whatever
+the theme: bold, dim and underline stay, and the highlighted row and your messages turn to inverse text.
+
 To pick one, set `theme` in [`settings.toml`](/config/settings#preferences) (`dark`, `light` or
 `terminal`) and restart; `theme = "auto"` goes back to following the terminal.
 

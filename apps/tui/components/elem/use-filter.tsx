@@ -69,8 +69,11 @@ export function FilterLine({ query, count }: Readonly<{ query: string; count?: s
 
 /** `text` with every word of `query` underlined where it occurs, so a match shows without colour. */
 export function Matched({ text, query, bold }: Readonly<{ text: string; query: string; bold?: boolean }>) {
+  // A focused row's name, which turns inverse where there's no colour for its band
+  const { focusText } = useKajaTheme()
+  const style = bold ? focusText() : {}
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return <Text bold={bold}>{text}</Text>
+  if (words.length === 0) return <Text {...style}>{text}</Text>
   const lower = text.toLowerCase()
   const marked = new Array<boolean>(text.length).fill(false)
   for (const word of words) {
@@ -85,7 +88,7 @@ export function Matched({ text, query, bold }: Readonly<{ text: string; query: s
     else runs.push({ text: text[at]!, marked: marked[at]! })
   }
   return (
-    <Text bold={bold}>
+    <Text {...style}>
       {runs.map((run, index) => (
         <Text key={index} underline={run.marked}>
           {run.text}
