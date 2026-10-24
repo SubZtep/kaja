@@ -2,8 +2,8 @@ import { join } from "node:path"
 import { write } from "bun"
 import { tombiSchemas } from "./index"
 
-/** Regenerates config/schemas/*.json from tombiSchemas. Run after changing any config/ or cli/ schema. */
-const outDir = join(import.meta.dir, "..", "..", "..", "config", "schemas")
+/** Regenerates packages/schema/json/*.json from tombiSchemas. Run after changing any config/ or abilities/ schema. */
+const outDir = join(import.meta.dir, "..", "json")
 
 await Promise.all(
   Object.entries(tombiSchemas).map(([filename, schema]) =>

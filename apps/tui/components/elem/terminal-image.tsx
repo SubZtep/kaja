@@ -8,8 +8,10 @@ import {
 } from "../../lib/image/render-terminal-image"
 import { useRemeasure, useViewportHeight } from "./virtual-scroll"
 
-/** Rows the chat viewport never gets: header 1, input up to 8, key bar 1, caption 1, one spare. */
-const CHROME_ROWS = 12
+/** Rows the chat viewport never gets: header 1, input up to 8, key bar 1, the frame's 3 rules, caption 1, one spare. */
+const CHROME_ROWS = 15
+/** Columns the chat's side margins take from the terminal. */
+const CHAT_MARGIN_COLUMNS = 2
 /** Rows of the viewport an image can't use: its caption line and the "older messages" hint. */
 const VIEWPORT_SPARE_ROWS = 2
 const MIN_IMAGE_ROWS = 4
@@ -55,7 +57,12 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   const { rows, columns } = useWindowSize()
   const boxRef = useRef<DOMElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
-  const target = imageBox({ terminalColumns: columns, terminalRows: rows, containerWidth, viewportHeight })
+  const target = imageBox({
+    terminalColumns: columns - CHAT_MARGIN_COLUMNS,
+    terminalRows: rows,
+    containerWidth,
+    viewportHeight
+  })
   // Re-render only once the size has settled (a resize drag, the input growing), not on every step.
   const [settled, setSettled] = useState(target)
   const size = { width: settled.columns, height: settled.rows }

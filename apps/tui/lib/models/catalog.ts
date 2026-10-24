@@ -1,11 +1,23 @@
-import { type CatalogFile, CatalogFileSchema, type ModelTask } from "@kaja/schema/config"
+import type { ModelTask } from "@kaja/schema/config"
 import { uniqueModelSlug } from "@kaja/shared/text"
 import { groupTomlTables } from "@kaja/shared/toml"
-import { TOML } from "bun"
-import CATALOG_TOML from "../../../../config/catalog.toml" with { type: "text" }
 
-/** One model a provider serves, with the task it is used for. */
-export type CatalogModel = { task: ModelTask; model: string }
+/** One model a provider serves, and every task it can do. */
+export type CatalogModel = {
+  model: string
+  /** Its display name, when the catalog has one. */
+  name?: string
+  tasks: ModelTask[]
+  /** Tokens it takes in, when the catalog knows; written as `context_window`. */
+  contextWindow?: number
+  /** False for a text-only chat model; written as `images = false`. */
+  images?: boolean
+  /** It can call tools, which a chat model needs to be any use to Kaja. */
+  toolCall?: boolean
+  /** Release date, `YYYY-MM-DD` or `YYYY-MM`: newer models are guessed first. */
+  released?: string
+  deprecated?: boolean
+}
 
 /** A provider the setup wizard knows how to configure. */
 export type CatalogProvider = {
@@ -16,12 +28,17 @@ export type CatalogProvider = {
   /** `hosted` (someone else's server) is asked for an API key, `self-hosted` (the user's own server) for its address. */
   kind: "hosted" | "self-hosted"
   baseUrl: string
-  /** Comment lines written above its `[providers.<id>]` table, without the leading `# `. */
-  comment?: string[]
+  /** The environment variables its API key is usually found in, e.g. `OPENAI_API_KEY`. */
+  env?: string[]
   /** A trailing comment on its `base_url` line. */
   note?: string
-  /** What it can serve, in the order they are offered. */
+  /** What it can serve. */
   models: CatalogModel[]
+  /**
+   * Its models are a list the user made (their own provider, or one models.toml has that the catalog doesn't): every
+   * one of them is written, not only the picked ones.
+   */
+  own?: boolean
 }
 
 /** The order tasks appear in models.toml. */
@@ -36,33 +53,15 @@ export const TASK_ORDER: ModelTask[] = [
   "vision"
 ]
 
-const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
-
-function providersOf(file: CatalogFile): CatalogProvider[] {
-  return file.providers.map(({ base_url, ...provider }) => ({ ...provider, baseUrl: base_url }))
-}
-
-// What this build ships; the generated examples and the drift check always use it, never the API's.
-const BUNDLED = providersOf(catalogFile)
-
 /**
- * The providers the wizard offers: `config/catalog.toml`'s, the one source of model defaults, until `setCatalog` swaps
- * in the API's. Swapped in place, so every importer keeps the one array.
+ * The providers the wizard offers: models.dev's once `setCatalog` swaps them in, empty until then (offline, the wizard
+ * asks for every detail instead). Swapped in place, so every importer keeps the one array.
  */
-export const CATALOG: CatalogProvider[] = [...BUNDLED]
+export const CATALOG: CatalogProvider[] = []
 
-/** Makes `catalog` the one the wizard offers, or the bundled one again when it's undefined. */
-export function setCatalog(catalog?: CatalogFile): void {
-  CATALOG.splice(0, CATALOG.length, ...(catalog ? providersOf(catalog) : BUNDLED))
-}
-
-/** The generated example files in `config` (`bun generate:models`), each a mix of catalog providers. */
-export const EXAMPLES = catalogFile.examples
-
-/** An example's models.toml: its providers in catalog order, one model per task. */
-export function exampleToml(example: CatalogFile["examples"][number]): string {
-  const providers = BUNDLED.filter(provider => example.providers.includes(provider.id))
-  return buildModelsToml({ providers, pick: example.pick, alternatives: false })
+/** Makes `providers` the ones the wizard offers, or none when undefined. */
+export function setCatalog(providers?: CatalogProvider[]): void {
+  CATALOG.splice(0, CATALOG.length, ...(providers ?? []))
 }
 
 /** The catalog entry named `id`, if there is one. */
@@ -70,32 +69,66 @@ export function catalogProvider(id: string): CatalogProvider | undefined {
   return CATALOG.find(provider => provider.id === id)
 }
 
-/** One way to serve a task: a provider and the model it names. */
-export type ModelCandidate = { provider: string; model: string }
+/** A model picked for a task: which provider, and the id sent to it. */
+export type ModelPick = { provider: string; model: string }
 
-/** Who can serve each task, in provider order. A task with more than one is what the wizard asks about. */
+/** One way to serve a task: a provider's model. */
+export type ModelCandidate = CatalogModel & { provider: string }
+
+// The tasks Kaja runs tools in: a model that can't call them is a poor guess there.
+const NEEDS_TOOLS = new Set<ModelTask>(["chat", "vision"])
+
+// Best guess first: current before deprecated, tool-calling where tools are used, then newest.
+function byGuess(task: ModelTask) {
+  return (a: ModelCandidate, b: ModelCandidate) =>
+    Number(Boolean(a.deprecated)) - Number(Boolean(b.deprecated)) ||
+    (NEEDS_TOOLS.has(task) ? Number(Boolean(b.toolCall)) - Number(Boolean(a.toolCall)) : 0) ||
+    (b.released ?? "").localeCompare(a.released ?? "") ||
+    a.model.localeCompare(b.model)
+}
+
+/** Who can serve each task, best guess first. */
 export function candidatesByTask(providers: CatalogProvider[]): Partial<Record<ModelTask, ModelCandidate[]>> {
   const byTask: Partial<Record<ModelTask, ModelCandidate[]>> = {}
   for (const provider of providers) {
-    for (const { task, model } of provider.models) {
-      byTask[task] = [...(byTask[task] ?? []), { provider: provider.id, model }]
+    for (const model of provider.models) {
+      for (const task of model.tasks) byTask[task] = [...(byTask[task] ?? []), { ...model, provider: provider.id }]
     }
   }
+  for (const [task, list] of Object.entries(byTask)) list.sort(byGuess(task as ModelTask))
   return byTask
 }
 
-/** What to write: the providers, which of them serves each contested task, and any address the user changed. */
+const samePick = (a: ModelPick | undefined, b: ModelPick) => a?.provider === b.provider && a.model === b.model
+
+/**
+ * Each task's model: the one in `picks` while it's still a candidate, else the best guess. Vision guesses chat's pick
+ * when that one can see, so one model does both.
+ */
+export function resolvePicks(
+  providers: CatalogProvider[],
+  tasks: ModelTask[],
+  picks: Partial<Record<ModelTask, ModelPick>> = {}
+): Partial<Record<ModelTask, ModelPick>> {
+  const candidates = candidatesByTask(providers)
+  const resolved: Partial<Record<ModelTask, ModelPick>> = {}
+  for (const task of TASK_ORDER.filter(candidate => tasks.includes(candidate))) {
+    const options = candidates[task]
+    if (!options?.length) continue
+    const wanted = picks[task] ?? (task === "vision" ? resolved.chat : undefined)
+    const chosen = options.find(option => samePick(wanted, option)) ?? options[0]!
+    resolved[task] = { provider: chosen.provider, model: chosen.model }
+  }
+  return resolved
+}
+
+/** What to write: the providers, each task's model, and any address the user changed. */
 export type ModelsSelection = {
   providers: CatalogProvider[]
-  /** Task to the provider id that serves it. A task not named here goes to its first candidate. */
-  pick?: Partial<Record<ModelTask, string>>
+  /** Task to its model; a task not named here is off. */
+  picks: Partial<Record<ModelTask, ModelPick>>
   /** Provider id to the address the user typed, replacing the catalog's default. */
   baseUrls?: Record<string, string>
-  /**
-   * Also write the candidates not picked, for pins and the doctor to switch to. Off for the examples, which show one
-   * model per task.
-   */
-  alternatives?: boolean
 }
 
 const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`provider\`, a [providers.*] table) and
@@ -106,88 +139,79 @@ const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`pr
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 `
 
-type ModelEntry = { id: string; provider: string; model: string; tasks: ModelTask[] }
+type ModelEntry = {
+  id: string
+  provider: string
+  model: string
+  tasks: ModelTask[]
+  contextWindow?: number
+  images?: boolean
+}
 
-// A provider's [providers.<id>] table, under its comment lines.
+// A provider's [providers.<id>] table.
 function providerTable(provider: CatalogProvider, baseUrl: string): string {
-  const lines = [...(provider.comment ?? []).map(line => `# ${line}`), `[providers.${provider.id}]`]
   const note = provider.note ? `  # ${provider.note}` : ""
-  lines.push(`base_url = ${JSON.stringify(baseUrl)}${note}`)
-  return lines.join("\n")
-}
-
-// Each task's model: the picked provider's candidate, else the first; vision follows chat's provider when it can see
-function pickedModels(
-  candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
-  pick: Partial<Record<ModelTask, string>>
-): Map<ModelTask, ModelCandidate> {
-  const chosen = new Map<ModelTask, ModelCandidate>()
-  for (const task of TASK_ORDER) {
-    const options = candidates[task]
-    const wanted = pick[task] ?? (task === "vision" ? chosen.get("chat")?.provider : undefined)
-    if (options?.length) chosen.set(task, options.find(option => option.provider === wanted) ?? options[0]!)
-  }
-  return chosen
-}
-
-// Lists each task on its other candidates' entries too; `order` is the picked entries, top to bottom.
-function addAlternatives(
-  chosen: Map<ModelTask, ModelCandidate>,
-  candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
-  order: ModelEntry[],
-  entryFor: (option: ModelCandidate) => ModelEntry
-): void {
-  for (const [task, picked] of chosen) {
-    const pickedAt = order.indexOf(entryFor(picked))
-    for (const option of candidates[task]!) {
-      if (option === picked) continue
-      const entry = entryFor(option)
-      // A picked model of another task sitting above this task's pick can't list it, or it would win.
-      const at = order.indexOf(entry)
-      if (at !== -1 && at < pickedAt) continue
-      entry.tasks.push(task)
-    }
-  }
+  return [`[providers.${provider.id}]`, `base_url = ${JSON.stringify(baseUrl)}${note}`].join("\n")
 }
 
 /**
- * Builds models.toml text for the chosen providers: each task's picked model is the first entry listing it, and every
- * model written is keyed by the slug of its name (a model serving several tasks is one entry). The other candidates are
- * written after the picked ones, so a persona pin, or the doctor dropping a broken model, can reach them. Text is
- * generated rather than edited, so the comments that explain the file are always there.
+ * Builds models.toml text: each task's picked model is the first entry listing it, and a model serving several tasks
+ * is one entry keyed by the slug of its name. An own provider's other models follow, listing only tasks that are on and
+ * whose pick sits above them, for a persona pin or the doctor to reach. Text is generated rather than edited, so the
+ * comments that explain the file are always there.
  */
-export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternatives = true }: ModelsSelection): string {
+export function buildModelsToml({ providers, picks, baseUrls = {} }: ModelsSelection): string {
   const providerTables = providers.map(provider => providerTable(provider, baseUrls[provider.id] ?? provider.baseUrl))
+  const byId = new Map(providers.map(provider => [provider.id, provider]))
 
-  // One entry per provider and model name, in task order, collecting every task it's written for.
   const entries = new Map<string, ModelEntry>()
   const taken = new Set<string>()
-  const entryFor = (option: ModelCandidate) => {
-    const key = `${option.provider}\n${option.model}`
+  const entryFor = (provider: string, model: string) => {
+    const key = `${provider}\n${model}`
     let entry = entries.get(key)
     if (!entry) {
-      const id = uniqueModelSlug(taken, option.model, option.provider)
+      const id = uniqueModelSlug(taken, model, provider)
       taken.add(id)
-      entry = { id, provider: option.provider, model: option.model, tasks: [] }
+      const known = byId.get(provider)?.models.find(candidate => candidate.model === model)
+      entry = { id, provider, model, tasks: [], contextWindow: known?.contextWindow, images: known?.images }
       entries.set(key, entry)
     }
     return entry
   }
 
-  const candidates = candidatesByTask(providers)
-  const chosen = pickedModels(candidates, pick)
-  // The picked models first, so each is the first entry listing its task.
-  for (const [task, option] of chosen) entryFor(option).tasks.push(task)
-  if (alternatives) addAlternatives(chosen, candidates, [...entries.values()], entryFor)
+  // The picks first, so each is the first entry listing its task.
+  for (const task of TASK_ORDER) {
+    const pick = picks[task]
+    if (pick && byId.has(pick.provider)) entryFor(pick.provider, pick.model).tasks.push(task)
+  }
+  const pickedAt = (task: ModelTask) => {
+    const pick = picks[task]
+    return pick ? [...entries.values()].indexOf(entryFor(pick.provider, pick.model)) : -1
+  }
+  const addTasks = (entry: ModelEntry, tasks: readonly ModelTask[]) => {
+    const at = [...entries.values()].indexOf(entry)
+    for (const task of tasks) {
+      // Never a task that's off, and never above that task's pick, where it would win
+      if (entry.tasks.includes(task) || pickedAt(task) === -1 || at < pickedAt(task)) continue
+      entry.tasks.push(task)
+    }
+  }
+  for (const provider of providers.filter(candidate => candidate.own)) {
+    for (const model of provider.models) addTasks(entryFor(provider.id, model.model), model.tasks)
+  }
 
-  const modelTables = [...entries.values()].map(entry =>
-    [
-      `[models.${entry.id}]`,
-      `model = ${JSON.stringify(entry.model)}`,
-      `provider = "${entry.provider}"`,
-      `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`
-    ].join("\n")
-  )
+  const modelTables = [...entries.values()]
+    .filter(entry => entry.tasks.length > 0)
+    .map(entry =>
+      [
+        `[models.${entry.id}]`,
+        `model = ${JSON.stringify(entry.model)}`,
+        `provider = "${entry.provider}"`,
+        `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`,
+        ...(entry.contextWindow ? [`context_window = ${entry.contextWindow}`] : []),
+        ...(entry.images === false ? ["images = false"] : [])
+      ].join("\n")
+    )
   const out = [HEADER.trimEnd()]
   if (providerTables.length > 0) out.push(groupTomlTables("[providers]", providerTables))
   if (modelTables.length > 0) out.push(groupTomlTables("[models]", modelTables))

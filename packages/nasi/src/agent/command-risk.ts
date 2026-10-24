@@ -45,8 +45,8 @@ export function isDangerousCommand(command: string): boolean {
 }
 
 /**
- * Regex sources for commands that run without asking; each must match the whole command. The built-in list, also
- * `config/commands.toml`'s `safe`.
+ * Regex sources for commands that run without asking; each must match the whole command. The built-in list, which the
+ * user's commands.toml `custom` adds to.
  */
 export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
   String.raw`ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*`,

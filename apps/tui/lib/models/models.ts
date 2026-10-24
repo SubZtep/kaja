@@ -1,11 +1,15 @@
 import { join } from "node:path"
 import type { PersonaModels } from "@kaja/schema/cli"
-import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
+import {
+  type CliResolvedModel,
+  type KajaModelsFile,
+  ModelsFileSchema,
+  type ModelTask,
+  providerKey
+} from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// What `kaja config fetch --offline` writes: the default example generated from config/catalog.toml.
-import TEMPLATE from "../../../../config/models.default.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
-import { writeTemplateConfig } from "../config/fetch"
+import { writeConfigFile } from "../config/schema-file"
 import { secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { buildModelsToml, type ModelsSelection } from "./catalog"
@@ -21,7 +25,7 @@ export function getModelsPath() {
 
 /** Writes models.toml for the providers the user ticked, replacing what was there. See {@link buildModelsToml}. */
 export async function writeModelsFromCatalog(selection: ModelsSelection) {
-  await write(file(getModelsPath()), buildModelsToml(selection))
+  await writeConfigFile(getModelsPath(), buildModelsToml(selection))
 }
 
 /**
@@ -82,14 +86,6 @@ export async function saveCommentedOutModels(ids: string[]) {
   const text = await f.text()
   const next = commentOutModels(text, ids)
   if (next !== text) await write(f, next)
-}
-
-/**
- * The `kaja config fetch` subcommand: (re-)writes the bundled config/models.default.toml template, backing up any
- * existing (differing) file first.
- */
-export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
-  return writeTemplateConfig(TEMPLATE, getModelsPath())
 }
 
 /** Flattens each models.toml entry with its provider's credentials, once per task it lists. */
@@ -156,7 +152,7 @@ export async function loadModelsFile(): Promise<ResolvedModelsFile> {
     const providers = Object.fromEntries(
       Object.entries(parsed.providers).map(([name, provider]) => [
         name,
-        { ...provider, api_key: providerSecrets[name]?.api_key }
+        { ...provider, api_key: providerKey(providerSecrets[name]) }
       ])
     )
     return { ...parsed, providers }

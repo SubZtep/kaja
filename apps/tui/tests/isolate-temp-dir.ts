@@ -5,10 +5,9 @@ import { join } from "node:path"
 
 // getPaths().temp comes from env-paths, which derives it from os.tmpdir() and honours no XDG_*
 // variable — so unlike XDG_CONFIG_HOME/XDG_DATA_HOME it cannot be redirected per test file, and
-// the suite would share the real temp dir with the user's own CLI (remote-fetch.ts caches its
-// ETag there). env-paths also captures os.tmpdir() when it is first imported, and `bun test` runs
-// every file in one process, so a per-file TMPDIR would leak whichever file imported it first to
-// all the others — hence one dir per run, set here before any test module loads. Per run (keyed
+// the suite would share the real temp dir with the user's own CLI. env-paths also captures
+// os.tmpdir() when it is first imported, and `bun test` runs every file in one process, so a
+// per-file TMPDIR would leak whichever file imported it first to all the others — hence one dir per run, set here before any test module loads. Per run (keyed
 // by pid) because test files build fixed paths under tmpdir(), so two runs at once (a hook and a
 // terminal, say) would otherwise wipe each other's config dirs mid-test.
 const PREFIX = "kaja-test-tmp-"
@@ -26,6 +25,8 @@ const testTmp = join(root, `${PREFIX}${process.pid}`)
 // Tests call mkdtemp under it directly, so it must exist even on a fresh machine (CI).
 mkdirSync(testTmp, { recursive: true })
 Bun.env.TMPDIR = testTmp
+// The cached provider catalog (getPaths().cache) must never be the user's own.
+Bun.env.XDG_CACHE_HOME = join(testTmp, "cache")
 // A KAJA_PROFILE from the user's shell would rename every config/data dir the tests expect.
 delete Bun.env.KAJA_PROFILE
 // Run in a terminal or not (a hook, CI), the code under test sees a pipe: no wrapping to the terminal's width

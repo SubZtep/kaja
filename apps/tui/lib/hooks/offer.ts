@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs"
 import { syncSounds } from "../audio/sounds"
 import { writeTemplateConfig } from "../config/fetch"
-import { getHooksPath } from "../config/hooks"
+import { getHooksPath, loadHooks } from "../config/hooks"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { type BackendKind, detectBackends, type Detected, installHint, type Which } from "./detect"
-import { buildHooksToml } from "./templates"
+import { buildHooksToml, currentHooks, type WantedHooks } from "./templates"
 
 const KIND_LABEL: Record<BackendKind, string> = {
   player: "hooks.kindPlayer",
@@ -56,12 +56,45 @@ export async function offerHooks(
     print(statusLine("info", t("hooks.nothing")))
     return
   }
+  await writeHooks(found, wanted, print)
+}
 
+// Downloads the sounds when they're wanted, then writes hooks.toml (a differing one is backed up first)
+async function writeHooks(found: Detected, wanted: WantedHooks, print: (line: string) => void) {
+  const path = getHooksPath()
   if (wanted.sounds && !(await syncSounds())) print(statusLine("warning", t("hooks.soundsFailed")))
-
   const written = await writeTemplateConfig(buildHooksToml(found, wanted), path)
   if (written.unchanged) print(statusLine("success", t("config.fetchedUnchanged", { path })))
   else if (written.backedUpTo)
     print(statusLine("success", t("config.fetchedWithBackup", { path, backup: written.backedUpTo })))
   else print(statusLine("success", t("config.fetched", { path })))
+}
+
+/** The programs the setup wizard asks about, by kind, and what hooks.toml switches on now (none without the file). */
+export function hooksPrefill(found: Detected = detectBackends()): {
+  programs: Partial<Record<BackendKind, string>>
+  current?: WantedHooks
+} {
+  const programs = Object.fromEntries(Object.entries(found).map(([kind, backend]) => [kind, backend.program]))
+  return { programs, ...(existsSync(getHooksPath()) ? { current: currentHooks(loadHooks()) } : {}) }
+}
+
+/**
+ * Applies the setup wizard's hook answers: says how to install what's missing, then writes hooks.toml, unless that
+ * would change nothing (a hand-edited file stays as it is) or nothing is wanted and there's no file yet.
+ */
+export async function applyHooks(
+  wanted: WantedHooks,
+  print: (line: string) => void,
+  platform: string = process.platform,
+  which: Which = Bun.which
+): Promise<void> {
+  const found = detectBackends(platform, which)
+  for (const kind of ["player", "notifier", "speaker"] as const) {
+    if (!found[kind]) print(describeKind(kind, found, platform, which))
+  }
+  const { current } = hooksPrefill(found)
+  const none = !wanted.sounds && !wanted.notifications && !wanted.speech
+  if (current ? Bun.deepEquals(current, wanted) : none) return
+  await writeHooks(found, wanted, print)
 }

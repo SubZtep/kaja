@@ -1,7 +1,7 @@
 toml-version = "v1.1.0"
 
 # Schemas are generated from @kaja/schema's Zod schemas — run `bun generate:schemas`
-# after changing packages/schema/config/*.ts, packages/schema/abilities/*.ts or packages/schema/cli/datasets.ts.
+# after changing packages/schema/config/*.ts or packages/schema/abilities/*.ts.
 # The TUI's own config files are matched by their real path (Linux, macOS, Windows), not through the .user-config
 # link: Tombi resolves symlinks before matching, so a **/.user-config/… pattern never matches.
 
@@ -17,9 +17,8 @@ toml-version = "v1.1.0"
 
 
 [[schemas]]
-path    = "config/schemas/commands.json"
+path    = "packages/schema/json/commands.json"
 include = [
-  "config/commands.toml",
   "**/.config/kaja*/commands.toml",
   "**/Library/Preferences/kaja*/commands.toml",
   "**/kaja*/Config/commands.toml",
@@ -30,16 +29,8 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/catalog.json"
+path    = "packages/schema/json/hooks.json"
 include = [
-  "config/catalog.toml"
-]
-
-
-[[schemas]]
-path    = "config/schemas/hooks.json"
-include = [
-  "config/hooks.toml",
   "**/.config/kaja*/hooks.toml",
   "**/Library/Preferences/kaja*/hooks.toml",
   "**/kaja*/Config/hooks.toml"
@@ -47,7 +38,7 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/http-tool.json"
+path    = "packages/schema/json/http-tool.json"
 include = [
   "marketplace/abilities/*/tool.toml",
   "**/.config/kaja*/marketplace/abilities/*/tool.toml",
@@ -57,7 +48,7 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/mcp-ability.json"
+path    = "packages/schema/json/mcp-ability.json"
 include = [
   "marketplace/abilities/*/mcp.toml",
   "**/.config/kaja*/marketplace/abilities/*/mcp.toml",
@@ -67,9 +58,8 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/models.json"
+path    = "packages/schema/json/models.json"
 include = [
-  "config/models*.toml",
   "**/.config/kaja*/models.toml",
   "**/Library/Preferences/kaja*/models.toml",
   "**/kaja*/Config/models.toml",
@@ -80,7 +70,7 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/persona.json"
+path    = "packages/schema/json/persona.json"
 include = [
   "marketplace/personas/*.toml",
   "**/.config/kaja*/marketplace/personas/*.toml",
@@ -90,9 +80,8 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/secrets.json"
+path    = "packages/schema/json/secrets.json"
 include = [
-  "config/secrets.toml",
   "**/.config/kaja*/secrets.toml",
   "**/Library/Preferences/kaja*/secrets.toml",
   "**/kaja*/Config/secrets.toml",
@@ -103,9 +92,8 @@ include = [
 
 
 [[schemas]]
-path    = "config/schemas/settings.json"
+path    = "packages/schema/json/settings.json"
 include = [
-  "config/settings.toml",
   "**/.config/kaja*/settings.toml",
   "**/Library/Preferences/kaja*/settings.toml",
   "**/kaja*/Config/settings.toml",

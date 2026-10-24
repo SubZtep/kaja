@@ -110,18 +110,12 @@ test("in a multiline draft, arrows move the cursor before recalling", async () =
   await t.waitUntilExit()
 })
 
-test("the border turns to arrows only while an ask_user answer is awaited", async () => {
+test("the field is one row with a › mark, no rules around it", async () => {
   const t = renderForTest(<UserInput pending={false} speaking={false} send={async () => {}} />)
   await t.tick()
-  expect(t.lastFrame()).not.toContain("↓")
+  expect(t.lastFrame().trimEnd().split("\n")).toEqual([" › Type something..."])
   t.unmount()
   await t.waitUntilExit()
-
-  const asking = renderForTest(<UserInput pending={false} speaking={false} asking send={async () => {}} />)
-  await asking.tick()
-  expect(asking.lastFrame()).toContain("↓")
-  asking.unmount()
-  await asking.waitUntilExit()
 })
 
 test("a given placeholder replaces the chat one, and the draft is reported as it changes", async () => {

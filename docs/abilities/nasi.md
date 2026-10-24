@@ -24,8 +24,8 @@ you.
 ## Where it runs
 
 On your machine in local mode (and `kaja telegram`), and on the Kaja API for cloud mode, the cloud Telegram
-bot and the widget. It's the same brain either way. The cloud one gets a smaller toolset because it serves
-many people, except what your terminal runs for it on your own computer. [Cloud or local](/start/modes) has the full comparison.
+bot and the widget. It's the same brain either way; the cloud one gets a smaller toolset because it serves
+many people. [Cloud or local](/start/modes) has the full comparison.
 
 ## What it knows when a conversation starts
 
@@ -56,38 +56,16 @@ answer. Along the way it can stop and hand control back to you:
   `git status`) run without asking.
 
 It can also [switch persona](/abilities/personas) mid-turn, which may switch the model too, and carry on.
-The diagram on [Cloud or local](/start/modes#how-a-turn-runs) shows the whole loop.
 
-## When things go wrong
-
-Nasi tries not to leave you with nothing:
-
-- A failed tool doesn't end the turn. The model sees the error and can try another way. After three rounds
-  in a row where every tool call failed, it stops.
-- An empty reply from the model is retried a few times before Nasi admits it's drawing a blank.
-- An ability that can't load (a broken file, a missing key, an MCP server silent for 10 seconds) is skipped
-  with a warning, and everything else still works. `kaja doctor` lists what was left out and why.
-
-## Long conversations
-
-Models can only read so much at once, so Nasi keeps each request inside the model's context window:
-
-- A tool result too big for the window (a long web page, a huge file) is condensed for the model. The full
-  output stays in the conversation log.
-- Images from older turns are replaced with a short note, since the model already saw them.
-- When the conversation nears the limit, the older part is **compacted** into a summary and recent messages
-  stay as they are. Nothing is deleted: the log keeps every message.
-
-Type `/compact` to do it on demand. Which model writes the summaries, and when compaction kicks in, is in
-[Settings](/config/settings#context).
-
-## What it keeps
+A failed tool doesn't end the turn: the model sees the error and can try another way. An ability that can't
+load is skipped with a warning, and `kaja doctor` lists what was left out and why. Long conversations are
+[compacted](/config/settings#context) into a summary before they outgrow the model's window; the log keeps
+every message.
 
 Conversations, memory notes and dataset answers live in a store the host provides: a
-[SQLite file](/config/storage) locally, Postgres in the cloud. Nasi reads no config file and opens no
-database itself, which is why one brain fits every front door.
+[SQLite file](/config/storage) locally, Postgres in the cloud.
 
-Curious how it works under the hood? [Inside Nasi](/abilities/inside-nasi) tells the story.
+[Inside Nasi](/abilities/inside-nasi) shows the whole loop and how it works under the hood.
 
 ---
 

@@ -15,17 +15,15 @@ icon: 🩺
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `kaja config paths`  | print where every config file resolves on this machine. Start here when unsure which file Kaja reads                                                                   |
 | `kaja config wizard` | re-run the [setup wizard](/start/wizard)                                                                                                                               |
-| `kaja config diff`   | show what `fetch` would change, without writing anything                                                                                                               |
-| `kaja config fetch`  | rewrite `models.toml` and `commands.toml` from the defaults (backing them up if they differ), and write `secrets.toml` if you have none                                |
+| `kaja config diff`   | show whether `fetch` would change `models.toml`, without writing anything                                                                                              |
+| `kaja config fetch`  | refresh `models.toml` from [models.dev](https://models.dev) (backing it up if it differs)                                                                              |
 | `kaja config hooks`  | find a sound player, notifier and speech tool on this machine and write [`hooks.toml`](/config/settings#hookstoml-commands-that-run-on-chat-events) from what it finds |
 | `kaja doctor`        | test every key, model and tool, see below                                                                                                                              |
 
-`kaja config fetch` takes `models.toml` and `commands.toml` from the Kaja server's defaults, or from the
-templates bundled in the binary when you're offline or pass `--offline`. Your own patterns in
-`commands.toml`'s `custom` survive a fetch. `secrets.toml` comes from the bundled template with every section
-commented out, and is only written if you have none, so fetching never loses a key. `--only models`,
-`--only commands` or `--only secrets` limits it to one file. It never touches `settings.toml` or the
-`marketplace/` folder. Use it to pick up new defaults after an upgrade, or to recover a broken file.
+`kaja config fetch` updates what [models.dev](https://models.dev) says about the providers and models in
+`models.toml` (see [models.toml](/config/models#writing-it)), keeping every model you picked and backing the old
+file up first. Offline it leaves `models.toml` alone. It touches no other file. To switch to a newer model, run
+`kaja config wizard`.
 
 ## Checking keys and models
 
@@ -59,7 +57,7 @@ Run `kaja doctor` first. For the rest:
   ([Personas](/abilities/personas#abilities)), an ability without its key stays out, and an MCP server that
   doesn't connect within 10 seconds is skipped. `kaja doctor` says which and why.
 - **Alt shortcuts type odd characters (macOS):** set `hotkeyModifier = "ctrl"`
-  ([Key bar](/use/tui#key-bar)).
+  ([Key line](/use/tui#key-line)).
 - **A setting change did nothing:** config is read once at startup, so restart Kaja (and `kaja telegram`).
 
 ## Logs

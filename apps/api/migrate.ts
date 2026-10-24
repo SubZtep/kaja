@@ -2,7 +2,6 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { SQL } from "bun"
 import { applyMigrations, readMigrations } from "./scripts/migrations"
-import { seedConfig } from "./scripts/seed-config"
 
 // source tree and built image both keep migrate next to migrations (see Dockerfile)
 const scriptDir = dirname(fileURLToPath(import.meta.url))
@@ -15,9 +14,5 @@ const db = new SQL({ url: process.env.DATABASE_URL, max: 1 })
 
 const applied = await applyMigrations(db, migrations)
 console.log(`migrations: ${applied} applied, ${migrations.length - applied} already up to date`)
-
-// The cloud agent reads its persona catalog from the DB, so an unseeded database means no
-// personas at all. Idempotent, so running it on every deploy leaves admin edits untouched.
-await seedConfig(db)
 
 await db.close()

@@ -1,7 +1,7 @@
 import { setWarnHandler } from "@kaja/nasi"
 import { consolePalette, paint } from "./components/theme"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
-import { createCloud, getConfigPath, isConfigExists, validate } from "./lib/config/config"
+import { create, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { modeFromFlags, resolveMode } from "./lib/config/mode"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
@@ -83,7 +83,7 @@ try {
   await checkForUpdate(mode, args.flags.headless)
 
   if (mode === "cloud") {
-    if (!(await isConfigExists())) await createCloud()
+    if (!(await isConfigExists())) await create()
     await runCloudSubcommand()
     process.exit(0)
   }

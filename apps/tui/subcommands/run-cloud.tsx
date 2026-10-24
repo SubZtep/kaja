@@ -151,7 +151,7 @@ export async function runCloudSubcommand() {
   const apiUrl = getApiBaseUrl()
 
   try {
-    // cli.ts guarantees settings.toml exists (via createCloud()) before this subcommand runs.
+    // cli.ts guarantees settings.toml exists (via create()) before this subcommand runs.
     const { preferences } = await config()
     // Before the sign-in prompt, which is coloured by it, and before render: "auto" queries the terminal over stdin, which Ink is about to take over
     const theme = await resolveTheme(preferences?.theme)

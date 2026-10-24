@@ -56,5 +56,7 @@ export async function ensureMarketplace(print: (line: string) => void): Promise<
   if (!(await marketplaceSettings()).enabled || (await readSyncLock(getMarketplaceDir()))) return
 
   const { withStepProgress } = await import("./progress")
-  print((await withStepProgress(t("ability.firstSync"), UPDATE_STEPS, runAbilityUpdate)).text)
+  const { text } = await withStepProgress(t("ability.marketplace"), UPDATE_STEPS, runAbilityUpdate)
+  // Under the bar, from the text column, so it reads as the bar's detail
+  for (const line of text.split("\n")) print(`   ${line}`)
 }

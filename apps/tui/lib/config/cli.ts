@@ -1,86 +1,39 @@
-import { existsSync } from "node:fs"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
-import { fetchModelsToml, getModelsPath } from "../models/models"
+import type { RefreshSkipped } from "../models/current"
 import { listPaths } from "../paths"
-import { pathForBundleKey, pickBundleFiles } from "./bundle"
-import { fetchCommandsToml } from "./commands"
 import { getConfigDir } from "./config"
-import { writeTemplateConfig } from "./fetch"
-import { fetchRemoteConfigBundle } from "./remote-fetch"
-import { fetchSecretsToml } from "./secrets"
 
-type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean; kept?: boolean }
+type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
-function fetchResultLine({ path, backedUpTo, unchanged, kept }: FetchResult) {
-  if (kept) return statusLine("info", t("config.fetchedKept", { path }))
+const SKIPPED_KEY: Record<RefreshSkipped["skipped"], string> = {
+  "no-catalog": "config.fetchModelsNoCatalog",
+  "no-models": "config.fetchModelsNoFile",
+  "no-catalog-providers": "config.fetchModelsOwnOnly"
+}
+
+function fetchResultLine(result: FetchResult | RefreshSkipped) {
+  if ("skipped" in result) return statusLine("info", t(SKIPPED_KEY[result.skipped]))
+  const { path, backedUpTo, unchanged } = result
   if (unchanged) return statusLine("info", t("config.fetchedUnchanged", { path }))
   if (backedUpTo) return statusLine("success", t("config.fetchedWithBackup", { path, backup: backedUpTo }))
   return statusLine("success", t("config.fetched", { path }))
-}
-
-function matchesOnly(key: string, only: string | undefined): boolean {
-  if (!only) return true
-  if (only === "models") return key === "models.toml"
-  if (only === "secrets") return key === "secrets.toml"
-  if (only === "commands") return key === "commands.toml"
-  return true
-}
-
-async function runFetchOffline(only?: string): Promise<FetchResult[]> {
-  const results: FetchResult[] = []
-  if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
-  if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
-  if (matchesOnly("commands.toml", only)) results.push(await fetchCommandsToml())
-  return results
-}
-
-async function runFetchOnline(only: string | undefined): Promise<FetchResult[] | undefined> {
-  // A 304 only means "same as the last download", not "same as what's on disk", so with no models.toml (the one file the bundle writes) ask for the full body. Not the config dir: fetching secrets.toml has just created it.
-  const bundle = await fetchRemoteConfigBundle(existsSync(getModelsPath()))
-  if ("unchanged" in bundle) return undefined
-
-  const entries = Object.entries(pickBundleFiles(bundle.files)).filter(([key]) => matchesOnly(key, only))
-  return Promise.all(
-    entries.map(([key, text]) =>
-      key === "commands.toml" ? fetchCommandsToml(text) : writeTemplateConfig(text, pathForBundleKey(key))
-    )
-  )
 }
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number; text: string }> {
-  if (offline) {
-    try {
-      const results = await runFetchOffline(only)
-      return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (error) {
-      return { code: 1, text: errorMessage(error) }
-    }
-  }
-
+/** Moves models.toml to the online catalog's current defaults for the providers it uses. */
+async function runFetch(): Promise<{ code: number; text: string }> {
   try {
-    // secrets.toml is never admin-managed (no user secrets on the server), so it's always fetched
-    // from the bundled local template rather than the remote bundle. Done before runFetchOnline:
-    // that call may read secrets(), which auto-writes a missing
-    // secrets.toml as a side effect — fetching it explicitly first keeps this status line accurate.
-    const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
-    const remoteResults = await runFetchOnline(only)
-    const results = [...secretsResult, ...(remoteResults ?? [])]
-    if (results.length === 0) return { code: 0, text: statusLine("success", t("config.fetchAllUpToDate")) }
-    return { code: 0, text: results.map(fetchResultLine).join("\n") }
+    const { refreshCatalog } = await import("../models/modelsdev")
+    await refreshCatalog()
+    const { refreshModelsToml } = await import("../models/current")
+    return { code: 0, text: fetchResultLine(await refreshModelsToml()) }
   } catch (error) {
-    console.log(statusLine("warning", t("config.fetchOfflineFallback", { message: errorMessage(error) })))
-    try {
-      const results = await runFetchOffline(only)
-      return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (fallbackError) {
-      return { code: 1, text: errorMessage(fallbackError) }
-    }
+    return { code: 1, text: errorMessage(error) }
   }
 }
 
@@ -92,10 +45,10 @@ function runPaths(): { code: number; text: string } {
   return { code: 0, text: markdownToTerminal(md) }
 }
 
-async function runDiff({ offline }: ConfigFlags): Promise<{ code: number; text: string }> {
+async function runDiff(): Promise<{ code: number; text: string }> {
   const { diffConfig } = await import("./diff")
   try {
-    const lines = await diffConfig(Boolean(offline))
+    const lines = await diffConfig()
     return { code: 0, text: lines.join("\n") }
   } catch (error) {
     return { code: 1, text: errorMessage(error) }
@@ -122,7 +75,7 @@ async function runHooks({ headless }: ConfigFlags): Promise<{ code: number; text
  * The parsed flags these subcommands read. They come from `lib/cli/args.ts`, not from the positionals: parseArgs strips
  * flags out of `input`, so scanning it here silently ignored every one of them.
  */
-export type ConfigFlags = { headless?: boolean; offline?: boolean; only?: string }
+export type ConfigFlags = { headless?: boolean }
 
 /**
  * Handles `kaja config <fetch|paths|diff|wizard|hooks>`;
@@ -132,9 +85,9 @@ export type ConfigFlags = { headless?: boolean; offline?: boolean; only?: string
 export async function runConfigCli(argv: string[], flags: ConfigFlags = {}): Promise<{ code: number; text: string }> {
   const [command] = argv
 
-  if (command === "fetch") return runFetch(flags)
+  if (command === "fetch") return runFetch()
   if (command === "paths") return runPaths()
-  if (command === "diff") return runDiff(flags)
+  if (command === "diff") return runDiff()
   if (command === "wizard") return runWizard(flags)
   if (command === "hooks") return runHooks(flags)
 

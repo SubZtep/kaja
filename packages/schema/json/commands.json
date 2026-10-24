@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "custom": {
+      "default": [],
+      "description": "Regexes for more commands that run without asking; each must match the whole command (it is anchored for you). A command with shell metacharacters, or one Kaja flags as dangerous, always asks",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

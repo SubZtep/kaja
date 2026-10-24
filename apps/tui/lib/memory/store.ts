@@ -1,8 +1,9 @@
 import { join } from "node:path"
 import type { NasiStore } from "@kaja/nasi"
 import { stringifyToml } from "@kaja/shared/toml"
-import { file, write } from "bun"
+import { file } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
+import { writeConfigFile } from "../config/schema-file"
 import { log } from "../logger"
 import { getPaths } from "../paths"
 import { createSqliteStore, imagesRoot } from "../store/sqlite"
@@ -22,7 +23,7 @@ async function persistDbPathIfMissing(dbPath: string) {
     if (!(await file(configPath).exists())) return
     const loose = await readConfigLoose()
     if (loose.memory?.dbPath) return
-    await write(file(configPath), stringifyToml({ ...loose, memory: { ...loose.memory, dbPath } }))
+    await writeConfigFile(configPath, stringifyToml({ ...loose, memory: { ...loose.memory, dbPath } }))
     invalidateConfigCache()
   } catch (error) {
     log.warn("Failed to persist memory db path to config", { error, dbPath })

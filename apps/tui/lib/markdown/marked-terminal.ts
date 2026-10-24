@@ -45,6 +45,7 @@ const defaultOptions = {
   firstHeading: chalk.magenta.underline.bold,
   hr: chalk.reset,
   listitem: chalk.reset,
+  bullet: chalk.dim,
   list,
   table: chalk.reset,
   paragraph: chalk.reset,
@@ -149,16 +150,28 @@ function fixHardReturn(text: string, reflow: boolean) {
 }
 
 ;(Renderer.prototype as any).list = function (this: any, body: any, ordered: any) {
-  if (typeof body === "object") {
-    const listToken = body
-    ordered = listToken.ordered
-    body = ""
-    for (const item of listToken.items) {
-      body += this.listitem(item)
+  // Nested lists render inside their parent's items, which still look for the "*" markers
+  this.listDepth = (this.listDepth ?? 0) + 1
+  try {
+    if (typeof body === "object") {
+      const listToken = body
+      ordered = listToken.ordered
+      body = ""
+      for (const item of listToken.items) {
+        body += this.listitem(item)
+      }
     }
+    body = this.o.list(body, ordered, this.tab)
+    body = fixNestedLists(indentLines(this.tab, body), this.tab)
+    return section(this.listDepth === 1 ? bullets(body, this.o.bullet) : body)
+  } finally {
+    this.listDepth--
   }
-  body = this.o.list(body, ordered, this.tab)
-  return section(fixNestedLists(indentLines(this.tab, body), this.tab))
+}
+
+// The outermost list swaps every "*" marker for a "•" in the bullet style, once nothing parses them any more
+function bullets(body: string, style: (text: string) => string) {
+  return body.replace(/^( *)\* /gm, (_match, indent: string) => `${indent}${style("•")} `)
 }
 
 // Prefixes a loose task item's first paragraph (and its first text token, if

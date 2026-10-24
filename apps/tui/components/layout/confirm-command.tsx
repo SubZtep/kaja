@@ -38,7 +38,7 @@ export function ConfirmCommand({
   const dangerous = kind === "command" && isDangerousCommand(command)
   const { danger, warning } = useKajaTheme()
   const spec: PromptSpec = {
-    title: dangerous ? `⚠ ${description}` : description,
+    title: dangerous ? `! ${description}` : description,
     tone: dangerous ? danger() : warning(),
     options: [
       { kind: "choice", id: "yes", label: t("confirmCommand.yes") },

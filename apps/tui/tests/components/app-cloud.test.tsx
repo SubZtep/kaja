@@ -73,21 +73,15 @@ test("renders the resolved persona label and model from /nasi/info", async () =>
   await t.waitUntilExit()
 })
 
-test("the key bar shows Esc, Help, Persona, and Copy", async () => {
+test("the key line shows scrolling, help, persona and Esc; copy is left to the help screen", async () => {
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.tick()
   const frame = t.lastFrame()
-  expect(frame).toContain("Esc")
-  expect(frame).toContain("Quit")
-  expect(frame).toContain("Alt+L")
-  expect(frame).toContain("Help")
-  expect(frame).toContain("Alt+P")
-  expect(frame).toContain("Persona")
-  expect(frame).toContain("Alt+R")
-  expect(frame).toContain("Copy")
+  expect(frame).toContain("PgUp/PgDn scroll · Alt+L help · Alt+P persona · Esc quit")
+  expect(frame).not.toContain("Alt+R")
   // Nothing on screen is longer than the code preview, so there is no Expand button (and no hotkey behind it)
-  expect(frame).not.toContain("Expand")
+  expect(frame).not.toContain("expand")
   t.unmount()
   await t.waitUntilExit()
 })
@@ -96,13 +90,13 @@ test("the key bar's Esc entry becomes Close while the persona picker is open", a
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.tick()
-  expect(t.lastFrame()).toContain("Quit")
+  expect(t.lastFrame()).toContain("quit")
 
   await t.press("\x1bp") // Alt+P opens the persona picker
   const frame = t.lastFrame()
   expect(frame).toContain("Choose a persona")
-  expect(frame).toContain("Close")
-  expect(frame).not.toContain("Quit")
+  expect(frame).toContain("close")
+  expect(frame).not.toContain("quit")
 
   t.unmount()
   await t.waitUntilExit()
@@ -120,7 +114,7 @@ test("help opens a modal that blocks typing, and Esc closes it without quitting"
   await t.press("\x1b")
   expect(t.lastFrame()).not.toContain("Switch persona")
   expect(t.lastFrame()).not.toContain("zzz")
-  expect(t.lastFrame()).toContain("Quit")
+  expect(t.lastFrame()).toContain("quit")
 
   await t.press("abc")
   expect(t.lastFrame()).toContain("abc")
@@ -372,9 +366,9 @@ test("writing instead of answering declines the call here and shows what was wri
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
 
-  expect(t.lastFrame()).toContain("Esc Decline")
+  expect(t.lastFrame()).toContain("Esc decline")
   await t.press("use hostnamectl")
-  expect(t.lastFrame()).toContain("Esc Clear")
+  expect(t.lastFrame()).toContain("Esc clear")
   await t.press("\r")
   for (let i = 0; i < 4; i++) await t.tick()
   expect(ran).toEqual([{ name: "read_file", answer: { feedback: "use hostnamectl" } }])
@@ -435,7 +429,6 @@ test("a question with options lists them beside the field, and picking one sends
   expect(t.lastFrame()).toContain("Proceed?")
   expect(t.lastFrame()).toContain("Yes")
   expect(t.lastFrame()).toContain("Or type your own answer")
-  expect(t.lastFrame()).toContain("↓") // the power border marks it as an answer
 
   await t.press("\x1b[B") // down to "No"
   await t.press("\r")
@@ -464,13 +457,13 @@ test("Esc beside a question's options empties the typed text without quitting, a
   const { t } = mountQuestionWithOptions()
   await askWithOptions(t)
 
-  expect(t.lastFrame()).toContain("Esc Quit")
+  expect(t.lastFrame()).toContain("Esc quit")
   await t.press("only")
-  expect(t.lastFrame()).toContain("Esc Clear")
+  expect(t.lastFrame()).toContain("Esc clear")
   await t.press("\x1b")
   expect(t.lastFrame()).not.toContain("only")
   expect(t.lastFrame()).toContain("Yes") // still here: nothing quit
-  expect(t.lastFrame()).toContain("Esc Quit")
+  expect(t.lastFrame()).toContain("Esc quit")
 
   t.unmount()
   await t.waitUntilExit()

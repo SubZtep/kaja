@@ -1,20 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { configCatalogSchema } from "@kaja/schema/api"
-import { CATALOG_VERSION, ModelsFileSchema, SoundsManifestSchema } from "@kaja/schema/config"
-import { TOML } from "bun"
+import { SoundsManifestSchema } from "@kaja/schema/config"
+import { tombiSchemas } from "@kaja/schema/tombi"
 import { app } from "../../src/app"
 
 describe("config defaults (public)", () => {
-  test("GET /config/catalog requires no auth and returns the versioned catalog", async () => {
-    const res = await app.request("/config/catalog")
-    expect(res.status).toBe(200)
-    const body = configCatalogSchema.parse(await res.json())
-    expect(body.version).toBe(CATALOG_VERSION)
-    expect(body.catalog.providers.length).toBeGreaterThan(0)
-  })
-
-  test.each(["/config/catalog", "/config/templates/commands.toml", "/config/schemas/settings.json", "/config/sounds"])(
+  test.each(["/config/schemas/settings.json", "/config/sounds"])(
     "GET %s honours If-None-Match with a 304",
     async path => {
       const etag = (await app.request(path)).headers.get("etag")
@@ -24,26 +15,15 @@ describe("config defaults (public)", () => {
     }
   )
 
-  test("GET /config/templates/<file> returns plain TOML", async () => {
-    const res = await app.request("/config/templates/models.default.toml")
-    expect(res.status).toBe(200)
-    expect(res.headers.get("content-type")).toContain("text/plain")
-    expect(ModelsFileSchema.safeParse(TOML.parse(await res.text())).success).toBe(true)
-  })
-
-  test.each(["secrets.toml", "settings.toml", "catalog.toml", "constructor", "does-not-exist.toml"])(
-    "GET /config/templates/%s is 404",
+  test.each(Object.keys(tombiSchemas))(
+    "GET /config/schemas/%s matches the committed packages/schema/json copy",
     async file => {
-      expect((await app.request(`/config/templates/${file}`)).status).toBe(404)
+      const res = await app.request(`/config/schemas/${file}`)
+      expect(res.status).toBe(200)
+      const committed = await Bun.file(join(import.meta.dir, "../../../../packages/schema/json", file)).json()
+      expect(await res.json()).toEqual(committed)
     }
   )
-
-  test("GET /config/schemas/<file> returns the JSON Schema, the one committed in config/schemas", async () => {
-    const res = await app.request("/config/schemas/models.json")
-    expect(res.status).toBe(200)
-    const committed = await Bun.file(join(import.meta.dir, "../../../../config/schemas/models.json")).json()
-    expect(await res.json()).toEqual(committed)
-  })
 
   test.each(["constructor", "models", "does-not-exist.json"])("GET /config/schemas/%s is 404", async file => {
     expect((await app.request(`/config/schemas/${file}`)).status).toBe(404)

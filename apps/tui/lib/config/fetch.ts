@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { extname } from "node:path"
 import { deepEquals, file, TOML, write } from "bun"
+import { writeConfigFile } from "./schema-file"
 
 /**
  * First non-existent path among <name>.bak.<ext>, <name>.bak.2.<ext>, ... — the extension stays last so editors still
@@ -15,7 +16,10 @@ export async function nextBackupPath(path: string): Promise<string> {
   return candidate
 }
 
-/** Writes a bundled config/*.toml template to the local config dir, backing up any existing (differing) file first. */
+/**
+ * Writes a config file Kaja generated (models.toml from the catalog, hooks.toml), backing up an existing one first
+ * unless it already holds the same.
+ */
 export async function writeTemplateConfig(
   templateText: string,
   path: string
@@ -33,7 +37,7 @@ export async function writeTemplateConfig(
     backedUpTo = await nextBackupPath(path)
     await write(backedUpTo, f)
   }
-  await write(path, templateText)
+  await writeConfigFile(path, templateText)
   return { path, backedUpTo }
 }
 

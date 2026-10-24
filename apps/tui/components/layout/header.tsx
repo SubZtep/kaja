@@ -1,33 +1,47 @@
-import { Badge, Spinner } from "@inkjs/ui"
+import { Spinner } from "@inkjs/ui"
 import { titleCase } from "@kaja/shared/text"
-import { Box, type DOMElement, Text, useBoxMetrics } from "ink"
-import { useRef } from "react"
+import { Box, Text } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
 import { MonsterMate } from "./monster"
 
-/**
- * Live top bar: the current persona on the left; on the right, in-flight tool activity or the active model name, the
- * prompt tokens when known, then a red YOLO badge while every approval is skipped and a badge for where the agent runs
- * (local or cloud, plus the `KAJA_PROFILE`). The right side's parts share the first row while they fit and wrap onto
- * the rows below otherwise, each flush right, so the model always keeps the top-right corner.
- *
- * `width` must be the full terminal width, so the right side has a real track to lay out against. Every part truncates
- * to one line, so the header is never taller than three rows, one per part (an unbounded one overflows the full-screen
- * frame and garbles the redraw).
- */
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
-/** "12,345 tokens", or "12,345 / 33K tokens (38%)" once the window is known. */
+// The mascot's width plus the gap after it
+const MASCOT_COLS = 6
+// Past this share of the window, the header gives the full count, not just the percent
+const FULL_COUNT_FROM = 50
+const TAG_GAP = 3
+
+/**
+ * How full the context is: "1%" while there's room, "18,000 / 33K (55%)" past half, "12,345 tokens" while the window is
+ * unknown, nothing before the first reply.
+ */
 export function tokensLabel(promptTokens: number | null, contextWindow?: number | null): string {
   if (promptTokens == null) return ""
-  if (!contextWindow) return `${promptTokens.toLocaleString()} tokens`
+  if (!contextWindow) return t("header.tokens", { count: promptTokens.toLocaleString() })
   const percent = Math.round((promptTokens / contextWindow) * 100)
-  return `${promptTokens.toLocaleString()} / ${compact.format(contextWindow)} tokens (${percent}%)`
+  if (percent < FULL_COUNT_FROM) return `${percent}%`
+  return `${promptTokens.toLocaleString()} / ${compact.format(contextWindow)} (${percent}%)`
 }
 
+/**
+ * The model's line, as much as fits in `room` columns: model · provider · usage, dropping the provider first and then
+ * the model; usage alone is the last resort.
+ */
+export function infoParts(model: string, provider: string | undefined, usage: string, room: number): string {
+  const tries = [[model, provider, usage], [model, usage], [usage]].map(parts => parts.filter(Boolean).join(" · "))
+  return tries.find(line => Bun.stringWidth(line) <= room) ?? ""
+}
+
+/**
+ * Live top bar on one row: the mascot and the persona (accent, bold) on the left; on the right, dim, the model,
+ * provider and how full the context is (or the tool running, when `currentTool` is set), then where the agent runs as a
+ * dim tag, with YOLO in the warning colour while every approval is skipped. What doesn't fit drops (the provider, then
+ * the model), and the persona's name truncates last.
+ */
 export function Header({
   mode,
   persona,
@@ -42,7 +56,7 @@ export function Header({
 }: Readonly<{
   /** Where the agent runs. */
   mode: "local" | "cloud"
-  /** `KAJA_PROFILE`, after the mode, e.g. "LOCAL·dev". */
+  /** `KAJA_PROFILE`, after the mode, e.g. "local · dev". */
   profile?: string
   /** Settings.toml's `yolo` is on: nothing asks for approval. */
   yolo?: boolean
@@ -57,76 +71,60 @@ export function Header({
   /** Terminal columns (from useWindowSize). */
   width: number
 }>) {
-  const tokens = tokensLabel(promptTokens, contextWindow)
-  // The tokens below the model's row (wrapped) lose the "·" that joins them to it; a space keeps their width, so they can't fit back up and flicker
-  const tokensRef = useRef<DOMElement>(null)
-  const tokensBox = useBoxMetrics(tokensRef)
-  const tokensWrapped = tokensBox.hasMeasured && tokensBox.top > 0
   const spinnerType = useRandomSpinner(!!currentTool, "block")
-  const { muted, accent, toolLabel, badge } = useKajaTheme()
-  const danger = badge("danger")
-  const modeBadge = badge(mode === "cloud" ? "info" : "success")
+  const { accent, warning } = useKajaTheme()
 
-  const badges = (
-    <Box flexShrink={0} columnGap={1}>
-      {yolo ? (
-        <Badge color={danger.background}>
-          <Text color={danger.text}>YOLO</Text>
-        </Badge>
-      ) : null}
-      <Badge color={modeBadge.background}>
-        <Text color={modeBadge.text}>{t(`header.${mode}`).toUpperCase()}</Text>
-        {profile ? <Text dimColor>·{profile}</Text> : null}
-      </Badge>
-    </Box>
-  )
+  const tag = [t(`header.${mode}`), profile].filter(Boolean).join(" · ")
+  const yoloTag = yolo ? "YOLO" : ""
+  const tags = [yoloTag, tag].filter(Boolean).join("  ")
+  // What's left for the right side once the mascot, a short persona and the tags have their place
+  const personaCols = Math.min(Bun.stringWidth(persona), 16)
+  const room = Math.max(0, width - 2 - MASCOT_COLS - personaCols - TAG_GAP - Bun.stringWidth(tags) - TAG_GAP)
+  const info = currentTool
+    ? ""
+    : infoParts(
+        titleCase(model) ?? model,
+        (provider && titleCase(provider)) || undefined,
+        tokensLabel(promptTokens, contextWindow),
+        room
+      )
 
   return (
-    <Box width={width} flexShrink={0} paddingX={1} columnGap={1}>
+    <Box width={width} flexShrink={0} paddingX={1} columnGap={TAG_GAP}>
       <Box gap={1} flexShrink={1} minWidth={0} overflow="hidden">
         <Box flexShrink={0}>
           <MonsterMate />
         </Box>
         <Box overflow="hidden" flexShrink={1} minWidth={0}>
-          <Text {...accent()} wrap="truncate-end">
+          <Text {...accent()} bold wrap="truncate-end">
             {persona}
           </Text>
         </Box>
       </Box>
-      {/* Packed to the right and wrapping: the parts that don't fit move to the rows below, still flush right */}
-      <Box
-        flexGrow={1}
-        flexShrink={1}
-        flexBasis={0}
-        minWidth={0}
-        flexWrap="wrap"
-        justifyContent="flex-end"
-        columnGap={1}
-      >
+      <Box flexGrow={1} flexShrink={1} minWidth={0} justifyContent="flex-end" overflow="hidden">
         {currentTool ? (
           <Box flexShrink={1} gap={1} overflow="hidden" minWidth={0}>
             <Spinner type={spinnerType} />
-            <Text {...toolLabel()} wrap="truncate-end">
+            <Text dimColor wrap="truncate-end">
               {describeToolCall(currentTool.name, currentTool.arguments)}
             </Text>
           </Box>
         ) : (
-          // One text, so a narrow corner cuts the end of the name rather than each part
-          <Box flexShrink={1} minWidth={0} overflow="hidden">
-            <Text wrap="truncate-end">
-              <Text {...muted()}>{titleCase(model)}</Text>
-              {provider ? <Text dimColor>{` ${titleCase(provider)}`}</Text> : null}
-            </Text>
-          </Box>
+          <Text dimColor wrap="truncate-end">
+            {info}
+          </Text>
         )}
-        {tokens && !currentTool ? (
-          <Box ref={tokensRef} flexShrink={1} minWidth={0} overflow="hidden">
-            <Text {...muted()} wrap="truncate-end">
-              {`${tokensWrapped ? " " : "·"} ${tokens}`}
+      </Box>
+      <Box flexShrink={0}>
+        <Text>
+          {yoloTag ? (
+            <Text {...warning()} bold>
+              {yoloTag}
             </Text>
-          </Box>
-        ) : null}
-        {badges}
+          ) : null}
+          {yoloTag ? "  " : ""}
+          <Text dimColor>{tag}</Text>
+        </Text>
       </Box>
     </Box>
   )

@@ -12,7 +12,6 @@ COPY packages/shared/package.json ./packages/shared/package.json
 # Only manifests before the install, so a source edit anywhere reuses the installed dependencies layer
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY packages ./packages
-COPY config ./config
 COPY marketplace/personas ./marketplace/personas
 COPY apps/api ./apps/api
 RUN bun run --filter @kaja/api build

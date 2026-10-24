@@ -75,15 +75,15 @@ test("groups models by task in the order the report lists them", () => {
 
 test("a working model is listed and nothing is asked", async () => {
   const r = await run([FIREWORKS_CHAT, EMBEDDING], {})
-  expect(r.lines).toContain("  ✔ minimax-m3 (up · 32,768 tokens, assumed)")
-  expect(r.lines).toContain("  ✔ qwen3-embedding (up)")
+  expect(r.lines).toContain(" ✓ Chat          minimax-m3 (up · 32,768 tokens, assumed)")
+  expect(r.lines).toContain(" ✓ Embedding     qwen3-embedding (up)")
   expect(r.asked).toEqual([])
   expect(r.outcomes.map(o => o.ok)).toEqual([true, true])
 })
 
 test("a failing model says why", async () => {
   const r = await run([FIREWORKS_CHAT], { "minimax-m3": "401 The API key you provided is invalid." })
-  expect(r.lines).toContain("  ✘ minimax-m3 (down): 401 The API key you provided is invalid.")
+  expect(r.lines).toContain(" ✗ Chat          minimax-m3 (down): 401 The API key you provided is invalid.")
   expect(r.outcomes).toMatchObject([{ task: "chat", ok: false }])
 })
 
@@ -95,7 +95,8 @@ test("a broken first model with a working one after it offers the switch, and ch
   // The safe answer is first, then only the models that actually answered.
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "ollama — llama3.2:1b"])
   expect(r.saved).toEqual([["minimax-m3"]])
-  expect(r.lines.at(-1)).toContain("chat now uses ollama — llama3.2:1b")
+  // The question leaves only its result, under the task's heading
+  expect(r.lines.at(-1)).toBe(" ✓ Chat          now llama3.2:1b from ollama")
   expect(r.outcomes[0]).toMatchObject({ ok: true, switchedTo: OLLAMA_CHAT })
 })
 
@@ -109,6 +110,7 @@ test("keeping the broken model, or dismissing the question, changes nothing", as
   const keep = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "minimax-m3": "down" }, [0])
   expect(keep.saved).toEqual([])
   expect(keep.outcomes[0]).toMatchObject({ ok: false })
+  expect(keep.lines.at(-1)).toBe(" ℹ Chat          kept minimax-m3")
 
   const dismissed = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "minimax-m3": "down" }, [undefined])
   expect(dismissed.saved).toEqual([])
@@ -142,7 +144,7 @@ test("a working first model is never offered a switch, even with others after it
 
 test("a broken later model alone does not fail the task", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "llama3.2:1b": "down" })
-  expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
+  expect(r.lines).toContain(" ✗               llama3.2:1b (down): down")
   expect(r.outcomes).toHaveLength(1)
   expect(r.outcomes[0]).toMatchObject({ task: "chat", ok: true })
 })

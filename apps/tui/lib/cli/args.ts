@@ -27,10 +27,6 @@ const options = {
   pair: {
     type: "boolean"
   },
-  /** `config fetch`/`diff`: use the bundled templates instead of asking the server. */
-  offline: {
-    type: "boolean"
-  },
   /** `images describe`: also retry the images given up on after three tries. */
   retry: {
     type: "boolean"
@@ -38,10 +34,6 @@ const options = {
   /** `images clean`: remove every kind found without asking. */
   yes: {
     type: "boolean"
-  },
-  /** `config fetch`: limit it to one file, "models" or "secrets". */
-  only: {
-    type: "string"
   },
   help: {
     type: "boolean"

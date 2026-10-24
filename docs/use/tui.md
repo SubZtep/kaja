@@ -9,15 +9,16 @@ icon: 🖵
 
 # Terminal UI
 
-A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/start/modes)
-use it. Cloud mode has no model switching. It asks before a call on your computer the same way local mode does (see
-[Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)).
+A scrollable chat, a multi-line input, and a line of hotkeys at the bottom. Both [modes](/start/modes)
+use it.
 
 A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
 their tool counts, and how many saved conversations and memory notes you have.
 
-The header shows the persona, the model and, after the first reply, how full the context window is, like
-`12,345 / 32,768 tokens (38%)`. Long conversations are summarised before they run out of room (see
+The header shows the persona, the model and its provider and, after the first reply, how full the context
+window is: just the percent, like `1%`, and the full count (`18,000 / 33K (55%)`) once it's past half. At the
+right edge, where Kaja runs (`local` or `cloud`, plus `KAJA_PROFILE`), and `YOLO` while approvals are off. On a
+narrow terminal the provider goes first, then the model. Long conversations are summarised before they run out of room (see
 `/compact` below).
 
 Replies render as markdown while they arrive: headings, lists, tables that fit, and highlighted code.
@@ -38,6 +39,7 @@ kaja logout               # clear the stored cloud token
 kaja -c, --continue       # resume the most recent session
 kaja -s, --session <id>   # resume a specific session
 kaja sessions             # list saved sessions with their ids
+kaja images               # count stored images; `describe` fills in descriptions, `clean` removes leftovers
 kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot (add --headless for no terminal UI)
 kaja telegram --pair      # print a one-time code to pair one more Telegram user
@@ -86,17 +88,17 @@ Prompt history spans all past sessions, newest first.
 
 While you're scrolled back, the top of the chat shows how far down the history you are. Scroll to the bottom or start typing to follow new output again.
 
-### Key bar
+### Key line
 
-Every entry but Cancel and Decline is also a button you can click, handy when your terminal or system takes
-the hotkey. Quit needs the same double press while something runs. Expand shows only while some code on
-screen is longer than `codePreviewLines`.
+The hotkeys and Quit are also buttons you can click, handy when your terminal or system takes the hotkey.
+Each hotkey shows only while it does something. Copy works but isn't on the line, to keep it short: the
+help screen lists it.
 
 | Key            | Action                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------------- |
-| `<modifier>+L` | Open these docs in your browser                                                                |
+| `<modifier>+L` | Help: every shortcut, and a link to these docs                                                 |
 | `<modifier>+P` | Open the persona picker (hidden while a turn runs)                                             |
-| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                             |
+| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`); clicking a reply copies it too             |
 | `<modifier>+E` | Show every line of long code blocks (they show `codePreviewLines`, 5 by default, otherwise)    |
 | `<modifier>+O` | Read the command or request waiting for your approval in a window (shown only while one waits) |
 
@@ -105,7 +107,7 @@ screen is longer than `codePreviewLines`.
 `"ctrl+alt"`, `"ctrl+meta"`, `"alt+meta"`. Use `Ctrl` if Alt types special characters (macOS Terminal.app
 and iTerm2 without "Option as Meta"), keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
 terminal does), and pick a pair if your window manager grabs a combo (many bind `Ctrl+Alt+<letter>`).
-In a terminal with the kitty keyboard protocol, holding the modifier lights up the key bar's shortcuts.
+In a terminal with the kitty keyboard protocol, holding the modifier lights up the key line's shortcuts.
 
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
 [persona](/abilities/personas) starts a fresh conversation and lasts until you quit.
@@ -139,10 +141,13 @@ fits when it starts. In terminals that announce changes (kitty, Ghostty, Contour
 when you switch your system between dark and light.
 
 `theme = "terminal"` paints Kaja in your terminal's own colour scheme instead: text uses its ANSI
-colours, and the tinted backgrounds (the badges, the input box, your messages) are mixed from them. Load
+colours, and the tinted backgrounds (the highlighted row of a list) are mixed from them. Load
 any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for example, and Kaja wears it
 too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
 change the terminal's scheme, restart Kaja so the tints follow.
+
+Set [`NO_COLOR`](https://no-color.org/) (to anything but an empty string) and Kaja uses no colour at all, whatever
+the theme: bold, dim and underline stay, and the highlighted row turns to inverse text.
 
 To pick one, set `theme` in [`settings.toml`](/config/settings#preferences) (`dark`, `light` or
 `terminal`) and restart; `theme = "auto"` goes back to following the terminal.

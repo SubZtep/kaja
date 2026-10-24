@@ -41,7 +41,7 @@ test("a tall image is scaled to the requested number of rows", async () => {
 })
 
 test("maxImageRows leaves room for the chrome and never collapses", () => {
-  expect(maxImageRows(40)).toBe(28)
+  expect(maxImageRows(40)).toBe(25)
   expect(maxImageRows(10)).toBe(4)
 })
 
@@ -63,7 +63,7 @@ test("a wide image is scaled to the requested number of columns", async () => {
 test("imageBox falls back to the terminal until the container is measured", () => {
   expect(imageBox({ terminalColumns: 100, terminalRows: 40, containerWidth: 0, viewportHeight: 0 })).toEqual({
     columns: 60,
-    rows: 28
+    rows: 25
   })
 })
 
@@ -74,7 +74,7 @@ test("imageBox only ever shrinks for a narrow container or a short viewport", ()
   })
   expect(imageBox({ terminalColumns: 100, terminalRows: 40, containerWidth: 90, viewportHeight: 35 })).toEqual({
     columns: 60,
-    rows: 28
+    rows: 25
   })
   expect(imageBox({ terminalColumns: 100, terminalRows: 40, containerWidth: 3, viewportHeight: 2 })).toEqual({
     columns: 8,

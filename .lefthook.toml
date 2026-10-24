@@ -16,11 +16,10 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:schemas && git add config/schemas"
+      run  = "bun generate:schemas && git add packages/schema/json"
       glob = [
         "packages/schema/config/*.ts",
-        "packages/schema/cli/personas.ts",
-        "packages/schema/cli/datasets.ts"
+        "packages/schema/abilities/*.ts"
       ]
 
 
@@ -31,15 +30,6 @@ piped = true
         "**/.env.example",
         "compose.yaml",
         "apps/*/disco.json"
-      ]
-
-
-      [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:models && git add config/models.*.toml"
-      glob = [
-        "config/catalog.toml",
-        "apps/tui/lib/models/catalog.ts",
-        "config/models.*.toml"
       ]
 
 
@@ -121,7 +111,7 @@ piped = true
 
 
       [[pre-push.jobs.group.jobs]]
-      run = "bun check:env && bun check:models && bun check:locales"
+      run = "bun check:env && bun check:locales"
 
 
       [[pre-push.jobs.group.jobs]]

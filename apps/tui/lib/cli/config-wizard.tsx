@@ -1,16 +1,18 @@
-import type { ModelTask } from "@kaja/schema/config"
-import { file, TOML } from "bun"
-import { render } from "ink"
-import type { WizardResult, WizardSaved } from "../../components/config-wizard"
-import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
+import { homedir } from "node:os"
+import { type ModelTask, providerKey } from "@kaja/schema/config"
+import { Box, render, renderToString, Text } from "ink"
+import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
+import type { LiveCheck } from "../../components/secret-prompt"
+import { create, getConfigDir, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
-import { statusLine } from "../doctor/status"
+import { sectionRule, statusLine } from "../doctor/status"
 import { t } from "../i18n"
-import { candidatesByTask, CATALOG, catalogProvider } from "../models/catalog"
-import { getModelsPath, writeModelsFromCatalog } from "../models/models"
-import type { PullProgress } from "../models/pull"
-import { refreshCatalog } from "../models/remote-catalog"
+import { type CatalogProvider, catalogProvider } from "../models/catalog"
+import { readCurrentModels } from "../models/current"
+import { detectedProvider, type DetectedServer, detectLocalServers, sameAddress } from "../models/detect"
+import { writeModelsFromCatalog } from "../models/models"
+import { refreshCatalog } from "../models/modelsdev"
 
 /**
  * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API for speech-to-text
@@ -31,12 +33,8 @@ async function applySpeachesUrl(url: string, print: (line: string) => void) {
 async function applyResult(result: WizardResult, print: (line: string) => void) {
   const mode: KajaMode = result.mode ?? "local"
 
-  // savePreferences merges into a parsed config, so the file has to exist first. Cloud gets the
-  // minimal settings.toml (no stt/tts/memory sections — those are local-agent only).
-  if (!(await isConfigExists())) {
-    if (mode === "cloud") await createCloud()
-    else await create()
-  }
+  // savePreferences merges into a parsed config, so the file has to exist first
+  if (!(await isConfigExists())) await create()
 
   await savePreferences({
     mode,
@@ -52,11 +50,19 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   }
 
   // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
-  const { chosenProviders } = await import("../../components/config-wizard")
+  const { chosenPicks, chosenProviders } = await import("../../components/config-wizard")
   const providers = chosenProviders(result)
   if (providers.length === 0) return
 
-  await writeModelsFromCatalog({ providers, pick: result.models, baseUrls: result.addresses })
+  await writeModelsFromCatalog({ providers, picks: chosenPicks(result), baseUrls: result.addresses })
+  // A key read from the environment is saved as the variable's name now; the credential pass then tests what it holds
+  const keyEnv = Object.entries(result.keyEnv ?? {})
+  if (keyEnv.length > 0) {
+    const { saveSecrets } = await import("../config/secrets")
+    await saveSecrets({
+      providers: Object.fromEntries(keyEnv.map(([id, name]) => [id, { api_key_env: name }]))
+    })
+  }
   // Speaches is the one provider that also lives in settings.toml: its address is where voice goes.
   const speaches = providers.find(provider => provider.id === "speaches")
   if (speaches) await applySpeachesUrl(result.addresses?.speaches ?? speaches.baseUrl, print)
@@ -69,44 +75,47 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
   invalidateConfigCache()
 }
 
+// The last line printed: the mascot that closed the wizard's header, then what's next
+function readyLine(text: string): string {
+  return renderToString(
+    <Box paddingLeft={1}>
+      <Text>
+        ༼^ω^༽🪄 <Text bold>{text}</Text>
+      </Text>
+    </Box>,
+    { columns: 80 }
+  )
+}
+
+// A path under the home folder as people write it: ~/.config/kaja
+function tildePath(path: string): string {
+  const home = homedir()
+  return path.startsWith(home) ? `~${path.slice(home.length)}` : path
+}
+
+type GitCheck = Awaited<ReturnType<typeof import("../abilities/fetch").checkGit>>
+
 /**
- * Asks whether to use the online marketplace and records it in settings.toml's `[marketplace]`. "No" means Kaja never
- * goes online for abilities. "Yes" checks git (the one thing the fetch needs), fetches once, and only then asks about
- * fetching periodically, so the question comes with something the user has seen work. A git that can't fetch leaves the
- * marketplace off rather than on and failing at every start.
+ * Records the wizard's marketplace answers in settings.toml's `[marketplace]` and fetches it once. "No" means Kaja
+ * never goes online for abilities. A git that can't fetch leaves the marketplace off rather than on and failing at
+ * every start.
  */
-export async function offerMarketplace(print: (line: string) => void) {
-  const { marketplaceSettings } = await import("../abilities/abilities-file")
-  const { askYesNo } = await import("../doctor/prompt")
-  const current = await marketplaceSettings()
-
-  const wanted = await askYesNo(t("wizard.marketplaceTitle"), t("wizard.marketplaceYes"), t("wizard.marketplaceNo"), {
-    defaultYes: current.enabled,
-    yesFirst: true
-  })
-  if (!wanted) {
-    await saveMarketplaceSetting("enabled", false)
-    print(statusLine("info", t("wizard.marketplaceOff")))
-    return
-  }
-
-  const { checkGit } = await import("../abilities/fetch")
-  const git = await checkGit()
+async function applyMarketplace(result: WizardResult, git: GitCheck, print: (line: string) => void) {
   if (!git.ok) {
     await saveMarketplaceSetting("enabled", false)
     print(statusLine("warning", t("wizard.marketplaceNoGit", { reason: git.reason })))
     return
   }
+  if (result.marketplace === false) {
+    await saveMarketplaceSetting("enabled", false)
+    print(statusLine("info", t("wizard.marketplaceOff")))
+    return
+  }
   await saveMarketplaceSetting("enabled", true)
+  await saveMarketplaceSetting("autoFetch", result.autoFetch !== false)
 
   const { ensureMarketplace } = await import("../abilities/cli")
   await ensureMarketplace(print)
-
-  const auto = await askYesNo(t("wizard.autoFetchTitle"), t("wizard.autoFetchYes"), t("wizard.autoFetchNo"), {
-    defaultYes: current.autoFetch,
-    yesFirst: true
-  })
-  await saveMarketplaceSetting("autoFetch", auto)
 }
 
 /**
@@ -131,27 +140,6 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
 }
 
 /**
- * One rewritten line while a model downloads, e.g. " llama3.2:1b: pulling manifest 42%". Only a terminal gets it — a
- * redirected log would collect one line per progress update otherwise.
- */
-function progressLine(model: string) {
-  let width = 0
-  return {
-    update({ status, percent }: PullProgress) {
-      if (!process.stdout.isTTY) return
-      const suffix = percent === undefined ? "" : ` ${percent}%`
-      const line = `  ${model}: ${status}${suffix}`
-      width = Math.max(width, line.length)
-      process.stdout.write(`\r${line.padEnd(width)}`)
-    },
-    // Wipes the progress line so the result prints on a clean one.
-    clear() {
-      if (process.stdout.isTTY && width > 0) process.stdout.write(`\r${" ".repeat(width)}\r`)
-    }
-  }
-}
-
-/**
  * Offers to download the models the local server hasn't got. One question for the lot rather than one per model:
  * nothing about them is a choice — the config already names them, and either the machine has them or it doesn't. Runs
  * before the credential pass so its probes meet a real model instead of reporting every task as broken. Servers that
@@ -170,7 +158,7 @@ async function offerModelDownloads(print: (line: string) => void) {
     t("wizard.pullYes"),
     t("wizard.pullNo"),
     // Without them the local agent can't answer at all, so "yes" is the safe default here.
-    { defaultYes: true }
+    { defaultYes: true, quiet: true }
   )
   if (!wanted) {
     print(statusLine("info", t("wizard.pullSkipped")))
@@ -178,77 +166,92 @@ async function offerModelDownloads(print: (line: string) => void) {
   }
 
   print(statusLine("info", t("wizard.pullStarted")))
+  const { liveProgress } = await import("../abilities/progress")
+  const { StatusRow } = await import("../doctor/status")
+  const { formatBytes } = await import("../image/report")
   for (const target of missing) {
-    const progress = progressLine(target.model)
-    const result = await pullModel(target, status => progress.update(status))
-    progress.clear()
-    print(
+    const bar = liveProgress(target.model)
+    let bytes: number | undefined
+    const result = await pullModel(target, progress => {
+      bytes = progress.bytes ?? bytes
+      if (progress.percent !== undefined) bar.update(progress.percent)
+    })
+    bar.finish(
       result.ok
-        ? statusLine("success", t("wizard.pullDone", { model: target.model }))
-        : statusLine("error", t("wizard.pullFailed", { model: target.model, error: result.error }))
+        ? { note: bytes ? formatBytes(bytes) : t("wizard.pullDone") }
+        : {
+            instead: (
+              <StatusRow
+                variant="error"
+                subject={target.model}
+                text={t("wizard.pullFailed", { error: result.error })}
+              />
+            )
+          }
     )
   }
 }
 
-// models.toml as the wizard reads it back: loosely, since a hand-edited file needn't match the schema
-type LooseModelsFile = {
-  providers?: Record<string, { base_url?: string }>
-  models?: Record<string, { provider?: string; model: string; tasks?: ModelTask[] }>
-}
-
 /**
- * The providers models.toml already uses, where each local one listens, and which provider serves each task more than
- * one could — for re-offering what the machine already runs. Tolerant: nothing when the file is missing or
- * unparseable.
+ * The providers models.toml already uses, where each local one listens, and the model in use for each task, for
+ * re-offering what the machine already runs. The first provider the catalog doesn't know becomes the
+ * custom one the wizard asks about; any others are kept as they are. Nothing when the file is missing or unparseable.
  */
-async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom">> {
-  try {
-    const f = file(getModelsPath())
-    if (!(await f.exists())) return {}
-    const data = TOML.parse(await f.text()) as LooseModelsFile
-    const known = CATALOG.filter(provider => data?.providers?.[provider.id])
-
-    const addresses: Record<string, string> = {}
-    for (const provider of known) {
-      const url = data.providers?.[provider.id]?.base_url
-      if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
-    }
-
-    // A provider the catalog doesn't know is the user's own; the wizard can carry one, so a re-run keeps it.
-    const customName = Object.keys(data?.providers ?? {}).find(name => !catalogProvider(name))
-    const custom: NonNullable<WizardResult["custom"]> | undefined = customName
-      ? {
-          name: customName,
-          baseUrl: data.providers?.[customName]?.base_url,
-          models: Object.values(data.models ?? {})
-            .filter(entry => entry.provider === customName)
-            .flatMap(entry =>
-              (Array.isArray(entry.tasks) ? entry.tasks : []).map(task => ({ model: entry.model, task }))
-            )
-        }
-      : undefined
-
-    const providers = [...known.map(provider => provider.id), ...(custom ? ["custom"] : [])]
-    if (providers.length === 0) return {}
-
-    // Which provider serves each task more than one could, judged over everything the file holds.
-    const { chosenProviders } = await import("../../components/config-wizard")
-    const models: NonNullable<WizardResult["models"]> = {}
-    for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
-      // The first model in the file that lists the task is the one in use.
-      const active = Object.values(data?.models ?? {}).find(
-        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task as ModelTask)
-      )?.provider
-      if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
-    }
-    return { providers, addresses, models, ...(custom ? { custom } : {}) }
-  } catch {
-    return {}
+async function currentModels(
+  servers: DetectedServer[]
+): Promise<Pick<WizardResult, "providers" | "addresses" | "tasks" | "models" | "custom" | "keep" | "local">> {
+  const local = localProviders(servers)
+  const current = await readCurrentModels()
+  if (!current) return local.length > 0 ? { local } : {}
+  // A provider models.toml already has at a running server's address is that server, under the name it has there
+  const running: string[] = []
+  const own = current.own.filter(provider => {
+    const server = local.find(candidate => sameAddress(candidate.baseUrl, provider.baseUrl))
+    if (!server) return true
+    server.id = provider.id
+    running.push(provider.id)
+    return false
+  })
+  const [first, ...rest] = own
+  const custom = first && {
+    name: first.id,
+    baseUrl: first.baseUrl,
+    models: first.models.flatMap(({ model, tasks }) => tasks.map(task => ({ model, task }))),
+    // Reviewed in one list rather than asked model by model
+    saved: true,
+    done: true
+  }
+  const providers = [...current.providers, ...running, ...(custom ? ["custom"] : [])]
+  if (providers.length === 0) return local.length > 0 ? { local } : {}
+  return {
+    providers,
+    ...(local.length > 0 ? { local } : {}),
+    addresses: current.addresses,
+    tasks: Object.keys(current.picks) as ModelTask[],
+    models: current.picks,
+    ...(custom ? { custom } : {}),
+    ...(rest.length > 0 ? { keep: rest } : {})
   }
 }
 
+/**
+ * The servers found running as providers the wizard offers, each under an id no catalog provider or other server has
+ * (models.dev lists LM Studio too; the running one's own models win).
+ */
+function localProviders(servers: DetectedServer[]): CatalogProvider[] {
+  const taken = new Set<string>()
+  return servers.map(server => {
+    const provider = detectedProvider(server)
+    let id = catalogProvider(provider.id) ? `${provider.id}-local` : provider.id
+    let n = 2
+    while (taken.has(id)) id = `${provider.id}-${n++}`
+    taken.add(id)
+    return { ...provider, id }
+  })
+}
+
 /** Every step's current value, so a re-run over a working setup opens on what is already there. */
-async function readPrefill(): Promise<WizardResult> {
+async function readPrefill(servers: DetectedServer[]): Promise<WizardResult> {
   const config = await readConfigLoose()
   const { resolveTheme } = await import("../terminal-background")
 
@@ -257,7 +260,7 @@ async function readPrefill(): Promise<WizardResult> {
     language: config.preferences?.locale,
     // A saved dark/light as is; otherwise the terminal is asked, which reads stdin, so this has to finish before the wizard renders
     theme: await resolveTheme(config.preferences?.theme),
-    ...(await currentModels())
+    ...(await currentModels(servers))
   }
 }
 
@@ -268,12 +271,67 @@ async function readPrefill(): Promise<WizardResult> {
 async function readSavedSecrets(): Promise<WizardSaved> {
   const { secrets } = await import("../config/secrets")
   const creds = await secrets()
+  // A key read from an environment variable isn't saved, so it has no tail to show
+  const tail = (key: string | undefined) => (key && key.length >= 12 ? key.slice(-4) : undefined)
+  const tails = Object.fromEntries(
+    [
+      ...Object.entries(creds.providers).map(([name, value]) => [
+        name,
+        value && "api_key" in value ? tail(value.api_key) : undefined
+      ]),
+      ["telegram", tail(creds.telegram?.bot_token)]
+    ].filter(([, value]) => value !== undefined)
+  )
   return {
     providers: Object.entries(creds.providers)
-      .filter(([, value]) => value?.api_key)
+      .filter(([, value]) => Boolean(value))
       .map(([name]) => name),
-    telegram: Boolean(creds.telegram?.bot_token)
+    telegram: Boolean(creds.telegram?.bot_token),
+    tails
   }
+}
+
+/** The wizard's live test of a typed answer: a key or address against `GET /models`, a bot token against Telegram. */
+async function probeAnswer(target: ProbeTarget, signal: AbortSignal): Promise<LiveCheck | undefined> {
+  if (target.kind === "telegram") {
+    const { checkTelegramToken } = await import("../doctor/checks")
+    const result = await checkTelegramToken(target.token)
+    return result.ok
+      ? { tone: "ok", note: t("wizard.checkTelegramOk") }
+      : { tone: "bad", note: t("wizard.checkTelegramBad"), detail: result.reason }
+  }
+  const { probeModels } = await import("../models/list")
+  const key = target.kind === "key" ? target.key : undefined
+  const probe = await probeModels(target.baseUrl, key, { signal })
+  if (probe.ok) {
+    const count = probe.ids.length
+    return { tone: "ok", note: t(key ? "wizard.checkKeyOk" : "wizard.checkServerOk", { count }) }
+  }
+  const refused = probe.status === 401 || probe.status === 403
+  if (key) {
+    // Only a refusal is about the key; anything else means it couldn't be judged
+    return refused
+      ? { tone: "bad", note: t("wizard.checkKeyRejected"), detail: probe.error }
+      : {
+          tone: "warn",
+          note: t("wizard.checkKeyUnknown"),
+          detail: t("wizard.checkKeyUnknownDetail", { error: probe.error })
+        }
+  }
+  if (refused) return { tone: "ok", note: t("wizard.checkServerNeedsKey") }
+  return {
+    tone: "warn",
+    note: t("wizard.checkServerDown"),
+    detail: t("wizard.checkServerDownDetail", { error: probe.error })
+  }
+}
+
+/** The custom provider's model ids, asked with the key just typed, else the one already saved for it. */
+async function listProviderModels(baseUrl: string, provider: string, key?: string): Promise<string[]> {
+  const { listModelIds } = await import("../models/list")
+  const { secrets } = await import("../config/secrets")
+  const apiKey = key ?? providerKey((await secrets()).providers[provider])
+  return listModelIds(baseUrl, apiKey)
 }
 
 /**
@@ -287,7 +345,6 @@ async function checkModels(): Promise<number> {
   if (models.length === 0) return 0
 
   const { defaultModelIo, runModelPass } = await import("../doctor/models")
-  console.log(t("wizard.checkingModels"))
   const outcomes = await runModelPass(models, line => console.log(line), await defaultModelIo())
   console.log()
   return outcomes.filter(outcome => !outcome.ok).length
@@ -295,8 +352,9 @@ async function checkModels(): Promise<number> {
 
 /**
  * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config, so Enter at
- * every step keeps what is already set. Non-interactive stdin or `--headless` can't answer a prompt: it writes the
- * bundled templates untouched, no questions, same fallback as before.
+ * every step keeps what is already set. Without a provider catalog (offline) it asks for every detail of the user's own
+ * provider instead. Non-interactive stdin or `--headless` can't answer a prompt: it writes a minimal settings.toml, no
+ * questions.
  */
 export async function runConfigWizard({
   headless,
@@ -310,17 +368,30 @@ export async function runConfigWizard({
     return { code: 0, text: t("wizard.headlessDone") }
   }
 
-  const { ConfigWizard } = await import("../../components/config-wizard")
-  // Before the prefill, which matches models.toml's providers against the catalog
-  await refreshCatalog()
-  const [prefill, saved] = await Promise.all([readPrefill(), readSavedSecrets()])
+  const { ConfigWizard, chosenHooks } = await import("../../components/config-wizard")
+  const { applyHooks, hooksPrefill } = await import("../hooks/offer")
+  const hooks = hooksPrefill()
+  const { marketplaceSettings } = await import("../abilities/abilities-file")
+  const { enabled, autoFetch } = await marketplaceSettings()
+  // Turned off, it has no auto-update setting to keep; turning it on starts with auto-update on
+  const marketplace = { marketplace: enabled, autoFetch: enabled ? autoFetch : true }
+  // Before the prefill, which matches models.toml's providers against the catalog and the servers running here
+  const { checkGit } = await import("../abilities/fetch")
+  const [hasCatalog, servers, git] = await Promise.all([refreshCatalog(), detectLocalServers(), checkGit()])
+  if (!hasCatalog) console.log(statusLine("info", t("wizard.noCatalog")))
+  const [prefill, saved] = await Promise.all([readPrefill(servers), readSavedSecrets()])
 
   const result = await new Promise<WizardResult | undefined>(resolve => {
     const { unmount } = render(
       <ConfigWizard
-        prefill={prefill}
+        prefill={{ ...prefill, ...(hooks.current ? { hooks: hooks.current } : {}), ...marketplace }}
+        hookPrograms={hooks.programs}
+        gitReady={git.ok}
+        configDir={tildePath(getConfigDir())}
         mode={mode}
         saved={saved}
+        listModels={listProviderModels}
+        probe={probeAnswer}
         onDone={r => {
           unmount()
           resolve(r)
@@ -339,13 +410,14 @@ export async function runConfigWizard({
     const { setConsoleTheme } = await import("../terminal-background")
     setConsoleTheme(result.theme)
   }
+  console.log()
+  console.log(sectionRule(t("wizard.blockFinishing")))
   await applyResult(result, line => console.log(line))
   // Cloud chat has the same hooks, so this comes before the mode split
-  const { offerHooks } = await import("../hooks/offer")
-  await offerHooks(line => console.log(line))
-  if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
+  await applyHooks(chosenHooks(result, hooks.programs), line => console.log(line))
+  if (result.mode === "cloud") return { code: 0, text: readyLine(t("wizard.doneCloud")) }
 
-  await offerMarketplace(line => console.log(line))
+  await applyMarketplace(result, git, line => console.log(line))
   // Right after the sync: abilities a persona uses that can't start here get install / sandbox / skip.
   const { offerAbilityHosts } = await import("../abilities/hosts")
   await offerAbilityHosts(line => console.log(line))
@@ -360,11 +432,14 @@ export async function runConfigWizard({
   for (const [id, key] of Object.entries(result.keys ?? {})) {
     Object.assign(providerKeys, offer(`[providers.${id}] api_key`, key))
   }
-  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra, {
+  const outcomes = await runCredentialPass(line => console.log(line), undefined, extra, {
     ...providerKeys,
     ...offered
   })
   const failingModels = await checkModels()
   const unresolved = outcomes.filter(isUnresolved).length + failingModels
-  return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
+  return {
+    code: 0,
+    text: readyLine(unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done"))
+  }
 }

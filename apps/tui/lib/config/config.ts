@@ -1,13 +1,10 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
 import { stringifyToml } from "@kaja/shared/toml"
-import { file, TOML, write } from "bun"
-import rawTemplate from "../../../../config/settings.toml" with { type: "text" }
+import { file, TOML } from "bun"
 import { detectLanguage, t } from "../i18n"
 import { getPaths } from "../paths"
-
-const TEMPLATE = rawTemplate as unknown as string
-const TEMPLATE_TOML = TOML.parse(TEMPLATE)
+import { writeConfigFile } from "./schema-file"
 
 /** Test-only override: lets specs point config reads at a fresh temp directory instead of XDG_CONFIG_HOME. */
 let configDirOverride: string | undefined
@@ -94,25 +91,24 @@ export async function config() {
 }
 
 export async function saveConfig(data: KajaConfig) {
-  await write(getConfigPath(), stringifyToml(data))
+  await writeConfigFile(getConfigPath(), stringifyToml(data))
   cached = undefined
 }
 
 export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
   // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like locale.
-  await write(getConfigPath(), stringifyToml({ ...current, preferences: { ...current.preferences, ...preferences } }))
+  await writeConfigFile(
+    getConfigPath(),
+    stringifyToml({ ...current, preferences: { ...current.preferences, ...preferences } })
+  )
   cached = undefined
 }
 
-export async function create() {
-  await write(getConfigPath(), stringifyToml(TEMPLATE_TOML))
-}
-
 /**
- * Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent
- * concept) and no stt/tts/memory sections (those don't apply to the cloud client).
+ * A new settings.toml: just the language, detected from the system locale. Everything else has a default (see the
+ * schema's), which the `#:schema` line shows in an editor.
  */
-export async function createCloud() {
-  await write(getConfigPath(), stringifyToml({ preferences: { locale: detectLanguage() } }))
+export async function create() {
+  await writeConfigFile(getConfigPath(), stringifyToml({ preferences: { locale: detectLanguage() } }))
 }

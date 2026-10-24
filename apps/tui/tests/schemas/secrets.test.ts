@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { SecretsFileSchema } from "@kaja/schema/config"
+import { providerKey, SecretsFileSchema } from "@kaja/schema/config"
 
 test("empty file validates: every section is optional, providers/abilities default to {}", () => {
   const parsed = SecretsFileSchema.parse({})
@@ -25,4 +25,14 @@ test("abilities are keyed by ability name, each requiring api_key", () => {
   const parsed = SecretsFileSchema.parse({ abilities: { context7: { api_key: "ctx7sk-..." } } })
   expect(parsed.abilities).toEqual({ context7: { api_key: "ctx7sk-..." } })
   expect(() => SecretsFileSchema.parse({ abilities: { context7: {} } })).toThrow()
+})
+
+test("a provider's key can be named by its environment variable instead of saved", () => {
+  const parsed = SecretsFileSchema.parse({ providers: { openai: { api_key_env: "OPENAI_API_KEY" } } })
+  expect(providerKey(parsed.providers.openai, { OPENAI_API_KEY: "sk-env" })).toBe("sk-env")
+  // Unset (or empty) reads as no key, for the doctor to report by name
+  expect(providerKey(parsed.providers.openai, {})).toBeUndefined()
+  expect(providerKey(parsed.providers.openai, { OPENAI_API_KEY: "" })).toBeUndefined()
+  expect(providerKey({ api_key: "sk-saved" }, {})).toBe("sk-saved")
+  expect(() => SecretsFileSchema.parse({ providers: { x: { api_key_env: "not a name" } } })).toThrow()
 })

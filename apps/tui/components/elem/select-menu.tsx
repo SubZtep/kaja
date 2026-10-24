@@ -1,11 +1,14 @@
 import { Box, Text } from "ink"
 import { useState } from "react"
 import { useKey } from "../../hooks/use-key"
+import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
-import { InputFrame } from "./rail"
+import { InputFrame, MenuRow, useInRail } from "./rail"
+import { FilterLine, Matched, matchesFilter, useFilter } from "./use-filter"
 
 /**
- * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss.
+ * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss. With
+ * `filterable`, typing narrows the rows (see {@link useFilter}); `onSelect` still gets the index in `items`.
  *
  * Rendered directly rather than through @inkjs/ui's `Select`, which can't open on a given option: its `defaultValue`
  * seeds the internal value but leaves the highlight on the first option, so returning on it either never fires (the
@@ -15,12 +18,15 @@ import { InputFrame } from "./rail"
 export function SelectMenu({
   items,
   hints,
+  columns,
+  tags,
   accented,
   width = 32,
   initialIndex,
   visibleCount = 5,
   preview,
   closeOnBackspace = true,
+  filterable = false,
   active = true,
   onFocus,
   onSelect,
@@ -29,6 +35,13 @@ export function SelectMenu({
   items: string[]
   /** Dimmed note pinned to the right edge of each row, e.g. a locale's code beside its name. */
   hints?: string[]
+  /**
+   * Dim columns after each row's label, lined up across the rows on show (on a question's rail only): a model's
+   * provider and release date. Typing matches them too.
+   */
+  columns?: string[][]
+  /** A word at the end of a row, e.g. "best guess": plain while focused, dim otherwise. */
+  tags?: (string | undefined)[]
   /** Rows drawn in the accent colour while not focused, e.g. your own personas in the persona picker. */
   accented?: boolean[]
   width?: number
@@ -43,6 +56,8 @@ export function SelectMenu({
   preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean
+  /** Typing filters the rows: for a list too long to scroll through, like every model a provider serves. */
+  filterable?: boolean
   /** Takes keys; off while something else (a text field beside it) has them, and the rows dim to show it. */
   active?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
@@ -51,6 +66,11 @@ export function SelectMenu({
   /** Left out inside a Modal, which closes on Escape itself. */
   onClose?: () => void
 }>) {
+  const filter = useFilter(filterable)
+  // The rows on show, as indexes into `items`; `focused` and `from` are positions in this list
+  const shown = items.flatMap((item, index) =>
+    matchesFilter([item, ...(columns?.[index] ?? [])].join(" "), filter.query) ? [index] : []
+  )
   const visible = visibleCount === undefined ? items.length : Math.max(visibleCount, 1)
   const start = Math.min(Math.max(initialIndex ?? 0, 0), Math.max(items.length - 1, 0))
   // Scrolls only far enough to keep the focused option on screen, so opening deep in a long list still shows it.
@@ -70,40 +90,115 @@ export function SelectMenu({
   function move(delta: number) {
     const next = focused + delta
     // No wrapping at either end, matching the list this replaces.
-    if (next < 0 || next >= items.length) return
+    if (next < 0 || next >= shown.length) return
     setFocused(next)
-    onFocus?.(next)
+    onFocus?.(shown[next]!)
     if (next < from) setFrom(next)
     else if (next >= from + visible) setFrom(next - visible + 1)
   }
 
   useKey(
-    (_input, key) => {
+    (input, key) => {
+      // A new filter starts the highlight over at its first match
+      if (filter.handle(input, key)) {
+        setFocused(0)
+        setFrom(0)
+        return
+      }
       if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
         onClose?.()
         return
       }
       if (key.downArrow) move(1)
       if (key.upArrow) move(-1)
-      if (key.return) onSelect(focused)
+      if (key.return && shown[focused] !== undefined) onSelect(shown[focused])
     },
     { isActive: active }
   )
 
   const { accent, previewRow, previewText } = useKajaTheme()
+  const inRail = useInRail()
 
   // A scrolling list reserves an arrow slot between the cursor and the label, so the menu stays `visible` rows tall.
-  const scrolls = items.length > visible
+  const scrolls = shown.length > visible
   const hiddenAbove = from
-  const hiddenBelow = Math.max(0, items.length - from - visible)
+  const hiddenBelow = Math.max(0, shown.length - from - visible)
+
+  // Column widths from the rows on show: a label at most 34 wide, so the columns after it stay on screen
+  const onShow = shown.slice(from, from + visible)
+  const widths = {
+    label: Math.min(34, Math.max(0, ...onShow.map(index => Bun.stringWidth(items[index]!)))),
+    columns: onShow.reduce<number[]>((all, index) => {
+      for (const [column, text] of (columns?.[index] ?? []).entries())
+        all[column] = Math.max(all[column] ?? 0, Bun.stringWidth(text))
+      return all
+    }, [])
+  }
+
+  if (inRail) {
+    // On a question's rail: the focused row a band to column 78, rows out of view counted above and below
+    const count = filter.query
+      ? t("menu.countMatch", { count: shown.length })
+      : t("menu.countTotal", { count: items.length })
+    return (
+      <Box flexDirection="column">
+        {filterable && (
+          <Box marginBottom={1}>
+            <FilterLine query={filter.query} count={count} />
+          </Box>
+        )}
+        {shown.length === 0 && <Text dimColor>{t("menu.noMatches")}</Text>}
+        {hiddenAbove > 0 && <Text dimColor>⋮ {t("menu.more", { count: hiddenAbove })}</Text>}
+        {shown.slice(from, from + visible).map((index, offset) => {
+          const isFocused = from + offset === focused
+          const hint = hints?.[index]
+          const previewing = isFocused && preview
+          if (columns) {
+            const tag = tags?.[index]
+            return (
+              <MenuRow key={index} focused={isFocused} dim={!active}>
+                <Box width={widths.label + 2} flexShrink={0}>
+                  <Text wrap="truncate-middle">
+                    <Matched text={items[index]!} query={filter.query} bold={isFocused} />
+                  </Text>
+                </Box>
+                {(columns[index] ?? []).map((text, column) => (
+                  <Box key={column} width={(widths.columns[column] ?? 0) + 2} flexShrink={0}>
+                    {/* On the highlight the whole row is plain, so it reads as one choice */}
+                    <Text dimColor={!isFocused} wrap="truncate-end">
+                      {text}
+                    </Text>
+                  </Box>
+                ))}
+                {tag ? <Text dimColor={!isFocused}>{tag}</Text> : null}
+              </MenuRow>
+            )
+          }
+          return (
+            <MenuRow key={index} focused={isFocused} dim={!active} {...(previewing ? { band: previewRow() } : {})}>
+              <Box justifyContent="space-between" flexGrow={1} paddingRight={1}>
+                <Text wrap="truncate-end" dimColor={!active} {...(previewing ? previewText() : {})}>
+                  <Matched text={items[index]!} query={filter.query} bold={isFocused} />
+                </Text>
+                {hint ? <Text dimColor>{hint}</Text> : null}
+              </Box>
+            </MenuRow>
+          )
+        })}
+        {hiddenBelow > 0 && <Text dimColor>⋮ {t("menu.more", { count: hiddenBelow })}</Text>}
+      </Box>
+    )
+  }
 
   return (
     // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only
     // `preview` paints it, in the theme's own colours).
     <InputFrame width={width} plain>
-      {items.slice(from, from + visible).map((item, offset) => {
-        const index = from + offset
-        const isFocused = index === focused
+      {filterable && <FilterLine query={filter.query} />}
+      {shown.length === 0 && <Text dimColor>{t("menu.noMatches")}</Text>}
+      {shown.slice(from, from + visible).map((index, offset) => {
+        const item = items[index]!
+        const isFocused = from + offset === focused
         const hint = hints?.[index]
         const accentRow = !isFocused && accented?.[index]
         let arrow = " "

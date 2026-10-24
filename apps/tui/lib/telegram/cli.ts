@@ -84,7 +84,7 @@ export async function runTelegramCli(deps: {
   console.log(t("telegram.starting"))
   if (deps.yolo) {
     const { statusLine } = await import("../doctor/status")
-    console.log(statusLine("warning", t("telegram.yolo"), 0))
+    console.log(statusLine("warning", t("telegram.yolo")))
   }
   try {
     await bot.start()

@@ -151,7 +151,7 @@ export async function runDoctorSubcommand() {
   if ((await config()).preferences?.yolo) {
     const { statusLine } = await import("../lib/doctor/status")
     console.log()
-    console.log(statusLine("warning", t("doctor.yolo", { path: getConfigPath() }), 0))
+    console.log(statusLine("warning", t("doctor.yolo", { path: getConfigPath() })))
   }
 
   await closeTools()

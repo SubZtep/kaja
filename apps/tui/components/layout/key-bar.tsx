@@ -17,10 +17,21 @@ export type KeyBarEntry = {
 
 type Rect = { left: number; top: number; width: number; height: number }
 
-const ITEM_GAP = 2
+const SEPARATOR = " · "
+// Like the setup screens' hint line: from column 2, never past column 78
+const MAX_COLUMN = 78
 
 const rowWidth = (items: KeyBarEntry[]) =>
-  items.reduce((sum, item) => sum + Bun.stringWidth(item.key) + 1 + Bun.stringWidth(item.label) + ITEM_GAP, 0)
+  items.reduce(
+    (sum, item, index) =>
+      sum + (index > 0 ? SEPARATOR.length : 0) + Bun.stringWidth(item.key) + 1 + Bun.stringWidth(item.label),
+    0
+  )
+
+/** The columns the bar has at this terminal width. */
+export function keyBarRoom(columns: number): number {
+  return Math.min(MAX_COLUMN, columns) - 1
+}
 
 /** Squeezes the bar onto one row when `width` is short: compact keys first, then without the droppable entries. */
 export function fitKeyBarItems(items: KeyBarEntry[], width: number): KeyBarEntry[] {
@@ -41,7 +52,7 @@ function KeyBarItem({
   onRect: (key: string, rect: Rect) => void
   onGone: (key: string) => void
 }>) {
-  const { keyCap, keyCapHeld } = useKajaTheme()
+  const { accent } = useKajaTheme()
   const ref = useRef<DOMElement>(null)
   const { left, top, width, height } = useBoxMetrics(ref)
   useEffect(() => onRect(item.key, { left, top, width, height }), [item.key, left, top, width, height, onRect])
@@ -49,20 +60,23 @@ function KeyBarItem({
   useEffect(() => () => onGone(item.key), [item.key, onGone])
   return (
     <Box ref={ref} flexShrink={0} columnGap={1}>
-      <Text {...(item.lit ? keyCapHeld() : keyCap())}>{item.key}</Text>
-      <Text bold={hovered || item.lit}>{item.label}</Text>
+      <Text {...(item.lit ? { ...accent(), bold: true } : {})}>{item.key}</Text>
+      <Text dimColor={!hovered} bold={hovered}>
+        {item.label}
+      </Text>
     </Box>
   )
 }
 
 /**
- * Bottom-of-screen key bar, nano/Midnight-Commander style: a full-width row of `<key> <label>` pairs, the key in
- * reverse video, the space between them growing to fill the row. On a narrow terminal (`width`) the keys shrink to
- * their `short` form and the `droppable` entries disappear; failing that the pairs wrap onto further rows whole, never
- * split mid-label. An entry with `onPress` is also a button: it dims under the mouse and a click runs it.
+ * Bottom-of-screen key line in the setup screens' hint style: `<key> <action>` pairs, the key plain (in the accent
+ * while its modifier is held) and the action dim, joined by a dim "·", on one row within column 78. On a narrow
+ * terminal (`width`) the keys shrink to their `short` form and the `droppable` entries disappear; what still doesn't
+ * fit is cut off at the end. An entry with `onPress` is also a button: its action brightens under the mouse and a click
+ * runs it.
  */
 export function KeyBar({ items: allItems, width }: Readonly<{ items: KeyBarEntry[]; width?: number }>) {
-  const items = width === undefined ? allItems : fitKeyBarItems(allItems, width)
+  const items = width === undefined ? allItems : fitKeyBarItems(allItems, keyBarRoom(width))
   const barRef = useRef<DOMElement>(null)
   const bar = useBoxMetrics(barRef)
   const rects = useRef(new Map<string, Rect>())
@@ -98,10 +112,25 @@ export function KeyBar({ items: allItems, width }: Readonly<{ items: KeyBarEntry
   }, !blocked)
 
   return (
-    <Box ref={barRef} flexShrink={0} width="100%" flexWrap="wrap" justifyContent="space-between" columnGap={ITEM_GAP}>
-      {items.map(item => (
+    <Box
+      ref={barRef}
+      flexShrink={0}
+      paddingLeft={1}
+      height={1}
+      overflow="hidden"
+      {...(width === undefined ? {} : { width: keyBarRoom(width) + 1 })}
+    >
+      {/* Siblings, not wrappers: an item's measured position must be relative to the bar for the hit test */}
+      {items.flatMap((item, index) => [
+        ...(index > 0
+          ? [
+              <Box key={`sep:${item.key}`} flexShrink={0}>
+                <Text dimColor>{SEPARATOR}</Text>
+              </Box>
+            ]
+          : []),
         <KeyBarItem key={item.key} item={item} hovered={hovered === item.key} onRect={onRect} onGone={onGone} />
-      ))}
+      ])}
     </Box>
   )
 }

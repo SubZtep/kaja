@@ -24,6 +24,7 @@ import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
 import { Backdrop, ModalHost } from "../elem/modal"
+import { DashedRule } from "../elem/rule"
 import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { CommandModal } from "./command-modal"
@@ -98,8 +99,11 @@ function confirmPrompt(
   return { command: event.summary, description: t("confirmCommand.toolRequest", { name: event.name }), kind: "tool" }
 }
 
-/** One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree. */
-type KeyBinding = { letter: string; label: string; run: () => void; when: boolean }
+/**
+ * One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree.
+ * `inBar: false` keeps a bound key out of the bar (the help screen lists it), for a line that has to fit in 78 columns.
+ */
+type KeyBinding = { letter: string; label: string; run: () => void; when: boolean; inBar?: boolean }
 
 function buildKeyBarItems(
   hotkeyModifier: HotkeyModifier | undefined,
@@ -109,8 +113,9 @@ function buildKeyBarItems(
 ) {
   const label = modifierLabel(hotkeyModifier)
   return [
+    { key: "PgUp/PgDn", label: t("keybar.scroll"), droppable: true },
     ...bindings
-      .filter(binding => binding.when)
+      .filter(binding => binding.when && binding.inBar !== false)
       .map(binding => ({
         key: `${label}+${binding.letter.toUpperCase()}`,
         // ‽ stands for whichever modifier it is; the help modal names it
@@ -119,8 +124,6 @@ function buildKeyBarItems(
         onPress: binding.run,
         lit: modifierHeld
       })),
-    { key: "PgUp", label: t("keybar.older"), onPress: () => uiEvents.emit("pageUp"), droppable: true },
-    { key: "PgDn", label: t("keybar.newer"), onPress: () => uiEvents.emit("pageDown"), droppable: true },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -228,7 +231,7 @@ function Chrome({
       run: () => setModal("persona")
     },
     // "R" for copy, not "C": Ctrl+C is reserved by Ink to quit the app, so under hotkeyModifier: "ctrl" it could never fire
-    { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
+    { letter: "r", label: t("keybar.copy"), when: true, inBar: false, run: () => uiEvents.emit("copy") },
     {
       letter: "e",
       label: t("keybar.expand"),
@@ -274,7 +277,9 @@ function Chrome({
               profile={Bun.env.KAJA_PROFILE}
               yolo={yolo}
             />
+            <DashedRule width={columns} />
             <ChatViewport
+              persona={personaLabel}
               events={events}
               thinking={thinking}
               partial={partial}
@@ -283,6 +288,7 @@ function Chrome({
               toolDisplay={toolDisplay}
               currentTool={currentTool}
             />
+            <DashedRule width={columns} />
             {showConfirm && pendingCommand && resolvePending && (
               <ConfirmCommand
                 key="confirm-command"
@@ -327,6 +333,7 @@ function Chrome({
                 onMicChange={setMic}
               />
             )}
+            <DashedRule width={columns} />
             <KeyBar items={keyBarItems} width={columns} />
           </Backdrop>
           {modal === "help" && (

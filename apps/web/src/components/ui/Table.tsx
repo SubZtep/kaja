@@ -7,6 +7,7 @@ import {
   type Header,
   type ReactTable,
   type RowData,
+  type SortingState,
   type TableOptions,
   useTable
 } from "@tanstack/react-table"
@@ -25,11 +26,20 @@ const USER_ROLES = ["admin", "user"] as const
 
 const PAGE_SIZES = [10, 25, 50, 100]
 
+const NEWEST_FIRST: SortingState = [{ id: "createdAt", desc: true }]
+
+/** `sorting` is the initial order (newest first by default); `[]` keeps the order `data` comes in. */
 export function Table<TData extends RowData>({
   columns,
   data,
-  showFilters = true
-}: Readonly<{ columns: TableOptions<Features, TData>["columns"]; data: TData[]; showFilters?: boolean }>) {
+  showFilters = true,
+  sorting = NEWEST_FIRST
+}: Readonly<{
+  columns: TableOptions<Features, TData>["columns"]
+  data: TData[]
+  showFilters?: boolean
+  sorting?: SortingState
+}>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
   const table = useTable({
@@ -37,12 +47,7 @@ export function Table<TData extends RowData>({
     columns,
     data: data,
     initialState: {
-      sorting: [
-        {
-          id: "createdAt",
-          desc: true
-        }
-      ],
+      sorting,
       pagination: {
         pageIndex: 0,
         pageSize: 25

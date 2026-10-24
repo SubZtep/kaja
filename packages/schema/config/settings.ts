@@ -1,13 +1,32 @@
 import { locales } from "@kaja/shared/locale"
 import * as z from "zod"
 
+/** What each unset preference means; the TUI reads it, and the JSON Schema shows it to editors. */
+export const PREFERENCE_DEFAULTS = {
+  thinking: false,
+  toolDisplay: "minimal",
+  codePreviewLines: 5,
+  voice: false,
+  hotkeyModifier: "alt",
+  theme: "auto",
+  yolo: false
+} as const
+
+/** `[marketplace]`'s defaults: on, and kept up to date. */
+export const MARKETPLACE_DEFAULTS = { enabled: true, autoFetch: true } as const
+
 export const KajaPreferencesSchema = z.object({
-  thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
+  thinking: z
+    .boolean()
+    .optional()
+    .meta({ default: PREFERENCE_DEFAULTS.thinking })
+    .describe("Show thinking indicator when the model is generating a response"),
   toolDisplay: z
     .enum(["minimal", "verbose", "corner"])
     .optional()
+    .meta({ default: PREFERENCE_DEFAULTS.toolDisplay })
     .describe(
-      "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header (default: minimal)"
+      "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header"
     ),
   codePreviewLines: z
     .number()
@@ -15,8 +34,13 @@ export const KajaPreferencesSchema = z.object({
     .min(1)
     .max(200)
     .optional()
-    .describe("Lines of a code block or approval command shown before it is cut short (default: 5)"),
-  voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
+    .meta({ default: PREFERENCE_DEFAULTS.codePreviewLines })
+    .describe("Lines of a code block or approval command shown before it is cut short"),
+  voice: z
+    .boolean()
+    .optional()
+    .meta({ default: PREFERENCE_DEFAULTS.voice })
+    .describe("Read the assistant's replies aloud (needs a Speaches server, see [tts])"),
   locale: z.enum(locales).optional().describe("Language for the chat and application"),
   // Written by the setup wizard. Without it the mode is guessed from "is there a usable chat model?", which
   // silently falls back to cloud when models.toml is missing, broken, or deliberately left for hand-editing.
@@ -30,16 +54,21 @@ export const KajaPreferencesSchema = z.object({
   hotkeyModifier: z
     .enum(["alt", "ctrl", "meta", "ctrl+alt", "ctrl+meta", "alt+meta"])
     .optional()
-    .describe("Modifier key for the help/persona hotkeys (default: alt)"),
+    .meta({ default: PREFERENCE_DEFAULTS.hotkeyModifier })
+    .describe(
+      "Modifier key for the help/persona hotkeys; none works everywhere (alt types characters on some macOS terminals, ctrl collides with some host apps, meta needs the kitty keyboard protocol)"
+    ),
   theme: z
     .enum(["auto", "dark", "light", "terminal"])
     .optional()
+    .meta({ default: PREFERENCE_DEFAULTS.theme })
     .describe(
-      "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)"
+      "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme"
     ),
   yolo: z
     .boolean()
     .optional()
+    .meta({ default: PREFERENCE_DEFAULTS.yolo })
     .describe(
       "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)"
     )
@@ -68,11 +97,13 @@ export const KajaMarketplaceSchema = z.object({
   enabled: z
     .boolean()
     .optional()
-    .describe("Use the online marketplace; false means Kaja never goes online for abilities (default: true)"),
+    .meta({ default: MARKETPLACE_DEFAULTS.enabled })
+    .describe("Use the online marketplace; false means Kaja never goes online for abilities"),
   autoFetch: z
     .boolean()
     .optional()
-    .describe("Pull the marketplace at startup when the last sync is over a day old (default: true)"),
+    .meta({ default: MARKETPLACE_DEFAULTS.autoFetch })
+    .describe("Pull the marketplace at startup when the last sync is over a day old"),
   url: z
     .string()
     .min(1)
@@ -89,8 +120,9 @@ export const KajaContextSchema = z.object({
     .min(0.3)
     .max(0.95)
     .optional()
+    .meta({ default: 0.8 })
     .describe(
-      "How full the chat model's context may get (0.3-0.95) before older messages are summarised (default: 0.8)"
+      "How full the chat model's context may get (0.3-0.95) before older messages are summarised; `/compact` does it on demand"
     )
 })
 

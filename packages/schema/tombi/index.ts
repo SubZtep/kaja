@@ -3,7 +3,6 @@ import { DatasetSchema } from "../abilities/dataset"
 import { HttpToolAbilitySchema } from "../abilities/http-tool"
 import { McpAbilitySchema } from "../abilities/mcp"
 import { PersonaSchema } from "../abilities/persona"
-import { CatalogFileSchema } from "../config/catalog"
 import { CommandsFileSchema } from "../config/commands"
 import { HooksFileSchema } from "../config/hooks"
 import { ModelsFileSchema } from "../config/models"
@@ -11,7 +10,7 @@ import { SecretsFileSchema } from "../config/secrets"
 import { KajaConfigSchema } from "../config/settings"
 
 /**
- * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io), one per config/*.toml shape.
+ * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io), one per TOML file shape.
  * Each is derived from this package's own Zod schemas via `z.toJSONSchema`, so it can never drift from the runtime
  * validators. Written to static .json files by ./generate.ts, which .tombi.toml's [[schemas]] point at — Tombi needs
  * files/URLs, not live TypeScript.
@@ -22,7 +21,6 @@ export const tombiSchemas = {
   "settings.json": z.toJSONSchema(KajaConfigSchema, { io: "input" }),
   "secrets.json": z.toJSONSchema(SecretsFileSchema, { io: "input" }),
   "models.json": z.toJSONSchema(ModelsFileSchema, { io: "input" }),
-  "catalog.json": z.toJSONSchema(CatalogFileSchema, { io: "input" }),
   "commands.json": z.toJSONSchema(CommandsFileSchema, { io: "input" }),
   "hooks.json": z.toJSONSchema(HooksFileSchema, { io: "input" }),
   "persona.json": z.toJSONSchema(PersonaSchema, { io: "input" }),

@@ -145,6 +145,26 @@ export async function storeRemoteImages(agent: Agent, session: Session, text: st
   )
 }
 
+// `![alt](kaja-image:<id>)`, as a reply links a stored image
+const STORED_IMAGE = /!\[([^\]]*)\]\((kaja-image:[0-9a-f]{16})\)/g
+
+/**
+ * A reply without its links to images the turn's tools already showed (models often link them again, and hosts would
+ * show them twice); a reply that would be left empty keeps their alt text instead.
+ */
+export function withoutShownImages(text: string, shown: ReadonlySet<string>): string {
+  if (![...text.matchAll(STORED_IMAGE)].some(([, , ref]) => shown.has(ref!))) return text
+  const replaced = (keepAlt: boolean) =>
+    text
+      .replace(STORED_IMAGE, (link, alt: string, ref: string) => {
+        if (!shown.has(ref)) return link
+        return keepAlt ? alt : ""
+      })
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  return replaced(false) || replaced(true)
+}
+
 /**
  * What a provider is sent: `messages` with each stored image's ref swapped for its bytes as a data URL (only the images
  * still in them: compaction already left out the old ones). A missing image becomes {@link MISSING_IMAGE}.

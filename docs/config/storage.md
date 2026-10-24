@@ -17,14 +17,15 @@ The file opens in WAL mode, so the terminal chat and the Telegram bot can run at
 
 Images the model was shown (a screenshot a tool returned, a photo sent to the bot) aren't in the database.
 Each is a file under `files/images/<sessionId>/` next to it, stored once per session and named by its
-sha256. Messages refer to them, and deleting a session removes its folder.
+sha256. Messages refer to them, and deleting a session removes its folder. `kaja images` counts them,
+`kaja images describe` writes the missing descriptions, and `kaja images clean` removes leftovers.
 
 In cloud mode there's no local database: the same data lives in the server's Postgres, under your account.
 
 ## Tables
 
 The tables have the same names and columns as the cloud's Postgres ones, so `user_id` is there too; locally it is
-always the same fixed id.
+always the same fixed id. Open the file with any SQLite tool to see the columns.
 
 | Table                  | Holds                                                                                                                                                                                         |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,141 +41,7 @@ always the same fixed id.
 | `nasi_dataset_version` | marks a dataset as completed at a point in time                                                                                                                                               |
 
 `owner` separates rows within one file: empty for the terminal (`null` in `nasi_session`), a namespaced id for a
-Telegram user or a widget visitor. Sessions belonging to another owner can't be resumed.
-
-```mermaid
-erDiagram
-  nasi_note {
-    TEXT user_id PK
-    TEXT owner PK "empty = terminal"
-    TEXT key PK
-    TEXT content
-    TEXT importance "low | medium | high"
-    TEXT tags "JSON"
-    INTEGER sticky
-    TEXT created_at
-    TEXT last_used_at
-    INTEGER use_count
-  }
-
-  nasi_session {
-    TEXT id PK "UUIDv7"
-    TEXT user_id
-    TEXT created_at
-    TEXT updated_at
-    TEXT persona
-    TEXT model
-    TEXT title
-    TEXT owner "null = terminal"
-    TEXT channel "local | telegram | widget"
-    TEXT system_prompt
-    TEXT pending_call_id "a call waiting on the human"
-    TEXT pending_kind
-    TEXT granted_tools "JSON: tools allowed for the session"
-  }
-
-  nasi_message {
-    TEXT id PK "UUIDv7"
-    TEXT session_id FK
-    INTEGER seq
-    TEXT role
-    TEXT content
-    TEXT parts "JSON: image parts"
-    TEXT reasoning
-    TEXT tool_call_id "on tool results"
-    TEXT persona "assistant rows: the round's numbers"
-    TEXT model "the model that served the round"
-    INTEGER prompt_tokens
-    INTEGER completion_tokens
-    INTEGER latency_ms
-    TEXT finish_reason
-    TEXT created_at
-  }
-
-  nasi_tool_call {
-    TEXT id PK "UUIDv7"
-    TEXT message_id FK
-    INTEGER position
-    TEXT call_id "the provider's id"
-    TEXT name
-    TEXT arguments
-    TEXT result_message_id FK
-    TEXT status "ok | error | declined | skipped"
-    INTEGER duration_ms
-    TEXT approval "approved | declined"
-    TEXT result_summary "what the model gets instead of an oversized result"
-  }
-
-  nasi_session_summary {
-    TEXT session_id PK
-    INTEGER summary_from PK "seq of the first message it doesn't cover"
-    TEXT summary
-    TEXT created_at
-  }
-
-  nasi_model_call {
-    TEXT id PK "UUIDv7"
-    TEXT session_id FK
-    TEXT kind "compact | condense | summarize | describe"
-    TEXT model
-    INTEGER prompt_tokens
-    INTEGER completion_tokens
-    INTEGER latency_ms
-    TEXT created_at
-  }
-
-  nasi_session_event {
-    TEXT session_id PK
-    INTEGER seq PK
-    TEXT type
-    TEXT payload "JSON"
-  }
-
-  nasi_image {
-    TEXT session_id PK
-    TEXT id PK "start of the bytes' sha256"
-    TEXT user_id
-    TEXT mime_type
-    INTEGER width
-    INTEGER height
-    INTEGER bytes
-    TEXT source_url
-    TEXT alt
-    TEXT title
-    TEXT file_name
-    TEXT description
-    TEXT description_model
-    TEXT described_at
-    INTEGER describe_attempts
-    TEXT describe_tried_at
-    TEXT created_at
-  }
-
-  nasi_dataset_answer {
-    TEXT user_id PK
-    TEXT topic PK
-    TEXT owner PK
-    INTEGER version PK
-    TEXT field PK
-    TEXT value
-    TEXT answered_at
-  }
-
-  nasi_dataset_version {
-    TEXT user_id PK
-    TEXT topic PK
-    TEXT owner PK
-    INTEGER version PK
-    TEXT completed_at
-  }
-
-  nasi_session ||--o{ nasi_message : has
-  nasi_session ||--o{ nasi_session_event : has
-  nasi_session ||--o{ nasi_session_summary : "compacted into"
-  nasi_session ||--o{ nasi_model_call : "summarised with"
-  nasi_message ||--o{ nasi_tool_call : makes
-  nasi_dataset_answer }o--|| nasi_dataset_version : "topic + owner + version"
-```
+Telegram user. Sessions belonging to another owner can't be resumed.
 
 ## Deleting it
 

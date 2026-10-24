@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
+import { ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { TOML } from "bun"
 import {
   buildModelsToml,
@@ -7,10 +7,13 @@ import {
   CATALOG,
   type CatalogProvider,
   catalogProvider,
-  EXAMPLES,
-  exampleToml,
+  resolvePicks,
+  setCatalog,
   TASK_ORDER
 } from "../../../lib/models/catalog"
+import { TEST_CATALOG } from "../../fixtures/catalog"
+
+setCatalog(TEST_CATALOG)
 
 const pick = (...ids: string[]): CatalogProvider[] => ids.map(id => catalogProvider(id)!)
 const parse = (text: string) => ModelsFileSchema.parse(TOML.parse(text))
@@ -23,182 +26,150 @@ const inUse = (parsed: Parsed, task: ModelTask) => {
   const id = inUseId(parsed, task)
   return id ? parsed.models[id] : undefined
 }
-
-// The examples are generated from the catalog (`bun generate:models`); a hand edit or a stale file fails here.
-// Content, not bytes: the file is tombi-formatted, which `bun check:models` checks exactly.
-test.each(EXAMPLES)("config/$file is what the catalog writes for it", async example => {
-  const text = await Bun.file(`${import.meta.dir}/../../../../../config/${example.file}`).text()
-  expect(TOML.parse(text)).toEqual(TOML.parse(exampleToml(example)))
-  parse(text)
+const provider = (id: string, models: CatalogProvider["models"], own?: boolean): CatalogProvider => ({
+  id,
+  name: id,
+  kind: "hosted",
+  baseUrl: `https://${id}.test/v1`,
+  models,
+  ...(own ? { own } : {})
 })
 
-test("an example's defaults follow catalog order, not the order it lists its providers in, unless it picks", () => {
-  const forward = parse(exampleToml({ file: "models.x.toml", providers: ["llama", "xai"] }))
-  const backward = parse(exampleToml({ file: "models.x.toml", providers: ["xai", "llama"] }))
-  expect(backward).toEqual(forward)
-  expect(inUse(forward, "chat")?.provider).toBe("llama")
-
-  const picked = parse(exampleToml({ file: "models.x.toml", providers: ["llama", "xai"], pick: { chat: "xai" } }))
-  expect(inUse(picked, "chat")?.provider).toBe("xai")
+test("no catalog means no providers to offer", () => {
+  setCatalog(undefined)
+  expect(CATALOG).toEqual([])
+  setCatalog(TEST_CATALOG)
+  expect(CATALOG).toHaveLength(6)
 })
 
-test("the catalog file rejects a pick outside the example, an unknown provider, and a missing default file", () => {
-  const provider = {
-    id: "a",
-    name: "A",
-    kind: "hosted",
-    base_url: "https://a.test",
-    models: [{ task: "chat", model: "m" }]
-  }
-  const ok = { file: "models.default.toml", providers: ["a"] }
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [ok] }).success).toBe(true)
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [] }).success).toBe(false)
-  expect(CatalogFileSchema.safeParse({ providers: [provider], examples: [{ ...ok, providers: ["b"] }] }).success).toBe(
-    false
-  )
-  expect(
-    CatalogFileSchema.safeParse({ providers: [provider], examples: [{ ...ok, pick: { chat: "b" } }] }).success
-  ).toBe(false)
+test("candidates come best guess first: current, tool-calling for chat, then newest", () => {
+  const acme = provider("acme", [
+    { model: "old", tasks: ["chat", "summarize"], toolCall: true, released: "2025-01-01" },
+    { model: "new-no-tools", tasks: ["chat", "summarize"], released: "2026-05-01" },
+    { model: "new", tasks: ["chat", "summarize"], toolCall: true, released: "2026-04-01" },
+    { model: "gone", tasks: ["chat", "summarize"], toolCall: true, released: "2026-09-01", deprecated: true }
+  ])
+  const candidates = candidatesByTask([acme])
+  expect(candidates.chat?.map(c => c.model)).toEqual(["new", "old", "new-no-tools", "gone"])
+  // Summarizing runs no tools, so newest wins there
+  expect(candidates.summarize?.map(c => c.model)).toEqual(["new-no-tools", "new", "old", "gone"])
 })
 
-test("every combination of providers writes a file the schema accepts, with a default per task", () => {
+test("each task resolves to its pick while that's a candidate, else the best guess", () => {
+  const providers = pick("fireworks", "ollama")
+  const guessed = resolvePicks(providers, ["chat", "embedding", "vision"])
+  expect(guessed.chat).toEqual({ provider: "fireworks", model: "accounts/fireworks/models/minimax-m3" })
+  expect(guessed.embedding?.provider).toBe("fireworks")
+  // A task that isn't wanted gets nothing
+  expect(guessed.summarize).toBeUndefined()
+
+  const picked = resolvePicks(providers, ["chat"], { chat: { provider: "ollama", model: "qwen3.5:4b" } })
+  expect(picked.chat).toEqual({ provider: "ollama", model: "qwen3.5:4b" })
+  // A pick no ticked provider serves any more falls back to the guess
+  const stale = resolvePicks(providers, ["chat"], { chat: { provider: "xai", model: "grok-4.3" } })
+  expect(stale.chat?.provider).toBe("fireworks")
+})
+
+test("vision guesses the chat pick when that model can see, so one model does both", () => {
+  const providers = pick("fireworks", "ollama")
+  const picks = resolvePicks(providers, ["chat", "vision"], { chat: { provider: "ollama", model: "qwen3.5:4b" } })
+  expect(picks.vision).toEqual({ provider: "ollama", model: "qwen3.5:4b" })
+})
+
+test("every combination of providers writes a file the schema accepts, with each wanted task served", () => {
   for (let mask = 1; mask < 1 << CATALOG.length; mask++) {
     const providers = CATALOG.filter((_, index) => mask & (1 << index))
-    const parsed = parse(buildModelsToml({ providers }))
+    const parsed = parse(buildModelsToml({ providers, picks: resolvePicks(providers, TASK_ORDER) }))
     const candidates = candidatesByTask(providers)
-
-    for (const task of TASK_ORDER) {
-      const options = candidates[task] ?? []
-      // Every task somebody can serve has a model, picking a real candidate.
-      expect(inUse(parsed, task) !== undefined).toBe(options.length > 0)
-      if (options.length === 0) continue
-      const entries = Object.values(parsed.models).filter(entry => entry.tasks.includes(task))
-      expect(entries).toHaveLength(options.length)
-      expect(options.some(o => o.provider === inUse(parsed, task)!.provider)).toBe(true)
-    }
+    for (const task of TASK_ORDER) expect(inUse(parsed, task) !== undefined).toBe(Boolean(candidates[task]?.length))
   }
 })
 
-test("with two providers for one task, the picked one is the default and the other is kept beside it", () => {
-  const providers = pick("fireworks", "ollama")
-  expect(candidatesByTask(providers).chat).toEqual([
-    { provider: "fireworks", model: "accounts/fireworks/models/minimax-m3" },
-    { provider: "ollama", model: "qwen3.5:4b" }
-  ])
-
-  const picked = parse(buildModelsToml({ providers, pick: { chat: "ollama" } }))
-  expect(inUseId(picked, "chat")).toBe("qwen3-5-4b")
-  expect(inUse(picked, "chat")).toMatchObject({ provider: "ollama", model: "qwen3.5:4b" })
-  expect(picked.models["minimax-m3"]).toMatchObject({ provider: "fireworks", tasks: ["chat", "vision"] })
-  // Vision follows the chat pick, so the chat model that sees images is the one in use for vision too
-  expect(inUse(picked, "vision")).toMatchObject({ provider: "ollama", model: "qwen3.5:4b" })
-
-  // No answer means the first candidate, so a silent choice is still a sensible one.
-  const unpicked = parse(buildModelsToml({ providers }))
-  expect(inUseId(unpicked, "chat")).toBe("minimax-m3")
-  expect(unpicked.models["qwen3-5-4b"]?.provider).toBe("ollama")
-  // The examples leave the alternatives out: one model per task.
-  const bare = parse(buildModelsToml({ providers, alternatives: false }))
-  expect(bare.models["qwen3-5-4b"]).toBeUndefined()
-  expect(inUse(bare, "chat")?.provider).toBe("fireworks")
-  // A task only one of them serves has no alternative.
-  expect(Object.values(unpicked.models).filter(entry => entry.tasks.includes("rerank"))).toHaveLength(1)
+test("only the picked models of a catalog provider are written, a model serving two tasks as one entry", () => {
+  const providers = pick("fireworks")
+  const parsed = parse(buildModelsToml({ providers, picks: resolvePicks(providers, ["chat", "summarize", "vision"]) }))
+  expect(parsed.models).toEqual({
+    "minimax-m3": {
+      model: "accounts/fireworks/models/minimax-m3",
+      provider: "fireworks",
+      tasks: ["chat", "summarize", "vision"]
+    }
+  })
 })
 
-test("a picked model listed as another task's alternative never comes before that task's pick", () => {
-  const provider = (id: string, models: CatalogProvider["models"]): CatalogProvider => ({
-    id,
-    name: id,
-    kind: "hosted",
-    baseUrl: `https://${id}.test/v1`,
-    models
-  })
-  const cloud = provider("cloud", [
-    { task: "chat", model: "c" },
-    { task: "summarize", model: "s" }
-  ])
-  const local = provider("local", [
-    { task: "chat", model: "q" },
-    { task: "summarize", model: "q" }
-  ])
-  // q is picked for chat, so its entry comes first; listing summarize too would take it from s.
-  const parsed = parse(buildModelsToml({ providers: [cloud, local], pick: { chat: "local", summarize: "cloud" } }))
+test("a task with no pick is off", () => {
+  const providers = pick("fireworks")
+  const parsed = parse(buildModelsToml({ providers, picks: resolvePicks(providers, ["chat"]) }))
+  expect(inUse(parsed, "embedding")).toBeUndefined()
+  expect(inUse(parsed, "summarize")).toBeUndefined()
+})
+
+test("an own provider's other models are kept after the picks, only for tasks that are on", () => {
+  const box = provider(
+    "box",
+    [
+      { model: "big", tasks: ["chat"] },
+      { model: "small", tasks: ["chat", "summarize"] },
+      { model: "voice", tasks: ["tts"] }
+    ],
+    true
+  )
+  const parsed = parse(buildModelsToml({ providers: [box], picks: { chat: { provider: "box", model: "big" } } }))
+  expect(inUseId(parsed, "chat")).toBe("big")
+  expect(parsed.models.small?.tasks).toEqual(["chat"])
+  // tts and summarize have no pick, so they stay off
+  expect(parsed.models.voice).toBeUndefined()
+})
+
+test("an own model picked for one task never lists another above that task's pick", () => {
+  const local = provider("local", [{ model: "q", tasks: ["chat", "summarize"] }], true)
+  const cloud = provider("cloud", [{ model: "s", tasks: ["summarize"] }])
+  const parsed = parse(
+    buildModelsToml({
+      providers: [cloud, local],
+      picks: { chat: { provider: "local", model: "q" }, summarize: { provider: "cloud", model: "s" } }
+    })
+  )
   expect(inUseId(parsed, "chat")).toBe("q")
   expect(inUseId(parsed, "summarize")).toBe("s")
   expect(parsed.models.q?.tasks).toEqual(["chat"])
-  expect(parsed.models.c?.tasks).toEqual(["chat"])
 })
 
 test("ids are slugs of the model name, with the provider added when two providers share a name", () => {
-  const twin = (id: string): CatalogProvider => ({
-    id,
-    name: id,
-    kind: "hosted",
-    baseUrl: `https://${id}.test/v1`,
-    models: [{ task: "chat", model: "org/Big-Model:7b" }]
-  })
-  const parsed = parse(buildModelsToml({ providers: [twin("one"), twin("two")] }))
+  const twin = (id: string) => provider(id, [{ model: "org/Big-Model:7b", tasks: ["chat", "embedding"] }])
+  const parsed = parse(
+    buildModelsToml({
+      providers: [twin("one"), twin("two")],
+      picks: {
+        chat: { provider: "one", model: "org/Big-Model:7b" },
+        embedding: { provider: "two", model: "org/Big-Model:7b" }
+      }
+    })
+  )
   expect(Object.keys(parsed.models)).toEqual(["big-model-7b", "big-model-7b-two"])
-  expect(inUseId(parsed, "chat")).toBe("big-model-7b")
 })
 
-test("a model serving two tasks is one entry listing both", () => {
-  const both: CatalogProvider = {
-    id: "local",
-    name: "Local",
-    kind: "self-hosted",
-    baseUrl: "http://localhost/v1",
-    models: [
-      { task: "chat", model: "qwen3.5:4b" },
-      { task: "summarize", model: "qwen3.5:4b" }
-    ]
-  }
-  const parsed = parse(buildModelsToml({ providers: [both] }))
-  expect(parsed.models).toEqual({
-    "qwen3-5-4b": { model: "qwen3.5:4b", provider: "local", tasks: ["chat", "summarize"] }
-  })
-  expect(inUseId(parsed, "summarize")).toBe("qwen3-5-4b")
-})
-
-test("a provider serving a task twice gets two entries, never a duplicate table", () => {
-  const twice: CatalogProvider = {
-    id: "custom",
-    name: "Custom",
-    kind: "hosted",
-    baseUrl: "https://example.test/v1",
-    models: [
-      { task: "chat", model: "big" },
-      { task: "chat", model: "small" }
-    ]
-  }
-  const parsed = parse(buildModelsToml({ providers: [twice] }))
-  expect(Object.keys(parsed.models).sort()).toEqual(["big", "small"])
-  expect(inUseId(parsed, "chat")).toBe("big")
+test("what the catalog knows about a model is written with it", () => {
+  const acme = provider("acme", [{ model: "m", tasks: ["chat"], contextWindow: 128000, images: false }])
+  const parsed = parse(buildModelsToml({ providers: [acme], picks: { chat: { provider: "acme", model: "m" } } }))
+  expect(parsed.models.m).toMatchObject({ context_window: 128000, images: false })
 })
 
 test("the comments that explain the file are written, and no placeholder for a task nobody serves", () => {
-  const text = buildModelsToml({ providers: pick("ollama") })
+  const providers = pick("ollama")
+  const text = buildModelsToml({ providers, picks: resolvePicks(providers, ["chat"]) })
   expect(text).toContain("# Kaja models")
-  expect(text).toContain("# Ollama requires an API key but ignores its value")
+  expect(text).toContain("# needs an api_key in secrets.toml, any value")
   expect(text).not.toContain("# [models.")
-
-  const withSpeech = buildModelsToml({ providers: pick("speaches") })
-  expect(withSpeech).toContain("# local server, no key needed")
-  expect(inUse(parse(withSpeech), "stt")?.provider).toBe("speaches")
 })
 
 test("an address the user typed replaces the default, and is escaped", () => {
-  const parsed = parse(
-    buildModelsToml({ providers: pick("ollama", "llama"), baseUrls: { ollama: "http://box.local:9090/v1" } })
-  )
+  const providers = pick("ollama", "llama")
+  const picks = resolvePicks(providers, ["chat"])
+  const parsed = parse(buildModelsToml({ providers, picks, baseUrls: { ollama: "http://box.local:9090/v1" } }))
   expect(parsed.providers.ollama?.base_url).toBe("http://box.local:9090/v1")
   expect(parsed.providers.llama?.base_url).toBe("http://localhost:8080/v1")
 
-  const text = buildModelsToml({ providers: pick("ollama"), baseUrls: { ollama: 'http://x/"evil' } })
+  const text = buildModelsToml({ providers: pick("ollama"), picks, baseUrls: { ollama: 'http://x/"evil' } })
   expect(text).toContain('base_url = "http://x/\\"evil"')
-})
-
-test("hosted providers are the ones asked for a key, self-hosted ones for an address", () => {
-  expect(CATALOG.filter(p => p.kind === "hosted").map(p => p.id)).toEqual(["fireworks", "xai", "openrouter"])
-  expect(CATALOG.filter(p => p.kind === "self-hosted").map(p => p.id)).toEqual(["ollama", "llama", "speaches"])
 })

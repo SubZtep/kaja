@@ -14,13 +14,9 @@ where it stops to ask you, and the small tricks that keep it from falling over. 
 
 ## One brain, carried around
 
-Nasi isn't a service you connect to. It's a library, and whatever hosts it runs it in-process: the terminal
-in local mode, and the Kaja API for cloud chat, the cloud Telegram bot and the widget. Each host hands it the
-same four things: a model, a place to store conversations, a set of tools, and a few words about where it's
-running. Nasi reads no config file and opens no database of its own.
-
-The terminal in cloud mode is the odd one out: it runs no loop at all. It carries a small HTTP client and
-lets the API think, which keeps it light.
+Each host (the terminal in local mode, the Kaja API for everything cloud) hands Nasi the same four things:
+a model, a place to store conversations, a set of tools, and a few words about where it's running. The
+terminal in cloud mode runs no loop at all: it carries a small HTTP client and lets the API think.
 
 In the cloud one store holds many people's conversations, so every conversation has an owner: your account,
 a Telegram user, or one widget visitor. Ask to resume a conversation that isn't yours and it simply isn't
@@ -56,10 +52,8 @@ Most tools just run. Three are caught by the loop instead, because their whole j
 
 - **`ask_user`** stops the turn. The conversation remembers the open question, and your next message becomes
   its answer.
-- **`run_command`** runs a shell command at once only when it's plainly harmless: it matches your
-  [safe list](/config/settings#commandstoml-commands-that-run-without-asking), has no shell tricks (no
-  `;`, `&&`, pipes, redirects or `$(…)`), nothing on the risky list (`rm -rf`, `sudo`, a force push) and doesn't touch a
-  credentials file. Anything else waits for your OK.
+- **`run_command`** runs a shell command at once only when it's plainly harmless (see
+  [Shell commands](/abilities/tools#shell-commands)). Anything else waits for your OK.
 - **`switch_persona`** rewrites the brief in place, the system prompt the conversation started with, and may
   swap the model mid-turn. The new persona carries on from where the old one stopped.
 
@@ -78,8 +72,7 @@ Models misbehave in small ways, and Nasi quietly covers for them:
   model still has nothing, you get "I'm drawing a blank on that one", never a blank bubble.
 - **Leaked tags are wiped.** Some models write their tool calls as text and leave closing tags like
   `</invoke>` at the end of a reply. Those are stripped.
-- **Failure has a limit.** A failed tool doesn't end the turn: the model sees the error and can try another
-  way. After three rounds in a row where every tool call failed, Nasi stops.
+- **Failure has a limit.** After three rounds in a row where every tool call failed, Nasi stops.
 
 ## Fitting a long chat into a small window
 
@@ -113,7 +106,7 @@ Then, in order:
 
 The summaries are written by the model with the `summarize` task, when you have one, else the chat model
 itself. Text too big even for it is summarised in parts, and then the parts together. `/compact` does the
-same on demand, and can be told what to keep: `/compact keep the dates`.
+same on demand ([Settings](/config/settings#context)).
 
 ## How it sees images
 

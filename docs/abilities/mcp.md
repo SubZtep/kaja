@@ -33,9 +33,6 @@ tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the 
 approval = "never"                  # never | writes | always
 ```
 
-The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking` and
-`time`.
-
 - A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
   var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
 
@@ -154,14 +151,13 @@ A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja'
 `chrome-devtools` is one, so the browser never runs on someone else's computer. A key travels with each
 request and is never stored there, and goes only to Kaja's own sandbox. The same goes for HTTP tools.
 
-- A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
-  switch, and closes them when it ends. Nothing is shared with other users.
-- A key is tested when an admin saves it, by connecting and listing the server's tools.
+- A turn connects the servers its persona lists, others after a persona switch, and closes them when it
+  ends. Nothing is shared with other users.
 - `approval` and `readOnly` work as above. Images, like screenshots, come back to you, and long results are
   cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`, like a screenshot's
   `filePath`) is hidden in the cloud.
-- A server that works without a key sees every user of a sandbox as one IP, with its rate limits, until an
-  admin adds a key.
+- A server that works without a key sees every user of a sandbox as one IP, with its rate limits, until
+  Kaja adds a key.
 
 Keys and approvals otherwise work as described in [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 
