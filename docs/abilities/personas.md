@@ -27,16 +27,16 @@ Listen first. Reflect back what you heard before offering anything.
 """
 ```
 
-| Field          | Purpose                                                                                                                                                                                                          |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `label`        | display name (required)                                                                                                                                                                                          |
-| `instructions` | system-prompt text for this persona                                                                                                                                                                              |
-| `when`         | short clause telling the model when to switch here on its own                                                                                                                                                    |
-| `dataset`      | id of a [dataset](/abilities/memory#datasets) this persona collects                                                                                                                                              |
-| `models`       | a model id per task from your [`models.toml`](/config/models), like `chat = "reasoning-chat"`                                                                                                                    |
-| `abilities`    | the [abilities](/abilities) this persona uses, by name (see below). Unset means every built-in tool and no abilities                                                                                             |
-| `localOnly`    | `true` keeps the persona to your own machine, for one whose abilities only work there: local mode, and cloud chat in the terminal (which runs them on your computer), never the cloud Telegram bot or the widget |
-| sampling       | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed`                                                                                                                   |
+| Field          | Purpose                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`        | display name (required)                                                                                                                                                                            |
+| `instructions` | system-prompt text for this persona                                                                                                                                                                |
+| `when`         | short clause telling the model when to switch here on its own                                                                                                                                      |
+| `dataset`      | id of a [dataset](/abilities/memory#datasets) this persona collects                                                                                                                                |
+| `models`       | a model id per task from your [`models.toml`](/config/models), like `chat = "reasoning-chat"`                                                                                                      |
+| `abilities`    | the [abilities](/abilities) this persona uses, by name (see below). Unset means every built-in tool and no abilities                                                                               |
+| `localOnly`    | `true` keeps the persona to your own machine, for one whose abilities only work there: local mode, and cloud chat in the terminal (which runs them on your computer), never the cloud Telegram bot |
+| sampling       | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed`                                                                                                     |
 
 > Kaja already tells the model to ask questions through `ask_user` and how to collect a dataset. Don't
 > repeat either in `instructions`.

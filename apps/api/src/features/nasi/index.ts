@@ -255,9 +255,7 @@ nasiRoutes.openapi(infoRoute, async c => {
   const mcpTools = (await abilityService.mcpAbilities())
     .filter(loads)
     .flatMap(ability => narrowed(ability.name, ability.tools ?? []))
-  const loadsSkills = persona
-    ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
-    : false
+  const loadsSkills = persona ? personaLoadsSkills(persona, await createPostgresAbilityStore().listSkills()) : false
   const tools = [
     ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })).filter(
       name => !persona || personaGetsBuiltin(persona, name)
@@ -282,7 +280,7 @@ const personasRoute = createRoute({
   method: "get",
   path: "/personas",
   tags: ["Nasi"],
-  summary: "Every persona in the cloud catalog (id and label), default first, for pickers like the widget form",
+  summary: "Every persona in the cloud catalog (id and label), default first, for pickers",
   security: [{ bearerAuth: [] }],
   responses: {
     200: { description: "OK", content: { "application/json": { schema: NasiPersonasResponseSchema } } },

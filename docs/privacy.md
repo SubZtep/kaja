@@ -20,7 +20,7 @@ Kaja can run two ways, and the difference matters here.
 
 **Local mode** (`kaja --local`) runs entirely on your own computer. Your conversations, memory notes, and dataset answers are stored in a SQLite file in your home directory; your configuration is plain text files there too. None of it reaches Kaja's servers. If you point Kaja at a local model, nothing leaves your machine at all; if you point it at a third-party LLM provider, or enable an ability that calls an outside service, what is sent there falls under _their_ privacy policy, not this one. **This policy does not apply to local mode**, apart from the account sections if you also have an account.
 
-**Cloud mode** (the default `kaja`, the website, the Kaja Telegram bot, and the embeddable widget) runs the agent on Kaja's servers against an account. That is what this policy covers.
+**Cloud mode** (the default `kaja`, the website, the Kaja Telegram bot, and widgets) runs the agent on Kaja's servers against an account. That is what this policy covers.
 
 ## Data We Collect
 
@@ -49,7 +49,7 @@ Sandboxes can be run by Kaja, by you, or by other people who share theirs. By de
 
 If you **run a sandbox**, Kaja stores, for as long as it's registered: its public IP address and the location our geolocation service ([ip2geo](https://github.com/SubZtep/geo-service), run by Kaja on MaxMind GeoLite2 data) finds for it (country, city, coordinates), when it was online, the name you gave it, and its hardware and load (CPU, memory, how many tools it's running). Its city and country are shown to Kaja's administrators. A sandbox run without your key is anonymous, and its record is deleted a week after it was last online.
 
-When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against _that site owner's_ Kaja account, not yours. The site owner is the controller of that data and Kaja processes it on their behalf (see [Widgets](#widgets)). A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
+When you play the homepage Barkochba game, the questions, your answers, and a random visitor id are stored as that widget's state on the demo account that runs the game. The id is an httpOnly cookie. It is not shared across sites.
 
 IP address handling details:
 
@@ -89,6 +89,8 @@ Kaja does not use your conversations to train models, and neither Fireworks AI n
 ## Cookies And Sessions
 
 Kaja uses essential cookies for login and authentication. These are needed for the service to work, so they don't need consent.
+
+The homepage Barkochba game sets one more, `kaja_barkochba`, only once you play: a random id for a week, so the game you started carries on between pages. It holds nothing else.
 
 The bot check on the sign-in and sign-up forms is run by Cloudflare, which may set its own strictly necessary cookies to tell people from bots (see [Cloudflare's cookie policy](https://www.cloudflare.com/cookie-policy/)).
 
@@ -139,8 +141,8 @@ You can ask for details of the safeguard for any provider by email.
 ## Retention
 
 - **Account data** is kept while your account exists.
-- **Cloud conversations, memory notes, dataset answers, widget keys, and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
-- **Deleting your account** from your profile page deletes it and everything stored with it straight away, including conversations your widgets' visitors had.
+- **Cloud conversations, memory notes, dataset answers, widgets (including their source and visitor state), and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
+- **Deleting your account** from your profile page deletes it and everything stored with it straight away, including your widgets' visitor state.
 - **Sandbox working state** (such as a browser's pages and cookies) is deleted after about 10 minutes unused, or when the sandbox restarts.
 - **Sandbox records** (IP address, location, hardware) are kept until you remove the sandbox or your account; anonymous ones a week after they were last online.
 - **Login session records** (with their IP address and user agent) are kept until the session ends or expires.
@@ -178,7 +180,7 @@ Kaja is run from the UK and offers its service to people in the EU. Under Articl
 
 ## Widgets
 
-If you embed a widget on your own site, you are the controller of your visitors' conversations and Kaja is your processor. The data processing terms that apply are in the [Terms of Service](/terms#data-processing-for-widgets).
+If you run a widget, you are the controller of the visitor state it stores and Kaja is your processor. The data processing terms that apply are in the [Terms of Service](/terms#data-processing-for-widgets).
 
 ## Children
 

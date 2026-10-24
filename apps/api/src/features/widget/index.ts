@@ -1,83 +1,101 @@
-import { resolve } from "node:path"
-import { categorizeError } from "@kaja/nasi"
-import { WidgetTurnRequestSchema } from "@kaja/schema/nasi"
-import { Hono } from "hono"
-import { withLock } from "../../core/lock"
-import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
-import { reportError } from "../../core/report"
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import {
+  widgetMeSchema,
+  widgetSourceResponseSchema,
+  widgetStatePutSchema,
+  widgetStateResponseSchema
+} from "@kaja/schema/api"
 import { widgetService } from "../../services"
-import { badRequest, internalError, knownTurnErrorResponse, notFound } from "../../types/errors"
-import { widgetKeyAuthMiddleware, type WidgetVariables } from "./auth"
-import { runWidgetTurn } from "./chat"
-import { widgetCors } from "./cors"
+import { badRequest, notFound, unauthorized } from "../../types/errors"
+import { widgetTokenAuth, type WidgetVariables } from "./auth"
 
-export const widgetRoutes = new Hono<{ Variables: WidgetVariables }>()
-// Only the two public routes: this router is mounted at /widget, so "*" would also reflect any origin onto /widget/admin/*
-widgetRoutes.use("/turn", widgetCors)
-widgetRoutes.use(String.raw`/:rawKey{[A-Za-z0-9_-]+\.js}`, widgetCors)
-
-// In prod `bun run --filter @kaja/api build` bundles widgets/src/index.ts into public/widget.js ahead
-// of time, so it's served as a plain static file (no bundler, no node_modules needed at runtime) — cwd
-// is /home/bun/app there (matches the Dockerfile WORKDIR), same as public/. In dev the file is usually
-// missing (only `bun run --filter @kaja/api build:widget` writes it) — fall back to bundling it fresh on
-// every request, uncached, so widget source edits show up without a restart; import.meta.dir (this
-// file's own dir) anchors that fallback since it only ever runs unbundled, where cwd may vary but
-// import.meta.dir is always apps/api/src/features/widget.
-// oxlint-disable-next-line bun/no-cwd-dependent-path -- the build writes public/widget.js under the API's working directory
-const widgetBundlePath = resolve("public/widget.js")
-const widgetEntrypoint = resolve(import.meta.dir, "../../../widgets/src/index.ts")
-
-// Prebuilt bundles are cacheable; the dev fallback isn't, so source edits show up on the next load.
-async function getWidgetBundle(): Promise<{ code: string; prebuilt: boolean }> {
-  const file = Bun.file(widgetBundlePath)
-  if (await file.exists()) return { code: await file.text(), prebuilt: true }
-
-  const result = await Bun.build({
-    entrypoints: [widgetEntrypoint],
-    target: "browser",
-    format: "iife",
-    minify: true
-  })
-  const output = result.outputs[0]
-  if (!result.success || !output) throw new AggregateError(result.logs, "Widget bundle build failed")
-  return { code: await output.text(), prebuilt: false }
-}
-
-// Plain string literal (not String.raw) so Hono can infer the ":rawKey" param name from the
-// literal type — a tagged template widens to `string` and c.req.param("rawKey") loses its typing.
-// No per-key limit: a script load costs no model spend, and a per-key bucket would cut off a busy site's own visitors;
-// the global per-IP limiter still applies.
-widgetRoutes.get("/:rawKey{[A-Za-z0-9_-]+\\.js}", async c => {
-  const rawKey = c.req.param("rawKey").replace(/\.js$/, "")
-  const resolved = await widgetService.resolveByRawKey(rawKey)
-  if (!resolved) return notFound(c, "Unknown widget")
-
-  const bundle = await getWidgetBundle()
-  const body = `window.__kajaWidgetMode=${JSON.stringify(resolved.config.widgetType)};\n${bundle.code}`
-  // Short: the key's widget type (and a deploy's new bundle) must reach embedding pages soon
-  const cacheControl = bundle.prebuilt ? "public, max-age=300, stale-while-revalidate=86400" : "no-store"
-  return new Response(body, {
-    headers: { "content-type": "application/javascript; charset=utf-8", "cache-control": cacheControl }
-  })
+const errorSchema = z.object({ error: z.string() })
+const visitorParam = z.object({
+  visitorId: z.uuid().openapi({ param: { name: "visitorId", in: "path" } })
 })
 
-widgetRoutes.options("/turn", c => c.body(null, 204))
+export const widgetRoutes = new OpenAPIHono<{ Variables: WidgetVariables }>()
+// Not `*`: this router is mounted at /widget, and a blanket middleware would 401 /widget/admin before that router runs.
+widgetRoutes.use("/me", widgetTokenAuth)
+widgetRoutes.use("/source", widgetTokenAuth)
+widgetRoutes.use("/state/*", widgetTokenAuth)
 
-widgetRoutes.post("/turn", widgetKeyRateLimiter, widgetTurnRateLimiter, widgetKeyAuthMiddleware, async c => {
-  const widgetKey = c.get("widgetKey")
-  const parsed = WidgetTurnRequestSchema.safeParse(await c.req.json().catch(() => undefined))
-  if (!parsed.success) return badRequest(c, "Invalid request body")
-
-  try {
-    const result = await withLock(`${widgetKey.id}:${parsed.data.visitorId}`, () =>
-      runWidgetTurn(widgetKey, parsed.data)
-    )
-    return c.json(result)
-  } catch (error) {
-    const known = knownTurnErrorResponse(c, error)
-    if (known) return known
-    const { category, message } = categorizeError(error)
-    reportError("widget turn failed", error, { widgetKeyId: widgetKey.id, category })
-    return internalError(c, message)
+const meRoute = createRoute({
+  method: "get",
+  path: "/me",
+  tags: ["Widget"],
+  summary: "The calling widget",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: widgetMeSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
   }
+})
+
+widgetRoutes.openapi(meRoute, async c => {
+  const described = await widgetService.describe(c.get("widget").id)
+  if (!described) return unauthorized(c)
+  return c.json(described, 200)
+})
+
+const sourceRoute = createRoute({
+  method: "get",
+  path: "/source",
+  tags: ["Widget"],
+  summary: "The published source",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: widgetSourceResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "Nothing published", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+widgetRoutes.openapi(sourceRoute, async c => {
+  const source = await widgetService.publishedSource(c.get("widget").id)
+  if (!source) return notFound(c, "Nothing published")
+  return c.json(source, 200)
+})
+
+const getStateRoute = createRoute({
+  method: "get",
+  path: "/state/{visitorId}",
+  tags: ["Widget"],
+  summary: "Visitor state for this widget",
+  security: [{ bearerAuth: [] }],
+  request: { params: visitorParam },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: widgetStateResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+widgetRoutes.openapi(getStateRoute, async c => {
+  const state = await widgetService.getState(c.get("widget").id, c.req.valid("param").visitorId)
+  return c.json({ state }, 200)
+})
+
+const putStateRoute = createRoute({
+  method: "put",
+  path: "/state/{visitorId}",
+  tags: ["Widget"],
+  summary: "Replace visitor state for this widget",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: visitorParam,
+    body: { content: { "application/json": { schema: widgetStatePutSchema } } }
+  },
+  responses: {
+    200: { description: "Stored", content: { "application/json": { schema: widgetStateResponseSchema } } },
+    400: { description: "Too large", content: { "application/json": { schema: errorSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+widgetRoutes.openapi(putStateRoute, async c => {
+  const { visitorId } = c.req.valid("param")
+  const { state } = c.req.valid("json")
+  const stored = await widgetService.putState(c.get("widget").id, visitorId, state)
+  if (!stored) return badRequest(c, "State is too large")
+  return c.json({ state }, 200)
 })

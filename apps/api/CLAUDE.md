@@ -37,7 +37,7 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 ## Abilities
 
 - `services/marketplace.ts` syncs the `ability` table from `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (startup, hourly, `POST /admin/abilities/sync`). Rows are never deleted; a removed ability gets `removed_at`
-- Each ability is stored as one row per part the cloud can run: a skill (never one with `scripts/`), `tool.toml` (public `baseUrl` only), `mcp.toml` (needs a `tools` allowlist; see `cloudMcpProblem`). A widget gets its persona's skills only
+- Each ability is stored as one row per part the cloud can run: a skill (never one with `scripts/`), `tool.toml` (public `baseUrl` only), `mcp.toml` (needs a `tools` allowlist; see `cloudMcpProblem`). Widgets do not load abilities; they call `POST /ai/chat`
 - No per-user switches: everyone has every ability and persona, and the turn's persona picks. A terminal's turn declares what runs on the user's computer (`clientTools`, `clientSkills`, `clientPersonas` → `openNasiFor`'s `client`)
 - Every tool request goes out through a sandbox, never from the API (`features/sandbox/registry.ts`'s `egressFor`)
 - **Every caller of `openNasiFor` must `close()` the instance after the turn** (lazy MCP connections)

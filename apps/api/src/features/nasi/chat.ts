@@ -18,9 +18,8 @@ import { sql } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService, sandboxService } from "../../services"
-import type { AbilityKeyValue } from "../../services/ability"
 import { egressFor, mcpSandboxFor, type SandboxKeys } from "../sandbox"
-import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
+import { createPostgresAbilityStore } from "./pg-abilities"
 import { nasiStore } from "./store"
 
 export type ChatResolver = () => Promise<{
@@ -34,6 +33,11 @@ let chatResolver: ChatResolver | undefined
 
 export function setNasiChatResolver(resolver: ChatResolver | undefined) {
   chatResolver = resolver
+}
+
+/** A widget's chat client: the test resolver when installed, else exactly `pinnedModel`, with no random fallback. */
+export function resolveWidgetChat(pinnedModel: string) {
+  return chatResolver ? chatResolver() : defaultChatResolver(pinnedModel, true)
 }
 
 type DescriberResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string } | undefined>
@@ -71,7 +75,7 @@ function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Pr
   return (input, init) => guarded(input instanceof Request ? input.url : input, init)
 }
 
-async function defaultChatResolver(pinnedModel?: string) {
+async function defaultChatResolver(pinnedModel?: string, strict = false) {
   const stub = env.NASI_STUB_MODEL
   if (stub) {
     return {
@@ -80,7 +84,10 @@ async function defaultChatResolver(pinnedModel?: string) {
       model: stub
     }
   }
-  const result = await resolveModelWithProvider(pinnedModel)
+  const result =
+    strict && pinnedModel
+      ? await modelService.getModelWithProviderByName(pinnedModel)
+      : await resolveModelWithProvider(pinnedModel)
   if (!result) throw new NoModelError()
   if (!isPublicHttpUrl(result.provider.baseUrl)) throw new Error("unsafe_model_url")
   const modelFetch = cloudModelFetch()
@@ -207,19 +214,14 @@ export function cloudSandbox(userId: string, keys: SandboxKeys): McpSandbox {
 }
 
 /**
- * Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows
- * within it. The caller closes it after the turn (its MCP connections).
+ * Shared by cloud turns (`/nasi/turn*`, the cloud Telegram bot) — same account, `owner` distinguishes whose rows within
+ * it. The caller closes it after the turn (its MCP connections).
  */
 export async function openNasiFor(opts: {
   userId: string
   owner?: string | null
   pinnedModel?: string
   language?: string
-  /**
-   * Whose abilities the turn gets; defaults to the user's own (every ability, with their keys); a widget passes skills
-   * only.
-   */
-  abilities?: CloudAbilitySource
   /** How replies should read where they're shown (see `PromptContext.channelInstruction`). */
   channelInstruction?: string
   /** What the user's terminal runs on their computer this turn, and their own personas (see {@link clientOf}). */
@@ -230,14 +232,12 @@ export async function openNasiFor(opts: {
     resolveSummarizer(),
     cloudDescriber()
   ])
-  const source = opts.abilities ?? { userId: opts.userId }
   // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.
   const personas = withOwnPersonas(await abilityService.personaCatalog(), opts.client?.personas ?? [])
-  // Only a user's turns get the server-wide keys; a widget's skills-only source never needs one.
-  const [keys, sandboxSettings] =
-    "userId" in source
-      ? await Promise.all([abilityService.serviceKeys(), sandboxService.settings(source.userId)])
-      : [new Map<string, AbilityKeyValue>(), undefined]
+  const [keys, sandboxSettings] = await Promise.all([
+    abilityService.serviceKeys(),
+    sandboxService.settings(opts.userId)
+  ])
   const keyOf: SandboxKeys = name => keys.get(name)
   return Nasi.open({
     store: nasiStore(opts.userId),
@@ -246,11 +246,11 @@ export async function openNasiFor(opts: {
     describer,
     personas,
     owner: opts.owner,
-    egress: "userId" in source ? cloudEgress(source.userId, keyOf) : undefined,
-    abilities: createPostgresAbilityStore(source),
+    egress: cloudEgress(opts.userId, keyOf),
+    abilities: createPostgresAbilityStore(),
     abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
-    mcpSandbox: "userId" in source ? cloudSandbox(source.userId, keyOf) : undefined,
+    mcpSandbox: cloudSandbox(opts.userId, keyOf),
     client: opts.client && { tools: opts.client.tools, skills: opts.client.skills },
     promptContext: {
       environment:

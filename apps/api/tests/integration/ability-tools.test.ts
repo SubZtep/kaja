@@ -548,26 +548,6 @@ describe("HTTP tools in the cloud", () => {
     expect(edits.at(-1)!.text).toBe("⚠ Something went wrong: &lt;html&gt;Bad Gateway&lt;/html&gt; &amp; more")
   })
 
-  test("widget turns never get HTTP tools, even when their persona lists them", async () => {
-    const origin = "https://tools-widget.test"
-    const created = await app.request("/widget/admin", {
-      method: "POST",
-      headers: auth(),
-      body: JSON.stringify({ label: "w", allowedOrigins: [origin] })
-    })
-    const { rawKey } = await created.json()
-    const sent = useScript([{ content: "hi" }])
-    const res = await app.request("/widget/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", origin, "x-kaja-widget-key": rawKey },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
-    })
-    expect(res.status).toBe(200)
-    const names = sent[0]!.tools?.map(t => t.function.name) ?? []
-    expect(names).not.toContain(forecastTool)
-    expect(names).not.toContain(createIssueTool)
-  })
-
   test("a service key copied to another name doesn't decrypt", async () => {
     const copy = `ability:copy-${tag}`
     await sql`INSERT INTO service_secret (name, ciphertext, iv, tag)

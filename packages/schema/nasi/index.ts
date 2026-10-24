@@ -99,15 +99,6 @@ export const NasiTurnRequestSchema = z
     path: ["message"]
   })
 
-/**
- * Same turn contract (a message every time; widget turns never ask for approval), plus the widget's client-minted
- * visitor id (resumption token, not a credential — the widget key already authenticates the request).
- */
-export const WidgetTurnRequestSchema = z.object({
-  ...turnFields,
-  visitorId: z.string().min(1).max(128)
-})
-
 /** One call a client runs: the provider's call id, which its result answers. */
 export const NasiClientCallSchema = z.object({ id: z.string(), name: z.string(), arguments: z.string() })
 
@@ -220,7 +211,7 @@ export const NasiInfoResponseSchema = z.object({
   tools: z.array(z.string())
 })
 
-/** The cloud persona catalog as any signed-in user sees it: enough to pick one (e.g. for a widget). */
+/** The cloud persona catalog as any signed-in user sees it: enough to pick one. */
 export const NasiPersonasResponseSchema = z.object({
   personas: z.array(z.object({ id: z.string(), label: z.string() }))
 })
@@ -241,7 +232,6 @@ export type NasiClientTool = z.infer<typeof NasiClientToolSchema>
 export type NasiClientSkill = z.infer<typeof NasiClientSkillSchema>
 export type NasiToolResult = z.infer<typeof NasiToolResultSchema>
 export type NasiClientCall = z.infer<typeof NasiClientCallSchema>
-export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>

@@ -94,8 +94,7 @@ limits).
 **Approvals.** A call that could change something waits for you, as locally. The server runs the exact call
 it saved, so a client can only say yes or no.
 
-**Widgets** get skills only, the ones the widget's persona lists, so a site's visitors never make a call with
-your keys.
+**Widgets** do not run this catalog. A widget calls the model gateway with its own token and never receives ability keys.
 
 Datasets come with the personas that use them.
 

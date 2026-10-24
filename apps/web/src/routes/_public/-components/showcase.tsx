@@ -1,7 +1,6 @@
 import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import type { ReactNode } from "react"
-import { toast } from "react-toastify"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { m } from "../../../paraglide/messages.js"
 import { BarkochbaGame } from "./barkochba-game"
@@ -9,42 +8,6 @@ import { SectionTitle } from "./section-title"
 import { Sticker } from "./sticker"
 
 const SLOT = "flex min-w-0 flex-col gap-2"
-
-let chatWidget: Promise<void> | undefined
-
-/**
- * The standalone chat widget's script, fetched on the first tap of the Chat card rather than with the page; it builds
- * its bubble as soon as it runs.
- */
-function loadChatWidget(src: string) {
-  chatWidget ??= new Promise((resolve, reject) => {
-    const script = document.createElement("script")
-    script.async = true
-    script.src = src
-    script.onload = () => resolve()
-    script.onerror = () => {
-      // A failed download may be retried with the next tap
-      script.remove()
-      chatWidget = undefined
-      reject(new Error(`Could not load ${src}`))
-    }
-    document.body.appendChild(script)
-  })
-  return chatWidget
-}
-
-/** Opens the chat widget's panel, loading its script on first use. */
-export async function openChatWidget(apiUrl: string, widgetKey: string | undefined) {
-  if (widgetKey) await loadChatWidget(`${apiUrl}/widget/${widgetKey}.js`).catch(() => {})
-  const bubble = document.querySelector<HTMLButtonElement>(".kaja-widget-bubble")
-  const panel = document.querySelector<HTMLElement>(".kaja-widget-panel")
-  if (!widgetKey || !bubble) {
-    toast.info(widgetKey ? m.carousel_chat_missing() : m.carousel_demo_missing())
-    return
-  }
-  if (panel?.hidden !== false) bubble.click()
-  else bubble.focus()
-}
 
 function ToyCard({
   src,
@@ -123,7 +86,7 @@ function SoonItem({ src, title, meta }: Readonly<{ src: string; title: string; m
 
 /** Live toys to play with on the page, and the ones still coming. */
 export function Showcase() {
-  const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = useLoaderData({ from: "__root__" })
+  const { barkochbaReady } = useLoaderData({ from: "__root__" })
 
   return (
     <section>
@@ -138,7 +101,7 @@ export function Showcase() {
         />
         <div className="grid gap-5 md:grid-cols-3">
           <div className="md:col-span-2">
-            {barkochbaWidgetKey ? (
+            {barkochbaReady ? (
               <div className={SLOT}>
                 <div className="toy-card min-h-72">
                   <BarkochbaGame className="h-full rounded-none border-0 shadow-none" />
@@ -161,11 +124,9 @@ export function Showcase() {
           <ToyCard
             src="/art/bubble.webp"
             rotate={2.2}
-            stamp={chatWidgetKey ? m.stamp_live() : m.stamp_soon()}
-            live={Boolean(chatWidgetKey)}
+            stamp={m.stamp_soon()}
             title={m.carousel_chat_title()}
             meta={m.carousel_chat_meta()}
-            onClick={() => openChatWidget(apiUrl, chatWidgetKey)}
           />
         </div>
 

@@ -9,6 +9,7 @@ import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
+import { aiRoutes } from "./features/ai"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { configExportRoutes } from "./features/config-export"
@@ -46,15 +47,7 @@ if (env.NODE_ENV === "production") {
     })
   )
 }
-// /widget/turn and /widget/<key>.js are embedded on arbitrary third-party sites and have their own
-// reflected-origin CORS (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply
-// there. /widget/admin/* is the authenticated management API and must go through the normal
-// credentialed CORS below, so it's deliberately excluded from this exemption.
-const PUBLIC_WIDGET_PATH = /^\/widget\/(turn|[A-Za-z0-9_-]+\.js)$/
-app.use("*", (c, next) => {
-  if (PUBLIC_WIDGET_PATH.test(c.req.path)) return next()
-  return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
-})
+app.use("*", cors({ origin: env.CORS_ORIGIN, credentials: true }))
 // No route takes more than a turn's text, except a terminal's tool results with their images (screenshots); without this Bun buffers up to 128 MB before zod runs.
 const TURN_PATH = /^\/nasi\/turn(\/stream)?$/
 const limitBody = (maxSize: number) =>
@@ -79,6 +72,7 @@ app.route("/nasi", nasiRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
+app.route("/ai", aiRoutes)
 app.route("/widget", widgetRoutes)
 app.route("/widget/admin", widgetAdminRoutes)
 

@@ -53,11 +53,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     return { rootEnv, session, sessionError }
   },
   loader: ({ context: { rootEnv, session, sessionError } }) => {
-    const { apiUrl, barkochbaWidgetKey, chatWidgetKey, turnstileSiteKey } = rootEnv
+    const { apiUrl, barkochbaReady, turnstileSiteKey } = rootEnv
     return {
       apiUrl,
-      barkochbaWidgetKey,
-      chatWidgetKey,
+      barkochbaReady,
       turnstileSiteKey,
       session,
       sessionError
@@ -170,7 +169,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = getLocale()
   const ogLocale = OG_LOCALE[locale]
-  // The session, sandbox and widget requests all go to the API origin
+  // The session and sandbox requests go to the API origin
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
   // Sentry starts right after hydration: off the first paint, yet early enough to catch what goes wrong next

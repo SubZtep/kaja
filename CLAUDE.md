@@ -9,7 +9,7 @@ Translations: edit only the en-GB locale files and leave every other language to
 - **API** (`apps/api`): Hono, Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start: public landing + admin portal
 - **TUI** (`apps/tui`): Ink; cloud mode talks to the API's `/nasi/*`, `--local` embeds `@kaja/nasi` against the user's own provider
-- **Widget** (`apps/api/widgets`): embeddable chat bundle served by the API at `/widget/<widget-key>.js`
+- **Widget**: a cloud principal (secret token, pinned model, generated source) served by the API. The homepage Barkochba board and player are the first programs.
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers and tool egress for cloud turns; dials out to the API, nothing connects in
 - **Packages**: `@kaja/nasi` (agent brain), `@kaja/schema`, `@kaja/shared`
 - **Image bytes** never go in a database: object storage (API) or files beside the SQLite file (TUI), metadata in `nasi_image`, messages hold `kaja-image:<id>` refs (`packages/nasi/CLAUDE.md`, Images)

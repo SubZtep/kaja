@@ -3,7 +3,7 @@
 set -eu
 
 remote="${1:-origin}"
-locale_dirs="apps/tui/locales apps/api/locales apps/api/widgets/locales apps/web/messages"
+locale_dirs="apps/tui/locales apps/api/locales apps/web/messages"
 
 zero="0000000000000000000000000000000000000000"
 branch="$(git symbolic-ref --quiet --short HEAD || true)"

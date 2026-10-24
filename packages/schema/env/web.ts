@@ -18,16 +18,14 @@ export const WebEnvSchema = z.object({
     .describe("Browser-facing API base URL, baked into the client bundle")
     .meta({ example: "http://localhost:3001" }),
   VITE_APP_URL: url.default("http://localhost:3000").describe("Public web app URL"),
-  VITE_WIDGET_BARKOCHBA_KEY: trimmed
+  BARKOCHBA_BOARD_TOKEN: trimmed
     .optional()
-    .describe(
-      "Widget key pinned to the barkochba persona, used by the landing page's playable hero demo. Intentionally public — the Origin allowlist is the real gate, not key secrecy."
-    ),
-  VITE_WIDGET_CHAT_KEY: trimmed
+    .describe("Secret token of the homepage Barkochba board widget. The browser never sees it.")
+    .meta({ secret: true, section: "Barkochba" }),
+  BARKOCHBA_PLAYER_TOKEN: trimmed
     .optional()
-    .describe(
-      "Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script."
-    ),
+    .describe("Secret token of the homepage Barkochba player widget. The browser never sees it.")
+    .meta({ secret: true, section: "Barkochba" }),
   VITE_TURNSTILE_SITE_KEY: trimmed
     .optional()
     .describe(

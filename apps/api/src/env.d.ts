@@ -53,7 +53,7 @@ declare module "bun" {
     CONFIG_API_TOKEN?: string
     /** Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile */
     BUN_TEST?: string
-    /** Set false to disable global + auth + nasi/widget turn rate limiters */
+    /** Set false to disable global, auth, nasi, and widget chat rate limiters */
     RATE_LIMIT_ENABLED?: string
     /** Global rate limit window (ms) */
     RATE_LIMIT_WINDOW_MS?: string
@@ -67,13 +67,9 @@ declare module "bun" {
     NASI_TURN_RATE_LIMIT_WINDOW_MS?: string
     /** Max turns per window per user */
     NASI_TURN_RATE_LIMIT_MAX?: string
-    /** /widget/turn rate limit window (ms) */
-    WIDGET_TURN_RATE_LIMIT_WINDOW_MS?: string
-    /** Max turns per window per (widget key, IP) pair */
-    WIDGET_TURN_RATE_LIMIT_MAX?: string
-    /** /widget/turn spend-ceiling window (ms) */
+    /** /ai/chat spend-ceiling window (ms) */
     WIDGET_KEY_RATE_LIMIT_WINDOW_MS?: string
-    /** Max turns per window per widget key, regardless of visitor/IP */
+    /** Max chat completions per window per widget */
     WIDGET_KEY_RATE_LIMIT_MAX?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string

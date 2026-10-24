@@ -61,8 +61,7 @@ function capturingChatClient(calls: { tools: { function: { name: string } }[]; m
 }
 
 /** The skills a user's cloud turn can load. */
-const servedSkills = async () =>
-  (await createPostgresAbilityStore({ userId: "any" }).listSkills()).map(item => item.name)
+const servedSkills = async () => (await createPostgresAbilityStore().listSkills()).map(item => item.name)
 
 describe("abilities", () => {
   let token: string
@@ -114,7 +113,7 @@ describe("abilities", () => {
   })
 
   test("the cloud store serves a skill's body and its other files, case-insensitively", async () => {
-    const store = createPostgresAbilityStore({ skillsOnly: true })
+    const store = createPostgresAbilityStore()
     expect((await store.listSkills()).filter(s => s.name.endsWith(tag)).map(s => [s.name, s.files])).toEqual([
       [plain, ["reference.md"]]
     ])
@@ -152,38 +151,12 @@ describe("abilities", () => {
     expect((await app.request("/admin/abilities/sync", { method: "POST", headers: auth() })).status).toBe(403)
   })
 
-  test("a widget's visitors get the skills its persona lists", async () => {
-    const origin = "https://ability-widget.test"
-    const create = (config: object) =>
-      app.request("/widget/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...auth() },
-        body: JSON.stringify({ label: "w", allowedOrigins: [origin], config })
-      })
-    expect((await create({ persona: "nope-nope" })).status).toBe(400)
-    const turnTools = async (rawKey: string) => {
-      const calls: Parameters<typeof capturingChatClient>[0] = []
-      setNasiChatResolver(async () => ({ client: capturingChatClient(calls) as never, model: "fake-model" }))
-      const res = await app.request("/widget/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", origin, "x-kaja-widget-key": rawKey },
-        body: JSON.stringify({ message: "hi", visitorId: "v1" })
-      })
-      expect(res.status).toBe(200)
-      return calls[0]!.tools.map(t => t.function.name)
-    }
-    const withDefault = (await (await create({})).json()).rawKey
-    const withQuiet = (await (await create({ persona: quiet })).json()).rawKey
-    expect(await turnTools(withDefault)).toContain("load_skill")
-    expect(await turnTools(withQuiet)).not.toContain("load_skill")
-  })
-
   test("a SKILL.md's sticky suggestion reaches the cloud store", async () => {
     const sticky = `sticky-${tag}`
     const root = marketplace([plain])
     put(root, `abilities/${sticky}/SKILL.md`, "---\ndescription: Always on.\nsticky: true\n---\nKeep this.\n")
     await marketplaceService.syncFromDir(root, "s1")
-    const skills = await createPostgresAbilityStore({ skillsOnly: true }).listSkills()
+    const skills = await createPostgresAbilityStore().listSkills()
     expect(skills.find(s => s.name === sticky)?.sticky).toBe(true)
     expect(skills.find(s => s.name === plain)?.sticky).toBeUndefined()
   })

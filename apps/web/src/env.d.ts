@@ -16,16 +16,10 @@ declare module "bun" {
     VITE_API_URL?: string
     /** Public web app URL */
     VITE_APP_URL?: string
-    /**
-     * Widget key pinned to the barkochba persona, used by the landing page's playable hero demo. Intentionally public —
-     * the Origin allowlist is the real gate, not key secrecy.
-     */
-    VITE_WIDGET_BARKOCHBA_KEY?: string
-    /**
-     * Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget
-     * script.
-     */
-    VITE_WIDGET_CHAT_KEY?: string
+    /** Secret token of the homepage Barkochba board widget. The browser never sees it. */
+    BARKOCHBA_BOARD_TOKEN?: string
+    /** Secret token of the homepage Barkochba player widget. The browser never sees it. */
+    BARKOCHBA_PLAYER_TOKEN?: string
     /**
      * Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's
      * TURNSTILE_SECRET

@@ -2,272 +2,232 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { askUserChatClient, fakeChatClient, signUpAndSignIn } from "./helpers"
+import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
+
+const PLAYER_SOURCE = "export async function play(){ return { type: 'question', text: 'Is it red?' } }"
+
+function chatClient(reply: string, seen: { model?: string; messages?: unknown }[] = []) {
+  return {
+    chat: {
+      completions: {
+        create: (params: { model: string; messages: unknown }) => {
+          seen.push({ model: params.model, messages: params.messages })
+          return Promise.resolve({
+            choices: [{ message: { content: reply } }],
+            usage: { prompt_tokens: 3, completion_tokens: 5 }
+          })
+        }
+      }
+    }
+  }
+}
 
 describe("widget", () => {
   const email = faker.internet.email()
   let token: string
-  let rawKey: string
-  const allowedOrigin = "https://example-site.test"
+  let rawToken: string
+  let widgetId: string
+  let providerId: string
+  let modelName: string
+  const seen: { model?: string }[] = []
 
   beforeAll(async () => {
+    ;({ providerId, modelName } = await seedModel("widget"))
     setNasiChatResolver(async () => ({
-      client: fakeChatClient("hello from widget") as never,
+      client: chatClient(`\`\`\`js\n${PLAYER_SOURCE}\n\`\`\``, seen) as never,
       model: "fake-model"
     }))
     token = await signUpAndSignIn(email, "Widget Tester")
-
-    const createKey = await app.request("/widget/admin", {
+    const created = await app.request("/widget/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Test widget", allowedOrigins: [allowedOrigin] })
+      body: JSON.stringify({
+        label: "Player",
+        intent: "Ask yes or no questions.",
+        model: modelName,
+        target: { kind: "server" }
+      })
     })
-    expect(createKey.status).toBe(201)
-    rawKey = (await createKey.json()).rawKey
-    expect(rawKey).toStartWith("kwk_")
+    expect(created.status).toBe(201)
+    const body = await created.json()
+    rawToken = body.rawToken
+    widgetId = body.id
+    expect(rawToken).toStartWith("kwt_")
+    expect(body.tokenPrefix).toBe(rawToken.slice(0, 12))
+    expect(body.draft?.source).toBe(PLAYER_SOURCE)
+    expect(body.draft?.error).toBeNull()
   })
 
-  afterAll(() => {
+  afterAll(async () => {
     setNasiChatResolver(undefined)
+    await cleanupModel(providerId)
   })
 
-  test("missing widget key is 401", async () => {
-    const res = await app.request("/widget/turn", {
+  const widgetAuth = () => ({ Authorization: `Bearer ${rawToken}`, "Content-Type": "application/json" })
+
+  test("the raw token is not listed again", async () => {
+    const res = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
+    const body = await res.json()
+    expect(JSON.stringify(body)).not.toContain(rawToken)
+    expect(body.widgets.find((widget: { id: string }) => widget.id === widgetId).tokenPrefix).toBe(
+      rawToken.slice(0, 12)
+    )
+  })
+
+  test("a user token cannot call the chat gateway", async () => {
+    const res = await app.request("/ai/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", origin: allowedOrigin },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "hi" }] })
     })
     expect(res.status).toBe(401)
   })
 
-  test("well-formed but never-issued widget key is 401", async () => {
-    const res = await app.request("/widget/turn", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        origin: allowedOrigin,
-        "x-kaja-widget-key": `kwk_${"a".repeat(32)}`
-      },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
-    })
+  test("a widget token cannot manage widgets", async () => {
+    const res = await app.request("/widget/admin", { headers: widgetAuth() })
     expect(res.status).toBe(401)
   })
 
-  test("mismatched origin is 403", async () => {
-    const res = await app.request("/widget/turn", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        origin: "https://attacker.test",
-        "x-kaja-widget-key": rawKey
-      },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
-    })
-    expect(res.status).toBe(403)
+  test("an unknown widget token is 401", async () => {
+    const res = await app.request("/widget/me", { headers: { Authorization: `Bearer kwt_${"a".repeat(32)}` } })
+    expect(res.status).toBe(401)
   })
 
-  test("valid key + allowed origin returns the reply and reflects CORS", async () => {
-    const res = await app.request("/widget/turn", {
+  test("chat uses the pinned model and rejects an empty message list", async () => {
+    seen.length = 0
+    const missing = await app.request("/ai/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        origin: allowedOrigin,
-        "x-kaja-widget-key": rawKey
-      },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
+      headers: widgetAuth(),
+      body: JSON.stringify({ messages: [] })
+    })
+    expect(missing.status).toBe(400)
+    const res = await app.request("/ai/chat", {
+      method: "POST",
+      headers: widgetAuth(),
+      body: JSON.stringify({ messages: [{ role: "user", content: "hi" }], model: "other-model" })
     })
     expect(res.status).toBe(200)
-    expect(res.headers.get("access-control-allow-origin")).toBe(allowedOrigin)
-    const body = await res.json()
-    expect(body.message).toBe("hello from widget")
-    expect(body.status).toBe("completed")
+    expect(await res.json()).toMatchObject({
+      message: `\`\`\`js\n${PLAYER_SOURCE}\n\`\`\``,
+      usage: { promptTokens: 3, completionTokens: 5 }
+    })
+    expect(seen.at(-1)?.model).toBe(modelName)
   })
 
-  test("a widget turn offers no tools that need the user's machine", async () => {
-    let offered: string[] = []
+  test("state is isolated per widget and capped", async () => {
+    const visitor = crypto.randomUUID()
+    const put = await app.request(`/widget/state/${visitor}`, {
+      method: "PUT",
+      headers: widgetAuth(),
+      body: JSON.stringify({ state: { phase: "idle" } })
+    })
+    expect(put.status).toBe(200)
+    const got = await app.request(`/widget/state/${visitor}`, { headers: widgetAuth() })
+    expect(await got.json()).toEqual({ state: { phase: "idle" } })
+    const huge = await app.request(`/widget/state/${visitor}`, {
+      method: "PUT",
+      headers: widgetAuth(),
+      body: JSON.stringify({ state: { blob: "x".repeat(20_000) } })
+    })
+    expect(huge.status).toBe(400)
+  })
+
+  test("unpublished source is 404 and publish then serves it", async () => {
+    expect((await app.request("/widget/source", { headers: widgetAuth() })).status).toBe(404)
+    const published = await app.request(`/widget/admin/${widgetId}/publish`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    expect(published.status).toBe(200)
+    const source = await app.request("/widget/source", { headers: widgetAuth() })
+    expect(await source.json()).toMatchObject({ source: PLAYER_SOURCE })
+  })
+
+  test("a link requires the same owner and me does not leak the other token", async () => {
+    const otherEmail = faker.internet.email()
+    const other = await signUpAndSignIn(otherEmail, "Other")
+    const foreign = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${other}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "Foreign", intent: "Nope.", model: modelName, target: { kind: "server" } })
+    })
+    const foreignId = (await foreign.json()).id as string
+    const refused = await app.request(`/widget/admin/${widgetId}/links`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ to: foreignId })
+    })
+    expect(refused.status).toBe(404)
+
+    const board = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label: "Board",
+        intent: "Show the question.",
+        model: modelName,
+        target: { kind: "browser", page: "home", selector: "#kaja-barkochba" }
+      })
+    })
+    const boardBody = await board.json()
+    const linked = await app.request(`/widget/admin/${boardBody.id}/links`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ to: widgetId })
+    })
+    expect(linked.status).toBe(200)
+    expect((await linked.json()).links).toEqual([widgetId])
+
+    const me = await app.request("/widget/me", { headers: { Authorization: `Bearer ${boardBody.rawToken}` } })
+    const meBody = await me.json()
+    expect(meBody.links).toEqual([widgetId])
+    expect(JSON.stringify(meBody)).not.toContain(rawToken)
+    expect(meBody.source).toBeUndefined()
+
+    const visitor = crypto.randomUUID()
+    await app.request(`/widget/state/${visitor}`, {
+      method: "PUT",
+      headers: widgetAuth(),
+      body: JSON.stringify({ state: { phase: "playing" } })
+    })
+    const fromBoard = await app.request(`/widget/state/${visitor}`, {
+      headers: { Authorization: `Bearer ${boardBody.rawToken}` }
+    })
+    expect(await fromBoard.json()).toEqual({ state: null })
+  })
+
+  test("a draft that contains a token is refused and the published source stays", async () => {
     setNasiChatResolver(async () => ({
-      client: fakeChatClient("hello from widget", params => {
-        offered = (params.tools ?? []).map(tool => tool.function.name)
-      }) as never,
+      client: chatClient("```js\nexport async function play(){ return { text: 'kwt_secret' } }\n```") as never,
       model: "fake-model"
     }))
-    try {
-      const res = await app.request("/widget/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-        body: JSON.stringify({ message: "read my notes.txt", visitorId: "v-tools" })
-      })
-      expect(res.status).toBe(200)
-    } finally {
-      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from widget") as never, model: "fake-model" }))
-    }
-    expect(offered).toContain("ask_user")
-    expect(offered).not.toContain("read_file")
-    expect(offered).not.toContain("list_files")
-  })
-
-  test("a question's options come back in the turn's steps for the widget to offer", async () => {
-    setNasiChatResolver(async () => ({ client: askUserChatClient() as never, model: "fake-model" }))
-    try {
-      const res = await app.request("/widget/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-        body: JSON.stringify({ message: "deploy it", visitorId: "v-options" })
-      })
-      const body = await res.json()
-      expect(body.status).toBe("needs_input")
-      expect(body.steps).toContainEqual({
-        type: "ask_user",
-        question: "Proceed?",
-        options: ["Yes", "No"],
-        fromTool: true
-      })
-    } finally {
-      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from widget") as never, model: "fake-model" }))
-    }
-  })
-
-  test("two visitors on the same key cannot resume each other's session", async () => {
-    const first = await app.request("/widget/turn", {
+    const generated = await app.request(`/widget/admin/${widgetId}/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-      body: JSON.stringify({ message: "hi", visitorId: "visitor-a" })
+      headers: { Authorization: `Bearer ${token}` }
     })
-    const { session } = await first.json()
-
-    const hijack = await app.request("/widget/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-      body: JSON.stringify({ session, message: "hijack attempt", visitorId: "visitor-b" })
-    })
-    expect(hijack.status).toBe(404)
+    const body = await generated.json()
+    expect(body.draft.error).toContain("token")
+    expect(body.published.source).toBe(PLAYER_SOURCE)
+    const source = await app.request("/widget/source", { headers: widgetAuth() })
+    expect((await source.json()).source).toBe(PLAYER_SOURCE)
   })
 
-  test("a key created with a persona round-trips it through create and list", async () => {
-    // The API only accepts catalog personas; `default` is always there, built in until a sync brings it.
-    const createKey = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        label: "Persona widget",
-        allowedOrigins: [allowedOrigin],
-        config: { persona: "default" }
-      })
-    })
-    expect(createKey.status).toBe(201)
-    const created = await createKey.json()
-    expect(created.config.persona).toBe("default")
-
-    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
-    const { keys } = await list.json()
-    const found = keys.find((k: { id: string }) => k.id === created.id)
-    expect(found.config.persona).toBe("default")
-  })
-
-  test("a key can be edited by its owner only", async () => {
-    const created = await (
-      await app.request("/widget/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ label: "Before", allowedOrigins: [allowedOrigin] })
-      })
-    ).json()
-    const patch = (bearer: string, body: object) =>
-      app.request(`/widget/admin/${created.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearer}` },
-        body: JSON.stringify(body)
-      })
-
-    const renamed = await patch(token, { label: "After", config: { widgetType: "barkochba" } })
-    expect(renamed.status).toBe(200)
-    expect(await renamed.json()).toMatchObject({ label: "After", config: { widgetType: "barkochba" } })
-    expect((await patch(token, { config: { widgetType: "chat", persona: "no-such-persona" } })).status).toBe(400)
-
-    const otherToken = await signUpAndSignIn(faker.internet.email(), "Other")
-    expect((await patch(otherToken, { label: "Hijacked" })).status).toBe(404)
-  })
-
-  test("widgetType is independent of persona and defaults to chat", async () => {
-    const createKey = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "No type set", allowedOrigins: [allowedOrigin] })
-    })
-    expect(createKey.status).toBe(201)
-    const created = await createKey.json()
-    expect(created.config.widgetType).toBe("chat")
-
-    const createBarkochbaTyped = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        label: "Barkochba UI, no persona",
-        allowedOrigins: [allowedOrigin],
-        config: { widgetType: "barkochba" }
-      })
-    })
-    expect(createBarkochbaTyped.status).toBe(201)
-    const createdBarkochba = await createBarkochbaTyped.json()
-    expect(createdBarkochba.config.widgetType).toBe("barkochba")
-    expect(createdBarkochba.config.persona).toBeUndefined()
-  })
-
-  test("creating a key with an unknown persona is rejected", async () => {
-    const res = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        label: "Bad persona",
-        allowedOrigins: [allowedOrigin],
-        config: { persona: "does-not-exist" }
-      })
-    })
-    expect(res.status).toBe(400)
-  })
-
-  test.each([
-    "null",
-    "example-site.test",
-    "https://example-site.test/",
-    "https://example-site.test/page",
-    "HTTPS://EXAMPLE-SITE.TEST",
-    "https://example-site.test:443",
-    "ftp://example-site.test"
-  ])("a key for %p, which no browser sends as its Origin, is rejected", async origin => {
-    const res = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Bad origin", allowedOrigins: [origin] })
-    })
-    expect(res.status).toBe(400)
-  })
-
-  test("a key with no persona behaves exactly as before (auto-select, unaffected)", async () => {
-    const res = await app.request("/widget/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-      body: JSON.stringify({ message: "hi again", visitorId: "v1" })
-    })
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.message).toBe("hello from widget")
-  })
-
-  test("revoked key is rejected", async () => {
-    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
-    const { keys } = await list.json()
-    const revoke = await app.request(`/widget/admin/${keys[0].id}`, {
+  test("discard leaves the published generation", async () => {
+    const discarded = await app.request(`/widget/admin/${widgetId}/draft`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     })
-    expect(revoke.status).toBe(200)
+    const body = await discarded.json()
+    expect(body.draft).toBeNull()
+    expect(body.published.source).toBe(PLAYER_SOURCE)
+  })
 
-    const res = await app.request("/widget/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
-      body: JSON.stringify({ message: "hi", visitorId: "v1" })
+  test("a revoked token is 401", async () => {
+    const revoked = await app.request(`/widget/admin/${widgetId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
     })
-    expect(res.status).toBe(401)
+    expect(revoked.status).toBe(200)
+    expect((await app.request("/widget/me", { headers: widgetAuth() })).status).toBe(401)
   })
 })
