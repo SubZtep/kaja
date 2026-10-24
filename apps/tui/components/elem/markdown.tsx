@@ -172,9 +172,9 @@ function ReplyImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
 }
 
 // One colour or style code, which may wrap a list marker
-const SGR = `${String.fromCodePoint(27)}\\[[0-9;]*m`
+const SGR = String.raw`${String.fromCodePoint(27)}\[[0-9;]*m`
 // A line's lead: its indent, plus a list marker ("•" in any style, "1.") and the space after it
-const LEAD = new RegExp(`^( *(?:(?:${SGR})*(?:•|\\d+\\.)(?:${SGR})* )?)(.*)$`)
+const LEAD = new RegExp(String.raw`^( *(?:(?:${SGR})*(?:•|\d+\.)(?:${SGR})* )?)(.*)$`)
 
 /** Rendered text as runs: plain lines together, and each indented or list line with its lead apart from the rest. */
 export function hangingRuns(text: string): ({ lines: string } | { lead: string; rest: string })[] {

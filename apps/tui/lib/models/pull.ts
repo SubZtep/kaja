@@ -112,28 +112,41 @@ async function errorText(res: Response): Promise<string> {
   return typeof body?.error === "string" ? body.error : `HTTP ${res.status}`
 }
 
+// Each layer reports its own total, so a single bar has to add them up
+type Layers = Map<string, { total: number; completed: number }>
+
+// Records the event's layer, if it carries a total, and returns that total.
+function recordLayer(layers: Layers, event: Record<string, unknown>, status: string): number | undefined {
+  const total = typeof event.total === "number" ? event.total : undefined
+  if (total) {
+    const layer = typeof event.digest === "string" ? event.digest : status
+    layers.set(layer, { total, completed: typeof event.completed === "number" ? event.completed : 0 })
+  }
+  return total
+}
+
+function layerSums(layers: Layers): { bytes: number; completed: number } {
+  let bytes = 0
+  let completed = 0
+  for (const layer of layers.values()) {
+    bytes += layer.total
+    completed += layer.completed
+  }
+  return { bytes, completed }
+}
+
 /**
  * Forwards each progress event and returns the error the stream ended on, if any: a pull that fails partway still
  * answers 200 and says why in the stream.
  */
 async function reportPullStream(body: ReadableStream<Uint8Array>, onProgress: (progress: PullProgress) => void) {
   let failure: string | undefined
-  // Each layer reports its own total, so a single bar has to add them up
-  const layers = new Map<string, { total: number; completed: number }>()
+  const layers: Layers = new Map()
   for await (const event of streamEvents(body)) {
     if (typeof event.error === "string") failure = event.error
     if (typeof event.status !== "string") continue
-    const total = typeof event.total === "number" ? event.total : undefined
-    if (total) {
-      const layer = typeof event.digest === "string" ? event.digest : event.status
-      layers.set(layer, { total, completed: typeof event.completed === "number" ? event.completed : 0 })
-    }
-    let bytes = 0
-    let completed = 0
-    for (const layer of layers.values()) {
-      bytes += layer.total
-      completed += layer.completed
-    }
+    const total = recordLayer(layers, event, event.status)
+    const { bytes, completed } = layerSums(layers)
     onProgress({
       status: event.status,
       ...(total ? { percent: Math.round((completed / bytes) * 100) } : {}),
