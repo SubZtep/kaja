@@ -16,11 +16,10 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:schemas && git add config/schemas"
+      run  = "bun generate:schemas && git add packages/schema/json"
       glob = [
         "packages/schema/config/*.ts",
-        "packages/schema/cli/personas.ts",
-        "packages/schema/cli/datasets.ts"
+        "packages/schema/abilities/*.ts"
       ]
 
 

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
 import { configCatalogSchema } from "@kaja/schema/api"
 import { CATALOG_VERSION, ModelsFileSchema, SoundsManifestSchema } from "@kaja/schema/config"
+import { tombiSchemas } from "@kaja/schema/tombi"
 import { TOML } from "bun"
 import { app } from "../../src/app"
 
@@ -38,12 +39,15 @@ describe("config defaults (public)", () => {
     }
   )
 
-  test("GET /config/schemas/<file> returns the JSON Schema, the one committed in config/schemas", async () => {
-    const res = await app.request("/config/schemas/models.json")
-    expect(res.status).toBe(200)
-    const committed = await Bun.file(join(import.meta.dir, "../../../../config/schemas/models.json")).json()
-    expect(await res.json()).toEqual(committed)
-  })
+  test.each(Object.keys(tombiSchemas))(
+    "GET /config/schemas/%s matches the committed packages/schema/json copy",
+    async file => {
+      const res = await app.request(`/config/schemas/${file}`)
+      expect(res.status).toBe(200)
+      const committed = await Bun.file(join(import.meta.dir, "../../../../packages/schema/json", file)).json()
+      expect(await res.json()).toEqual(committed)
+    }
+  )
 
   test.each(["constructor", "models", "does-not-exist.json"])("GET /config/schemas/%s is 404", async file => {
     expect((await app.request(`/config/schemas/${file}`)).status).toBe(404)
