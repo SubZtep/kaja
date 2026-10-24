@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test"
-import { Box } from "ink"
 import { fitKeyBarItems, KeyBar, type KeyBarEntry } from "../../components/layout/key-bar"
 import { renderForTest } from "../test-utils"
 
@@ -24,26 +23,22 @@ test("renders each item's key and label", async () => {
   await t.waitUntilExit()
 })
 
-test("wraps whole items onto another row when the terminal is narrow", async () => {
+test("one row, the items joined by a dot; what doesn't fit is cut off rather than wrapped", async () => {
   const t = renderForTest(
-    <Box width={20}>
-      <KeyBar
-        items={[
-          { key: "Alt+L", label: "Help" },
-          { key: "Alt+P", label: "Persona" },
-          { key: "Alt+R", label: "Copy" }
-        ]}
-      />
-    </Box>
+    <KeyBar
+      width={24}
+      items={[
+        { key: "Alt+L", label: "help" },
+        { key: "Alt+P", label: "persona" },
+        { key: "Alt+R", label: "copy" }
+      ]}
+    />
   )
   await t.tick()
 
-  const rows = t.lastFrame().split("\n")
-  expect(rows.length).toBeGreaterThan(1)
-  // every label survives intact on a single row
-  for (const item of ["Alt+L Help", "Alt+P Persona", "Alt+R Copy"]) {
-    expect(rows.some(r => r.includes(item))).toBe(true)
-  }
+  const rows = t.lastFrame().trimEnd().split("\n")
+  expect(rows).toHaveLength(1)
+  expect(rows[0]!).toStartWith(" Alt+L help · Alt+P")
 
   t.unmount()
   await t.waitUntilExit()
@@ -58,11 +53,11 @@ const barItems: KeyBarEntry[] = [
 ]
 
 test("fitKeyBarItems keeps everything while it fits", () => {
-  expect(fitKeyBarItems(barItems, 60)).toEqual(barItems)
+  expect(fitKeyBarItems(barItems, 70)).toEqual(barItems)
 })
 
 test("fitKeyBarItems shortens the modifier first, then drops the paging keys", () => {
-  const compact = fitKeyBarItems(barItems, 55)
+  const compact = fitKeyBarItems(barItems, 60)
   expect(compact.map(i => i.key)).toEqual(["‽+L", "‽+R", "PgUp", "PgDn", "Esc"])
 
   const tight = fitKeyBarItems(barItems, 40)

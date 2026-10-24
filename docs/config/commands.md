@@ -57,7 +57,7 @@ Run `kaja doctor` first. For the rest:
   ([Personas](/abilities/personas#abilities)), an ability without its key stays out, and an MCP server that
   doesn't connect within 10 seconds is skipped. `kaja doctor` says which and why.
 - **Alt shortcuts type odd characters (macOS):** set `hotkeyModifier = "ctrl"`
-  ([Key bar](/use/tui#key-bar)).
+  ([Key line](/use/tui#key-line)).
 - **A setting change did nothing:** config is read once at startup, so restart Kaja (and `kaja telegram`).
 
 ## Logs

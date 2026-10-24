@@ -354,24 +354,24 @@ askChoicesPlaceholder = "Or type your own answer…"
 
 
 [header]
-local = "Local"
-cloud = "Cloud"
+local  = "local"
+cloud  = "cloud"
+tokens = "{count} tokens"
 
 
 [keybar]
-help      = "Help"
-persona   = "Persona"
-copy      = "Copy"
-older     = "Older"
-newer     = "Newer"
-quit      = "Quit"
-expand    = "Expand"
-quitAgain = "Still running: Esc again to quit"
-cancel    = "Cancel"
-decline   = "Decline"
-close     = "Close"
-clear     = "Clear"
-command   = "Command"
+help      = "help"
+persona   = "persona"
+copy      = "copy"
+scroll    = "scroll"
+quit      = "quit"
+expand    = "expand"
+quitAgain = "still running: Esc again to quit"
+cancel    = "cancel"
+decline   = "decline"
+close     = "close"
+clear     = "clear"
+command   = "command"
 
 
 [viewport]

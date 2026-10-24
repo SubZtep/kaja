@@ -14,7 +14,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 ## UI
 
 - **Keys**: input hooks use `hooks/use-key.ts`'s `useKey` (the kitty protocol sends releases, `useKey` drops them), never Ink's `useInput`. Mouse, focus and colour-scheme reports come via `hooks/use-terminal-reports.ts` (Ink 8 drops unknown control sequences)
-- **Hotkeys**: one `KeyBinding` list in `app.tsx`; a hidden entry has no live hotkey. "R" copies (Ctrl+C is Ink's quit), "L" is help (Ctrl+H = Backspace); F-keys and Ctrl+digit don't work reliably. The modifier is `preferences.hotkeyModifier` because no single one works everywhere
+- **Hotkeys**: one `KeyBinding` list in `app.tsx`; a hidden entry (`when` false) has no live hotkey, `inBar: false` keeps a live one off the key line (it must fit in 78 columns; the help screen lists it). "R" copies (Ctrl+C is Ink's quit), "L" is help (Ctrl+H = Backspace); F-keys and Ctrl+digit don't work reliably. The modifier is `preferences.hotkeyModifier` because no single one works everywhere
 - **Modals** (`components/elem/modal.tsx`): while one is open `InputBlockedContext` silences `useKey` outside it, so a modal's key handling lives in a component rendered _inside_ `<Modal>`. Esc or a footer click calls `onClose`
 - **Prompts** (`components/layout/prompt.tsx`): a `PromptSpec` list in place of the input; `ConfirmCommand` (approvals) and `ask_user` options use it. An approval's command shows in `CommandModal`, never in the chat
 - **Theme**: every colour lives in `components/theme.tsx`; components use palette roles or styles. A nested `ThemeProvider` extends the surrounding theme. Output outside the chat uses `resolveConsoleTheme()`. `auto` is resolved before Ink renders (it reads stdin)

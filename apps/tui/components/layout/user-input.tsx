@@ -1,5 +1,5 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, type BoxProps, useWindowSize } from "ink"
+import { Box, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
 import { useKey } from "../../hooks/use-key"
@@ -8,27 +8,22 @@ import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
 import { uiEvents } from "../../lib/ui-events"
 import { TextInput } from "../elem/text-input"
-import { useKajaTheme } from "../theme"
+import { paint, useKajaTheme, usePalette } from "../theme"
 
-/**
- * Outer box max rows (padding/border included). Content lines for the field leave room for SolidBorder padding (1+1) or
- * PowerBorder edges (~1+1).
- */
-const INPUT_MAX_HEIGHT = 8
 const INPUT_CONTENT_LINES = 6
 const CURSOR_BLINK_MS = 500
-/** Always 2 ASCII cells — never emoji (terminals disagree on emoji width). */
+/** Always 2 cells — never emoji (terminals disagree on emoji width). */
 const PREFIX_COLS = 2
 
 /**
- * Status mark for the input gutter. Pure ASCII so multi-line hang-indent matches the first line exactly.
+ * Status mark for the input gutter, one cell so a wrapped line hangs under the first exactly.
  *
- * > Ready to type
+ * › Ready to type
  *
  * - Mic on, idle o recording speech ~ transcribing x mic muted while agent speaks
  */
 function statusPrefix(mic: boolean, speaking: boolean, sttState: string): string {
-  if (!mic) return "> "
+  if (!mic) return "› "
   if (speaking) return "x "
   if (sttState === "recording") return "o "
   if (sttState === "transcribing") return "~ "
@@ -50,7 +45,7 @@ export function UserInput({
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
   speaking: boolean
-  /** The agent's ask_user call is waiting for this answer — the power border marks it as a reply, not a new prompt. */
+  /** The agent's ask_user call is waiting for this answer — the mark's colour says it's a reply, not a new prompt. */
   asking?: boolean
   send: (prompt: string) => Promise<void>
   /** Past prompts for shell-style ↑/↓ recall, newest first. */
@@ -70,6 +65,7 @@ export function UserInput({
   const mic = controlledMic ?? ownMic
   const setMic = onMicChange ?? setOwnMic
   const { columns } = useWindowSize()
+  const { highlightRow } = useKajaTheme()
   const history = usePromptHistory(initialHistory ?? [])
   useEffect(() => {
     onDraft?.(input)
@@ -96,7 +92,9 @@ export function UserInput({
     personaModels
   )
 
-  const prefix = statusPrefix(mic, speaking, sttState)
+  const palette = usePalette()
+  // An answer to the agent's question gets its mark in the success colour, so it doesn't read as a new prompt
+  const prefix = paint(asking ? palette.success : palette.accent)(statusPrefix(mic, speaking, sttState))
   const windowFocused = useWindowFocus()
 
   const handleSubmit = (value: string) => {
@@ -106,13 +104,13 @@ export function UserInput({
     send(value)
   }
 
-  // padding/border (~2) + fixed 2-col ASCII prefix.
+  // The row's padding + the fixed 2-column prefix
   const sideChrome = 2
   const fieldColumns = Math.max(8, columns - sideChrome - PREFIX_COLS - 1)
 
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Border variant={asking ? "power" : "solid"}>
+      <Box {...highlightRow()} width="100%" flexShrink={0} paddingX={1}>
         <TextInput
           value={input}
           focus={!pending}
@@ -132,30 +130,7 @@ export function UserInput({
           columns={fieldColumns}
           maxVisibleLines={INPUT_CONTENT_LINES}
         />
-      </Border>
+      </Box>
     </Box>
   )
-}
-
-function Border({ children, variant = "solid" }: Readonly<{ children: React.ReactNode; variant?: "solid" | "power" }>) {
-  const isPower = variant === "power"
-  const { inputBox, powerBox } = useKajaTheme()
-
-  const boxProps: BoxProps = {
-    ...inputBox(),
-    borderStyle: "classic",
-    borderDimColor: true,
-    borderLeft: false,
-    borderRight: false,
-    width: "100%",
-    flexShrink: 0,
-    maxHeight: INPUT_MAX_HEIGHT,
-    overflow: "hidden",
-    ...(isPower && {
-      borderStyle: "arrow",
-      borderColor: powerBox().borderColor
-    })
-  }
-
-  return <Box {...boxProps}>{children}</Box>
 }

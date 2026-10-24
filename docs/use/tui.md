@@ -9,14 +9,16 @@ icon: 🖵
 
 # Terminal UI
 
-A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/start/modes)
+A scrollable chat, a multi-line input, and a line of hotkeys at the bottom. Both [modes](/start/modes)
 use it.
 
 A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
 their tool counts, and how many saved conversations and memory notes you have.
 
-The header shows the persona, the model and, after the first reply, how full the context window is, like
-`12,345 / 32,768 tokens (38%)`. Long conversations are summarised before they run out of room (see
+The header shows the persona, the model and its provider and, after the first reply, how full the context
+window is: just the percent, like `1%`, and the full count (`18,000 / 33K (55%)`) once it's past half. At the
+right edge, where Kaja runs (`local` or `cloud`, plus `KAJA_PROFILE`), and `YOLO` while approvals are off. On a
+narrow terminal the provider goes first, then the model. Long conversations are summarised before they run out of room (see
 `/compact` below).
 
 Replies render as markdown while they arrive: headings, lists, tables that fit, and highlighted code.
@@ -86,10 +88,11 @@ Prompt history spans all past sessions, newest first.
 
 While you're scrolled back, the top of the chat shows how far down the history you are. Scroll to the bottom or start typing to follow new output again.
 
-### Key bar
+### Key line
 
-The hotkeys, `PgUp`/`PgDn` and Quit are also buttons you can click, handy when your terminal or system takes
-the hotkey. Each hotkey shows only while it does something.
+The hotkeys and Quit are also buttons you can click, handy when your terminal or system takes the hotkey.
+Each hotkey shows only while it does something. Copy works but isn't on the line, to keep it short: the
+help screen lists it.
 
 | Key            | Action                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------------- |
@@ -104,7 +107,7 @@ the hotkey. Each hotkey shows only while it does something.
 `"ctrl+alt"`, `"ctrl+meta"`, `"alt+meta"`. Use `Ctrl` if Alt types special characters (macOS Terminal.app
 and iTerm2 without "Option as Meta"), keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
 terminal does), and pick a pair if your window manager grabs a combo (many bind `Ctrl+Alt+<letter>`).
-In a terminal with the kitty keyboard protocol, holding the modifier lights up the key bar's shortcuts.
+In a terminal with the kitty keyboard protocol, holding the modifier lights up the key line's shortcuts.
 
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
 [persona](/abilities/personas) starts a fresh conversation and lasts until you quit.
@@ -138,7 +141,7 @@ fits when it starts. In terminals that announce changes (kitty, Ghostty, Contour
 when you switch your system between dark and light.
 
 `theme = "terminal"` paints Kaja in your terminal's own colour scheme instead: text uses its ANSI
-colours, and the tinted backgrounds (the badges, the input box, your messages) are mixed from them. Load
+colours, and the tinted backgrounds (the input row, your messages) are mixed from them. Load
 any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for example, and Kaja wears it
 too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
 change the terminal's scheme, restart Kaja so the tints follow.

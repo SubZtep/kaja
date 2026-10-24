@@ -354,24 +354,24 @@ askChoicesPlaceholder = "Or type your own answer…"
 
 
 [header]
-local = "Local"
-cloud = "Cloud"
+local  = "[en-US] lorem"
+cloud  = "[en-US] lorem"
+tokens = "[en-US] lorem {count}"
 
 
 [keybar]
-help      = "Help"
-persona   = "Persona"
-copy      = "Copy"
-older     = "Older"
-newer     = "Newer"
-quit      = "Quit"
-expand    = "Expand"
-quitAgain = "Still running: Esc again to quit"
-cancel    = "Cancel"
-decline   = "Decline"
-close     = "Close"
-clear     = "Clear"
-command   = "Command"
+help      = "[en-US] lorem"
+persona   = "[en-US] lorem"
+copy      = "[en-US] lorem"
+scroll    = "[en-US] lorem"
+quit      = "[en-US] lorem"
+expand    = "[en-US] lorem"
+quitAgain = "[en-US] lorem ipsum dolor sit amet"
+cancel    = "[en-US] lorem"
+decline   = "[en-US] lorem"
+close     = "[en-US] lorem"
+clear     = "[en-US] lorem"
+command   = "[en-US] lorem"
 
 
 [viewport]

@@ -55,8 +55,6 @@ export type Palette = {
   code: string
   foreground: string
   background: string
-  /** The mascot's and the wizard header's gradient, left to right. */
-  gradient: string[]
   /** `hue` mixed `amount` (0–1) of the way into the background, for the backgrounds of badges, boxes and rows. */
   tint: (hue: Hue, amount: number) => string
 }
@@ -148,7 +146,6 @@ export function paletteFrom(scheme: Scheme, base: Scheme = scheme): Palette {
     code: scheme.yellow,
     foreground: hex("foreground"),
     background: hex("background"),
-    gradient: [hex("magenta"), hex("red"), hex("yellow")],
     tint: (hue, amount) => mix(hex("background"), hex(hue), amount)
   }
 }
@@ -162,14 +159,8 @@ type KajaComponentTheme = {
   styles: ReturnType<typeof kajaStyles>
 } & ComponentTheme
 
-/** A badge's tone: the hue of its text, and of the tint behind it. */
-export type BadgeTone = "success" | "info" | "danger"
-
-const BADGE_HUE: Record<BadgeTone, Hue> = { success: "green", info: "blue", danger: "red" }
-
 function kajaStyles(p: Palette) {
   return {
-    inputBox: (): BoxProps => ({ backgroundColor: p.tint("blue", 0.12), borderColor: p.frame }),
     /** The theme step's highlighted row: a band in the theme's colours, so the choice previews itself. */
     previewRow: (): BoxProps => ({ backgroundColor: p.tint("magenta", 0.3) }),
     previewText: (): TextProps => ({ color: p.foreground, bold: true }),
@@ -177,8 +168,6 @@ function kajaStyles(p: Palette) {
     highlightRow: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.18) }),
     /** The panel behind an answer field (a typed value or a menu), in the input box's background. */
     field: (): BoxProps => ({ backgroundColor: p.tint("blue", 0.12) }),
-    /** The chat box border while a power command is typed. */
-    powerBox: (): BoxProps => ({ borderColor: p.success }),
     frame: (): BoxProps => ({ borderColor: p.frame }),
     /** A modal window: opaque, so the pale screen under it doesn't show through. */
     modal: (): BoxProps => ({ backgroundColor: p.background, borderColor: p.frame }),
@@ -198,9 +187,7 @@ function kajaStyles(p: Palette) {
     /** A key bar entry whose hotkey modifier is held down. */
     keyCapHeld: (): TextProps => ({ backgroundColor: p.accent, color: p.background, bold: true }),
     thinkingLabel: (): TextProps => ({ color: p.frame, dimColor: true }),
-    toolLabel: (): TextProps => ({ color: p.success, dimColor: true }),
-    /** A label such as the header's LOCAL/CLOUD/YOLO: its tone's colour on a tint of it. */
-    badge: (tone: BadgeTone) => ({ background: p.tint(BADGE_HUE[tone], 0.22), text: p[tone] })
+    toolLabel: (): TextProps => ({ color: p.success, dimColor: true })
   }
 }
 

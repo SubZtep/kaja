@@ -5,8 +5,8 @@ import { mix, paletteFrom, schemes, terminalScheme, themes, useKajaTheme } from 
 import { renderForTest } from "../test-utils"
 
 function Probe() {
-  const { inputBox, userText } = useKajaTheme()
-  return <Text>{`${inputBox().backgroundColor} ${userText().color}`}</Text>
+  const { field, userText } = useKajaTheme()
+  return <Text>{`${field().backgroundColor} ${userText().color}`}</Text>
 }
 
 test("falls back to the dark palette outside a ThemeProvider", () => {
@@ -88,12 +88,10 @@ test("a palette's roles and tints come from its scheme", () => {
   expect(palette.frame).toBe("#c397d8")
   expect(palette.background).toBe(SCHEME.background)
   expect(palette.tint("green", 0.2)).toBe(mix(SCHEME.background, "#b9ca4a", 0.2))
-  expect(palette.gradient).toEqual(["#c397d8", "#d54e53", "#e7c547"])
 })
 
 test("a named colour is mixed as the base scheme's", () => {
   const palette = paletteFrom(terminalScheme(null, "light"), schemes.light)
   expect(palette.danger).toBe("red")
   expect(palette.tint("red", 0.5)).toBe(mix(schemes.light.background, schemes.light.red, 0.5))
-  expect(palette.gradient).toEqual([schemes.light.magenta, schemes.light.red, schemes.light.yellow])
 })

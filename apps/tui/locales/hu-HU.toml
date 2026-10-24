@@ -354,24 +354,24 @@ askChoicesPlaceholder = "Vagy írd be a saját válaszod…"
 
 
 [header]
-local = "Helyi"
-cloud = "Felhő"
+local  = "[hu-HU] lorem"
+cloud  = "[hu-HU] lorem"
+tokens = "[hu-HU] lorem {count}"
 
 
 [keybar]
-help      = "Súgó"
-persona   = "Persona"
-copy      = "Másolás"
-older     = "Régebbi"
-newer     = "Újabb"
-quit      = "Kilépés"
-expand    = "Kibontás"
-quitAgain = "Még fut: Esc újra a kilépéshez"
-cancel    = "Mégse"
-decline   = "Elutasítás"
-close     = "Bezárás"
-clear     = "Törlés"
-command   = "Parancs"
+help      = "[hu-HU] lorem"
+persona   = "[hu-HU] lorem"
+copy      = "[hu-HU] lorem"
+scroll    = "[hu-HU] lorem"
+quit      = "[hu-HU] lorem"
+expand    = "[hu-HU] lorem"
+quitAgain = "[hu-HU] lorem ipsum dolor sit amet"
+cancel    = "[hu-HU] lorem"
+decline   = "[hu-HU] lorem"
+close     = "[hu-HU] lorem"
+clear     = "[hu-HU] lorem"
+command   = "[hu-HU] lorem"
 
 
 [viewport]

@@ -79,7 +79,7 @@ own. An MCP server starts only when a persona that lists it becomes active.
 
 Every persona's `when` goes into the system prompt, so the model can call `switch_persona` on its own
 mid-conversation. A persona without `when` can only be reached from the
-[persona picker](/use/tui#key-bar).
+[persona picker](/use/tui#key-line).
 
 - **Automatic** (`switch_persona`) keeps the current conversation going.
 - **Manual** (the picker) starts a fresh one, and isn't remembered: every launch starts from `default`.
