@@ -33,16 +33,16 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **`doctor`** (`--local`): `runCredentialPass` first, then models/MCP/tools. Only a `"credential"` failure (401/403) asks for a new value; `"unreachable"` is reported and skipped (a stopped local server needs starting, not a key)
 - **Tool hosts**: settings.toml `[tools.hosts]` sends a stdio ability to a sandbox via the API's relay with the stored cloud token
 - **Cloud turns use this computer** (`lib/cloud/computer.ts`): the user's own and local-only abilities and file builtins (`run_command` only with `[tools.hosts] shell = "computer"`) run here on `needs_client_tool`, through the same `ConfirmCommand` gate
-- `commands.toml` lists shell commands that skip approval (`safe` from `kaja config fetch`, the user's `custom` kept)
+- Shell commands that skip approval: nasi's `DEFAULT_SAFE_COMMANDS` plus commands.toml's `custom`; nothing writes commands.toml
 
 ## First-run wizard
 
-`components/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes the template untouched.
+`components/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml.
 
 - Every step opens on the current value (`readPrefill`), so Enter throughout keeps a machine unchanged. `--cloud`/`--local` skip the mode step; a prefilled mode does not
 - **Keys are typed in the wizard but saved by the credential pass**, so each is tested first. In `offered`, `null` means "asked and turned down" (`""` in `WizardResult`) versus `undefined` "never applied": losing that distinction brings back the double-ask
 - `refreshCatalog` loads the API's `/config/catalog` (the cached last good one when it can't); with neither, the providers checklist is skipped and the custom-provider steps ask everything, offering the models its `/models` lists
-- `appendTomlSection` appends so the templates' commented examples survive
+- Every config file is written through `lib/config/schema-file.ts`'s `writeConfigFile` (or edited in place): a `#:schema ./schemas/<f>.json` line on top, and this build's schema copied beside it. Defaults live in code and the Zod schemas (`PREFERENCE_DEFAULTS`), never in templates
 
 ## Abilities and personas (local)
 

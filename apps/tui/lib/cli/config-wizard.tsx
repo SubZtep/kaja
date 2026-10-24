@@ -1,6 +1,6 @@
 import { render } from "ink"
 import type { WizardResult, WizardSaved } from "../../components/config-wizard"
-import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
+import { create, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { statusLine } from "../doctor/status"
@@ -29,12 +29,8 @@ async function applySpeachesUrl(url: string, print: (line: string) => void) {
 async function applyResult(result: WizardResult, print: (line: string) => void) {
   const mode: KajaMode = result.mode ?? "local"
 
-  // savePreferences merges into a parsed config, so the file has to exist first. Cloud gets the
-  // minimal settings.toml (no stt/tts/memory sections — those are local-agent only).
-  if (!(await isConfigExists())) {
-    if (mode === "cloud") await createCloud()
-    else await create()
-  }
+  // savePreferences merges into a parsed config, so the file has to exist first
+  if (!(await isConfigExists())) await create()
 
   await savePreferences({
     mode,
@@ -270,7 +266,7 @@ async function checkModels(): Promise<number> {
 /**
  * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config, so Enter at
  * every step keeps what is already set. Without a provider catalog (offline) it asks for every detail of the user's own
- * provider instead. Non-interactive stdin or `--headless` can't answer a prompt: it writes settings.toml's template, no
+ * provider instead. Non-interactive stdin or `--headless` can't answer a prompt: it writes a minimal settings.toml, no
  * questions.
  */
 export async function runConfigWizard({

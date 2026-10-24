@@ -131,19 +131,6 @@ test("fetch without a models.toml points at the wizard, and writes neither model
   expect(await Bun.file(getMcpPath()).exists()).toBe(false)
 })
 
-test("fetch with --offline never touches the network and leaves models.toml alone", async () => {
-  await Bun.write(getModelsPath(), OUTDATED)
-  const restore = failFetch("network should not be used with --offline")
-  try {
-    const { code, text } = await runConfigCli(["fetch"], { offline: true })
-    expect(code).toBe(0)
-    expect(text).toContain("there is no provider catalog")
-  } finally {
-    restore()
-  }
-  expect(await Bun.file(getModelsPath()).text()).toBe(OUTDATED)
-})
-
 test("fetch with the server unreachable and no cached catalog leaves models.toml alone", async () => {
   await Bun.write(getModelsPath(), OUTDATED)
   const restore = failFetch("connection refused")
@@ -157,49 +144,36 @@ test("fetch with the server unreachable and no cached catalog leaves models.toml
   expect(await Bun.file(getModelsPath()).text()).toBe(OUTDATED)
 })
 
-test("fetch writes secrets.toml from the bundled template, but never settings.toml", async () => {
-  await runConfigCli(["fetch"], { offline: true })
-  const { getSecretsPath } = await import("../../../lib/config/secrets")
-  expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  expect(await Bun.file(getConfigPath()).exists()).toBe(false)
+test("fetch writes only models.toml: never settings.toml, secrets.toml or commands.toml", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = mockCatalogFetch()
+  try {
+    await runConfigCli(["fetch"])
+  } finally {
+    restore()
+  }
+  for (const name of ["settings.toml", "secrets.toml", "commands.toml"])
+    expect(await Bun.file(join(getConfigDir(), name)).exists()).toBe(false)
 })
 
-test("fetch leaves a secrets.toml holding keys alone: no backup, nothing overwritten", async () => {
-  const { getSecretsPath } = await import("../../../lib/config/secrets")
-  const saved = '[providers.fireworks]\napi_key = "fw-secret"\n'
-  await Bun.write(getSecretsPath(), saved)
-
-  const { code, text } = await runConfigCli(["fetch"], { offline: true })
-  expect(code).toBe(0)
-  expect(text).toContain(`${getSecretsPath()} holds your keys`)
-  expect(await Bun.file(backup(getSecretsPath())).exists()).toBe(false)
-  expect(await Bun.file(getSecretsPath()).text()).toBe(saved)
-})
-
-test("fetch leaves a secrets.toml that doesn't parse alone too, since it may still hold keys", async () => {
-  const { getSecretsPath } = await import("../../../lib/config/secrets")
-  await Bun.write(getSecretsPath(), 'api_key = "half-typed\n')
-
-  const { text } = await runConfigCli(["fetch"], { offline: true })
-  expect(text).toContain("holds your keys")
-  expect(await Bun.file(getSecretsPath()).text()).toBe('api_key = "half-typed\n')
+test("a file fetch writes points at the schema copy it puts beside it", async () => {
+  await Bun.write(getModelsPath(), OUTDATED)
+  const restore = mockCatalogFetch()
+  try {
+    await runConfigCli(["fetch"])
+  } finally {
+    restore()
+  }
+  expect(await Bun.file(getModelsPath()).text()).toStartWith("#:schema ./schemas/models.json\n")
+  const schema = await Bun.file(join(getConfigDir(), "schemas", "models.json")).json()
+  expect(schema.properties.models).toBeDefined()
 })
 
 test("wizard --headless writes default config without prompting", async () => {
   const { code, text } = await runConfigCli(["wizard"], { headless: true })
   expect(code).toBe(0)
   expect(text.length).toBeGreaterThan(0)
-  expect(await Bun.file(getConfigPath()).exists()).toBe(true)
-})
-
-test("diff treats commands.toml as unchanged when only the user's custom patterns differ", async () => {
-  await runConfigCli(["fetch", "--offline"], { offline: true })
-  const path = join(getConfigDir(), "commands.toml")
-  await Bun.write(path, `${await Bun.file(path).text()}\ncustom = ["npm test"]\n`)
-  const { text } = await runConfigCli(["diff"], { offline: true })
-  expect(text).toContain(path)
-  const line = text.split("\n").find(row => row.includes("commands.toml"))!
-  expect(line).not.toMatch(/would update|update/i)
+  expect(await Bun.file(getConfigPath()).text()).toStartWith("#:schema ./schemas/settings.json\n")
 })
 
 test("diff says models.toml would update when the catalog has moved on", async () => {

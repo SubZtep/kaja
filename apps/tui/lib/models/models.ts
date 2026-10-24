@@ -3,6 +3,7 @@ import type { PersonaModels } from "@kaja/schema/cli"
 import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 import { getConfigDir } from "../config/config"
+import { writeConfigFile } from "../config/schema-file"
 import { secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { buildModelsToml, type ModelsSelection } from "./catalog"
@@ -18,7 +19,7 @@ export function getModelsPath() {
 
 /** Writes models.toml for the providers the user ticked, replacing what was there. See {@link buildModelsToml}. */
 export async function writeModelsFromCatalog(selection: ModelsSelection) {
-  await write(file(getModelsPath()), buildModelsToml(selection))
+  await writeConfigFile(getModelsPath(), buildModelsToml(selection))
 }
 
 /**

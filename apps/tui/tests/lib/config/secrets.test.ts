@@ -29,21 +29,27 @@ afterEach(() => {
   invalidateSecretsCache()
 })
 
-test("missing file: writes the template and returns its active (non-commented) sections", async () => {
+test("a missing file holds no keys, and reading it writes nothing", async () => {
   const dir = `${tmpdir()}/kaja-test-secrets-missing-${Math.random()}`
   setConfigDirOverride(dir)
 
-  expect(await Bun.file(getSecretsPath()).exists()).toBe(false)
   const data = await loadSecretsFile()
-
-  expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  // Every section in the shipped template is commented out.
+  expect(await Bun.file(getSecretsPath()).exists()).toBe(false)
   expect(data.abilities).toEqual({})
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})
 })
 
-test("existing file is parsed as-is, not overwritten by the template", async () => {
+test("the first key saved creates the file, pointing at the schema copy beside it", async () => {
+  const dir = `${tmpdir()}/kaja-test-secrets-first-${Math.random()}`
+  setConfigDirOverride(dir)
+  await saveSecrets({ providers: { xai: { api_key: "k" } } })
+  expect(await Bun.file(getSecretsPath()).text()).toStartWith("#:schema ./schemas/secrets.json\n")
+  expect(await Bun.file(join(dir, "schemas", "secrets.json")).exists()).toBe(true)
+  expect((await loadSecretsFile()).providers).toEqual({ xai: { api_key: "k" } })
+})
+
+test("an existing file is parsed as it is", async () => {
   const dir = `${tmpdir()}/kaja-test-secrets-existing-${Math.random()}`
   setConfigDirOverride(dir)
   await write(
@@ -163,10 +169,6 @@ test("unset keys are written as commented-out tables in their group, and read ba
   // Comments only: nothing a placeholder says reaches the parsed file.
   expect(Bun.TOML.parse(text)).toEqual({ providers: { fireworks: { api_key: "fw" } } })
   expect(readSecretPlaceholders(text)).toEqual([{ group: "providers", name: "xai" }, OFF, KEYLESS])
-})
-
-test("the template's commented examples hold sample values, so they aren't placeholders", () => {
-  expect(readSecretPlaceholders('# [providers.fireworks]\n# api_key = "fw_YourSecretKey"\n')).toEqual([])
 })
 
 test("saving keeps the placeholders, and one that gets its key turns into the real table", async () => {

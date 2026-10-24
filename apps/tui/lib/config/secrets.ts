@@ -1,41 +1,13 @@
 import { join } from "node:path"
 import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
 import { groupTomlTables, stringifyToml } from "@kaja/shared/toml"
-import { file, TOML, write } from "bun"
-import TEMPLATE from "../../../../config/secrets.toml" with { type: "text" }
+import { file, TOML } from "bun"
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
-import { writeTemplateConfig } from "./fetch"
+import { withSchemaLine, writeConfigFile } from "./schema-file"
 
 export function getSecretsPath() {
   return join(getConfigDir(), "secrets.toml")
-}
-
-/**
- * The `kaja config fetch` subcommand: writes the bundled config/secrets.toml template (all commented-out placeholders)
- * when there's no secrets.toml yet; one with no values already reads the same, so it's left as it is. A file holding
- * any value, or one that doesn't parse, is `kept` as it is: the template has no keys to offer, so replacing it only
- * ever lost the user's own. Never served by the API — admin-managed config has no user secrets to export — so this is
- * the only source `fetch` has for it.
- */
-export async function fetchSecretsToml(): Promise<{
-  path: string
-  backedUpTo?: string
-  unchanged?: boolean
-  kept?: boolean
-}> {
-  const path = getSecretsPath()
-  const f = file(path)
-  if (await f.exists()) {
-    let data: unknown
-    try {
-      data = TOML.parse(await f.text())
-    } catch {
-      return { path, kept: true }
-    }
-    if (data && typeof data === "object" && Object.keys(data).length > 0) return { path, kept: true }
-  }
-  return writeTemplateConfig(TEMPLATE, path)
 }
 
 /** Tolerant reader: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */
@@ -52,16 +24,13 @@ export async function readSecretsLoose(): Promise<Partial<SecretsFile>> {
 }
 
 /**
- * Loads and parses secrets.toml. Missing file: writes the commented-out template and parses that (empty). Invalid file:
- * prints the error and exits, same policy as {@link import("./config").config}.
+ * Loads and parses secrets.toml; a missing one holds no keys. Invalid file: prints the error and exits, same policy as
+ * {@link import("./config").config}.
  */
 export async function loadSecretsFile(): Promise<SecretsFile> {
   const secretsPath = getSecretsPath()
   const f = file(secretsPath)
-  // Parse TEMPLATE directly rather than reading it back: a freshly written BunFile can report stale (empty) content on an immediate re-read.
-  const exists = await f.exists()
-  if (!exists) await write(f, TEMPLATE)
-  const text = exists ? await f.text() : TEMPLATE
+  const text = (await f.exists()) ? await f.text() : ""
   try {
     return SecretsFileSchema.parse(TOML.parse(text))
   } catch (error) {
@@ -107,8 +76,7 @@ const NOTE = /^\s*#(.*)$/
 
 /**
  * The placeholders in secrets.toml text: a commented-out `[providers.<name>]` or `[abilities.<name>]` followed by `#
- * api_key = ""`, with the comment line above it as its note. The template's own commented examples hold a sample value,
- * so they never count.
+ * api_key = ""`, with the comment line above it as its note.
  */
 export function readSecretPlaceholders(text: string): SecretPlaceholder[] {
   const lines = text.split("\n")
@@ -166,10 +134,11 @@ export async function saveSecrets(
     providers: { ...current.providers, ...update.providers },
     abilities: { ...current.abilities, ...update.abilities }
   }
-  const kept = placeholders ?? readSecretPlaceholders(await file(getSecretsPath()).text())
-  const text = secretsText(next, kept)
   const f = file(getSecretsPath())
-  if ((await f.text()) !== text) await write(f, text)
+  const existing = (await f.exists()) ? await f.text() : ""
+  const kept = placeholders ?? readSecretPlaceholders(existing)
+  const text = secretsText(next, kept)
+  if (existing !== withSchemaLine(getSecretsPath(), text)) await writeConfigFile(getSecretsPath(), text)
   cached = undefined
 }
 

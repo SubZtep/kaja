@@ -19,7 +19,6 @@ toml-version = "v1.1.0"
 [[schemas]]
 path    = "packages/schema/json/commands.json"
 include = [
-  "config/commands.toml",
   "**/.config/kaja*/commands.toml",
   "**/Library/Preferences/kaja*/commands.toml",
   "**/kaja*/Config/commands.toml",
@@ -32,7 +31,6 @@ include = [
 [[schemas]]
 path    = "packages/schema/json/hooks.json"
 include = [
-  "config/hooks.toml",
   "**/.config/kaja*/hooks.toml",
   "**/Library/Preferences/kaja*/hooks.toml",
   "**/kaja*/Config/hooks.toml"
@@ -84,7 +82,6 @@ include = [
 [[schemas]]
 path    = "packages/schema/json/secrets.json"
 include = [
-  "config/secrets.toml",
   "**/.config/kaja*/secrets.toml",
   "**/Library/Preferences/kaja*/secrets.toml",
   "**/kaja*/Config/secrets.toml",
@@ -97,7 +94,6 @@ include = [
 [[schemas]]
 path    = "packages/schema/json/settings.json"
 include = [
-  "config/settings.toml",
   "**/.config/kaja*/settings.toml",
   "**/Library/Preferences/kaja*/settings.toml",
   "**/kaja*/Config/settings.toml",

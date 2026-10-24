@@ -10,7 +10,7 @@ import { SecretsFileSchema } from "../config/secrets"
 import { KajaConfigSchema } from "../config/settings"
 
 /**
- * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io), one per config/*.toml shape.
+ * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io), one per TOML file shape.
  * Each is derived from this package's own Zod schemas via `z.toJSONSchema`, so it can never drift from the runtime
  * validators. Written to static .json files by ./generate.ts, which .tombi.toml's [[schemas]] point at — Tombi needs
  * files/URLs, not live TypeScript.

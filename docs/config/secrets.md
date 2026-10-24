@@ -35,7 +35,7 @@ owner_ids = [123456789]
   # api_key = ""
 ```
 
-A missing section just turns that feature off. The template ships with every section commented out. The
+A missing section, or a missing file, just turns that feature off. The
 wizard and `kaja doctor` fill it in for you, testing each key first. The doctor asks for the key of every
 ability a persona uses.
 

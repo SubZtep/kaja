@@ -41,16 +41,17 @@ Only `secrets.toml` holds credentials, so the other files are safe to share or p
 
 ## Editor support
 
-JSON Schemas for every file are served at `https://api.kaja.io/config/schemas/<file>.json` (`settings`,
-`models`, `secrets`, `commands` and `hooks`), and the [model examples](/config/models#examples) are
-served by the Kaja API too. To pick one for a file, start it with a
-[Tombi](https://tombi-toml.github.io/tombi/) schema directive and a blank line after it:
+Every file Kaja writes starts with a [Tombi](https://tombi-toml.github.io/tombi/) schema directive pointing
+at a JSON Schema in the `schemas/` folder beside it, which Kaja keeps matching the version you run:
 
 ```toml
-#:schema https://api.kaja.io/config/schemas/models.json
+#:schema ./schemas/models.json
 ```
 
-With the recommended VS Code TOML extension you get completion and validation as you edit.
+With the recommended VS Code TOML extension you get completion, validation and each setting's default and
+description as you edit, offline too. For a file you write yourself, add the same line (`settings`, `models`,
+`secrets`, `commands` or `hooks`). The schemas are also served at
+`https://api.kaja.io/config/schemas/<file>.json`.
 
 ---
 

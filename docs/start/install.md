@@ -44,8 +44,8 @@ folder; put them after the pipe so they reach the script:
 curl -fsSL https://kaja.io/install.sh | VERSION=v1.2.3 bash
 ```
 
-Updating leaves your config files alone. `kaja config diff` shows what
-[`kaja config fetch`](/config/commands) would change, and `kaja abilities update` refreshes the
+Updating leaves your config files alone. `kaja config diff` shows whether
+[`kaja config fetch`](/config/commands) would move `models.toml` to newer models, and `kaja abilities update` refreshes the
 [marketplace](/abilities/marketplace).
 
 ## Uninstall

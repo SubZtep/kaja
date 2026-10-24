@@ -88,8 +88,8 @@ invalidAt            = "設定檔無效（{path}）：{message}"
 notExists            = "設定檔無存在：{path}"
 usage                = """
 [nan-TW] lorem
-  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore
   [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
   [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
   [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
   [nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -97,11 +97,9 @@ usage                = """
 fetched              = "已經寫入 {path}"
 fetchedWithBackup    = "已經寫入 {path}（早前个檔案已經備份去 {backup}）"
 fetchedUnchanged     = "{path} 已經是上新版矣"
-fetchedKept          = "{path} 含著你个金鑰，所以保留"
 fetchModelsNoCatalog = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
 fetchModelsNoFile    = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 fetchModelsOwnOnly   = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-diffNew              = "{path}：新个"
 diffUnchanged        = "{path}：無變"
 diffWouldUpdate      = "{path}：會更新"
 

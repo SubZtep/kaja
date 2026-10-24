@@ -88,8 +88,8 @@ invalidAt            = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists            = "Nem létezik a konfigurációs fájl: {path}"
 usage                = """
 [hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore
   [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
   [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
   [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
   [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -97,11 +97,9 @@ usage                = """
 fetched              = "{path} elmentve"
 fetchedWithBackup    = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 fetchedUnchanged     = "{path} már naprakész"
-fetchedKept          = "{path} tartalmazza a kulcsaidat, ezért érintetlen maradt"
 fetchModelsNoCatalog = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
 fetchModelsNoFile    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 fetchModelsOwnOnly   = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-diffNew              = "{path}: új"
 diffUnchanged        = "{path}: változatlan"
 diffWouldUpdate      = "{path}: frissülne"
 

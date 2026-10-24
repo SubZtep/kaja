@@ -47,11 +47,13 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "Use the online marketplace; false means Kaja never goes online for abilities (default: true)",
+          "default": true,
+          "description": "Use the online marketplace; false means Kaja never goes online for abilities",
           "type": "boolean"
         },
         "autoFetch": {
-          "description": "Pull the marketplace at startup when the last sync is over a day old (default: true)",
+          "default": true,
+          "description": "Pull the marketplace at startup when the last sync is over a day old",
           "type": "boolean"
         },
         "url": {
@@ -71,7 +73,8 @@
       "type": "object",
       "properties": {
         "compact_at": {
-          "description": "How full the chat model's context may get (0.3-0.95) before older messages are summarised (default: 0.8)",
+          "default": 0.8,
+          "description": "How full the chat model's context may get (0.3-0.95) before older messages are summarised; `/compact` does it on demand",
           "type": "number",
           "minimum": 0.3,
           "maximum": 0.95
@@ -101,22 +104,26 @@
       "type": "object",
       "properties": {
         "thinking": {
+          "default": false,
           "description": "Show thinking indicator when the model is generating a response",
           "type": "boolean"
         },
         "toolDisplay": {
-          "description": "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header (default: minimal)",
+          "default": "minimal",
+          "description": "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header",
           "type": "string",
           "enum": ["minimal", "verbose", "corner"]
         },
         "codePreviewLines": {
-          "description": "Lines of a code block or approval command shown before it is cut short (default: 5)",
+          "default": 5,
+          "description": "Lines of a code block or approval command shown before it is cut short",
           "type": "integer",
           "minimum": 1,
           "maximum": 200
         },
         "voice": {
-          "description": "Enable voice output (text-to-speech)",
+          "default": false,
+          "description": "Read the assistant's replies aloud (needs a Speaches server, see [tts])",
           "type": "boolean"
         },
         "locale": {
@@ -130,16 +137,19 @@
           "enum": ["cloud", "local"]
         },
         "hotkeyModifier": {
-          "description": "Modifier key for the help/persona hotkeys (default: alt)",
+          "default": "alt",
+          "description": "Modifier key for the help/persona hotkeys; none works everywhere (alt types characters on some macOS terminals, ctrl collides with some host apps, meta needs the kitty keyboard protocol)",
           "type": "string",
           "enum": ["alt", "ctrl", "meta", "ctrl+alt", "ctrl+meta", "alt+meta"]
         },
         "theme": {
-          "description": "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)",
+          "default": "auto",
+          "description": "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme",
           "type": "string",
           "enum": ["auto", "dark", "light", "terminal"]
         },
         "yolo": {
+          "default": false,
           "description": "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)",
           "type": "boolean"
         }

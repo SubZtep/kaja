@@ -62,12 +62,12 @@ voice = false
 
 ## `commands.toml`: commands that run without asking
 
-The agent asks before it runs a shell command, except for the simple read-only ones on the safe list.
-`commands.toml` holds that list as regexes, each of which must match the whole command:
+The agent asks before it runs a shell command, except for the simple read-only ones on its built-in safe
+list (`ls`, `cat`, `pwd`, `git status` and the like). `commands.toml` adds your own, as regexes that must each
+match the whole command:
 
 ```toml
-safe = ['pwd', 'git (status|diff|log)(\s+[\w./=:@^~-]+)*', '...']  # a couple of the defaults; `kaja config fetch` refreshes them
-custom = ['npm (test|run lint)']                            # yours, kept when the defaults are refreshed
+custom = ['npm (test|run lint)']
 ```
 
 A command with a shell metacharacter (`; & | $ ( ) { } < >`, a backtick or a newline) always asks, and so
