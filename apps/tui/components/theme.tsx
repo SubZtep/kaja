@@ -184,8 +184,6 @@ function kajaStyles(p: Palette, mono = false) {
   return {
     /** A focused row's name: bold, and inverse without colour, where the highlight band can't show. */
     focusText: (): TextProps => ({ bold: true, ...(mono ? { inverse: true } : {}) }),
-    /** Text on the highlight band: inverse without colour, so the band still reads. */
-    bandText: (): TextProps => (mono ? { inverse: true } : {}),
     /** The theme step's highlighted row: a band in the theme's colours, so the choice previews itself. */
     previewRow: (): BoxProps => ({ backgroundColor: p.tint("magenta", 0.3) }),
     previewText: (): TextProps => ({ color: p.foreground, bold: true }),
@@ -199,8 +197,8 @@ function kajaStyles(p: Palette, mono = false) {
     reasoningBox: (): BoxProps => ({ borderColor: p.info }),
     accent: (): TextProps => ({ color: p.accent }),
     userText: (): TextProps => ({ color: p.user }),
-    /** A message the user sent: the highlight band with an accent bar down its left edge. */
-    userBox: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.18), borderColor: p.accent }),
+    /** A message the user sent: an accent bar down its left edge. */
+    userBox: (): BoxProps => ({ borderColor: p.accent }),
     /** A copyable block while hovered: a faint accent band, without reserving any layout space when it isn't. */
     hoverTint: (hovered: boolean): BoxProps => (hovered ? { backgroundColor: p.tint("accent", 0.15) } : {}),
     muted: (): TextProps => ({ color: p.muted }),

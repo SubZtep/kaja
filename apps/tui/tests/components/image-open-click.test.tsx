@@ -29,7 +29,7 @@ test("a click on the open link of an image in the chat opens the image", async (
   ]
   const t = renderForTest(
     <Box flexDirection="column" width={120} height={30}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={events} thinking={false} partial={null} pending={false} />
     </Box>,
     { columns: 120, rows: 30 }
   )

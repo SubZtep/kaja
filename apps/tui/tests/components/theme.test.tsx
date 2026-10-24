@@ -107,13 +107,13 @@ test("a named colour is mixed as the base scheme's", () => {
   expect(palette.tint("red", 0.5)).toBe(mix(schemes.light.background, schemes.light.red, 0.5))
 })
 
-test("NO_COLOR drops every colour but keeps the styles, and a focused name or your message turns inverse", () => {
+test("NO_COLOR drops every colour but keeps the styles, and a focused name turns inverse", () => {
   const saved = Bun.env.NO_COLOR
   Bun.env.NO_COLOR = "1"
   try {
     function MonoProbe() {
-      const { accent, focusText, bandText, highlightRow } = useKajaTheme()
-      return <Text>{JSON.stringify([accent(), focusText(), bandText(), highlightRow()])}</Text>
+      const { accent, focusText, highlightRow } = useKajaTheme()
+      return <Text>{JSON.stringify([accent(), focusText(), highlightRow()])}</Text>
     }
     const t = renderForTest(
       <ThemeProvider theme={themeFor("dark")}>
@@ -121,12 +121,7 @@ test("NO_COLOR drops every colour but keeps the styles, and a focused name or yo
       </ThemeProvider>,
       { columns: 300 }
     )
-    expect(JSON.parse(t.lastFrame())).toEqual([
-      { color: "" },
-      { bold: true, inverse: true },
-      { inverse: true },
-      { backgroundColor: "" }
-    ])
+    expect(JSON.parse(t.lastFrame())).toEqual([{ color: "" }, { bold: true, inverse: true }, { backgroundColor: "" }])
     t.unmount()
     expect(paint(paletteFor("light").accent).bold("x")).toBe(chalk.bold("x"))
   } finally {

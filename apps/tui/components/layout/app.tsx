@@ -24,6 +24,7 @@ import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
 import { Backdrop, ModalHost } from "../elem/modal"
+import { DashedRule } from "../elem/rule"
 import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { CommandModal } from "./command-modal"
@@ -276,7 +277,9 @@ function Chrome({
               profile={Bun.env.KAJA_PROFILE}
               yolo={yolo}
             />
+            <DashedRule width={columns} />
             <ChatViewport
+              persona={personaLabel}
               events={events}
               thinking={thinking}
               partial={partial}
@@ -285,6 +288,7 @@ function Chrome({
               toolDisplay={toolDisplay}
               currentTool={currentTool}
             />
+            <DashedRule width={columns} />
             {showConfirm && pendingCommand && resolvePending && (
               <ConfirmCommand
                 key="confirm-command"
@@ -329,6 +333,7 @@ function Chrome({
                 onMicChange={setMic}
               />
             )}
+            <DashedRule width={columns} />
             <KeyBar items={keyBarItems} width={columns} />
           </Backdrop>
           {modal === "help" && (

@@ -8,7 +8,7 @@ import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
 import { uiEvents } from "../../lib/ui-events"
 import { TextInput } from "../elem/text-input"
-import { paint, useKajaTheme, usePalette } from "../theme"
+import { paint, usePalette } from "../theme"
 
 const INPUT_CONTENT_LINES = 6
 const CURSOR_BLINK_MS = 500
@@ -65,7 +65,6 @@ export function UserInput({
   const mic = controlledMic ?? ownMic
   const setMic = onMicChange ?? setOwnMic
   const { columns } = useWindowSize()
-  const { highlightRow } = useKajaTheme()
   const history = usePromptHistory(initialHistory ?? [])
   useEffect(() => {
     onDraft?.(input)
@@ -110,7 +109,7 @@ export function UserInput({
 
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Box {...highlightRow()} width="100%" flexShrink={0} paddingX={1}>
+      <Box width="100%" flexShrink={0} paddingX={1}>
         <TextInput
           value={input}
           focus={!pending}

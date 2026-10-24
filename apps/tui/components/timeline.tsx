@@ -82,7 +82,7 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
           paddingX={1}
           width="100%"
         >
-          <Text {...theme.bandText()}>{item.text}</Text>
+          <Text>{item.text}</Text>
         </Box>
       )
     case "tool_call":

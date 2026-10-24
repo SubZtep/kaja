@@ -15,7 +15,7 @@ const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({
 test("the key bar's page-up request scrolls toward older lines", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={many} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={many} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -41,7 +41,7 @@ test("the key bar's page-up request scrolls toward older lines", async () => {
 test("shows recent history and page-up reveals older lines", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={many} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={many} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -75,7 +75,7 @@ test("the copy event copies the most recent message to the clipboard", async () 
   const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={events} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -96,7 +96,7 @@ test("copy takes the agent's latest words, not the user's message that came afte
   const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={true} />
+      <ChatViewport persona="Kaja" events={events} thinking={false} partial={null} pending={true} />
     </Box>
   )
   await t.tick()
@@ -117,7 +117,7 @@ test("clicking an agent message copies its own text, not just the latest one", a
   const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={events} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={events} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -144,7 +144,7 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   const parseSpy = spyOn(dedentModule, "dedent")
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={mdEvents} thinking={false} partial={null} pending={false} />
+      <ChatViewport persona="Kaja" events={mdEvents} thinking={false} partial={null} pending={false} />
     </Box>
   )
   await t.tick()
@@ -166,7 +166,7 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   await t.waitUntilExit()
 })
 
-test("blank lines around the user's messages and the agent's words; tool lines stack under what they follow, even a user message", async () => {
+test("blank lines around the user's messages and the agent's words; a rule names the persona over each turn, tool lines stack under what they follow", async () => {
   const events: TimelineEvent[] = [
     { type: "user", text: "first" },
     { type: "reasoning", text: "hidden" },
@@ -180,11 +180,11 @@ test("blank lines around the user's messages and the agent's words; tool lines s
   const t = renderForTest(
     <Box flexDirection="column" width={60} height={20}>
       <ChatViewport
+        persona="Kaja"
         events={events}
         thinking={false}
         partial={null}
         pending={false}
-
         toolDisplay="verbose"
       />
     </Box>
@@ -200,6 +200,8 @@ test("blank lines around the user's messages and the agent's words; tool lines s
   const to = lines.findIndex(line => line.includes("second"))
   expect(lines.slice(from, to + 1).map(line => (line === "" ? "" : line.replace(/^\W+/, "").split(" ")[0]))).toEqual([
     "first",
+    "",
+    "Kaja",
     "Searching",
     "",
     "middle",
@@ -216,13 +218,51 @@ test("blank lines around the user's messages and the agent's words; tool lines s
   await t.waitUntilExit()
 })
 
+test("a turn's rule names the persona in effect when it began, and opens as soon as the turn starts", async () => {
+  const before: TimelineEvent[] = [
+    { type: "user", text: "one" },
+    { type: "final", content: "reply" }
+  ]
+  const view = (persona: string, events: TimelineEvent[]) => (
+    <Box flexDirection="column" width={60} height={20}>
+      <ChatViewport persona={persona} events={events} thinking={false} partial={null} pending={true} />
+    </Box>
+  )
+  const t = renderForTest(view("Kaja", before), { columns: 60 })
+  await t.tick()
+  t.rerender(
+    view("Grumpy Cat", [
+      ...before,
+      { type: "persona_switch", personaId: "cat", label: "Grumpy Cat" },
+      { type: "user", text: "two" }
+    ])
+  )
+  await t.tick()
+  await t.tick()
+  const rules = t
+    .lastFrame()
+    .split("\n")
+    .filter(line => line.trimStart().startsWith("──"))
+    .map(line => line.trim().split(" ")[1])
+  expect(rules).toEqual(["Kaja", "Grumpy"])
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("a reply as wide as the terminal keeps its dot, gap and indent; streaming reasoning sits above the reply", async () => {
   const reply =
     "Haha, vicces! De komolyan, nem szeretnék így szólítani, inkább maradjunk a barátságos hangnemnél. Van becenév?"
   const base: TimelineEvent[] = [{ type: "user", text: "hi" }]
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={20}>
-      <ChatViewport events={base} thinking={true} partial={{ content: "Haha", reasoning: "hm" }} pending={true} />
+      <ChatViewport
+        persona="Kaja"
+        events={base}
+        thinking={true}
+        partial={{ content: "Haha", reasoning: "hm" }}
+        pending={true}
+      />
     </Box>,
     { columns: 80 }
   )
@@ -236,6 +276,7 @@ test("a reply as wide as the terminal keeps its dot, gap and indent; streaming r
   t.rerender(
     <Box flexDirection="column" width={80} height={20}>
       <ChatViewport
+        persona="Kaja"
         events={[...base, { type: "ask_user", question: reply }]}
         thinking={true}
         partial={null}
@@ -246,9 +287,9 @@ test("a reply as wide as the terminal keeps its dot, gap and indent; streaming r
   await t.tick()
   await t.tick()
   const lines = t.lastFrame().split("\n")
-  const first = lines.findIndex(line => line.startsWith("● Haha"))
+  const first = lines.findIndex(line => line.startsWith(" ● Haha"))
   expect(first).toBeGreaterThan(-1)
-  expect(lines[first + 1]).toMatch(/^ {2}\S/)
+  expect(lines[first + 1]).toMatch(/^ {3}\S/)
 
   t.unmount()
   await t.waitUntilExit()
@@ -258,6 +299,7 @@ test("a thinking line wider than the terminal keeps its spinner, gap and one row
   const t = renderForTest(
     <Box flexDirection="column" width={30} height={12}>
       <ChatViewport
+        persona="Kaja"
         events={[{ type: "user", text: "hi" }]}
         thinking={false}
         partial={{ content: "", reasoning: "x".repeat(40_000) }}
@@ -272,7 +314,7 @@ test("a thinking line wider than the terminal keeps its spinner, gap and one row
   const lines = t.lastFrame().split("\n")
   const at = lines.findIndex(line => /\d+ ?s/.test(line))
   expect(at).toBeGreaterThan(-1)
-  expect(lines[at]).toMatch(/^\S \S/)
+  expect(lines[at]).toMatch(/^ \S \S/)
   expect(lines[at + 1]?.trim() ?? "").toBe("")
 
   t.unmount()

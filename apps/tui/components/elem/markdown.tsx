@@ -101,8 +101,8 @@ function createParser(p: Palette) {
 
 const parsers = new WeakMap<Palette, (source: string, tableWidth: number, view: CodeView) => Rendered>()
 
-// Columns a table leaves free for what Markdown sits in: the agent's "●" and its gap, or the reasoning box's frame
-const TABLE_MARGIN = 6
+// Columns a table leaves free for what Markdown sits in: the chat's margins, plus the agent's "●" and its gap or the reasoning box's frame
+const TABLE_MARGIN = 8
 
 function useParser() {
   const palette = usePalette()

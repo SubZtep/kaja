@@ -141,13 +141,13 @@ fits when it starts. In terminals that announce changes (kitty, Ghostty, Contour
 when you switch your system between dark and light.
 
 `theme = "terminal"` paints Kaja in your terminal's own colour scheme instead: text uses its ANSI
-colours, and the tinted backgrounds (the input row, your messages) are mixed from them. Load
+colours, and the tinted backgrounds (the highlighted row of a list) are mixed from them. Load
 any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for example, and Kaja wears it
 too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
 change the terminal's scheme, restart Kaja so the tints follow.
 
 Set [`NO_COLOR`](https://no-color.org/) (to anything but an empty string) and Kaja uses no colour at all, whatever
-the theme: bold, dim and underline stay, and the highlighted row and your messages turn to inverse text.
+the theme: bold, dim and underline stay, and the highlighted row turns to inverse text.
 
 To pick one, set `theme` in [`settings.toml`](/config/settings#preferences) (`dark`, `light` or
 `terminal`) and restart; `theme = "auto"` goes back to following the terminal.
