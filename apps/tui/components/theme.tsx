@@ -174,8 +174,8 @@ function kajaStyles(p: Palette) {
     reasoningBox: (): BoxProps => ({ borderColor: p.info }),
     accent: (): TextProps => ({ color: p.accent }),
     userText: (): TextProps => ({ color: p.user }),
-    /** A message the user sent: tinted band with a bar down its left edge. */
-    userBox: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.15), borderColor: p.user }),
+    /** A message the user sent: the highlight band with an accent bar down its left edge. */
+    userBox: (): BoxProps => ({ backgroundColor: p.tint("cyan", 0.18), borderColor: p.accent }),
     /** A copyable block while hovered: a faint accent band, without reserving any layout space when it isn't. */
     hoverTint: (hovered: boolean): BoxProps => (hovered ? { backgroundColor: p.tint("accent", 0.15) } : {}),
     muted: (): TextProps => ({ color: p.muted }),

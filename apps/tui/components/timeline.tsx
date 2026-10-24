@@ -49,12 +49,12 @@ export function itemShows(item: DisplayEvent, thinking: boolean) {
   return item.type !== "reasoning" || thinking
 }
 
-// Only the left edge is drawn, as a thin bar
+// Only the left edge is drawn, as a heavy bar
 const USER_BAR = {
   topLeft: "",
   top: "",
   topRight: "",
-  left: "▎",
+  left: "┃",
   bottomLeft: "",
   bottom: "",
   bottomRight: "",
@@ -82,14 +82,16 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
           paddingX={1}
           width="100%"
         >
-          <Text {...theme.userText()}>{item.text}</Text>
+          <Text>{item.text}</Text>
         </Box>
       )
     case "tool_call":
-      return <Text dimColor>{`⚙ ${describeToolCall(item.name, item.arguments)}`}</Text>
+      return <Text dimColor wrap="truncate-end">{`⚙ ${describeToolCall(item.name, item.arguments)}`}</Text>
     case "tool_summary":
       return (
-        <Text dimColor>{`⚙ ${t("timeline.toolsUsed", { count: item.count, names: summaryNames(item.names) })}`}</Text>
+        <Text dimColor wrap="truncate-end">
+          {`⚙ ${t("timeline.toolsUsed", { count: item.count, names: summaryNames(item.names) })}`}
+        </Text>
       )
     case "reasoning":
       if (!thinking) return null

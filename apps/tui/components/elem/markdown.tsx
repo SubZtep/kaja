@@ -1,3 +1,4 @@
+import chalk from "chalk"
 import { Box, Text, useWindowSize } from "ink"
 import { Marked, marked, type Token } from "marked"
 import { memo, useContext } from "react"
@@ -28,8 +29,8 @@ export function codeTheme(p: Palette) {
 }
 
 /**
- * A markdown-to-ANSI parser in the palette's colours: the accent for structure (mirrors the agent's "●" prefix), the
- * user colour for emphasis/links (mirrors the user's "> " prefix), muted for de-emphasis.
+ * A markdown-to-ANSI parser in the palette's colours: the accent for headings and inline code (one accent, as the
+ * agent's "●"), bold alone for emphasis so it doesn't read as code, underline for links, muted for de-emphasis.
  *
  * The source is rendered block by block ({@link splitBlocks}), each block cached on its own: a streaming message only
  * re-renders its last block, and a history item that remounts on scroll hits the cache. Keyed on the block's text —
@@ -38,6 +39,9 @@ export function codeTheme(p: Palette) {
  * last block behind).
  */
 type Rendered = { text: string; overflow: boolean }
+
+// A block that opens with a list item, the way Markdown starts one
+const LIST_START = /^ {0,3}(?:[*+-]|\d{1,9}[.)]) /
 
 function createParser(p: Palette) {
   let tableWidth = 80
@@ -49,14 +53,14 @@ function createParser(p: Palette) {
       {
         firstHeading: paint(p.accent).bold,
         heading: paint(p.accent).bold,
-        strong: paint(p.user).bold,
+        strong: chalk.bold,
         code: paint(p.code),
-        codespan: paint(p.user),
+        codespan: paint(p.accent),
         blockquote: paint(p.muted).italic,
         html: paint(p.muted),
         del: paint(p.muted).dim.strikethrough,
-        link: paint(p.user),
-        href: paint(p.user).underline,
+        link: chalk.underline,
+        href: paint(p.muted).underline,
         tableHead: paint(p.frame).bold,
         tableBorder: paint(p.muted),
         tableWidth: () => tableWidth,
@@ -77,7 +81,9 @@ function createParser(p: Palette) {
     const hit = rendered.get(key)
     if (hit !== undefined) return hit
     longest = 0
-    const out = { text: dedent(renderer.parse(block) as string), overflow: false }
+    const text = dedent(renderer.parse(block) as string)
+    // A list sits indented under the reply's text, its bullets apart from it
+    const out = { text: LIST_START.test(block) ? text.replace(/^/gm, "  ") : text, overflow: false }
     // A code block longer than the preview: the expand button has something to do
     out.overflow = longest > previewLines
     if (rendered.size > 2000) rendered.clear()
@@ -165,6 +171,48 @@ function ReplyImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
   return <TerminalImage href={href} alt={alt} />
 }
 
+// One colour or style code, which may wrap a list marker
+const SGR = `${String.fromCodePoint(27)}\\[[0-9;]*m`
+// A line's lead: its indent, plus a list marker ("•" in any style, "1.") and the space after it
+const LEAD = new RegExp(`^( *(?:(?:${SGR})*(?:•|\\d+\\.)(?:${SGR})* )?)(.*)$`)
+
+/** Rendered text as runs: plain lines together, and each indented or list line with its lead apart from the rest. */
+export function hangingRuns(text: string): ({ lines: string } | { lead: string; rest: string })[] {
+  const runs: ({ lines: string } | { lead: string; rest: string })[] = []
+  for (const line of text.split("\n")) {
+    const [, lead = "", rest = ""] = LEAD.exec(line) ?? []
+    const last = runs.at(-1)
+    if (lead) runs.push({ lead, rest })
+    else if (last && "lines" in last) last.lines += `\n${line}`
+    else runs.push({ lines: line })
+  }
+  return runs
+}
+
+/** Rendered Markdown whose wrapped list items and indented lines hang under their text, not under the marker. */
+function Hanging({ text }: Readonly<{ text: string }>) {
+  const runs = hangingRuns(text)
+  if (runs.length === 1 && "lines" in runs[0]!) return <Text>{text}</Text>
+  return (
+    <Box flexDirection="column">
+      {runs.map((run, i) =>
+        "lines" in run ? (
+          <Text key={i}>{run.lines}</Text>
+        ) : (
+          <Box key={i}>
+            <Box flexShrink={0}>
+              <Text>{run.lead}</Text>
+            </Box>
+            <Box flexShrink={1} flexGrow={1} minWidth={0}>
+              <Text>{run.rest}</Text>
+            </Box>
+          </Box>
+        )
+      )}
+    </Box>
+  )
+}
+
 // memo() so scroll ticks (which re-render mounted subtrees) skip items
 // whose text is unchanged entirely.
 export default memo(function Markdown({ children }: { children: string }) {
@@ -172,12 +220,12 @@ export default memo(function Markdown({ children }: { children: string }) {
   const segments = splitSegments(children)
   const rendered = segments.map(segment => (segment.type === "text" ? parseMarkdown(segment.source) : undefined))
   useReportOverflow(rendered.some(part => part?.overflow))
-  if (segments.length === 1 && segments[0]!.type === "text") return <Text>{rendered[0]!.text}</Text>
+  if (segments.length === 1 && segments[0]!.type === "text") return <Hanging text={rendered[0]!.text} />
   return (
     <Box flexDirection="column">
       {segments.map((segment, i) =>
         segment.type === "text" ? (
-          <Text key={segmentKey(segment, i)}>{rendered[i]!.text}</Text>
+          <Hanging key={segmentKey(segment, i)} text={rendered[i]!.text} />
         ) : (
           <ReplyImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
         )
