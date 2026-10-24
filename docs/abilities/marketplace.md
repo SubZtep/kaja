@@ -26,9 +26,10 @@ which of them a chat uses. There's nothing to turn on; an ability that needs a k
 
 Right now the marketplace has:
 
-- **personas:** `default`, `care`, `barkochba`, `onboarding`, `config-hyprland` (local only)
+- **personas:** `default`, `care`, `barkochba`, `onboarding`, `config-hyprland` (local only); see
+  [Shipped personas](/abilities/personas#shipped-personas)
 - **skills:** `system-report`, `meeting-notes`
-- **HTTP tools:** `web-search`, `open-meteo`
+- **HTTP tools:** `web-search` (Brave Search), `open-meteo` (weather)
 - **MCP servers:** `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking`, `time`
 - **code tools:** `hyprland` (with a skill; local only), which previews and checks Hyprland changes
 
@@ -85,16 +86,13 @@ still use your computer for the rest, see [Cloud or local](/start/modes#your-com
 | HTTP tool  | its `baseUrl` isn't a public address                                                                                  |
 | MCP server | it has no `tools` allowlist, or isn't on a public host (`stdio` ones [run in a sandbox](/abilities/mcp#in-the-cloud)) |
 
-**Keys.** Kaja provides them, so there's nothing to set up: an admin saves each ability's key once, and
-every user's chats share it. Kaja tests the key, stores it encrypted and never shows it again; it never
-reaches your terminal, and goes only to Kaja's own sandbox. An ability that takes a key stays out of chats
+**Keys.** Kaja provides them, so there's nothing to set up: each ability's key is saved once, encrypted, and
+every user's chats share it. It never reaches your terminal, and goes only to Kaja's own sandbox. An ability that takes a key stays out of chats
 until the server has one, unless it also works without one (like context7, where a key only raises the
 limits).
 
-**Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
-shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs
-the exact call it saved, so a client can only say yes or no. Writing a message instead of answering skips the
-call.
+**Approvals.** A call that could change something waits for you, as locally. The server runs the exact call
+it saved, so a client can only say yes or no.
 
 **Widgets** get skills only, the ones the widget's persona lists, so a site's visitors never make a call with
 your keys.

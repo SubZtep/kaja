@@ -17,6 +17,7 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ settings.toml    # preferences, voice, marketplace, storage location
 ├─ models.toml      # providers and the model for each task
 ├─ secrets.toml     # every key and token, and nothing else
+├─ commands.toml    # shell commands that run without asking
 ├─ hooks.toml       # optional: commands to run on chat events (sounds, notifications, speech)
 └─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
@@ -26,14 +27,15 @@ the data folder's: `KAJA_PROFILE=dev kaja` uses `~/.config/kaja-dev/`, a separat
 [setup wizard](/start/wizard) writes the first version, and after that the files are yours to
 edit. Kaja reads them once at startup and never writes them while running, so restart to apply a change.
 
-| File            | Reference                                                                  |
-| --------------- | -------------------------------------------------------------------------- |
-| `settings.toml` | [Settings](/config/settings)                                               |
-| `models.toml`   | [Models](/config/models)                                                   |
-| `secrets.toml`  | [Secrets](/config/secrets)                                                 |
-| `hooks.toml`    | [Hooks](/config/settings#hookstoml-commands-that-run-on-chat-events)       |
-| `marketplace/`  | [The marketplace](/abilities/marketplace), [Personas](/abilities/personas) |
-| the SQLite file | [Local storage](/config/storage)                                           |
+| File            | Reference                                                                       |
+| --------------- | ------------------------------------------------------------------------------- |
+| `settings.toml` | [Settings](/config/settings)                                                    |
+| `models.toml`   | [Models](/config/models)                                                        |
+| `secrets.toml`  | [Secrets](/config/secrets)                                                      |
+| `commands.toml` | [Safe commands](/config/settings#commandstoml-commands-that-run-without-asking) |
+| `hooks.toml`    | [Hooks](/config/settings#hookstoml-commands-that-run-on-chat-events)            |
+| `marketplace/`  | [The marketplace](/abilities/marketplace), [Personas](/abilities/personas)      |
+| the SQLite file | [Local storage](/config/storage)                                                |
 
 Only `secrets.toml` holds credentials, so the other files are safe to share or paste into a bug report.
 

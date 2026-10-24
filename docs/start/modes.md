@@ -9,8 +9,7 @@ icon: ☁️
 
 # Cloud or local
 
-Kaja is one agent with several front doors: the terminal, Telegram and a website widget. The two modes
-differ in _where the agent loop runs_, and so in which tools it can use.
+The two modes differ in _where the agent loop runs_, and so in which tools it can use.
 
 | Front door                                    | Loop runs on | Store    | Your files, shell and own MCP servers                          |
 | --------------------------------------------- | ------------ | -------- | -------------------------------------------------------------- |
@@ -63,13 +62,10 @@ clears it.
 > Without a keychain, cloud mode stops and suggests `--local`. There is no plaintext fallback.
 > {: .warning }
 
-The server picks the model and keeps your sessions, memory and dataset answers. The agent can use:
-
-- the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, image generation and more;
-- every persona in the marketplace, each with the skills, HTTP tools and MCP servers it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
-
-Tools that reach the internet (`fetch_url`, HTTP tools, MCP servers) run on a
-[sandbox](/abilities/mcp#in-the-cloud), never on the API itself. There's no model switching.
+The server picks the model (there's no model switching) and keeps your sessions, memory and dataset
+answers. The agent gets the cloud [built-in tools](/abilities/tools#built-ins) and every persona in the
+marketplace, each with the abilities it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
+Tools that reach the internet run on a [sandbox](/abilities/mcp#in-the-cloud), never on the API itself.
 
 ### Your computer in cloud mode
 
@@ -83,10 +79,9 @@ the cloud only their results:
 - `read_file`, `list_files` and `view_image`;
 - your shell (`run_command`), only once you allow it with `shell = "computer"` in `[tools.hosts]`.
 
-They ask first exactly as in local mode: a shell command unless [`commands.toml`](/config/commands)
-lists it as safe, an MCP or HTTP call that changes something. Your own personas, and local-only ones like
-`config-hyprland`, join the persona picker. Nothing of this is stored in the cloud beyond the conversation
-itself. The cloud Telegram bot and the widget have no computer behind them, so they never get these tools.
+They ask first exactly as in local mode. Your own personas, and local-only ones like `config-hyprland`,
+join the persona picker. Nothing of this is stored in the cloud beyond the conversation itself. The cloud
+Telegram bot and the widget have no computer behind them, so they never get these tools.
 
 ## Local mode
 
@@ -98,40 +93,6 @@ The whole agent runs in your process:
 - every tool works: files, shell, MCP servers, hosts on your own network;
 - sessions, memory and dataset answers live in a [SQLite file](/config/storage);
 - `kaja -c` resumes the last session, `kaja -s <id>` a specific one, and `kaja sessions` lists them.
-
-## How a turn runs
-
-Both modes run the same agent core, [Nasi](/abilities/nasi):
-
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neo-dark
----
-flowchart TD
-    In["💬 your message"] --> Prompt["compose system prompt<br>persona + memory + skills + language"]
-    Prompt --> CallLLM["✨ call the model"]
-    CallLLM --> Decide{"what next?"}
-    Decide -->|"a tool"| RunTool["🛠️ run the tool"]
-    RunTool -->|"result"| CallLLM
-    Decide -->|"switch_persona"| Switch["🎭 swap persona<br>(and its model)"]
-    Switch --> CallLLM
-    Decide -->|"ask_user"| Ask["❓ wait for your answer"]
-    Decide -->|"needs approval"| Approve["✅ approve / decline"]
-    Ask -.->|"answer"| CallLLM
-    Approve -.->|"result"| CallLLM
-    Decide -->|"final answer"| Reply["💬 reply"]
-    Reply --> DB[("SQLite (local)<br>Postgres (cloud)")]
-```
-
-Two things hand control back to you:
-
-- **`ask_user`**: the agent needs an answer. Your next message is that answer, not a new turn.
-- **Approvals**: a shell command, or an HTTP tool or MCP call that changes something, waits for your OK.
-  You get a prompt above the input in the terminal, and buttons in Telegram.
-
-`switch_persona` doesn't stop anything. It swaps the [persona](/abilities/personas) and carries on.
 
 ---
 

@@ -31,8 +31,8 @@ the models go in `models.toml`, the endpoint in `settings.toml`. Ticking Speache
    provider = "speaches"
    tasks = ["tts"]
 
-   [models.faster-distil-whisper-small-en]
-   model = "Systran/faster-distil-whisper-small.en"
+   [models.faster-whisper-small]
+   model = "Systran/faster-whisper-small"
    provider = "speaches"
    tasks = ["stt"]
    ```
@@ -42,7 +42,6 @@ the models go in `models.toml`, the endpoint in `settings.toml`. Ticking Speache
    ```toml
    [stt]
    speachesUrl = "ws://localhost:8000"
-   language = "en"
 
    [tts]
    speachesUrl = "http://localhost:8000"
@@ -67,15 +66,10 @@ The interface and the assistant's replies follow `preferences.locale`:
 | `zh-TW`  | 繁體中文                 |
 
 The wizard asks first. With no saved value, your system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`),
-and anything unsupported becomes British English. In cloud mode your account's language is used, and the
-web app offers the same five.
+and anything unsupported becomes British English. In cloud mode your account's language is used.
 
-Voice lags behind:
-
-- **Dictation** needs a multilingual Whisper model. The default above is English-only, so put a multilingual one
-  that lists `stt` above it and set `stt.language`.
-- **Spoken replies** use the configured Kokoro voice, which has no Hungarian. Put a `tts` model that does
-  above it.
+Dictation follows your language unless `stt.language` says otherwise. Spoken replies use the configured
+Kokoro voice, which has no Hungarian; for that, put a `tts` model that has one above it in `models.toml`.
 
 ---
 

@@ -10,8 +10,7 @@ icon: 🖵
 # Terminal UI
 
 A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/start/modes)
-use it. Cloud mode has no model switching. It asks before a call on your computer the same way local mode does (see
-[Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)).
+use it.
 
 A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
 their tool counts, and how many saved conversations and memory notes you have.
@@ -38,6 +37,7 @@ kaja logout               # clear the stored cloud token
 kaja -c, --continue       # resume the most recent session
 kaja -s, --session <id>   # resume a specific session
 kaja sessions             # list saved sessions with their ids
+kaja images               # count stored images; `describe` fills in descriptions, `clean` removes leftovers
 kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot (add --headless for no terminal UI)
 kaja telegram --pair      # print a one-time code to pair one more Telegram user
@@ -88,15 +88,14 @@ While you're scrolled back, the top of the chat shows how far down the history y
 
 ### Key bar
 
-Every entry but Cancel and Decline is also a button you can click, handy when your terminal or system takes
-the hotkey. Quit needs the same double press while something runs. Expand shows only while some code on
-screen is longer than `codePreviewLines`.
+The hotkeys, `PgUp`/`PgDn` and Quit are also buttons you can click, handy when your terminal or system takes
+the hotkey. Each hotkey shows only while it does something.
 
 | Key            | Action                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------------- |
-| `<modifier>+L` | Open these docs in your browser                                                                |
+| `<modifier>+L` | Help: every shortcut, and a link to these docs                                                 |
 | `<modifier>+P` | Open the persona picker (hidden while a turn runs)                                             |
-| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`)                                             |
+| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`); clicking a reply copies it too             |
 | `<modifier>+E` | Show every line of long code blocks (they show `codePreviewLines`, 5 by default, otherwise)    |
 | `<modifier>+O` | Read the command or request waiting for your approval in a window (shown only while one waits) |
 

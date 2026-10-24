@@ -23,26 +23,30 @@ On Windows:
 irm https://kaja.io/install.ps1 | iex
 ```
 
-The script picks the right binary for your system and puts it in `~/.local/bin` (change that with
-`INSTALL_DIR`). If the folder isn't on your `PATH`, it tells you. You can also download a binary
-(x64 or arm64) from [GitHub Releases](https://github.com/SubZtep/kaja/releases).
+The script picks the right binary for your system and puts it in `~/.local/bin`, and tells you if that
+folder isn't on your `PATH`. Binaries (x64 or arm64) are also on
+[GitHub Releases](https://github.com/SubZtep/kaja/releases).
 
 ## First run
 
 Run `kaja`. The [setup wizard](/start/wizard) asks a few questions, including whether to use
-**Kaja Cloud** (nothing to set up, you just approve a code in the browser) or **your own providers**. Your
-answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides it for
-one launch.
+**Kaja Cloud** or **your own providers**.
 
 ## Updating
 
-Kaja checks for a newer version each time it starts and offers to install it. Cloud chat only runs on the latest version; local mode can carry on with the one you have.
+Kaja checks for a newer version each time it starts and offers to install it. Cloud chat only runs on the
+latest version; local mode can carry on with the one you have.
 
-To update by hand, run the install script again. Set `VERSION=v1.2.3` to pin a release.
+To update by hand, run the install script again. `VERSION` pins a release and `INSTALL_DIR` changes the
+folder; put them after the pipe so they reach the script:
 
-Your config files stay as they are. `kaja config diff` shows what
+```sh
+curl -fsSL https://kaja.io/install.sh | VERSION=v1.2.3 bash
+```
+
+Updating leaves your config files alone. `kaja config diff` shows what
 [`kaja config fetch`](/config/commands) would change, and `kaja abilities update` refreshes the
-[marketplace](/abilities).
+[marketplace](/abilities/marketplace).
 
 ## Uninstall
 

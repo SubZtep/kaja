@@ -62,8 +62,7 @@ The models further down stay in the file, for a [persona](/abilities/personas) t
 [`kaja doctor`](/config/commands#checking-keys-and-models) to fall back to when the one in use stops
 answering. Falling back comments out the broken model, so the next one takes over.
 
-The header shows how full the chat model's context is (`12,345 / 32,768 tokens (38%)`). Without
-`context_window`, Kaja asks the server once per run. llama.cpp and Ollama report the size they actually run
+Without `context_window`, Kaja asks the server once per run. llama.cpp and Ollama report the size they actually run
 with, and some hosted providers list it with their models. If nothing answers, it assumes 32,768.
 `kaja doctor` shows the number each chat model got and where it came from. Set it by hand when the guess is
 wrong, for example when you start Ollama with a bigger `num_ctx`:
@@ -90,13 +89,13 @@ generated from [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/config
 same provider catalog the setup wizard writes `models.toml` from. Each example shows one model per task, and
 the wizard also keeps the models it didn't pick, for pins and switching.
 
-| File                                                                                    | Providers                | Tasks                                                                                                             |
-| --------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| [`models.ollama.toml`](https://api.kaja.io/config/templates/models.ollama.toml)         | Ollama                   | chat and vision (`qwen3.5:4b`), embedding. Fully local                                                            |
-| [`models.default.toml`](https://api.kaja.io/config/templates/models.default.toml)       | Fireworks, xAI, Speaches | chat, vision, summarize, embedding, rerank, image-generation, tts, stt. What `kaja config fetch --offline` writes |
-| [`models.llama.toml`](https://api.kaja.io/config/templates/models.llama.toml)           | llama.cpp                | chat against a local `llama-server`                                                                               |
-| [`models.xai.toml`](https://api.kaja.io/config/templates/models.xai.toml)               | xAI                      | chat and vision (`grok-4.3`), image-generation. One hosted key                                                    |
-| [`models.openrouter.toml`](https://api.kaja.io/config/templates/models.openrouter.toml) | OpenRouter               | chat (`stealth/space-bunny-alpha`). One hosted key                                                                |
+| File                                                                                    | Providers                                                                       |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [`models.default.toml`](https://api.kaja.io/config/templates/models.default.toml)       | Fireworks, xAI, Speaches: every task. What `kaja config fetch --offline` writes |
+| [`models.ollama.toml`](https://api.kaja.io/config/templates/models.ollama.toml)         | Ollama, fully local                                                             |
+| [`models.llama.toml`](https://api.kaja.io/config/templates/models.llama.toml)           | llama.cpp's `llama-server`                                                      |
+| [`models.xai.toml`](https://api.kaja.io/config/templates/models.xai.toml)               | xAI, one hosted key                                                             |
+| [`models.openrouter.toml`](https://api.kaja.io/config/templates/models.openrouter.toml) | OpenRouter, one hosted key                                                      |
 
 ---
 

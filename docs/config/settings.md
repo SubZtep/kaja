@@ -71,9 +71,9 @@ custom = ['npm (test|run lint)']                            # yours, kept when t
 ```
 
 A command with a shell metacharacter (`; & | $ ( ) { } < >`, a backtick or a newline) always asks, and so
-does anything flagged as dangerous (`rm -rf`, `sudo`, a force push, ...), whatever the patterns say. A
-pattern that isn't a valid regex is skipped with a warning. The list applies to the local TUI and to
-`kaja telegram`; the cloud agent never runs shell commands.
+does anything [flagged as risky](/abilities/tools#shell-commands), whatever the patterns say. A pattern
+that isn't a valid regex is skipped with a warning. The list applies wherever your shell is used: the
+terminal, `kaja telegram`, and cloud chat with `shell = "computer"`.
 
 ## `hooks.toml`: commands that run on chat events
 
@@ -110,19 +110,17 @@ run = 'notify-send -- "$KAJA_TITLE" "$KAJA_TEXT"'        # show a notification
 | `login_code`     | the browser couldn't be opened for sign-in, so the code went to your clipboard instead |
 
 In the command, `$KAJA_TEXT` is what happened as plain text without Markdown (also on stdin), `$KAJA_TITLE` a short
-title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`bell.wav`, `magic.wav`, `wind.wav`, `hehe.wav`,
-`error.wav`, `keyboard.wav`; see `kaja config paths`), `$KAJA_LOCALE` your language (the [`locale`](#preferences)
-preference, like `hu-HU`), which is why a speech command doesn't hard-code
-a voice and follows the setting when you change it, and `$KAJA_HOOK` the event's name.
+title for notifications, `$KAJA_SOUNDS` the folder of sound effects (`kaja config paths` shows it), `$KAJA_LOCALE`
+your [`locale`](#preferences), so a speech command follows your language, and `$KAJA_HOOK` the event's name.
 
 `cancel = true` stops a still-running earlier run of the same command before the new one starts; `cancel = "name"` does
 that for every command sharing the name, so two `espeak-ng` never talk over each other. A command that fails is only
 logged (see [Logs](/config/commands#logs)), and one still running when you quit carries on. A session you resume
 doesn't replay its old messages, and `kaja telegram` has no hooks.
 
-`kaja config hooks` knows `paplay`, `pw-play`, `ffplay`, `mpv`, `play` and `aplay` for sounds, `notify-send` and
-`kdialog` for notifications and `espeak-ng`, `espeak` and `spd-say` for speech on Linux, `afplay`, `osascript` and
-`say` on macOS, and PowerShell on Windows. When one is missing it prints the command that installs it.
+`kaja config hooks` looks for the usual tools of each system (`paplay`, `notify-send` and `espeak-ng` on Linux,
+say; `afplay` and `say` on macOS; PowerShell on Windows), and when one is missing it prints the command that
+installs it.
 
 ## `[marketplace]`
 
@@ -145,7 +143,7 @@ Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode
   ([Your computer in cloud mode](/start/modes#your-computer-in-cloud-mode)). Local-only abilities
   and your own always run here anyway.
 - `shell = "computer"` lets cloud chat use your shell (`run_command`), asking first unless
-  [`commands.toml`](/config/commands) lists the command as safe. Off by default.
+  [`commands.toml`](#commandstoml-commands-that-run-without-asking) lists the command as safe. Off by default.
 
 ## `[context]`
 
@@ -155,22 +153,14 @@ Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode
 
 Past that point, the older messages are summarised, and the model carries on from the summary plus the most
 recent turns, word for word. The chat shows a line each time, like `Context compacted: 26,000 → 4,000
-tokens`. Nothing is deleted, and the whole conversation stays saved. If the summary can't be written, the
-oldest messages are left out instead, and the line says so.
+tokens`. Nothing is deleted: the whole conversation stays saved.
 
 `/compact` does it on demand and keeps only your latest turn word for word. Add what to keep:
 `/compact keep the SQL decisions`.
 
-A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
-the model sees it, in parts if it's more than the summarising model can take in at once. The terminal shows
-a line like `fetch_url output condensed: 40,000 → 2,000 tokens`, and the full output stays in the saved
-conversation.
-
-Images (say, a screenshot a tool took) are sent to the model for your latest two messages. Older ones
-become a short note, since resending them every time costs a lot. They stay in the saved conversation.
-
 Summaries are written by the first model in `models.toml` that lists `summarize` (a smaller, cheaper one
-works well), or else the chat model. The `summarize` tool uses the same model.
+works well), or else the chat model. [Inside Nasi](/abilities/inside-nasi#fitting-a-long-chat-into-a-small-window)
+explains the rest: oversized tool results, old images, and what happens when a summary fails.
 
 ## `[stt]` / `[tts]`
 

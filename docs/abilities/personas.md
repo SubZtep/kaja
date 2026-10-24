@@ -93,13 +93,13 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 
 ## Shipped personas
 
-| Id                | What it does                                                                                                                                                                                                |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `default`         | fallback for anything no other persona fits; uses `fetch-url`, `generate-image`, `edit-image` and every marketplace ability but `filesystem`, `hyprland` and `time` (the built-in `current_time` covers it) |
-| `care`            | self-care companion: listens, reflects, doesn't lecture                                                                                                                                                     |
-| `barkochba`       | plays Twenty Questions, asking through `ask_user`                                                                                                                                                           |
-| `onboarding`      | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service` and `open-meteo`                                                                          |
-| `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only                                                                             |
+| Id                | What it does                                                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `default`         | fallback for anything no other persona fits; uses the opt-in built-ins and most marketplace abilities                              |
+| `care`            | self-care companion: listens, reflects, doesn't lecture                                                                            |
+| `barkochba`       | plays Twenty Questions, asking through `ask_user`                                                                                  |
+| `onboarding`      | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service` and `open-meteo` |
+| `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only    |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 

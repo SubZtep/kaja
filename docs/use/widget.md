@@ -37,30 +37,6 @@ lose it, create a new one.
 
 ## How it works
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neo-dark
----
-sequenceDiagram
-    participant P as Your page
-    participant A as Kaja API
-    participant N as Agent (Nasi)
-    participant D as Postgres
-
-    P->>A: GET /widget/<key>.js
-    A->>A: resolve key → widgetType + persona
-    A-->>P: bundle, prefixed with window.__kajaWidgetMode
-    Note over P: bubble + panel rendered,<br/>visitorId + session in sessionStorage
-    P->>A: POST /widget/turn (X-Kaja-Widget-Key header)
-    A->>A: resolve key, check Origin allowlist, rate limits
-    A->>N: run one turn
-    N->>D: load / save session, memory
-    N-->>A: reply + steps
-    A-->>P: NasiTurnResponse
-```
-
 The bundle works out the API address from its own `src` and sends the key as an `X-Kaja-Widget-Key` header
 on every turn, so there's nothing else to wire up.
 
@@ -93,9 +69,7 @@ kaja.io runs the `barkochba` widget on its landing page.
 
 - **The key isn't a secret.** It's visible in your page source. The real boundary is the `Origin` check: a
   turn from an origin outside the key's list is rejected with 403. Keep that list tight.
-- The embed and turn routes skip the API's single `CORS_ORIGIN` (they live on third-party pages) and
-  reflect the request origin instead. That's safe because nothing uses cookies. The key header is the only
-  credential.
+- Nothing uses cookies: the key header is the only credential.
 - Key lookups and turns are both rate-limited.
 - Turns from one visitor run one at a time, so a fast double-send can't interleave.
 - You can disable or delete a key from the Widget page at any time.

@@ -39,7 +39,7 @@ listing `fetch-url`, `generate-image` or `edit-image` there (see [Personas](/abi
 shipped `default` persona lists all three.
 
 Web search isn't built in: the marketplace's `web-search` [HTTP tool](#http-tools) adds `web_search`,
-locally with your own Brave Search API key, in the cloud with the server's key (or yours, if you save one).
+locally with your own Brave Search API key, in the cloud with Kaja's.
 
 Locally, `fetch_url` runs from your own machine. In the cloud it goes out through a
 [sandbox](/abilities/mcp#in-the-cloud), never from the server, and so do HTTP tools and remote MCP servers.
@@ -93,18 +93,15 @@ type = "string"
   (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional
   `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
-  approval, like a shell command. In the cloud you can also approve the tool for the rest of the chat.
+  approval, like a shell command. In Telegram you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so
   the model can react. Redirects to another host are refused, and the key never appears in what the model
   sees.
 - Locally, a tool may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
-The marketplace has two: `web-search` adds `web_search` through the Brave Search API (the key goes in the
-`X-Subscription-Token` header, and `kaja doctor` asks for it), and `open-meteo` looks up weather.
-
 In the cloud, marketplace HTTP tools work in cloud chat and the cloud Telegram bot, unless the `baseUrl` is a
-private or local address. Requests go out through a sandbox, and private addresses are refused, on every
-redirect too. Keys and approvals work as described in [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
+private or local address; private addresses are refused on every redirect too. See
+[Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 
 ## Shell commands
 

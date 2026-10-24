@@ -62,25 +62,6 @@ After the last answer the wizard carries on by itself: the marketplace, any mode
 your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
 before it's saved.
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neo-dark
----
-flowchart TD
-    L["<b>Language</b>"] --> C["<b>Colours</b><br><small>dark or light</small>"]
-    C --> M{"<b>How to run Kaja</b>"}
-    M -->|"Kaja Cloud"| SUM["<b>Setup complete</b>"]
-    M -->|"your own provider"| P["<b>Providers</b><br><small>tick every one you can use</small>"]
-    P --> KEY["<b>API key</b> for each online one<br><small>Fireworks · xAI · OpenRouter</small>"]
-    KEY --> URL["<b>Server address</b> for each local one<br><small>Ollama · llama.cpp · Speaches</small>"]
-    URL --> CUS["<b>Custom provider</b>, if ticked<br><small>name · address · key · models</small>"]
-    CUS --> MODEL["<b>Which model</b><br><small>only where two providers overlap</small>"]
-    MODEL --> EX["<b>Extras</b><br><small>Telegram bot</small>"]
-    EX --> SUM
-```
-
 ## After the last question
 
 Either way, Kaja first looks for a sound player, a notification tool and a speech tool on your computer and
