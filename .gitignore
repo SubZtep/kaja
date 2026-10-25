@@ -1,5 +1,5 @@
 .claude/worktrees/
-.user-config
+.dev-config
 .data/
 .output/
 .playwright-mcp/

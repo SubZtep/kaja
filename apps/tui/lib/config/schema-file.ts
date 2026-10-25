@@ -33,8 +33,10 @@ export async function writeSchemaCopy(path: string): Promise<void> {
   const schema = schemaFor(path)
   if (!schema) return
   const target = file(join(dirname(path), "schemas", schema))
-  const text = `${JSON.stringify(tombiSchemas[schema], null, 2)}\n`
-  if (!(await target.exists()) || (await target.text()) !== text) await write(target, text)
+  // Compared as data, so a reformatted copy (or a dev link to the repo's formatted schemas) is left alone
+  const current = await target.json().catch(() => undefined)
+  if (!Bun.deepEquals(current, tombiSchemas[schema]))
+    await write(target, `${JSON.stringify(tombiSchemas[schema], null, 2)}\n`)
 }
 
 /** Writes a config file with its `#:schema` line, and the schema it points at. */

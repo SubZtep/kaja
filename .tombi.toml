@@ -2,8 +2,8 @@ toml-version = "v1.1.0"
 
 # Schemas are generated from @kaja/schema's Zod schemas — run `bun generate:schemas`
 # after changing packages/schema/config/*.ts or packages/schema/abilities/*.ts.
-# The TUI's own config files are matched by their real path (Linux, macOS, Windows), not through the .user-config
-# link: Tombi resolves symlinks before matching, so a **/.user-config/… pattern never matches.
+# The TUI's config files are matched by their real path (Linux, macOS, Windows): Tombi resolves symlinks first.
+# A file's `#:schema ./schemas/…` line (the copy the TUI writes beside it) beats these patterns.
 
 
 [format]
