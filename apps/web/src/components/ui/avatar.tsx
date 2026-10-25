@@ -1,3 +1,4 @@
+import { Avatar as BaseAvatar } from "@base-ui/react/avatar"
 import { cn } from "@kaja/shared/ui"
 
 const SIZES = {
@@ -17,17 +18,17 @@ export function Avatar({
   size?: keyof typeof SIZES
 }>) {
   return (
-    <div
+    <BaseAvatar.Root
       className={cn(
         "border-border bg-surface-2 flex shrink-0 items-center justify-center overflow-hidden rounded-md border",
         SIZES[size].box
       )}
     >
-      {src ? (
-        <img alt={alt} className="size-full object-cover" src={src} />
-      ) : (
-        <span className={cn("text-neon font-mono font-semibold", SIZES[size].text)}>{initials}</span>
-      )}
-    </div>
+      {src ? <BaseAvatar.Image alt={alt} className="size-full object-cover" src={src} /> : null}
+      {/* Also shown while the image loads or when its URL fails */}
+      <BaseAvatar.Fallback className={cn("text-neon font-mono font-semibold", SIZES[size].text)}>
+        {initials}
+      </BaseAvatar.Fallback>
+    </BaseAvatar.Root>
   )
 }
