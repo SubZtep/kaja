@@ -8,8 +8,8 @@ import { requireAuthMiddleware, sessionUser } from "../auth"
 
 const errorSchema = z.object({ error: z.string() })
 
-export const telegramAdminRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
-telegramAdminRoutes.use("*", requireAuthMiddleware)
+export const telegramLinkRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
+telegramLinkRoutes.use("*", requireAuthMiddleware)
 
 const linkStatusRoute = createRoute({
   method: "get",
@@ -23,7 +23,7 @@ const linkStatusRoute = createRoute({
   }
 })
 
-telegramAdminRoutes.openapi(linkStatusRoute, async c => {
+telegramLinkRoutes.openapi(linkStatusRoute, async c => {
   const user = sessionUser(c)
   const linkedAt = await telegramLinkService.linkedAt(user.id)
   return c.json({ linked: linkedAt !== null, linkedAt }, 200)
@@ -43,7 +43,7 @@ const unlinkRoute = createRoute({
   }
 })
 
-telegramAdminRoutes.openapi(unlinkRoute, async c => {
+telegramLinkRoutes.openapi(unlinkRoute, async c => {
   const user = sessionUser(c)
   if (!(await telegramLinkService.unlink(user.id))) return notFound(c, "Not linked to Telegram")
   return c.json({ ok: true }, 200)
@@ -62,7 +62,7 @@ const linkRoute = createRoute({
   }
 })
 
-telegramAdminRoutes.openapi(linkRoute, async c => {
+telegramLinkRoutes.openapi(linkRoute, async c => {
   const user = sessionUser(c)
 
   const botUsername = getBotUsername()

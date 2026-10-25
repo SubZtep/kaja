@@ -3,7 +3,7 @@ import { getAdminItems } from "../../components/layout/nav-items"
 import { SectionTabs } from "../../components/layout/section-tabs"
 import { userRequired } from "../../lib/loaders"
 
-export const Route = createFileRoute("/_admin/admin")({
+export const Route = createFileRoute("/_portal/admin")({
   component: AdminLayout,
   beforeLoad: ({ context }) => userRequired(context.session, "admin")
 })

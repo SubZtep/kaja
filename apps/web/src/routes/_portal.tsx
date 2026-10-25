@@ -5,13 +5,13 @@ import { SiteShell } from "../components/layout/site-shell"
 import { userRequired } from "../lib/loaders"
 import { noindexSeo } from "../lib/seo"
 
-export const Route = createFileRoute("/_admin")({
-  component: AdminLayoutRoute,
+export const Route = createFileRoute("/_portal")({
+  component: PortalLayoutRoute,
   loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
   head: () => ({ meta: noindexSeo() })
 })
 
-function AdminLayoutRoute() {
+function PortalLayoutRoute() {
   // Sign-in starts the drifting background on <body>; private pages stay still
   useEffect(() => document.body.classList.remove("bg-drift"), [])
 

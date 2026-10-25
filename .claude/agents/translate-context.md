@@ -12,7 +12,7 @@ Where keys are used (`key` is as the todo lists it):
 - `apps/tui/locales/*`: `t("<section>.<key>")` under `apps/tui/` (Ink terminal UI and CLI output)
 - `apps/api/locales/*`: `t("<section>.<key>")` under `apps/api/src/` (emails and the Telegram bot)
 - `apps/api/widgets/locales/*`: `t.<key>` under `apps/api/widgets/src/` (the embeddable browser chat widget)
-- `apps/web/messages/*`: `m.<key>(` under `apps/web/src/` (the website and admin portal)
+- `apps/web/messages/*`: `m.<key>(` under `apps/web/src/` (the website and signed-in portal)
 
 If a literal lookup finds nothing, try the key's last segment; a key may be built dynamically.
 

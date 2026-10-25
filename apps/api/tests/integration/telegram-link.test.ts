@@ -11,13 +11,13 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   const [{ id: userId }] = await sql`SELECT id FROM "user" WHERE email = ${email}`
   const headers = { Authorization: `Bearer ${token}` }
   const status = async () =>
-    (await app.request("/telegram/admin/link", { headers })).json() as Promise<{
+    (await app.request("/telegram/link", { headers })).json() as Promise<{
       linked: boolean
       linkedAt: string | null
     }>
 
   expect(await status()).toEqual({ linked: false, linkedAt: null })
-  expect((await app.request("/telegram/admin/link", { method: "DELETE", headers })).status).toBe(404)
+  expect((await app.request("/telegram/link", { method: "DELETE", headers })).status).toBe(404)
 
   const telegramUserId = faker.number.int({ min: 1_000_000, max: 9_000_000_000 })
   expect(await telegramLinkService.link(telegramUserId, userId)).toBe(true)
@@ -25,11 +25,11 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   expect(linked.linked).toBe(true)
   expect(Number.isNaN(Date.parse(linked.linkedAt!))).toBe(false)
 
-  expect((await app.request("/telegram/admin/link", { method: "DELETE", headers })).status).toBe(200)
+  expect((await app.request("/telegram/link", { method: "DELETE", headers })).status).toBe(200)
   expect(await status()).toEqual({ linked: false, linkedAt: null })
   expect(await telegramLinkService.resolveUserId(telegramUserId)).toBeUndefined()
 
-  expect((await app.request("/telegram/admin/link")).status).toBe(401)
+  expect((await app.request("/telegram/link")).status).toBe(401)
 })
 
 test("a link token is consumed once: the second delete finds no row", async () => {

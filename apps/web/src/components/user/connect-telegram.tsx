@@ -12,7 +12,7 @@ export function ConnectTelegram() {
   const [link, setLink] = useState<string | null>(null)
 
   const createLink = useMutation({
-    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/admin/link", {}),
+    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/link", {}),
     onSuccess: response => setLink(`https://t.me/${response.botUsername}?start=${response.token}`),
     onError: (err: Error) => toast.error(err.message || m.telegram_connect_error_failed())
   })

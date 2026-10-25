@@ -129,7 +129,7 @@ describe("the API hands times out as UTC", () => {
   })
 
   test("a stored instant reaches the client as one UTC ISO string and parses back to the same moment", async () => {
-    const created = await app.request("/widget/admin", {
+    const created = await app.request("/widget/manage", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -143,7 +143,7 @@ describe("the API hands times out as UTC", () => {
     const { id } = await created.json()
     await sql`UPDATE widget SET created_at = ${INSTANT} WHERE id = ${id}`
 
-    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
+    const list = await app.request("/widget/manage", { headers: { Authorization: `Bearer ${token}` } })
     const { widgets } = await list.json()
     const key = widgets.find((k: { id: string }) => k.id === id)
     expect(key.createdAt).toBe("2026-09-20T00:30:00.000Z")

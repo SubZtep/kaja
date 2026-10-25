@@ -44,7 +44,7 @@ function imageFilters(search: Record<string, unknown>): ImageFilters {
   }
 }
 
-export const Route = createFileRoute("/_admin/admin/images/")({
+export const Route = createFileRoute("/_portal/admin/images/")({
   validateSearch: imageFilters,
   component: ImagesPage,
   head: () => ({ meta: seo({ title: m.nav_images() }) })

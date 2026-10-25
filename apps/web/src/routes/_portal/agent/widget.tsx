@@ -25,7 +25,7 @@ import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../
 import { m } from "../../../paraglide/messages.js"
 import { EditWidgetDialog } from "./-components/edit-widget-dialog"
 
-export const Route = createFileRoute("/_admin/agent/widget")({
+export const Route = createFileRoute("/_portal/agent/widget")({
   component: WidgetPage,
   loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_widget() }) })
@@ -152,7 +152,7 @@ function WidgetPage() {
   const { data, error, isLoading } = useQuery({
     queryKey: ["widgets"],
     queryFn: () =>
-      apiFetch<ListWidgetsResponse>("/widget/admin").then(body => z.array(widgetSchema).parse(body.widgets))
+      apiFetch<ListWidgetsResponse>("/widget/manage").then(body => z.array(widgetSchema).parse(body.widgets))
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widgets"] })
@@ -163,7 +163,7 @@ function WidgetPage() {
 
   const createWidget = useMutation({
     mutationFn: (payload: { label: string; intent: string; model: string; target: Widget["target"] }) =>
-      apiFetch<CreateWidgetResponse>("/widget/admin", payload),
+      apiFetch<CreateWidgetResponse>("/widget/manage", payload),
     onSuccess: response => {
       invalidate()
       setJustCreated(response.rawToken)
@@ -174,44 +174,44 @@ function WidgetPage() {
 
   const updateWidget = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateWidgetRequest }) =>
-      apiFetch(`/widget/admin/${id}`, payload, { method: "PATCH" }).then(body => widgetSchema.parse(body)),
+      apiFetch(`/widget/manage/${id}`, payload, { method: "PATCH" }).then(body => widgetSchema.parse(body)),
     onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const publishWidget = useMutation({
-    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/publish`, undefined, { method: "POST" }),
+    mutationFn: (id: string) => apiFetch(`/widget/manage/${id}/publish`, undefined, { method: "POST" }),
     onSuccess: () => saved(m.widget_success_published()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_publish_failed())
   })
 
   const discardDraft = useMutation({
-    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/draft`, undefined, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/widget/manage/${id}/draft`, undefined, { method: "DELETE" }),
     onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const generateWidget = useMutation({
-    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}/generate`, undefined, { method: "POST" }),
+    mutationFn: (id: string) => apiFetch(`/widget/manage/${id}/generate`, undefined, { method: "POST" }),
     onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const linkWidget = useMutation({
-    mutationFn: ({ id, to }: { id: string; to: string }) => apiFetch(`/widget/admin/${id}/links`, { to }),
+    mutationFn: ({ id, to }: { id: string; to: string }) => apiFetch(`/widget/manage/${id}/links`, { to }),
     onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const unlinkWidget = useMutation({
     mutationFn: ({ id, to }: { id: string; to: string }) =>
-      apiFetch(`/widget/admin/${id}/links/${to}`, undefined, { method: "DELETE" }),
+      apiFetch(`/widget/manage/${id}/links/${to}`, undefined, { method: "DELETE" }),
     onSuccess: () => saved(m.widget_success_updated()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const revokeWidget = useMutation({
-    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}`, undefined, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/widget/manage/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => saved(m.widget_success_revoked()),
     onError: (err: Error) => toast.error(err.message || m.widget_error_revoke_failed())
   })

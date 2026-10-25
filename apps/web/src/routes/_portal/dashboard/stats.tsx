@@ -4,7 +4,7 @@ import { PageHeader } from "../../../components/ui/page-header"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/dashboard/stats")({
+export const Route = createFileRoute("/_portal/dashboard/stats")({
   component: StatsPage,
   head: () => ({ meta: seo({ title: m.nav_stats() }) })
 })

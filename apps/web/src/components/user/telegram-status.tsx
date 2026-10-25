@@ -18,10 +18,10 @@ export function TelegramStatus() {
   const queryClient = useQueryClient()
   const status = useQuery({
     queryKey: LINK_QUERY_KEY,
-    queryFn: () => apiFetch("/telegram/admin/link").then(r => telegramLinkStatusSchema.parse(r))
+    queryFn: () => apiFetch("/telegram/link").then(r => telegramLinkStatusSchema.parse(r))
   })
   const unlink = useMutation({
-    mutationFn: () => apiFetch("/telegram/admin/link", undefined, { method: "DELETE" }),
+    mutationFn: () => apiFetch("/telegram/link", undefined, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LINK_QUERY_KEY })
       toast.success(m.telegram_unlinked())

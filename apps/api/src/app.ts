@@ -18,9 +18,9 @@ import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { sandboxRoutes } from "./features/sandbox"
 import { statsRoutes } from "./features/stats"
-import { telegramAdminRoutes } from "./features/telegram-admin"
+import { telegramLinkRoutes } from "./features/telegram-link"
 import { widgetRoutes } from "./features/widget"
-import { widgetAdminRoutes } from "./features/widget-admin"
+import { widgetManageRoutes } from "./features/widget-manage"
 import type { RouteProps } from "./types"
 import { knownTurnError } from "./types/errors"
 
@@ -71,10 +71,10 @@ app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
-app.route("/telegram/admin", telegramAdminRoutes)
+app.route("/telegram", telegramLinkRoutes)
 app.route("/ai", aiRoutes)
 app.route("/widget", widgetRoutes)
-app.route("/widget/admin", widgetAdminRoutes)
+app.route("/widget/manage", widgetManageRoutes)
 
 // API documentation
 if (env.NODE_ENV === "development") {

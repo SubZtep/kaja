@@ -23,7 +23,7 @@ import { hardware, place } from "../../../lib/sandbox"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/agent/sandbox")({
+export const Route = createFileRoute("/_portal/agent/sandbox")({
   component: SandboxPage,
   loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_sandbox() }) })

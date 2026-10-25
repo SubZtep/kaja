@@ -24,8 +24,8 @@ async function unknownModel(model: string | undefined): Promise<string | undefin
   return found ? undefined : `Unknown model "${model}"`
 }
 
-export const widgetAdminRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
-widgetAdminRoutes.use("*", requireAuthMiddleware)
+export const widgetManageRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
+widgetManageRoutes.use("*", requireAuthMiddleware)
 
 const listRoute = createRoute({
   method: "get",
@@ -39,7 +39,7 @@ const listRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(listRoute, async c => {
+widgetManageRoutes.openapi(listRoute, async c => {
   const widgets = await widgetService.list(sessionUser(c).id)
   return c.json({ widgets }, 200)
 })
@@ -58,7 +58,7 @@ const createRouteDef = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(createRouteDef, async c => {
+widgetManageRoutes.openapi(createRouteDef, async c => {
   const user = sessionUser(c)
   const body = c.req.valid("json")
   const invalid = await unknownModel(body.model)
@@ -86,7 +86,7 @@ const updateRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(updateRoute, async c => {
+widgetManageRoutes.openapi(updateRoute, async c => {
   const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const patch = c.req.valid("json")
@@ -117,7 +117,7 @@ const linkRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(linkRoute, async c => {
+widgetManageRoutes.openapi(linkRoute, async c => {
   const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const { to } = c.req.valid("json")
@@ -151,7 +151,7 @@ const unlinkRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(unlinkRoute, async c => {
+widgetManageRoutes.openapi(unlinkRoute, async c => {
   const user = sessionUser(c)
   const { id, to } = c.req.valid("param")
   const removed = await widgetService.unlink(user.id, id, to)
@@ -176,7 +176,7 @@ const generateRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(generateRoute, async c => {
+widgetManageRoutes.openapi(generateRoute, async c => {
   const user = sessionUser(c)
   const widget = await generateDraft(user.id, c.req.valid("param").id, true)
   if (!widget) return notFound(c, "Widget not found")
@@ -197,7 +197,7 @@ const publishRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(publishRoute, async c => {
+widgetManageRoutes.openapi(publishRoute, async c => {
   const user = sessionUser(c)
   const widget = await widgetService.publish(user.id, c.req.valid("param").id)
   if (!widget) return notFound(c, "Widget not found")
@@ -218,7 +218,7 @@ const discardRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(discardRoute, async c => {
+widgetManageRoutes.openapi(discardRoute, async c => {
   const user = sessionUser(c)
   const widget = await widgetService.discardDraft(user.id, c.req.valid("param").id)
   if (!widget) return notFound(c, "Widget not found")
@@ -239,7 +239,7 @@ const deleteRoute = createRoute({
   }
 })
 
-widgetAdminRoutes.openapi(deleteRoute, async c => {
+widgetManageRoutes.openapi(deleteRoute, async c => {
   const user = sessionUser(c)
   const ok = await widgetService.revoke(user.id, c.req.valid("param").id)
   if (!ok) return notFound(c, "Widget not found")

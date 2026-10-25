@@ -304,7 +304,7 @@
   }
 }
 
-/* Public-only CRT overlay. Admin shells must not set this class. */
+/* Public-only CRT overlay. Portal shells must not set this class. */
 .public-grit {
   position: relative;
 }

@@ -18,13 +18,13 @@ import { useApiFetch } from "../../../../lib/api-fetch"
 import { seo } from "../../../../lib/seo"
 import { m } from "../../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/admin/users/$userId")({
+export const Route = createFileRoute("/_portal/admin/users/$userId")({
   component: UserPageComponent,
   head: () => ({ meta: seo({ title: m.seo_user_title() }) })
 })
 
 function UserPageComponent() {
-  const { userId } = useParams({ from: "/_admin/admin/users/$userId" })
+  const { userId } = useParams({ from: "/_portal/admin/users/$userId" })
   const authClient = useAuthClient()
   const [user, setUser] = useState<UserWithRole>()
 

@@ -21,7 +21,7 @@ import { seo } from "../../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
 import { m } from "../../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/admin/users/")({
+export const Route = createFileRoute("/_portal/admin/users/")({
   component: UserList,
   head: () => ({ meta: seo({ title: m.nav_users() }) })
 })

@@ -10,7 +10,7 @@ export function TelegramConnectCta({ actionClassName }: Readonly<{ actionClassNa
   const apiFetch = useApiFetch()
 
   const createLink = useMutation({
-    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/admin/link", {}),
+    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/link", {}),
     onError: (err: Error) => toast.error(err.message || m.telegram_cta_error())
   })
   const link = createLink.data ? `https://t.me/${createLink.data.botUsername}?start=${createLink.data.token}` : null

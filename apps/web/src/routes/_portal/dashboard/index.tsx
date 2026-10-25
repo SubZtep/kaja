@@ -9,7 +9,7 @@ import { useUser } from "../../../hooks/user"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/dashboard/")({
+export const Route = createFileRoute("/_portal/dashboard/")({
   component: DashboardPage,
   head: () => ({ meta: seo({ title: m.nav_dashboard() }) })
 })

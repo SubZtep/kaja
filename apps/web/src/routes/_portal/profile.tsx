@@ -18,7 +18,7 @@ import { seo } from "../../lib/seo"
 import { forgetSession } from "../../lib/session"
 import { m } from "../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/profile")({
+export const Route = createFileRoute("/_portal/profile")({
   component: Profile,
   loader: ({ context }) => userRequired(context.session),
   head: () => ({ meta: seo({ title: m.nav_profile() }) })

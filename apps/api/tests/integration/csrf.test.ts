@@ -23,13 +23,13 @@ describe("cross-site protection", () => {
   })
 
   test("widget admin never reflects a foreign origin", async () => {
-    const res = await app.request("/widget/admin", {
+    const res = await app.request("/widget/manage", {
       headers: { Authorization: `Bearer ${token}`, origin: attacker }
     })
     expect(res.status).toBe(200)
     expect(res.headers.get("access-control-allow-origin")).not.toBe(attacker)
 
-    const preflight = await app.request("/widget/admin", {
+    const preflight = await app.request("/widget/manage", {
       method: "OPTIONS",
       headers: { origin: attacker, "access-control-request-method": "POST" }
     })

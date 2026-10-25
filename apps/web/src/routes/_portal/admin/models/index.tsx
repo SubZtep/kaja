@@ -34,7 +34,7 @@ import { EditModelDialog } from "./-components/edit-model-dialog"
 import { EditProviderDialog } from "./-components/edit-provider-dialog"
 import { TaskCheckboxes } from "./-components/task-checkboxes"
 
-export const Route = createFileRoute("/_admin/admin/models/")({
+export const Route = createFileRoute("/_portal/admin/models/")({
   component: ModelsPage,
   head: () => ({ meta: seo({ title: m.nav_models() }) })
 })

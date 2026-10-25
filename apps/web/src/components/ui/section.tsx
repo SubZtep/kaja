@@ -7,7 +7,7 @@ const BORDERED = {
 } as const
 
 /**
- * Card surface shared by landing tiles and admin panels: the site's hand-cut paper frame (`paper-card`), from `sm` up
+ * Card surface shared by landing tiles and portal panels: the site's hand-cut paper frame (`paper-card`), from `sm` up
  * only with `bordered="sm-up"`; `tone="danger"` tints it red. Renders a div so it nests cleanly inside page sections.
  */
 export function Section({

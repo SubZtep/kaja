@@ -7,7 +7,7 @@ Translations: edit only the en-GB locale files and leave every other language to
 ## Workspaces
 
 - **API** (`apps/api`): Hono, Better Auth, PostgreSQL
-- **Web** (`apps/web`): TanStack Start: public landing + admin portal
+- **Web** (`apps/web`): TanStack Start: public landing + signed-in portal (admin pages under `/admin`)
 - **TUI** (`apps/tui`): Ink; cloud mode talks to the API's `/nasi/*`, `--local` embeds `@kaja/nasi` against the user's own provider
 - **Widget**: a cloud principal (secret token, pinned model, generated source) served by the API. The homepage Barkochba board and player are the first programs.
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers and tool egress for cloud turns; dials out to the API, nothing connects in

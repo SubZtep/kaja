@@ -38,7 +38,7 @@ describe("widget", () => {
       model: "fake-model"
     }))
     token = await signUpAndSignIn(email, "Widget Tester")
-    const created = await app.request("/widget/admin", {
+    const created = await app.request("/widget/manage", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -66,7 +66,7 @@ describe("widget", () => {
   const widgetAuth = () => ({ Authorization: `Bearer ${rawToken}`, "Content-Type": "application/json" })
 
   test("the raw token is not listed again", async () => {
-    const res = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
+    const res = await app.request("/widget/manage", { headers: { Authorization: `Bearer ${token}` } })
     const body = await res.json()
     expect(JSON.stringify(body)).not.toContain(rawToken)
     expect(body.widgets.find((widget: { id: string }) => widget.id === widgetId).tokenPrefix).toBe(
@@ -84,7 +84,7 @@ describe("widget", () => {
   })
 
   test("a widget token cannot manage widgets", async () => {
-    const res = await app.request("/widget/admin", { headers: widgetAuth() })
+    const res = await app.request("/widget/manage", { headers: widgetAuth() })
     expect(res.status).toBe(401)
   })
 
@@ -134,7 +134,7 @@ describe("widget", () => {
 
   test("unpublished source is 404 and publish then serves it", async () => {
     expect((await app.request("/widget/source", { headers: widgetAuth() })).status).toBe(404)
-    const published = await app.request(`/widget/admin/${widgetId}/publish`, {
+    const published = await app.request(`/widget/manage/${widgetId}/publish`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -146,20 +146,20 @@ describe("widget", () => {
   test("a link requires the same owner and me does not leak the other token", async () => {
     const otherEmail = faker.internet.email()
     const other = await signUpAndSignIn(otherEmail, "Other")
-    const foreign = await app.request("/widget/admin", {
+    const foreign = await app.request("/widget/manage", {
       method: "POST",
       headers: { Authorization: `Bearer ${other}`, "Content-Type": "application/json" },
       body: JSON.stringify({ label: "Foreign", intent: "Nope.", model: modelName, target: { kind: "server" } })
     })
     const foreignId = (await foreign.json()).id as string
-    const refused = await app.request(`/widget/admin/${widgetId}/links`, {
+    const refused = await app.request(`/widget/manage/${widgetId}/links`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ to: foreignId })
     })
     expect(refused.status).toBe(404)
 
-    const board = await app.request("/widget/admin", {
+    const board = await app.request("/widget/manage", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -170,7 +170,7 @@ describe("widget", () => {
       })
     })
     const boardBody = await board.json()
-    const linked = await app.request(`/widget/admin/${boardBody.id}/links`, {
+    const linked = await app.request(`/widget/manage/${boardBody.id}/links`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ to: widgetId })
@@ -201,7 +201,7 @@ describe("widget", () => {
       client: chatClient("```js\nexport async function play(){ return { text: 'kwt_secret' } }\n```") as never,
       model: "fake-model"
     }))
-    const generated = await app.request(`/widget/admin/${widgetId}/generate`, {
+    const generated = await app.request(`/widget/manage/${widgetId}/generate`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -213,7 +213,7 @@ describe("widget", () => {
   })
 
   test("discard leaves the published generation", async () => {
-    const discarded = await app.request(`/widget/admin/${widgetId}/draft`, {
+    const discarded = await app.request(`/widget/manage/${widgetId}/draft`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -223,7 +223,7 @@ describe("widget", () => {
   })
 
   test("a revoked token is 401", async () => {
-    const revoked = await app.request(`/widget/admin/${widgetId}`, {
+    const revoked = await app.request(`/widget/manage/${widgetId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     })
