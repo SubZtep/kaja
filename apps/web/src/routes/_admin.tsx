@@ -4,9 +4,6 @@ import { ContentWidth } from "../components/layout/ContentWidth"
 import { SiteShell } from "../components/layout/SiteShell"
 import { userRequired } from "../lib/loaders"
 import { noindexSeo } from "../lib/seo"
-import { Footer } from "./_public/-components/footer"
-import { GritDefs } from "./_public/-components/grit-defs"
-import { Header } from "./_public/-components/header"
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutRoute,
@@ -20,8 +17,7 @@ function AdminLayoutRoute() {
 
   return (
     // Same grit as the public pages (torn header edge, the #wobble filters the stamps and cards use), without the scanline
-    <SiteShell className="public-grit grit-still" header={<Header />} footer={<Footer />}>
-      <GritDefs />
+    <SiteShell className="grit-still">
       <ContentWidth className="flex-1 py-10 md:py-14">
         <Outlet />
       </ContentWidth>
