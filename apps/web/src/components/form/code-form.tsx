@@ -72,16 +72,7 @@ export function CodeForm({
     >
       <p className="text-muted m-0 text-[13.5px]">{m.auth_code_sent({ email })}</p>
       <form.AppField name="otp">
-        {field => (
-          <field.TextField
-            label={m.auth_field_code()}
-            layout="stack"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="123456"
-            autoFocus
-          />
-        )}
+        {field => <field.OtpField label={m.auth_field_code()} length={6} disabled={disabled} autoFocus autoSubmit />}
       </form.AppField>
       <Button type="submit" variant="primary" loading={loading} disabled={disabled} className="mt-1 w-full">
         {submit}
