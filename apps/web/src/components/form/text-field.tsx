@@ -4,8 +4,8 @@ import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
 import { useFieldContext } from "../../lib/form-contexts"
 import { m } from "../../paraglide/messages.js"
-import { FieldErrors } from "./FieldErrors"
-import { Text } from "./primitives/Text"
+import { FieldErrors } from "./field-errors"
+import { Text } from "./primitives/text"
 
 /** A form text input; a password one gets a show/hide toggle, and `hint` a muted line under it. */
 export function TextField({

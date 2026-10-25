@@ -1,5 +1,5 @@
 import { cn } from "@kaja/shared/ui"
-import { CopyButton } from "./CopyButton"
+import { CopyButton } from "./copy-button"
 
 const LOOKS = {
   crt: { frame: "crt-frame px-4 py-3", code: "font-crt text-neon text-sm", caret: true },

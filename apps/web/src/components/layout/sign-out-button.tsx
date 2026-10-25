@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { loadAuthClient } from "../../hooks/load-auth-client"
 import { m } from "../../paraglide/messages.js"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
+import { ConfirmDialog } from "../ui/confirm-dialog"
 
 /**
  * A header stamp like the menu items; `compact` (the desktop bar) shows just the icon, with the label as its accessible

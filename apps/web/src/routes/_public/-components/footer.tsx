@@ -1,11 +1,11 @@
 import { Star } from "lucide-react"
 import { lazy, type ReactNode, Suspense } from "react"
-import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { ContentWidth } from "../../../components/layout/content-width"
 import { m } from "../../../paraglide/messages.js"
 
 // Its Base UI Select (and floating-ui) is the page's biggest chunk after React; SSR still renders it, only its hydration waits for the download
 const LanguageSelect = lazy(() =>
-  import("../../../components/ui/LanguageSelect").then(mod => ({ default: mod.LanguageSelect }))
+  import("../../../components/ui/language-select").then(mod => ({ default: mod.LanguageSelect }))
 )
 
 /** The legal pages live on the docs site (docs/terms.md, docs/privacy.md). */

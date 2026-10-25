@@ -11,8 +11,8 @@ import {
   Scripts
 } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
-import { Providers } from "../components/Providers"
+import { keepsLinkLanguage, LocaleSync } from "../components/locale-sync"
+import { Providers } from "../components/providers"
 import { captureError, loadSentry } from "../lib/sentry"
 import { getSession, type SessionData } from "../lib/session"
 import { getPageTitle, loadRootEnv } from "../lib/vars"

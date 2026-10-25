@@ -2,8 +2,8 @@ import { Field } from "@base-ui/react/field"
 import { useState } from "react"
 import { runCommand } from "../../lib/sandbox"
 import { m } from "../../paraglide/messages.js"
-import { Checkbox } from "../form/primitives/Checkbox"
-import { CommandBox } from "../ui/CommandBox"
+import { Checkbox } from "../form/primitives/checkbox"
+import { CommandBox } from "../ui/command-box"
 
 /**
  * The sandbox's `docker run` (with `sandboxKey`, linked to that account), a switch that adds the memory and CPU limits,

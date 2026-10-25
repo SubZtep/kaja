@@ -1,7 +1,7 @@
 import { Field } from "@base-ui/react/field"
 import { cn } from "@kaja/shared/ui"
 import { useFieldContext } from "../../lib/form-contexts"
-import { FieldErrors } from "./FieldErrors"
+import { FieldErrors } from "./field-errors"
 
 export function TextAreaField({
   label,

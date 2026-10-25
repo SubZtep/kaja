@@ -10,8 +10,8 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { authErrorMessage } from "../../lib/error-messages"
 import { tableColumnHelper, tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "../form/primitives/Button"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
+import { Button } from "../form/primitives/button"
+import { ConfirmDialog } from "../ui/confirm-dialog"
 
 const columnHelper = tableColumnHelper<SessionWithImpersonatedBy>()
 

@@ -1,4 +1,4 @@
-import { Section } from "../ui/Section"
+import { Section } from "../ui/section"
 
 /** A ranked list with a bar behind each row, scaled to the biggest value. */
 export function BarList({

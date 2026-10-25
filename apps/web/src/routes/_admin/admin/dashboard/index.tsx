@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { PageHeader } from "../../../../components/ui/PageHeader"
+import { PageHeader } from "../../../../components/ui/page-header"
 import { seo } from "../../../../lib/seo"
 import { m } from "../../../../paraglide/messages.js"
-import { MarketplaceSection, ServiceKeysSection } from "./-components/MarketplaceSection"
-import { SandboxSection } from "./-components/SandboxSection"
-import { StorageSection } from "./-components/StorageSection"
+import { MarketplaceSection, ServiceKeysSection } from "./-components/marketplace-section"
+import { SandboxSection } from "./-components/sandbox-section"
+import { StorageSection } from "./-components/storage-section"
 
 export const Route = createFileRoute("/_admin/admin/dashboard/")({
   component: AdminDashboard,

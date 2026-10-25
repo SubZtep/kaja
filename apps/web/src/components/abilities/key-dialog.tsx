@@ -7,9 +7,9 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "../form/primitives/Button"
-import { Text } from "../form/primitives/Text"
-import { DIALOG_TITLE, DialogShell } from "../ui/DialogShell"
+import { Button } from "../form/primitives/button"
+import { Text } from "../form/primitives/text"
+import { DIALOG_TITLE, DialogShell } from "../ui/dialog-shell"
 import { invalidateAbilityKeys, keyPath } from "./queries"
 
 /**

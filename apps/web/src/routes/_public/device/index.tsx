@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { useState } from "react"
-import { Button } from "../../../components/form/primitives/Button"
+import { Button } from "../../../components/form/primitives/button"
 import { stashDeviceCodeAndRedirect } from "../../../lib/device-code"
 import { searchString } from "../../../lib/search"
 import { seo } from "../../../lib/seo"

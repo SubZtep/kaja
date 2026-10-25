@@ -16,7 +16,7 @@ import { type ReactNode, useState } from "react"
 import { periodDay, periodEnd, periodStart } from "../../lib/period"
 import { tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
-import { DebouncedText } from "../form/primitives/Text"
+import { DebouncedText } from "../form/primitives/text"
 
 type PeriodFilter = [Date | undefined, Date | undefined]
 

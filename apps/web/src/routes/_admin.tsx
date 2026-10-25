@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { ContentWidth } from "../components/layout/ContentWidth"
-import { SiteShell } from "../components/layout/SiteShell"
+import { ContentWidth } from "../components/layout/content-width"
+import { SiteShell } from "../components/layout/site-shell"
 import { userRequired } from "../lib/loaders"
 import { noindexSeo } from "../lib/seo"
 

@@ -2,11 +2,11 @@ import { Dialog } from "@base-ui/react/dialog"
 import type { Model, ModelTask, Provider, UpdateModelRequest } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
-import { Button } from "../../../../../components/form/primitives/Button"
-import { DIALOG_TITLE, DialogShell } from "../../../../../components/ui/DialogShell"
+import { Button } from "../../../../../components/form/primitives/button"
+import { DIALOG_TITLE, DialogShell } from "../../../../../components/ui/dialog-shell"
 import { useAppForm } from "../../../../../lib/form"
 import { m } from "../../../../../paraglide/messages.js"
-import { TaskCheckboxes } from "./TaskCheckboxes"
+import { TaskCheckboxes } from "./task-checkboxes"
 
 const editFormSchema = z.object({
   providerId: z.string().min(1, m.models_validation_required()),

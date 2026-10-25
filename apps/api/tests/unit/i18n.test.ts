@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { baseLocale, locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
-import { getCodeHtml } from "../../src/emails/CodeEmail"
+import { getCodeHtml } from "../../src/emails/code-email"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 for (const locale of locales.filter(candidate => candidate !== baseLocale)) {

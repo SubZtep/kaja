@@ -1,7 +1,7 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group"
 import { Field } from "@base-ui/react/field"
 import type { ModelTask } from "@kaja/schema/api"
-import { Checkbox } from "../../../../../components/form/primitives/Checkbox"
+import { Checkbox } from "../../../../../components/form/primitives/checkbox"
 
 /** Every task a model can serve, in the order the checkboxes show them. */
 export const MODEL_TASKS: ModelTask[] = [

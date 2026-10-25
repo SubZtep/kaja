@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "../form/primitives/Button"
+import { Button } from "../form/primitives/button"
 
 /** Asks the API for a one-time Telegram deep link that connects this account to the cloud bot. */
 export function ConnectTelegram() {

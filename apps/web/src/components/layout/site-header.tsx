@@ -2,8 +2,8 @@ import { Dialog } from "@base-ui/react/dialog"
 import { Menu, X } from "lucide-react"
 import { createContext, type ReactNode, useCallback, useContext, useState } from "react"
 import { m } from "../../paraglide/messages.js"
-import { BrandMark } from "./BrandMark"
-import { ContentWidth } from "./ContentWidth"
+import { BrandMark } from "./brand-mark"
+import { ContentWidth } from "./content-width"
 
 /** Lets an interactive element inside `mobileNav` (a link, the sign-out button) close the mobile menu on click. */
 const CloseMobileNavContext = createContext<(() => void) | null>(null)

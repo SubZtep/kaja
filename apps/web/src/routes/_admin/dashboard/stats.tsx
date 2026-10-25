@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { UsageStats } from "../../../components/stats/UsageStats"
-import { PageHeader } from "../../../components/ui/PageHeader"
+import { UsageStats } from "../../../components/stats/usage-stats"
+import { PageHeader } from "../../../components/ui/page-header"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 

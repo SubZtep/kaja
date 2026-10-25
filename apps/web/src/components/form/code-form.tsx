@@ -4,7 +4,7 @@ import { toast } from "react-toastify"
 import { validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "./primitives/Button"
+import { Button } from "./primitives/button"
 
 /**
  * An emailed code's step (signing in or up, changing the email): the code, a way back, and a resend when `resend` is

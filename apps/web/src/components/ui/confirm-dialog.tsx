@@ -2,9 +2,9 @@ import { AlertDialog } from "@base-ui/react/alert-dialog"
 import { cn } from "@kaja/shared/ui"
 import { useId, useState } from "react"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "../form/primitives/Button"
-import { Text } from "../form/primitives/Text"
-import { DIALOG_TITLE, DialogShell } from "./DialogShell"
+import { Button } from "../form/primitives/button"
+import { Text } from "../form/primitives/text"
+import { DIALOG_TITLE, DialogShell } from "./dialog-shell"
 
 interface Props {
   title: string

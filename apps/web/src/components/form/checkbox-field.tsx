@@ -1,7 +1,7 @@
 import { Field } from "@base-ui/react/field"
 import { useFieldContext } from "../../lib/form-contexts"
-import { FieldErrors } from "./FieldErrors"
-import { Checkbox } from "./primitives/Checkbox"
+import { FieldErrors } from "./field-errors"
+import { Checkbox } from "./primitives/checkbox"
 
 export function CheckboxField({ label, className }: Readonly<{ label: string; className?: string }>) {
   const field = useFieldContext<boolean>()

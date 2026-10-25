@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { getAdminItems } from "../../components/layout/nav-items"
-import { SectionTabs } from "../../components/layout/SectionTabs"
+import { SectionTabs } from "../../components/layout/section-tabs"
 import { userRequired } from "../../lib/loaders"
 
 export const Route = createFileRoute("/_admin/admin")({

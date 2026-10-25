@@ -1,7 +1,7 @@
 import { cn } from "@kaja/shared/ui"
 import { Link } from "@tanstack/react-router"
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
-import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { ContentWidth } from "../../../components/layout/content-width"
 import { CaptchaAlert, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
 import { m } from "../../../paraglide/messages.js"

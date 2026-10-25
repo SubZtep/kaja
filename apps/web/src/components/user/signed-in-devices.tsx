@@ -6,9 +6,9 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { describeUserAgent } from "../../lib/device"
 import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
-import { ErrorNotice } from "../ui/ErrorNotice"
-import { Loader } from "../ui/Loader"
+import { ConfirmDialog } from "../ui/confirm-dialog"
+import { ErrorNotice } from "../ui/error-notice"
+import { Loader } from "../ui/loader"
 
 const SESSIONS_QUERY_KEY = ["auth", "sessions"]
 

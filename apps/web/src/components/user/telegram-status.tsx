@@ -6,9 +6,9 @@ import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
-import { Loader } from "../ui/Loader"
-import { ConnectTelegram } from "./ConnectTelegram"
+import { ConfirmDialog } from "../ui/confirm-dialog"
+import { Loader } from "../ui/loader"
+import { ConnectTelegram } from "./connect-telegram"
 
 const LINK_QUERY_KEY = ["telegram", "link"]
 

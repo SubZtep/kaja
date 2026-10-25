@@ -1,7 +1,7 @@
 import { useLoaderData } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Flip, toast } from "react-toastify"
-import { Button } from "../components/form/primitives/Button"
+import { Button } from "../components/form/primitives/button"
 import { m } from "../paraglide/messages.js"
 
 // The one action the API's captcha plugin expects from every auth surface.

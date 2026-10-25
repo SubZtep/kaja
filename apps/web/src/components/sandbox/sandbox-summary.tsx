@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router"
 import { Box } from "lucide-react"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
-import { Loader } from "../ui/Loader"
+import { Loader } from "../ui/loader"
 
 /** How many of the user's own sandboxes are online, with the way to the Sandbox page. */
 export function SandboxSummary() {
