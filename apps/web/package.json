@@ -27,7 +27,7 @@
     "@tanstack/react-router": "^1.170.46",
     "@tanstack/react-start": "^1.169.4",
     "@tanstack/react-table": "^9.3.1",
-    "better-auth": "^1.7.12",
+    "better-auth": "^1.7.13",
     "lucide-react": "^1.61.0",
     "nitro": "npm:nitro-nightly@3.0.1-20261024-005652-6bccaad1",
     "react": "^19.3.1",

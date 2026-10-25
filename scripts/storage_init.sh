@@ -12,4 +12,5 @@ rc mb "storage/$bucket" --ignore-existing
 
 policy="$(mktemp)"
 printf '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/images/*"]}]}' "$bucket" > "$policy"
+# rc warns that this replaces the whole bucket policy; expected, this script owns it
 rc anonymous set-json "$policy" "storage/$bucket"
