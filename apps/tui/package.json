@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "clean:temp": "bun run scripts/clean-temp.ts",
-    "gen-schema": "bun run scripts/gen-schema.ts",
     "start": "bun run cli.ts",
     "test": "bun test"
   },

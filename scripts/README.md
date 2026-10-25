@@ -27,10 +27,3 @@ Never hand-edit their output. Change the input, then regenerate.
 ## SonarCloud
 
 **`sonar.ts`** lists a branch's open SonarCloud issues and unreviewed security hotspots on its pull request (public API, no token): `bun scripts/sonar.ts <branch>`. The `/sonar-fix` skill runs it and fixes them.
-
-## Dev utilities
-
-- **`link_user_config.sh`** links the TUI's config dir (resolved with the TUI's own `env-paths`, so `~/.config/kaja` on Linux) into the repo as the gitignored `.user-config`, when that dir exists.
-- **`db_migration.sh`** runs `apps/api/migrate.ts` against `$DATABASE_URL` (or `apps/api/.env`), like a deploy: the migrations the database hasn't applied, then the config seed. It catches up an existing `pgdata` volume. First-boot init does this on its own.
-- **`mass_user_create.ts [number]`** inserts random consented, verified users into `$DATABASE_URL` (run it with `bun --env-file=apps/api/.env`), 10 by default.
-- **`barkochba.ts ["secret"]`** self-plays Twenty Questions: a guesser driven by `marketplace/personas/barkochba.toml` against a thinker holding the secret. Uses your local `models.toml` and `secrets.toml`.
