@@ -1,6 +1,6 @@
 import { afterAll, expect, test } from "bun:test"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { missingModels, ollamaOrigin, pullModel, withTag } from "../../../lib/models/pull"
+import { missingModels, ollamaOrigin, pullModel, withTag } from "../../../src/lib/models/pull"
 
 // A stand-in Ollama: /api/tags has one model installed, and /api/pull streams progress for
 // "new-model", refuses an unknown one the way a real registry miss does, and fails mid-stream for

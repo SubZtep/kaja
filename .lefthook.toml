@@ -24,7 +24,7 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run  = "bun generate:env && bun generate:env-types && git add apps/api/.env.example apps/web/.env.example apps/sandbox/.env.example apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts apps/sandbox/src/env.d.ts"
+      run  = "bun generate:env && bun generate:env-types && git add apps/api/.env.example apps/web/.env.example apps/sandbox/.env.example apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/src/env.d.ts apps/sandbox/src/env.d.ts"
       glob = [
         "packages/schema/env/*.ts",
         "**/.env.example",

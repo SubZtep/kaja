@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { createPairing, generatePairingCode, MAX_PAIRING_ATTEMPTS } from "../../../lib/telegram/pairing"
+import { createPairing, generatePairingCode, MAX_PAIRING_ATTEMPTS } from "../../../src/lib/telegram/pairing"
 
 test("generatePairingCode gives XXXX-XXXX without look-alike characters", () => {
   for (let i = 0; i < 50; i++) expect(generatePairingCode()).toMatch(/^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$/)

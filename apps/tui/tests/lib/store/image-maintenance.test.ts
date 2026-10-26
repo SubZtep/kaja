@@ -10,8 +10,8 @@ import {
   imagesToDescribe,
   localImageStats,
   removeOrphans
-} from "../../../lib/store/image-maintenance"
-import { createSqliteStore, imagesRoot, openLocalDb } from "../../../lib/store/sqlite"
+} from "../../../src/lib/store/image-maintenance"
+import { createSqliteStore, imagesRoot, openLocalDb } from "../../../src/lib/store/sqlite"
 import { png } from "../../fixtures/images"
 
 const dir = mkdtempSync(join(tmpdir(), "kaja-image-maintenance-"))

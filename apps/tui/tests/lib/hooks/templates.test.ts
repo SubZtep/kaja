@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { HooksFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { detectBackends } from "../../../lib/hooks/detect"
-import { buildHooksToml, currentHooks } from "../../../lib/hooks/templates"
+import { detectBackends } from "../../../src/lib/hooks/detect"
+import { buildHooksToml, currentHooks } from "../../../src/lib/hooks/templates"
 
 const linux = detectBackends("linux", program => `/usr/bin/${program}`)
 const windows = detectBackends("win32", program => `C:\\${program}`)

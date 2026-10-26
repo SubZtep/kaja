@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { log } from "../../lib/logger"
+import { log } from "../../src/lib/logger"
 
 const dir = mkdtempSync(join(tmpdir(), "kaja-logger-test-"))
 const file = join(dir, "nested", "kaja.log")

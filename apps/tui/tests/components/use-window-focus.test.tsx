@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Text } from "ink"
-import { useWindowFocus } from "../../hooks/use-window-focus"
+import { useWindowFocus } from "../../src/hooks/use-window-focus"
 import { renderForTest } from "../test-utils"
 
 function Harness() {

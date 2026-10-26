@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { splitSegments } from "../../components/elem/markdown"
+import { splitSegments } from "../../src/components/elem/markdown"
 
 const image = "![Alt](https://example.com/a.jpg)"
 

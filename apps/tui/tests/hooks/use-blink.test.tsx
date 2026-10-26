@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Text } from "ink"
-import { useBlink } from "../../hooks/use-blink"
+import { useBlink } from "../../src/hooks/use-blink"
 import { renderForTest } from "../test-utils"
 
 function Harness({ active }: { active: boolean }) {

@@ -6,8 +6,8 @@ import { SANDBOX_ORIGIN } from "@kaja/nasi"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-sandbox-relay`
 
-const { getConfigDir, invalidateConfigCache } = await import("../../../lib/config/config")
-const { relayTo, sandboxedAbilities, signedOutSandbox } = await import("../../../lib/abilities/sandbox-relay")
+const { getConfigDir, invalidateConfigCache } = await import("../../../src/lib/config/config")
+const { relayTo, sandboxedAbilities, signedOutSandbox } = await import("../../../src/lib/abilities/sandbox-relay")
 
 afterEach(() => {
   rmSync(getConfigDir(), { recursive: true, force: true })

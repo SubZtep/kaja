@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { pickUnrunnable } from "../../../lib/abilities/hosts"
+import { pickUnrunnable } from "../../../src/lib/abilities/hosts"
 
 test("offers only abilities a persona uses that miss something here and aren't already on a sandbox", () => {
   const entries = [

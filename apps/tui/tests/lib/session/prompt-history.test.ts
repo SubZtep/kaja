@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { commit, createPromptHistory, markEdited, recall } from "../../../lib/session/prompt-history"
+import { commit, createPromptHistory, markEdited, recall } from "../../../src/lib/session/prompt-history"
 
 test("up walks to the oldest entry and sticks there", () => {
   let h = createPromptHistory(["newest", "older", "oldest"])

@@ -1,6 +1,6 @@
 # @kaja/tui
 
-Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram bot. The entry point is `cli.ts` at the package root (not `src/`). `memory.sqlite` is nasi's `createSqlStore` over `Bun.SQL` (`lib/store/sqlite.ts`), every row under `LOCAL_USER_ID`.
+Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram bot. The entry point is `src/cli.ts`; paths below are under `src/`, except `tests/` and `locales/` at the package root. `memory.sqlite` is nasi's `createSqlStore` over `Bun.SQL` (`lib/store/sqlite.ts`), every row under `LOCAL_USER_ID`.
 
 ## Modes
 

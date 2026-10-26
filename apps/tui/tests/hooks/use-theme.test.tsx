@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { Text } from "ink"
 
-const { useTheme } = await import("../../hooks/use-theme")
-const { consoleTheme, resolveTheme } = await import("../../lib/terminal-background")
+const { useTheme } = await import("../../src/hooks/use-theme")
+const { consoleTheme, resolveTheme } = await import("../../src/lib/terminal-background")
 const { renderForTest } = await import("../test-utils")
 
 const DARK_REPORT = "\x1b[?997;1n"

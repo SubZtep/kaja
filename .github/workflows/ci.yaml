@@ -182,5 +182,5 @@ jobs:
       - name: Compile full TUI
         run: |
           cd apps/tui
-          bun build cli.ts --compile --outfile kaja-check \
+          bun build src/cli.ts --compile --outfile kaja-check \
             --define process.env.KAJA_API_URL="\"https://api.kaja.io\""

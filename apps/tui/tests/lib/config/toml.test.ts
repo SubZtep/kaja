@@ -8,7 +8,7 @@ import {
   setTomlValue,
   setTomlValueInText,
   stringifyToml
-} from "../../../lib/config/toml"
+} from "../../../src/lib/config/toml"
 
 const path = join(tmpdir(), "kaja-test-append-section.toml")
 

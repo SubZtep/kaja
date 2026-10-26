@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { commentOutModels, setProviderBaseUrl } from "../../../lib/models/models"
+import { commentOutModels, setProviderBaseUrl } from "../../../src/lib/models/models"
 
 const TEMPLATE = `# Kaja models — a comment that must survive.
 

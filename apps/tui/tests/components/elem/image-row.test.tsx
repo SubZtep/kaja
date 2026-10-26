@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { ImageRow } from "../../../components/elem/image-row"
-import { sourceName } from "../../../lib/image/source"
+import { ImageRow } from "../../../src/components/elem/image-row"
+import { sourceName } from "../../../src/lib/image/source"
 import { png } from "../../fixtures/images"
 import { renderForTest } from "../../test-utils"
 

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Box } from "ink"
-import { ModalHost } from "../../components/elem/modal"
-import { HelpModal } from "../../components/layout/help-modal"
+import { ModalHost } from "../../src/components/elem/modal"
+import { HelpModal } from "../../src/components/layout/help-modal"
 import { renderForTest } from "../test-utils"
 
 test("Enter opens the docs, Esc closes", async () => {

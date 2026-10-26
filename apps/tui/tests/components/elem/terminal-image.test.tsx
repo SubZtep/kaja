@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { TerminalImage } from "../../../components/elem/terminal-image"
-import { drawnTerminalImage, renderTerminalImage } from "../../../lib/image/render-terminal-image"
+import { TerminalImage } from "../../../src/components/elem/terminal-image"
+import { drawnTerminalImage, renderTerminalImage } from "../../../src/lib/image/render-terminal-image"
 import { png } from "../../fixtures/images"
 import { renderForTest } from "../../test-utils"
 

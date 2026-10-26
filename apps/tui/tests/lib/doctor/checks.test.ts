@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
 import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { checkAbilityKey, checkProvider, checkTelegramToken } from "../../../lib/doctor/checks"
+import { checkAbilityKey, checkProvider, checkTelegramToken } from "../../../src/lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn>
 

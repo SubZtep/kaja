@@ -2,9 +2,9 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-embeddings`
 
-const { saveConfig } = await import("../../../lib/config/config")
-const { getModelsPath } = await import("../../../lib/models/models")
-const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
+const { saveConfig } = await import("../../../src/lib/config/config")
+const { getModelsPath } = await import("../../../src/lib/models/models")
+const { getSecretsPath, invalidateSecretsCache } = await import("../../../src/lib/config/secrets")
 await saveConfig({})
 await Bun.write(
   getModelsPath(),
@@ -37,7 +37,7 @@ api_key = "llm-key"
 )
 invalidateSecretsCache()
 
-const { embed, cosineSimilarity } = await import("../../../lib/models/embeddings")
+const { embed, cosineSimilarity } = await import("../../../src/lib/models/embeddings")
 
 let lastRequest: { url: string; init: RequestInit } | undefined
 const originalFetch = globalThis.fetch

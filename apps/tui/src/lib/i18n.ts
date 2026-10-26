@@ -2,17 +2,17 @@
 
 import { baseLocale, createMessages, type Locale, matchLocale } from "@kaja/shared/locale"
 import * as z from "zod"
-import deDe from "../locales/de-DE.toml"
-import enGb from "../locales/en-GB.toml"
-import enUs from "../locales/en-US.toml"
-import esEs from "../locales/es-ES.toml"
-import frFr from "../locales/fr-FR.toml"
-import huHu from "../locales/hu-HU.toml"
-import jaJp from "../locales/ja-JP.toml"
-import koKr from "../locales/ko-KR.toml"
-import nanTw from "../locales/nan-TW.toml"
-import ptBr from "../locales/pt-BR.toml"
-import zhTw from "../locales/zh-TW.toml"
+import deDe from "../../locales/de-DE.toml"
+import enGb from "../../locales/en-GB.toml"
+import enUs from "../../locales/en-US.toml"
+import esEs from "../../locales/es-ES.toml"
+import frFr from "../../locales/fr-FR.toml"
+import huHu from "../../locales/hu-HU.toml"
+import jaJp from "../../locales/ja-JP.toml"
+import koKr from "../../locales/ko-KR.toml"
+import nanTw from "../../locales/nan-TW.toml"
+import ptBr from "../../locales/pt-BR.toml"
+import zhTw from "../../locales/zh-TW.toml"
 
 export type Language = Locale
 

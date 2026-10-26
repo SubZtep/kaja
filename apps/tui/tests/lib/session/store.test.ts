@@ -20,8 +20,8 @@ const {
   loadPromptHistory,
   loadSessionRow,
   updateSessionRow
-} = await import("../../../lib/session/store")
-const { getStore, peekStorePath } = await import("../../../lib/memory/store")
+} = await import("../../../src/lib/session/store")
+const { getStore, peekStorePath } = await import("../../../src/lib/memory/store")
 
 type Messages = StoredConversation["messages"]
 

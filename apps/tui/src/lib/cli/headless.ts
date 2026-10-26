@@ -13,7 +13,7 @@ const SHUTDOWN_TIMEOUT_MS = 3000
 export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {}) {
   const { loadModels } = await import("../models/models")
   const { loadPersonas } = await import("../personas/personas")
-  const { getDefaultTools } = await import("../../tools")
+  const { getDefaultTools } = await import("../agent/default-tools")
 
   const models = await loadModels()
   const personas = await loadPersonas()

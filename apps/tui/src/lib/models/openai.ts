@@ -12,7 +12,7 @@ const visionEntry = resolveActiveModel(modelsFile, "vision")
 export const isFreeChat = !chatEntry
 
 // chatEntry is only undefined when isFreeChat is true, which every caller of chatModelId/client
-// below (app.tsx, tools/*, telegram/cli.ts) is prevented from reaching by requireConfiguredProvider().
+// below (app.tsx, lib/agent/default-tools.ts, telegram/cli.ts) is prevented from reaching by requireConfiguredProvider().
 export const chatModelId = chatEntry?.model ?? ""
 
 export const client = createOpenAIClient({

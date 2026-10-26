@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { fitTurnBody } from "../../../lib/cloud/turn-body"
+import { fitTurnBody } from "../../../src/lib/cloud/turn-body"
 
 const image = (size: number) => ({ data: "A".repeat(size), mimeType: "image/png" })
 

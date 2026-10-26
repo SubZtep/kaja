@@ -9,7 +9,7 @@ const rootDir = join(import.meta.dir, "..")
 const targets = [
   { schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/src/env.d.ts") },
   { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/src/env.d.ts") },
-  { schema: TuiEnvSchema, outPath: join(rootDir, "apps/tui/env.d.ts") },
+  { schema: TuiEnvSchema, outPath: join(rootDir, "apps/tui/src/env.d.ts") },
   { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/src/env.d.ts") }
 ]
 

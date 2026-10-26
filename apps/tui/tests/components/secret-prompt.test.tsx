@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { InputPrompt, maskSecret, YesNoPrompt } from "../../components/secret-prompt"
+import { InputPrompt, maskSecret, YesNoPrompt } from "../../src/components/secret-prompt"
 import { renderForTest } from "../test-utils"
 
 test("masks input and submits the trimmed value; an empty Enter skips", async () => {

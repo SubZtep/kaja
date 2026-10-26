@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { loadPersonas } from "../../../lib/personas/personas"
+import { loadPersonas } from "../../../src/lib/personas/personas"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/personas/datasets.test.ts.
 // Every persona file in the fixture's marketplace loads; its .sync-lock.json records all but own.toml, which is therefore yours.

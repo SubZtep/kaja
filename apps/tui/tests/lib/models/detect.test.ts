@@ -1,5 +1,5 @@
 import { afterAll, expect, test } from "bun:test"
-import { detectedProvider, detectLocalServers, envCandidates } from "../../../lib/models/detect"
+import { detectedProvider, detectLocalServers, envCandidates } from "../../../src/lib/models/detect"
 
 // Stand-in servers on random ports, each answering like one kind of local model server
 function serve(routes: Record<string, unknown>) {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import type { TimelineEvent } from "../../hooks/use-agent"
-import { foldToolCalls } from "../../lib/tool-summary"
+import type { TimelineEvent } from "../../src/hooks/use-agent"
+import { foldToolCalls } from "../../src/lib/tool-summary"
 
 const call = (name: string): TimelineEvent => ({ type: "tool_call", name, arguments: "{}" })
 

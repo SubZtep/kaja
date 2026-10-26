@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { loadDataset, loadDatasets } from "../../../lib/personas/datasets"
+import { loadDataset, loadDatasets } from "../../../src/lib/personas/datasets"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/agent/plugin-tools.test.ts.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/datasets")

@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
-import type { Agent, AgentEvent } from "../../../lib/agent/agents"
+import type { Agent, AgentEvent } from "../../../src/lib/agent/agents"
 
 // XDG_DATA_HOME/XDG_CONFIG_HOME are read fresh on every call by lib/config.ts and lib/memory-store.ts (not cached at module load), so setting them before each test isolates this file from the real ~/.local/share/kaja and ~/.config/kaja even though other test files run in the same `bun test` process and may set these vars between tests.
 // Set before any import: lib/openai.ts does `const { llm } = await config()` at its own module top level (transitively reached from lib/agents.ts), so a *static* import of lib/agents.ts here would resolve before this file's own body — including these env vars — ever ran. Dynamic imports below keep the sequencing: env vars and the settings.toml fixture are in place before lib/agents.ts (and everything it pulls in) is ever evaluated.
@@ -31,7 +31,7 @@ provider = "default"
 `
 )
 
-const { invalidateConfigCache } = await import("../../../lib/config/config")
+const { invalidateConfigCache } = await import("../../../src/lib/config/config")
 const {
   applyPersonaToMessages,
   askUserTool,
@@ -41,8 +41,8 @@ const {
   runCommandTool,
   switchPersonaTool,
   tool
-} = await import("../../../lib/agent/agents")
-const { peekStore, saveMemory } = await import("../../../lib/memory/store")
+} = await import("../../../src/lib/agent/agents")
+const { peekStore, saveMemory } = await import("../../../src/lib/memory/store")
 const { rememberNoteTool } = await import("@kaja/nasi")
 
 // config()'s parsed *contents* are cached in-process on top of the path resolution (see lib/config.ts) — invalidate before every test in case another test file's process-wide cache last populated it with a different config (e.g. a real location block, triggering a real network call from run()).
@@ -420,7 +420,7 @@ test("no sticky-note block when there are no sticky notes", async () => {
 
 test("dataset instructions block appears only when agent.dataset is set and the tool is present", async () => {
   // Module side effect: wires @kaja/nasi's pluggable dataset loader to read from this test's XDG-isolated config dir.
-  await import("../../../lib/personas/datasets")
+  await import("../../../src/lib/personas/datasets")
   const { datasetInfoTool } = await import("@kaja/nasi")
   const datasetsDir = join(configKajaDir, "marketplace", "datasets")
   mkdirSync(datasetsDir, { recursive: true })

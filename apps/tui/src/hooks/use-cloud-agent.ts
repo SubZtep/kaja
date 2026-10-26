@@ -29,7 +29,7 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
 }
 
 /**
- * Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no
+ * Same shape as apps/tui/src/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no
  * display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). A tool image's
  * `path` is the data URL it came as.
  */

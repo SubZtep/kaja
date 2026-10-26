@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { SelectMenu } from "../../../components/elem/select-menu"
+import { SelectMenu } from "../../../src/components/elem/select-menu"
 import { renderForTest } from "../../test-utils"
 
 const DOWN = "\x1b[B"

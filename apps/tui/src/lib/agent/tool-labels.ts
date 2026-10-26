@@ -2,8 +2,9 @@ import { t } from "../i18n"
 
 /**
  * Human-readable one-liner for a tool call, shown in the timeline instead of the raw `{name}({arguments})` JSON. Only
- * the built-in tools (defined in tools/*.ts and lib/agents.ts) have a label; MCP tools (Playwright, Chrome DevTools —
- * dynamic, unknown at build time) and any future tool without an entry here fall back to the raw display.
+ * the built-in tools (defined in lib/agent/default-tools.ts and lib/agent/agents.ts) have a label; MCP tools
+ * (Playwright, Chrome DevTools — dynamic, unknown at build time) and any future tool without an entry here fall back to
+ * the raw display.
  */
 // The arguments the labels read, as the model sends them (parsed JSON, not checked)
 type LabelArgs = Record<"q" | "url" | "timezone" | "prompt" | "path" | "key" | "query" | "name" | "file", string> & {

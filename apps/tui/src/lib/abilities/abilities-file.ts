@@ -11,8 +11,8 @@ import { syncedAbilityPaths } from "./sync"
  */
 export const DEFAULT_SOURCE = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
 
-// The checkout this CLI runs from (apps/tui/lib/abilities → the repo root); a compiled binary has none.
-const REPO_ROOT = join(import.meta.dir, "../../../..")
+// The checkout this CLI runs from (apps/tui/src/lib/abilities → the repo root); a compiled binary has none.
+const REPO_ROOT = join(import.meta.dir, "../../../../..")
 
 /**
  * The default source under `KAJA_PROFILE=dev`: the checkout the CLI runs from, on its current branch, so even a first

@@ -5,9 +5,9 @@ import { join } from "node:path"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-hooks`
 
-const { fireHook, getHooksPath, loadHooks, onHook, resetHooks, runHook } = await import("../../../lib/config/hooks")
-const { getConfigDir } = await import("../../../lib/config/config")
-const { getLanguage } = await import("../../../lib/i18n")
+const { fireHook, getHooksPath, loadHooks, onHook, resetHooks, runHook } = await import("../../../src/lib/config/hooks")
+const { getConfigDir } = await import("../../../src/lib/config/config")
+const { getLanguage } = await import("../../../src/lib/i18n")
 const { write, file } = await import("bun")
 
 async function reset() {

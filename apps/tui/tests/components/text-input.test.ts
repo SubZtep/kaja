@@ -6,8 +6,8 @@ import {
   nextWordBoundary,
   prevWordBoundary,
   type TextEditState
-} from "../../components/elem/text-input"
-import { softWrapLines } from "../../lib/text-wrap"
+} from "../../src/components/elem/text-input"
+import { softWrapLines } from "../../src/lib/text-wrap"
 
 const emptyKey = {
   upArrow: false,

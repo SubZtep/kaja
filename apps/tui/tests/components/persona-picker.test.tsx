@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Box } from "ink"
-import { PersonaPicker } from "../../components/layout/persona-picker"
+import { PersonaPicker } from "../../src/components/layout/persona-picker"
 import { renderForTest } from "../test-utils"
 
 const personas = [

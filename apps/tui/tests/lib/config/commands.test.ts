@@ -4,8 +4,8 @@ import { tmpdir } from "node:os"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-commands`
 
 const { isSafeCommand } = await import("@kaja/nasi")
-const { getCommandsPath, loadSafeCommands } = await import("../../../lib/config/commands")
-const { getConfigDir } = await import("../../../lib/config/config")
+const { getCommandsPath, loadSafeCommands } = await import("../../../src/lib/config/commands")
+const { getConfigDir } = await import("../../../src/lib/config/config")
 const { write, file, $ } = await import("bun")
 
 async function reset() {

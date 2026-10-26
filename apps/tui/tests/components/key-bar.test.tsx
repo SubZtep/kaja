@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { fitKeyBarItems, KeyBar, type KeyBarEntry } from "../../components/layout/key-bar"
+import { fitKeyBarItems, KeyBar, type KeyBarEntry } from "../../src/components/layout/key-bar"
 import { renderForTest } from "../test-utils"
 
 test("renders each item's key and label", async () => {

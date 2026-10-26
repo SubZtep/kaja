@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Activity } from "../../components/activity"
+import { Activity } from "../../src/components/activity"
 import { renderForTest } from "../test-utils"
 
 test("shows the indicator while reasoning streams with thinking hidden", async () => {

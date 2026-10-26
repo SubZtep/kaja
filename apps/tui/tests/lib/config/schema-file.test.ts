@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { tombiSchemas } from "@kaja/schema/tombi"
 import { file, write } from "bun"
-import { writeSchemaCopy } from "../../../lib/config/schema-file"
+import { writeSchemaCopy } from "../../../src/lib/config/schema-file"
 
 const repoSchema = join(import.meta.dir, "../../../../../packages/schema/json/settings.json")
 

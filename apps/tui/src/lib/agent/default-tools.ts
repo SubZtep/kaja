@@ -7,14 +7,14 @@ import {
   setDatasetLoaders
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
-import { getMarketplaceDir } from "../lib/abilities/abilities-file"
-import { sandboxedAbilities, sandboxRelay, signedOutSandbox } from "../lib/abilities/sandbox-relay"
-import { secrets } from "../lib/config/secrets"
-import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
-import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
-import { chatModelId, client, summarizer } from "../lib/models/openai"
-import { getBackupDir, getPaths } from "../lib/paths"
-import { loadDataset, loadDatasets } from "../lib/personas/datasets"
+import { getMarketplaceDir } from "../abilities/abilities-file"
+import { sandboxedAbilities, sandboxRelay, signedOutSandbox } from "../abilities/sandbox-relay"
+import { secrets } from "../config/secrets"
+import { peekStorePath, resolveMemoryDbPath } from "../memory/store"
+import { loadModelsFile, resolveActiveModel } from "../models/models"
+import { chatModelId, client, summarizer } from "../models/openai"
+import { getBackupDir, getPaths } from "../paths"
+import { loadDataset, loadDatasets } from "../personas/datasets"
 
 /**
  * Every tool the local agent gets. `lazyMcp` (default) leaves abilities' MCP servers for `ensureAbilities` to connect

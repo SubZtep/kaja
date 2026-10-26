@@ -2,13 +2,13 @@ import { expect, mock, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Box } from "ink"
-import { ChatViewport } from "../../components/layout/chat-viewport"
-import type { TimelineEvent } from "../../hooks/use-agent"
+import { ChatViewport } from "../../src/components/layout/chat-viewport"
+import type { TimelineEvent } from "../../src/hooks/use-agent"
 import { png } from "../fixtures/images"
 import { renderForTest } from "../test-utils"
 
 const opened: string[] = []
-mock.module("../../lib/image/open-image", () => ({
+mock.module("../../src/lib/image/open-image", () => ({
   openImage: async (target: string) => {
     opened.push(target)
     return true

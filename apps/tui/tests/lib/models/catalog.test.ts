@@ -10,7 +10,7 @@ import {
   resolvePicks,
   setCatalog,
   TASK_ORDER
-} from "../../../lib/models/catalog"
+} from "../../../src/lib/models/catalog"
 import { TEST_CATALOG } from "../../fixtures/catalog"
 
 setCatalog(TEST_CATALOG)

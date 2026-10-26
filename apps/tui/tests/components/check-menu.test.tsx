@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { CheckMenu } from "../../components/elem/check-menu"
+import { CheckMenu } from "../../src/components/elem/check-menu"
 import { renderForTest } from "../test-utils"
 
 const OPTIONS = [

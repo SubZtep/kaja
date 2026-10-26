@@ -5,10 +5,10 @@ import {
   ConfigWizard,
   providerGroups,
   type WizardResult
-} from "../../components/config-wizard"
-import { padLabel } from "../../components/elem/rail"
-import { setLanguage } from "../../lib/i18n"
-import { CATALOG, setCatalog } from "../../lib/models/catalog"
+} from "../../src/components/config-wizard"
+import { padLabel } from "../../src/components/elem/rail"
+import { setLanguage } from "../../src/lib/i18n"
+import { CATALOG, setCatalog } from "../../src/lib/models/catalog"
 import { TEST_CATALOG } from "../fixtures/catalog"
 import { renderForTest } from "../test-utils"
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { dedent } from "../../lib/markdown/dedent"
+import { dedent } from "../../src/lib/markdown/dedent"
 
 test("removes the smallest indent from indented lines and trims the ends", () => {
   expect(dedent("\n    one\n      two\n    three\n")).toBe("one\n  two\nthree")

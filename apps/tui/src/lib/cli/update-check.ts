@@ -1,7 +1,7 @@
 import { rename, rm } from "node:fs/promises"
 import { basename, dirname } from "node:path"
+import pkg from "../../../package.json" with { type: "json" }
 import { consolePalette, paint } from "../../components/theme"
-import pkg from "../../package.json" with { type: "json" }
 import type { KajaMode } from "../config/mode"
 import { t } from "../i18n"
 import { log } from "../logger"

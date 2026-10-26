@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { Marked } from "marked"
-import { splitBlocks } from "../../../lib/markdown/blocks"
-import { dedent } from "../../../lib/markdown/dedent"
-import { markedTerminal } from "../../../lib/markdown/marked-terminal"
+import { splitBlocks } from "../../../src/lib/markdown/blocks"
+import { dedent } from "../../../src/lib/markdown/dedent"
+import { markedTerminal } from "../../../src/lib/markdown/marked-terminal"
 
 const renderer = new Marked(markedTerminal({ tab: 2 }))
 const whole = (source: string) => dedent(renderer.parse(source) as string)

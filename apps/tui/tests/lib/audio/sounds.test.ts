@@ -6,8 +6,8 @@ import { join } from "node:path"
 
 process.env.XDG_DATA_HOME = `${tmpdir()}/kaja-test-xdg-data-sounds`
 
-const { syncSounds } = await import("../../../lib/audio/sounds")
-const { getSoundsDir } = await import("../../../lib/paths")
+const { syncSounds } = await import("../../../src/lib/audio/sounds")
+const { getSoundsDir } = await import("../../../src/lib/paths")
 
 const originalFetch = globalThis.fetch
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex")

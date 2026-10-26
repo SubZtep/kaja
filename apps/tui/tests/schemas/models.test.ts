@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { resolveModels } from "../../lib/models/models"
+import { resolveModels } from "../../src/lib/models/models"
 
 const parse = (toml: string) => ModelsFileSchema.parse(TOML.parse(toml))
 

@@ -7,9 +7,9 @@ import { png, TINY_PNG_BASE64 } from "../../fixtures/images"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-computer`
 
-const { getConfigDir, invalidateConfigCache } = await import("../../../lib/config/config")
-const { getMarketplaceDir } = await import("../../../lib/abilities/abilities-file")
-const { clampResult, computerAbilities, openComputer } = await import("../../../lib/cloud/computer")
+const { getConfigDir, invalidateConfigCache } = await import("../../../src/lib/config/config")
+const { getMarketplaceDir } = await import("../../../src/lib/abilities/abilities-file")
+const { clampResult, computerAbilities, openComputer } = await import("../../../src/lib/cloud/computer")
 
 afterEach(() => {
   rmSync(getConfigDir(), { recursive: true, force: true })
