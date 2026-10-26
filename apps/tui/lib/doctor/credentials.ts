@@ -50,7 +50,7 @@ export type CredentialOutcome =
 export type OfferedValues = Record<string, string | null>
 
 /** Where an ability's key goes in secrets.toml. */
-export function abilityKeyWhere(name: string): string {
+function abilityKeyWhere(name: string): string {
   return `[abilities.${name}] api_key`
 }
 

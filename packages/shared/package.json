@@ -9,10 +9,6 @@
       "types": "./date/index.ts",
       "default": "./date/index.ts"
     },
-    "./id": {
-      "types": "./id/index.ts",
-      "default": "./id/index.ts"
-    },
     "./locale": {
       "types": "./locale/index.ts",
       "default": "./locale/index.ts"

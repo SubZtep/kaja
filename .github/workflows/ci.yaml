@@ -77,9 +77,7 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       - name: Build API and its migrate script
-        run: |
-          bun --filter @kaja/api build
-          bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/scripts/migrate.ts
+        run: bun --filter @kaja/api build
 
       - name: Build sandbox
         run: bun --filter @kaja/sandbox build

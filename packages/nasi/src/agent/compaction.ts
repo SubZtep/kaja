@@ -160,14 +160,14 @@ const SUMMARY_INSTRUCTIONS =
  * Notes a conversation can carry on from; the language rule is repeated after the text, since some models otherwise
  * drift into their own default language.
  */
-export const CONVERSATION_STYLE: SummaryStyle = {
+const CONVERSATION_STYLE: SummaryStyle = {
   instructions: SUMMARY_INSTRUCTIONS,
   reminder: "(Write the notes in the same language as the user's messages above.)",
   whole: "the conversation"
 }
 
 /** A tool's output, condensed for the assistant that called it. */
-export const TOOL_OUTPUT_STYLE: SummaryStyle = {
+const TOOL_OUTPUT_STYLE: SummaryStyle = {
   instructions:
     "You condense the output of a tool an AI assistant called, so it can use the output without reading all of it. " +
     "Keep everything it is likely to need: facts, numbers, names, identifiers, file paths, URLs, error messages and " +

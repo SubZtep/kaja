@@ -9,7 +9,7 @@ import { getPaths } from "../paths"
 import { type CatalogModel, type CatalogProvider, setCatalog } from "./catalog"
 
 /** Models.dev's registry of providers and models: what the wizard offers online. About 600 KB gzipped. */
-export const MODELS_DEV_URL = "https://models.dev/api.json"
+const MODELS_DEV_URL = "https://models.dev/api.json"
 
 /**
  * The OpenAI-compatible endpoints of well-known providers models.dev lists without an `api` (their own SDK package
@@ -49,7 +49,7 @@ const providerSchema = z.object({
 })
 
 /** The tasks a models.dev model can do, from its `type` and modalities; none for one Kaja can't use. */
-export function tasksFor(model: z.infer<typeof modelSchema>): ModelTask[] {
+function tasksFor(model: z.infer<typeof modelSchema>): ModelTask[] {
   const input = model.modalities?.input ?? ["text"]
   const output = model.modalities?.output ?? ["text"]
   switch (model.type) {

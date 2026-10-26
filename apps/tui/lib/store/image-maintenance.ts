@@ -13,11 +13,11 @@ import type { SQL } from "bun"
 import { siteOf } from "../image/source"
 
 /** `kaja images describe` gives an image up after this many tries, unless it's run with `--retry`. */
-export const MAX_DESCRIBE_ATTEMPTS = 3
+const MAX_DESCRIBE_ATTEMPTS = 3
 /** Vision model calls running at once. */
 export const DESCRIBE_CONCURRENCY = 3
 /** Orphans this young are left alone: a file may still be getting its row, a row its file. */
-export const ORPHAN_GRACE_MS = 60 * 60 * 1000
+const ORPHAN_GRACE_MS = 60 * 60 * 1000
 /** An image whose session still doesn't exist after this long belongs to a turn that never saved. */
 const UNSAVED_AFTER_MS = 24 * 60 * 60 * 1000
 const TOP = 5

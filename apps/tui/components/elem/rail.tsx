@@ -7,11 +7,11 @@ import { useKajaTheme } from "../theme"
  * labels from column 4, values from column 18, and nothing past column 78, since writing into the last column makes
  * some terminals wrap.
  */
-export const FRAME_WIDTH = 78
+const FRAME_WIDTH = 78
 /** Columns 4 to 17: a label, padded so its value starts at column 18. */
 export const LABEL_WIDTH = 14
 /** Where a row's text starts: past the gutter mark and its space. */
-export const TEXT_COLUMN = 3
+const TEXT_COLUMN = 3
 
 /** The width left for a row's text at this terminal width, never past column 78. */
 export function textWidth(columns = process.stdout.columns || 80): number {

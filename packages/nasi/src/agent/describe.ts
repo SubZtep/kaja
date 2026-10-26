@@ -16,7 +16,7 @@ const DESCRIBE_INSTRUCTIONS =
 const MAX_DESCRIPTION = 400
 
 /** How long a turn waits for a description before it goes on with the alt text. */
-export const DESCRIBE_TIMEOUT_MS = 30_000
+const DESCRIBE_TIMEOUT_MS = 30_000
 
 /**
  * The text part that stands for an image in its message: what it is (`text`: the alt, then its description), and the

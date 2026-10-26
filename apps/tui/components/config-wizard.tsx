@@ -28,7 +28,7 @@ import { InputPrompt, type LiveCheck, Problem } from "./secret-prompt"
 import { themeFor, useKajaTheme } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
-export type WizardExtra = "telegram"
+type WizardExtra = "telegram"
 
 const EXTRA_CHOICES: WizardExtra[] = ["telegram"]
 
@@ -643,7 +643,7 @@ const FOLDS: Record<Block, (result: WizardResult, asked: Set<string>, saved?: Wi
 }
 
 /** `parts` joined by " · " within `width` columns: the ones that don't fit are counted as "+N", never cut mid-word. */
-export function fitParts(parts: string[], width: number): string {
+function fitParts(parts: string[], width: number): string {
   for (let kept = parts.length; kept > 0; kept--) {
     const dropped = parts.length - kept
     const text = [...parts.slice(0, kept), ...(dropped > 0 ? [`+${dropped}`] : [])].join(" · ")

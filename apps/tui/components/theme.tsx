@@ -34,7 +34,7 @@ export type Scheme = {
 }
 
 /** A scheme colour a tint can be mixed from. */
-export type Hue = Exclude<keyof Scheme, "foreground" | "background">
+type Hue = Exclude<keyof Scheme, "foreground" | "background">
 
 /**
  * What the TUI paints with, worked out from a scheme by {@link paletteFrom}: a colour per role, plus tints. Ink and
@@ -154,7 +154,7 @@ const darkPalette = paletteFrom(darkScheme)
 const lightPalette = paletteFrom(lightScheme)
 
 /** Whether the user asked for no colour (no-color.org: `NO_COLOR` set and not empty); chalk itself ignores it. */
-export function noColour(): boolean {
+function noColour(): boolean {
   return Boolean(Bun.env.NO_COLOR)
 }
 

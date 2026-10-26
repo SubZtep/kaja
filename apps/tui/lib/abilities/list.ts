@@ -127,6 +127,6 @@ export function missingPrograms(needs: string[] = [], requires: string[] = []): 
 }
 
 /** "uvx, pipx or docker", in the TUI's language. */
-export function anyOf(programs: string[]): string {
+function anyOf(programs: string[]): string {
   return new Intl.ListFormat(getLanguage(), { type: "disjunction" }).format(programs)
 }

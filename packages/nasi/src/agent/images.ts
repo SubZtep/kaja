@@ -9,7 +9,7 @@ import type { Agent, Session } from "./agent"
 import { describeInBackground, imageLabel } from "./describe"
 
 /** The note a model gets where a stored image is gone. */
-export const MISSING_IMAGE = "[an image that is no longer stored]"
+const MISSING_IMAGE = "[an image that is no longer stored]"
 
 // Each run's images as data URLs by ref, so a round after the first fetches nothing it already has.
 const caches = new WeakMap<Session, Map<string, string>>()

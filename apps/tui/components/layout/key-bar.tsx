@@ -29,7 +29,7 @@ const rowWidth = (items: KeyBarEntry[]) =>
   )
 
 /** The columns the bar has at this terminal width. */
-export function keyBarRoom(columns: number): number {
+function keyBarRoom(columns: number): number {
   return Math.min(MAX_COLUMN, columns) - 1
 }
 

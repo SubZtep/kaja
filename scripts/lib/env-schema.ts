@@ -3,7 +3,7 @@ import type { z } from "zod"
 
 type EnvDefault = string | number | boolean
 
-export interface EnvFieldMeta {
+interface EnvFieldMeta {
   description?: string
   example?: string
   secret?: boolean

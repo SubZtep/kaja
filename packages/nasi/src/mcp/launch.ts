@@ -49,10 +49,10 @@ export function isInstalled(requirement: McpRequirement): boolean {
 }
 
 /** A browser chrome-devtools-mcp can drive: `stable` it opens by itself, any other needs `--executablePath`. */
-export type FoundChrome = { path: string; stable: boolean }
+type FoundChrome = { path: string; stable: boolean }
 
 /** Chrome's stable channel where it installs itself, else a Chromium (installed by a distro, or on macOS). */
-export function findChrome(which: (program: string) => string | null = Bun.which): FoundChrome | undefined {
+function findChrome(which: (program: string) => string | null = Bun.which): FoundChrome | undefined {
   const stable = chromePaths().find(path => existsSync(path))
   if (stable) return { path: stable, stable: true }
   const chromium =

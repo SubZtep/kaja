@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect } from "react"
  */
 export type CodeView = { expanded: boolean; lines: number; register?: () => () => void }
 
-export const DEFAULT_CODE_LINES = 5
+const DEFAULT_CODE_LINES = 5
 
 export const CodeViewContext = createContext<CodeView>({ expanded: false, lines: DEFAULT_CODE_LINES })
 

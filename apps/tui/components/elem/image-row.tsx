@@ -9,7 +9,7 @@ import { TerminalImage } from "./terminal-image"
 import { useClick } from "./use-click"
 
 /** Below this many columns the text goes under the image: beside it, it would wrap to a few words a line. */
-export const IMAGE_ROW_MIN_COLUMNS = 100
+const IMAGE_ROW_MIN_COLUMNS = 100
 
 /** An OSC 8 link: terminals that know it open `target` on click; a local path becomes a file:// URL. */
 const terminalLink = (text: string, target: string) => {

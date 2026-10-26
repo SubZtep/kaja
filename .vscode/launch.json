@@ -15,7 +15,7 @@
       "request": "launch",
       "name": "Debug TUI --local",
       "program": "${workspaceFolder}/apps/tui/cli.ts",
-      "args": [],
+      "args": ["--local"],
       "cwd": "${workspaceFolder}/apps/tui",
       "stopOnEntry": false
     },

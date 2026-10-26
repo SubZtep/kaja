@@ -9,7 +9,7 @@ export type WidgetVariables = { widget: ResolvedWidget }
 const TOKEN_PREFIX = "kwt_"
 
 /** The raw widget token from `Authorization: Bearer kwt_…`, or undefined when this request is not one. */
-export function widgetBearer(header: string | undefined): string | undefined {
+function widgetBearer(header: string | undefined): string | undefined {
   if (!header?.startsWith(`Bearer ${TOKEN_PREFIX}`)) return undefined
   return header.slice("Bearer ".length).trim()
 }

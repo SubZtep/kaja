@@ -11,7 +11,7 @@ import { getMarketplaceDir, ownAbilities } from "../abilities/abilities-file"
 export type Persona = PersonaManifest & { local?: boolean }
 
 /** The persona that always loads, first in the roster. */
-export const DEFAULT_PERSONA_ID = "default"
+const DEFAULT_PERSONA_ID = "default"
 
 function builtinDefault(): Persona {
   return { ...PersonaSchema.parse(TOML.parse(DEFAULT_TEMPLATE)), id: DEFAULT_PERSONA_ID }

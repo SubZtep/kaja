@@ -21,7 +21,7 @@ const CHROME_URL = "https://www.google.com/chrome/"
 export type Unrunnable = { name: string; needs: string[]; requires: string[]; localOnly: boolean }
 
 /** The stdio abilities some persona uses that can't start here (a missing runner, or Chrome) and stay on this computer. */
-export async function unrunnableAbilities(): Promise<Unrunnable[]> {
+async function unrunnableAbilities(): Promise<Unrunnable[]> {
   const { scanMcpAbilities } = await import("@kaja/nasi")
   const used = new Set((await loadPersonas()).flatMap(persona => [...personaAbilities(persona).keys()]))
   return pickUnrunnable(await scanMcpAbilities(getMarketplaceDir()), used, await toolHosts())

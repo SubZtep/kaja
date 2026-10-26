@@ -10,7 +10,7 @@ import {
   EmailText
 } from "./template"
 
-export function CodeEmail({
+function CodeEmail({
   purpose,
   name,
   otp,

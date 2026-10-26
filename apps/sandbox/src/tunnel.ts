@@ -160,7 +160,7 @@ async function saveInstance(stateDir: string, instance: Instance) {
 }
 
 /** The API's WebSocket URL for sandboxes. */
-export function connectUrl(apiUrl: string): string {
+function connectUrl(apiUrl: string): string {
   const url = new URL("/sandbox/connect", apiUrl)
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
   return url.toString()

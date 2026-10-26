@@ -1,13 +1,8 @@
 .claude/worktrees/
-.dev-config
-.data/
 .output/
-.playwright-mcp/
 .tanstack/
 .tsbuildinfo
 .tmp-test-xdg-config-*/
-apps/tui/assets/datasets/
-apps/api/.data/
 dist/
 node_modules/
 data/

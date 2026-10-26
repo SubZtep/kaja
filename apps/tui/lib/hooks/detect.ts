@@ -1,7 +1,7 @@
 /** What a hook command can do for us: play a sound, show a desktop notification, or read text aloud. */
 export type BackendKind = "player" | "notifier" | "speaker"
 
-export type Backend = {
+type Backend = {
   kind: BackendKind
   /** The program the command starts, which must be on PATH for it to work. */
   program: string

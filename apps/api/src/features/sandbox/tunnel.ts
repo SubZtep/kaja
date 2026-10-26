@@ -14,7 +14,7 @@ type PendingRequest = {
 }
 type PendingStats = { kind: "stats"; resolve: (stats: SandboxStats) => void; reject: (error: Error) => void }
 
-export class SandboxGoneError extends Error {
+class SandboxGoneError extends Error {
   constructor() {
     super("the sandbox disconnected")
     this.name = "SandboxGoneError"

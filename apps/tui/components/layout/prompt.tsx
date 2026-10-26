@@ -6,7 +6,7 @@ import { SelectMenu } from "../elem/select-menu"
 import { UserInput } from "./user-input"
 
 /** One answer the user can pick; more kinds (multi-select, secret, path, …) join this union, each with its own view. */
-export type PromptOption = { kind: "choice"; id: string; label: string }
+type PromptOption = { kind: "choice"; id: string; label: string }
 
 /** What a prompt asks and how it can be answered: pick an option, or write something instead. */
 export type PromptSpec = {

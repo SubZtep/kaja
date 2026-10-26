@@ -41,7 +41,7 @@ export type TelegramButton = { text: string; data: string }
  * Buttons (rows of them) serve tool approvals (`confirm_tool`); cloud Nasi never emits confirm_command. Editing a
  * message without `rows` removes its buttons.
  */
-export type TelegramSender = {
+type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
   deleteMessage(chatId: number, messageId: number): Promise<void>
