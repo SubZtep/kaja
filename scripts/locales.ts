@@ -1,10 +1,11 @@
 // Used by `bun sync:locales` (pre-commit), `bun check:locales` (pre-push, CI) and the /translate skill (`--todo`, `--apply`).
 import { readdir } from "node:fs/promises"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import { $ } from "bun"
 import { baseLocale, locales } from "../packages/shared/locale"
+import { copiedAcross, wrongScript } from "./lib/locale-lint"
 
-// Syncs every non-en-GB locale file to en-GB: same keys in the same order; a key that is new or whose English changed since HEAD gets a lorem ipsum placeholder tagged with the language code, unless that translation was itself edited in the working tree. `--stage` git-adds the files it rewrote; `--check` fails on drift or leftover placeholders; `--todo` lists the placeholders as JSON and `--apply <file>` writes their translations back (the /translate skill).
+// Syncs every non-en-GB locale file to en-GB: same keys in the same order; a key that is new or whose English changed since HEAD gets a lorem ipsum placeholder tagged with the language code, unless that translation was itself edited in the working tree. `--stage` git-adds the files it rewrote; `--check` fails on drift, leftover placeholders or a value in the wrong language; `--todo` lists the placeholders as JSON and `--apply <file>` writes their translations back (the /translate skill).
 
 const LOCALE_DIRS = ["apps/tui/locales", "apps/api/locales", "apps/web/messages"]
 const SOURCE = baseLocale
@@ -255,14 +256,45 @@ async function todo(): Promise<Todo[]> {
   return todos
 }
 
-// The entries whose key exists in en-GB with the same `{params}`; the rest go to `errors`
+const localeOf = (file: string) => basename(file).replace(/\.(toml|json)$/, "")
+
+// Why an entry can't go in, or undefined: an unknown key, other `{params}` than en-GB, or another language's script
+function entryError(file: string, { key, value }: Translation, english: Values): string | undefined {
+  const source = english.get(key)
+  if (source === undefined) return `${file} ${key}: no such key in ${SOURCE}`
+  if (paramsOf(source) !== paramsOf(value)) return `${file} ${key}: params differ from ${SOURCE}`
+  const script = wrongScript(localeOf(file), source, value)
+  return script && `${file} ${key}: ${script}, so it's another language's translation`
+}
+
+// The entries that can go in; the rest go to `errors`
 function validEntries(file: string, entries: Translation[], english: Values, errors: string[]): Translation[] {
-  return entries.filter(({ key, value }) => {
-    const source = english.get(key)
-    if (source === undefined) errors.push(`${file} ${key}: no such key in ${SOURCE}`)
-    else if (paramsOf(source) !== paramsOf(value)) errors.push(`${file} ${key}: params differ from ${SOURCE}`)
-    return source !== undefined && paramsOf(source) === paramsOf(value)
+  return entries.filter(entry => {
+    const error = entryError(file, entry, english)
+    if (error) errors.push(error)
+    return error === undefined
   })
+}
+
+/** Translations in the wrong language: another script, or the same text as an unrelated language (a copy). */
+async function wrongLanguage(): Promise<string[]> {
+  const problems: string[] = []
+  for (const dir of LOCALE_DIRS) {
+    const { json, sourcePath, targets } = await localesOf(dir)
+    const english = new Map([...valuesOf(await Bun.file(sourcePath).text(), json)].filter(([k]) => !k.startsWith("$")))
+    const byLocale = new Map<string, Values>()
+    for (const { locale, path } of targets) {
+      const values = valuesOf(await readLocale(path, json), json)
+      byLocale.set(locale, values)
+      for (const [key, value] of values) {
+        const script = english.has(key) ? wrongScript(locale, english.get(key) as string, value) : undefined
+        if (script) problems.push(`${path} ${key}: ${script}`)
+      }
+    }
+    for (const [key, shared] of copiedAcross(english, byLocale))
+      problems.push(`${dir} ${key}: the same translation in ${shared.join(" and ")}`)
+  }
+  return problems
 }
 
 function withTranslations(text: string, json: boolean, entries: Translation[]): string {
@@ -308,10 +340,14 @@ async function check(): Promise<void> {
     ...(await syncInlang(false))
   ]
   const untranslated = Map.groupBy(await todo(), t => t.file)
-  if (drifted.length === 0 && untranslated.size === 0) return
+  const wrong = await wrongLanguage()
+  if (drifted.length === 0 && untranslated.size === 0 && wrong.length === 0) return
   for (const path of drifted) console.error(`out of sync with ${SOURCE}: ${path}`)
   for (const [file, entries] of untranslated)
     console.error(`untranslated: ${file} (${entries.map(e => e.key).join(", ")})`)
+  for (const problem of wrong) console.error(`wrong language: ${problem}`)
+  if (wrong.length > 0)
+    console.error("\nA wrong-language value needs translating again: replace it with its locale's translation.")
   if (drifted.length > 0) console.error("\nRun `bun sync:locales` to bring the keys in line with en-GB.")
   console.error(
     "Then run /translate in Claude Code (or translate the [<locale>] lorem placeholders by hand) and commit."
