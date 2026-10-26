@@ -23,6 +23,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **Images**: a drawn picture is cached by source and size (`lib/image/render-terminal-image.ts`), not in row state: unmounted rows would come back without it and the viewport flickers. Failures aren't cached
 - **Monster**: every face lives in `components/layout/monster.tsx` (`<Monster mood wand>`, never a copied string). `emote(mood)` from anywhere shows a face for a moment; each `fireHook` pulls one through `onHook`, hooks.toml or not
 - **Ink is patched** (`patches/ink@8.0.0.patch`, soft-wrap leading space): bumping Ink means redoing the patch or dropping it if upstream fixed it
+- **`react-devtools-core` devDependency** looks unused but must stay: `bun build --compile` bundles Ink's `devtools.js`, whose static import fails without it (`--external` crashes the binary at startup)
 - **Hooks**: optional `hooks.toml` (`kaja config hooks`); no file = silence. `fireHook(name, event)` is the one entry point; commands are unref'd to outlive a quit. Sounds/notifications use system utilities (`lib/hooks/detect.ts`), no npm packages; wav files are downloaded by `syncSounds` since an external player can't open files inside the binary
 - **Logging**: `lib/logger.ts`, a JSON-lines file, silent unless `KAJA_LOG_LEVEL` and `KAJA_LOG_FILE` are set; never the terminal (Ink owns it)
 
