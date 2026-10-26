@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import chalk from "chalk"
 import { ConfirmCommand } from "../../src/components/layout/confirm-command"
 import { renderForTest } from "../test-utils"
 
@@ -53,6 +54,23 @@ test("typing hands the keys to the field: Enter declines with what was written",
   expect(answers).toEqual([[false, "use trash instead"]])
   t.unmount()
   await t.waitUntilExit()
+})
+
+test("the field shows no cursor while the list has the keys, and one once typing gives it them", async () => {
+  // Test frames are colourless; the cursor is only an inverse cell, so turn colour on to see it
+  const level = chalk.level
+  chalk.level = 1
+  try {
+    const t = mount([])
+    await t.tick()
+    expect(t.lastRawFrame()).not.toContain("\x1b[7m")
+    await t.press("n")
+    expect(t.lastRawFrame()).toContain("\x1b[7m")
+    t.unmount()
+    await t.waitUntilExit()
+  } finally {
+    chalk.level = level
+  }
 })
 
 test("Esc empties the field and returns to the list, and Esc on the list declines", async () => {

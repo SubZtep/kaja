@@ -90,6 +90,8 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
       }
       return ""
     },
+    /** The last painted frame with its escapes, for asserting styles such as the inverse cursor cell. */
+    lastRawFrame: () => chunks.findLast(chunk => chunk.replace(ansi, "").trim() !== "") ?? "",
     /** Everything written so far, ANSI escapes stripped. */
     output: () => chunks.join("").replace(ansi, ""),
     /**

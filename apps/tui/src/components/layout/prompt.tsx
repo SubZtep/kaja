@@ -96,6 +96,7 @@ export function Prompt({
             mic={mic}
             onMicChange={onMicChange}
             placeholder={spec.placeholder}
+            cursorHidden={listHasKeys}
             onDraft={text => {
               setDraft(text)
               onDraft?.(text)

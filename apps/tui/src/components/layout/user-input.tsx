@@ -39,6 +39,7 @@ export function UserInput({
   personaModels,
   placeholder,
   onDraft,
+  cursorHidden = false,
   mic: controlledMic,
   onMicChange
 }: Readonly<{
@@ -56,6 +57,8 @@ export function UserInput({
   placeholder?: string
   /** Called with the text whenever it changes (typed, dictated, recalled or cleared by sending). */
   onDraft?: (draft: string) => void
+  /** No cursor while something else beside the field has the keys (a question's options), so it doesn't look focused. */
+  cursorHidden?: boolean
   /** The mic switch kept by the caller, so it outlives this field being swapped for another (a question's options). */
   mic?: boolean
   onMicChange?: (mic: boolean) => void
@@ -122,7 +125,7 @@ export function UserInput({
           }}
           showCursor={!mic}
           blinkMs={CURSOR_BLINK_MS}
-          blinkPaused={!windowFocused}
+          blinkPaused={!windowFocused || cursorHidden}
           placeholder={placeholder ?? t("input.placeholder")}
           prefix={prefix}
           prefixCols={PREFIX_COLS}
