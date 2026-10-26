@@ -1,8 +1,7 @@
 [cli]
 invalidConfig          = "Arquivo de configuração inválido: {path}"
-startupError           = """
-O Kaja encontrou um erro inesperado e não conseguiu iniciar: {message}
-Os detalhes foram gravados no arquivo de log."""
+startupError           = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing {message}"
+logWritten             = "[pt-BR] lorem ipsum {path}"
 bye                    = "Tchau, tchau!"
 localNoProvider        = "--local precisa de um modelo de chat. Execute `kaja config wizard` para configurar um, ou `kaja --cloud` para o chat na nuvem."
 headlessNoSubcommand   = "--headless precisa de um subcomando compatível, como `telegram`. Ainda não existe um modo headless puro."
@@ -47,6 +46,7 @@ settings       = "configurações"
 memorySessions = "memória e sessões"
 images         = "imagens da sessão"
 sounds         = "efeitos sonoros"
+log            = "[pt-BR] lorem"
 backups        = "backups de arquivos"
 models         = "modelos"
 commands       = "comandos seguros"

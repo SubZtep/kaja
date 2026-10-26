@@ -1,8 +1,7 @@
 [cli]
 invalidConfig          = "잘못된 설정 파일: {path}"
-startupError           = """
-Kaja에 예기치 않은 오류가 발생해 시작할 수 없습니다: {message}
-자세한 내용은 로그 파일에 기록했습니다."""
+startupError           = "[de-DE] lorem ipsum dolor sit amet consectetur adipiscing {message}"
+logWritten             = "[de-DE] lorem ipsum {path}"
 bye                    = "안녕, 또 봐요!"
 localNoProvider        = "--local에는 채팅 모델이 필요합니다. `kaja config wizard`로 설정하거나, 클라우드 채팅은 `kaja --cloud`를 사용하세요."
 headlessNoSubcommand   = "--headless에는 이를 지원하는 하위 명령(예: `telegram`)이 필요합니다. 단독 headless 모드는 아직 없습니다."
@@ -47,6 +46,7 @@ settings       = "설정"
 memorySessions = "메모리 및 세션"
 images         = "세션 이미지"
 sounds         = "효과음"
+log            = "[de-DE] lorem"
 backups        = "파일 백업"
 models         = "모델"
 commands       = "안전한 명령"

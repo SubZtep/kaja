@@ -4,7 +4,7 @@ import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { create, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { modeFromFlags, resolveMode } from "./lib/config/mode"
 import { t } from "./lib/i18n"
-import { log } from "./lib/logger"
+import { log, logTarget } from "./lib/logger"
 import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
@@ -119,5 +119,7 @@ try {
   log.error("Unhandled startup error", { error })
   const message = error instanceof Error ? error.message : String(error)
   console.log(paint(consolePalette().danger)(t("cli.startupError", { message })))
+  const target = logTarget()
+  if (target) console.log(t("cli.logWritten", { path: target.file }))
   process.exit(1)
 }

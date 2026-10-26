@@ -1,8 +1,7 @@
 [cli]
 invalidConfig          = "設定ファイルが無効です: {path}"
-startupError           = """
-Kajaで予期しないエラーが発生し、起動できませんでした: {message}
-詳細はログファイルに書き込まれました。"""
+startupError           = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing {message}"
+logWritten             = "[ja-JP] lorem ipsum {path}"
 bye                    = "じゃあね!"
 localNoProvider        = "--local にはチャットモデルが必要です。`kaja config wizard` で設定するか、クラウドチャットなら `kaja --cloud` を使ってください。"
 headlessNoSubcommand   = "--headless は対応するサブコマンド(`telegram` など)と一緒に使います。単独のヘッドレスモードはまだありません。"
@@ -47,6 +46,7 @@ settings       = "設定"
 memorySessions = "メモリとセッション"
 images         = "セッション画像"
 sounds         = "効果音"
+log            = "[ja-JP] lorem"
 backups        = "ファイルバックアップ"
 models         = "モデル"
 commands       = "安全なコマンド"

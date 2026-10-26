@@ -1,8 +1,7 @@
 [cli]
 invalidConfig          = "Archivo de configuración no válido: {path}"
-startupError           = """
-Kaja ha encontrado un error inesperado y no ha podido iniciarse: {message}
-Los detalles se han escrito en el archivo de registro."""
+startupError           = "[es-ES] lorem ipsum dolor sit amet consectetur adipiscing {message}"
+logWritten             = "[es-ES] lorem ipsum {path}"
 bye                    = "¡Hasta luego!"
 localNoProvider        = "--local necesita un modelo de chat. Ejecuta `kaja config wizard` para configurar uno, o `kaja --cloud` para el chat en la nube."
 headlessNoSubcommand   = "--headless necesita un subcomando compatible, como `telegram`. Todavía no hay un modo headless a secas."
@@ -47,6 +46,7 @@ settings       = "ajustes"
 memorySessions = "memoria y sesiones"
 images         = "imágenes de sesión"
 sounds         = "efectos de sonido"
+log            = "[es-ES] lorem"
 backups        = "copias de archivos"
 models         = "modelos"
 commands       = "comandos seguros"

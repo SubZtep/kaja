@@ -25,7 +25,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **Ink is patched** (`patches/ink@8.0.0.patch`, soft-wrap leading space): bumping Ink means redoing the patch or dropping it if upstream fixed it
 - **`react-devtools-core` devDependency** looks unused but must stay: `bun build --compile` bundles Ink's `devtools.js`, whose static import fails without it (`--external` crashes the binary at startup)
 - **Hooks**: optional `hooks.toml` (`kaja config hooks`); no file = silence. `fireHook(name, event)` is the one entry point; commands are unref'd to outlive a quit. Sounds/notifications use system utilities (`lib/hooks/detect.ts`), no npm packages; wav files are downloaded by `syncSounds` since an external player can't open files inside the binary
-- **Logging**: `lib/logger.ts`, a JSON-lines file, silent unless `KAJA_LOG_LEVEL` and `KAJA_LOG_FILE` are set; never the terminal (Ink owns it)
+- **Logging**: `lib/logger.ts`, a JSON-lines file: warn and up into `kaja.log` in the state folder (`getLogFile`) unless `KAJA_LOG_LEVEL`/`KAJA_LOG_FILE` say otherwise; never the terminal (Ink owns it). Never log prompts, messages or keys: users attach it to issues
 
 ## CLI
 
