@@ -72,7 +72,8 @@ export const viewImageTool: Tool<{ path: string }> = {
   approval: args => {
     if (typeof args?.path !== "string" || imageRefId(args.path)) return undefined
     const where = resolved(args.path)
-    return where && !where.inWorkspace ? `View ${args.path} (outside the folder Kaja runs in)` : undefined
+    if (where && !where.inWorkspace) return `View ${args.path} (outside the folder Kaja runs in)`
+    return where?.hidden ? `View ${args.path} (a hidden file or folder)` : undefined
   }
 }
 
