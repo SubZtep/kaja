@@ -4,6 +4,12 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
 import {
+  call,
+  type ChatParams,
+  scriptedChat,
+  type ScriptedMessage
+} from "../../../../packages/nasi/tests/fixtures/chat"
+import {
   type HttpMcpFixture,
   routeHostTo,
   startHttpMcpFixture
@@ -95,35 +101,9 @@ function marketplace(base: string) {
   return root
 }
 
-/** Chat client that plays `script` (one assistant message per model call) and records what each call was sent. */
-function scriptedChat(
-  script: { content: string | null; tool_calls?: unknown[] }[],
-  sent: { tools?: { function: { name: string } }[]; messages: { role: string; content?: unknown }[] }[]
-) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: (params: never) => {
-          sent.push(structuredClone(params))
-          const message = script[i++] ?? { content: "done" }
-          return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
-            },
-            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
-          }
-        }
-      }
-    }
-  }
-}
-
-const call = (id: string, name: string, args: object) => ({
-  id,
-  type: "function",
-  function: { name, arguments: JSON.stringify(args) }
-})
+/** Plays `script` (then "done"), recording what each model call was sent. */
+const chatClient = (script: ScriptedMessage[], sent: ChatParams[]) =>
+  scriptedChat(script, { onCall: params => sent.push(structuredClone(params)), fallback: { content: "done" } })
 
 describe("MCP servers in the cloud", () => {
   let base: string
@@ -194,9 +174,9 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("with no sandbox online, a stdio ability's turn still runs, without its tools", async () => {
-    const sent: Parameters<typeof scriptedChat>[1] = []
+    const sent: ChatParams[] = []
     setNasiChatResolver(async () => ({
-      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      client: chatClient([{ content: "Hi." }], sent) as never,
       model: "fake-model"
     }))
     expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
@@ -225,8 +205,8 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("a cloud turn connects the server with the server-wide key; a write waits for approval, then runs", async () => {
-    const sent: Parameters<typeof scriptedChat>[1] = []
-    const client = scriptedChat(
+    const sent: ChatParams[] = []
+    const client = chatClient(
       [
         { content: null, tool_calls: [call("c1", "read_thing", { id: "1" })] },
         { content: null, tool_calls: [call("c2", "write_thing", { id: "2" })] },
@@ -271,9 +251,9 @@ describe("MCP servers in the cloud", () => {
     expect(removed.status).toBe(200)
     const { abilities } = await keyList()
     expect(abilities.find((ability: { name: string }) => ability.name === things)!.saved).toBe(false)
-    const sent: Parameters<typeof scriptedChat>[1] = []
+    const sent: ChatParams[] = []
     setNasiChatResolver(async () => ({
-      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      client: chatClient([{ content: "Hi." }], sent) as never,
       model: "fake-model"
     }))
     await turn({ message: "hi" })
@@ -289,8 +269,8 @@ describe("MCP servers in the cloud", () => {
     const sandboxPool = sandbox.pool
     try {
       for (const expected of ["1", "2"]) {
-        const sent: Parameters<typeof scriptedChat>[1] = []
-        const client = scriptedChat(
+        const sent: ChatParams[] = []
+        const client = chatClient(
           [{ content: null, tool_calls: [call("c1", "count", {})] }, { content: "Counted." }],
           sent
         )
@@ -304,10 +284,7 @@ describe("MCP servers in the cloud", () => {
       expect(sandboxPool.size).toBe(1)
 
       // A screenshot-like image reaches the streaming client as a data URL, not a path on the server.
-      const client = scriptedChat(
-        [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
-        []
-      )
+      const client = chatClient([{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }], [])
       setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
       const res = await app.request("/nasi/turn/stream", {
         method: "POST",
@@ -327,7 +304,7 @@ describe("MCP servers in the cloud", () => {
       // Telegram gets it too; Telegram can't fetch a signed URL on the local dev storage, so it goes as the bytes
       const { user } = await (await app.request("/auth/get-session", { headers: auth() })).json()
       setNasiChatResolver(async () => ({
-        client: scriptedChat(
+        client: chatClient(
           [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
           []
         ) as never,

@@ -1,37 +1,10 @@
 import { expect, test } from "bun:test"
-import type OpenAI from "openai"
 import { z } from "zod"
 import { Agent, createSession } from "../../src/agent/agent"
 import { run } from "../../src/agent/run"
 import { checkToolArgs, runApprovedTool, tool } from "../../src/agent/tools"
 import { rememberNoteTool } from "../../src/tools/builtin/memory"
-
-type FakeCall = { id: string; name: string; arguments: string }
-
-/** Scripted stand-in for `chat.completions.stream()`: one assistant message per call. */
-function fakeClient(script: { content: string | null; calls?: FakeCall[] }[]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: () => {
-          const next = script[i++]
-          if (!next) throw new Error("fake script exhausted")
-          const tool_calls = next.calls?.map(c => ({
-            id: c.id,
-            type: "function",
-            function: { name: c.name, arguments: c.arguments }
-          }))
-          const message = { role: "assistant", content: next.content, ...(tool_calls ? { tool_calls } : {}) }
-          return {
-            async *[Symbol.asyncIterator]() {},
-            finalChatCompletion: async () => ({ choices: [{ message }] })
-          }
-        }
-      }
-    }
-  } as unknown as OpenAI
-}
+import { type FakeCall, scriptedCalls } from "../fixtures/chat"
 
 let executed: unknown[] = []
 const countTool = tool({
@@ -48,7 +21,7 @@ async function turn(call: FakeCall) {
   executed = []
   const agent = new Agent({
     model: "m",
-    client: fakeClient([{ content: null, calls: [call] }, { content: "Done." }]),
+    client: scriptedCalls([{ content: null, calls: [call] }, { content: "Done." }]),
     tools: [countTool],
     promptContext: { environment: "test" }
   })

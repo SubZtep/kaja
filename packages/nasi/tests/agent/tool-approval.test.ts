@@ -1,44 +1,10 @@
 import { expect, test } from "bun:test"
-import type OpenAI from "openai"
 import { z } from "zod"
 import { Agent, askUserTool, createSession } from "../../src/agent/agent"
 import { run } from "../../src/agent/run"
 import { runApprovedTool, type Tool, tool } from "../../src/agent/tools"
+import { scriptedCalls } from "../fixtures/chat"
 import { png } from "../fixtures/images"
-
-type FakeCall = { id: string; name: string; arguments: string }
-
-/** Scripted stand-in for `chat.completions.stream()`: one assistant message per call. */
-function fakeClient(script: { content: string | null; calls?: FakeCall[] }[]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: () => {
-          const next = script[i++]
-          if (!next) throw new Error("fake script exhausted")
-          const message = {
-            role: "assistant",
-            content: next.content,
-            ...(next.calls
-              ? {
-                  tool_calls: next.calls.map(c => ({
-                    id: c.id,
-                    type: "function",
-                    function: { name: c.name, arguments: c.arguments }
-                  }))
-                }
-              : {})
-          }
-          return {
-            async *[Symbol.asyncIterator]() {},
-            finalChatCompletion: async () => ({ choices: [{ message }] })
-          }
-        }
-      }
-    }
-  } as unknown as OpenAI
-}
 
 let executed: unknown[] = []
 const createIssue: Tool<{ title: string }> = {
@@ -54,11 +20,11 @@ const createIssue: Tool<{ title: string }> = {
   approval: args => `POST https://api.example.com/issues {"title":"${args.title}"}`
 }
 
-function agentWith(script: Parameters<typeof fakeClient>[0]) {
+function agentWith(script: Parameters<typeof scriptedCalls>[0]) {
   executed = []
   return new Agent({
     model: "m",
-    client: fakeClient(script),
+    client: scriptedCalls(script),
     tools: [askUserTool, createIssue],
     promptContext: { environment: "test" }
   })
@@ -187,7 +153,7 @@ test("yolo runs a tool that would ask, and a command that isn't safe, without pa
   executed = []
   const agent = new Agent({
     model: "m",
-    client: fakeClient([
+    client: scriptedCalls([
       {
         content: null,
         calls: [
