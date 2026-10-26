@@ -1,15 +1,26 @@
 version: 2
 updates:
+  # Workflows plus the local composite actions, which "/" alone doesn't scan
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories: ["/", "/.github/actions/*"]
     schedule:
       interval: "weekly"
     commit-message:
       prefix: "chore(gh): "
+    cooldown:
+      default-days: 3
 
   # Base images in the Dockerfiles (node, bun, uv, …) — keeps FROM tags current
   # so Docker Scout stops flagging stale trixie layers between releases.
   - package-ecosystem: "docker"
+    directories: ["/apps/api", "/apps/web", "/apps/sandbox"]
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(docker): "
+
+  # Dev service images in compose.yaml (Postgres, RustFS, maildev)
+  - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
       interval: "weekly"

@@ -20,16 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Check changed workspaces
         id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           filters: |
             api:
@@ -189,9 +189,12 @@ jobs:
             echo "Created tag ${tag}"
           done
 
-          if git push origin main --tags; then
+          # Only this attempt's tags, atomically with main: --tags would push stale tags from a rejected attempt
+          if git push --atomic origin main "${TAGS[@]}"; then
             break
           fi
+          # The retry recomputes versions, which may land on the same tag names
+          git tag -d "${TAGS[@]}"
           echo "Push rejected (attempt ${attempt}) — another run landed first, retrying"
           if [[ "$attempt" == 5 ]]; then
             echo "::error::Giving up after 5 attempts"
@@ -215,7 +218,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "api was bumped — dispatching Release api/web for ${{ steps.bump.outputs.api_tag }}"
-          gh workflow run "Release api/web" --ref main -f app=api -f "tag=${{ steps.bump.outputs.api_tag }}"
+          gh workflow run "Release api/web" --ref main -f "tag=${{ steps.bump.outputs.api_tag }}"
 
       - name: Trigger web release
         if: steps.bump.outputs.web_tag != ''
@@ -224,7 +227,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "web was bumped — dispatching Release api/web for ${{ steps.bump.outputs.web_tag }}"
-          gh workflow run "Release api/web" --ref main -f app=web -f "tag=${{ steps.bump.outputs.web_tag }}"
+          gh workflow run "Release api/web" --ref main -f "tag=${{ steps.bump.outputs.web_tag }}"
 
       - name: Trigger sandbox image release
         if: steps.bump.outputs.sandbox_bumped == 'true'
