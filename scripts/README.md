@@ -1,6 +1,6 @@
 # scripts/
 
-Repo-wide dev and ops utilities, run from the monorepo root with `bun run scripts/<name>` (or `./scripts/<name>.sh` for shell scripts). Anything tied to one workspace's build, like Docker image contents, stays in that workspace (see `apps/api/migrate.ts`).
+Repo-wide dev and ops utilities, run from the monorepo root with `bun run scripts/<name>` (or `./scripts/<name>.sh` for shell scripts). Anything tied to one workspace's build, like Docker image contents, stays in that workspace (see `apps/api/scripts/migrate.ts`).
 
 Most of these run for you from git hooks (`.lefthook.toml`).
 

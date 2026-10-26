@@ -6,9 +6,9 @@ Hono REST API: Better Auth, the cloud agent (`/nasi`), abilities, sandboxes, wid
 
 Files in `migrations/` apply in lexicographic order and only create. Until v1.0 a schema change is edited into the file that creates the table, and existing databases are recreated.
 
-- `migrate.ts` stays in this folder (path-coupled to `./migrations` and the Dockerfile): it runs `applyMigrations` (`scripts/migrations.ts`); deploy, CI and the test database use it
+- `scripts/migrate.ts` reads `../migrations`, so the image keeps the same layout (`scripts/migrate.js` beside `migrations/`, see the Dockerfile): it runs `applyMigrations` (`scripts/migrations.ts`); deploy, CI and the test database use it
 - `schema_migrations` records each file's checksum: new or (before v1.0) edited files apply, each in its own transaction; from v1.0 an edited file is refused
-- Compose runs the raw files on first Postgres init; an existing `pgdata` volume catches up with `bun --env-file=apps/api/.env apps/api/migrate.ts`
+- Compose runs the raw files on first Postgres init; an existing `pgdata` volume catches up with `bun --env-file=apps/api/.env apps/api/scripts/migrate.ts`
 
 ## Tests
 

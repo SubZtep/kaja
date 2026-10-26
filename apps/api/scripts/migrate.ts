@@ -1,11 +1,11 @@
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { SQL } from "bun"
-import { applyMigrations, readMigrations } from "./scripts/migrations"
+import { applyMigrations, readMigrations } from "./migrations"
 
-// source tree and built image both keep migrate next to migrations (see Dockerfile)
+// source tree and built image both keep migrate in scripts/ beside migrations/ (see Dockerfile)
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-const migrationsDir = join(scriptDir, "migrations")
+const migrationsDir = join(scriptDir, "..", "migrations")
 
 const migrations = readMigrations(migrationsDir)
 

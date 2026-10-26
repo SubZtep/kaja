@@ -8,7 +8,7 @@
     "hook:deploy:start:before": {
       "type": "command",
       "image": "backend",
-      "command": "bun run migrate.js"
+      "command": "bun run scripts/migrate.js"
     }
   },
   "images": {
