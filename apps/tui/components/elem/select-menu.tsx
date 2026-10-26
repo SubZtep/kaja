@@ -33,7 +33,7 @@ export function SelectMenu({
   onClose
 }: Readonly<{
   items: string[]
-  /** Dimmed note pinned to the right edge of each row, e.g. a locale's code beside its name. */
+  /** Dimmed note pinned to the right edge of each row, e.g. what a yes/no choice means. */
   hints?: string[]
   /**
    * Dim columns after each row's label, lined up across the rows on show (on a question's rail only): a model's

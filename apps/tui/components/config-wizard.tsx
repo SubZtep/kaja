@@ -1222,8 +1222,6 @@ export function ConfigWizard({
             <SelectMenu
               closeOnBackspace={false}
               items={locales.map(locale => LOCALE_LABELS[locale])}
-              // The code beside the native name, so a language you can't read is still identifiable.
-              hints={[...locales]}
               initialIndex={locales.indexOf(result.language ?? baseLocale)}
               onSelect={index => {
                 const language = locales[index]!

@@ -1,12 +1,8 @@
 import { Star } from "lucide-react"
-import { lazy, type ReactNode, Suspense } from "react"
+import type { ReactNode } from "react"
 import { ContentWidth } from "../../../components/layout/content-width"
+import { LanguageSelect } from "../../../components/ui/language-select"
 import { m } from "../../../paraglide/messages.js"
-
-// Its Base UI Select (and floating-ui) is the page's biggest chunk after React; SSR still renders it, only its hydration waits for the download
-const LanguageSelect = lazy(() =>
-  import("../../../components/ui/language-select").then(mod => ({ default: mod.LanguageSelect }))
-)
 
 /** The legal pages live on the docs site (docs/terms.md, docs/privacy.md). */
 export const TERMS_URL = "https://docs.kaja.io/terms/"
@@ -39,9 +35,7 @@ export function Footer() {
           </FooterColumn>
           <FooterColumn heading={m.language_select_label()} className="col-span-2 sm:col-span-1">
             <li>
-              <Suspense>
-                <LanguageSelect className="border-border/60 bg-transparent whitespace-nowrap" />
-              </Suspense>
+              <LanguageSelect className="border-border/60 bg-transparent whitespace-nowrap" />
             </li>
           </FooterColumn>
         </div>

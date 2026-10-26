@@ -94,10 +94,10 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   const w = renderWizard()
   await w.t.tick()
   expect(w.t.lastFrame()).toContain("Choose your language")
-  // Each name carries its code, so a language you can't read is still identifiable.
-  expect(w.t.lastFrame()).toContain("English")
-  expect(w.t.lastFrame()).toContain("en-GB")
-  expect(w.t.lastFrame()).toContain("de-DE")
+  // Native names only, no locale codes.
+  expect(w.t.lastFrame()).toContain("British English")
+  expect(w.t.lastFrame()).toContain("Deutsch")
+  expect(w.t.lastFrame()).not.toContain("en-GB")
   // The first question has nothing to go back to: its hint says it can change later instead of offering Esc
   expect(w.t.lastFrame()).toContain("↑↓ move · Enter picks · change it later in settings.toml")
   expect(w.t.lastFrame()).not.toContain("Esc back")

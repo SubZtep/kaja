@@ -1,9 +1,8 @@
-import { Select } from "@base-ui/react/select"
 import { LOCALE_LABELS } from "@kaja/shared/locale"
 import { cn } from "@kaja/shared/ui"
 import { useMatch } from "@tanstack/react-router"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { toast, Zoom } from "react-toastify"
 import { loadAuthClient } from "../../hooks/load-auth-client"
 import { m } from "../../paraglide/messages.js"
@@ -38,8 +37,7 @@ function takePick(): Picked | null {
 }
 
 export function LanguageSelect({ className }: Readonly<{ className?: string }> = {}) {
-  const [open, setOpen] = useState(false)
-  const triggerRef = useRef<HTMLButtonElement>(null)
+  const selectRef = useRef<HTMLSelectElement>(null)
   const rootData = useMatch({ from: "__root__", shouldThrow: false })?.loaderData
   const signedIn = Boolean(rootData?.session)
 
@@ -83,52 +81,41 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
         toastId: "language-select-hint",
         transition: Zoom,
         onClick: () => {
-          triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-          triggerRef.current?.focus()
-          setOpen(true)
+          const select = selectRef.current
+          select?.scrollIntoView({ behavior: "smooth", block: "center" })
+          select?.focus()
+          try {
+            select?.showPicker()
+          } catch {
+            // showPicker is missing in older browsers, focus is enough there
+          }
         }
       })
   }, [])
 
+  // Native, so phones get the OS picker and the box is always as wide as its longest option
   return (
-    <Select.Root
-      items={locales.map(locale => ({ label: LOCALE_LABELS[locale], value: locale }))}
-      value={getLocale()}
-      onValueChange={value => void pick(value as Locale)}
-      open={open}
-      onOpenChange={setOpen}
+    <span
+      className={cn(
+        "border-border bg-surface text-muted focus-within:text-fg hover:text-fg relative inline-flex items-center rounded-md border font-mono text-xs",
+        className
+      )}
     >
-      <Select.Trigger
-        ref={triggerRef}
-        aria-label={`${m.language_select_label()}: ${LOCALE_LABELS[getLocale()]}`}
-        className={cn(
-          "border-border bg-surface text-muted hover:text-fg inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-xs",
-          className
-        )}
+      <Languages size={14} aria-hidden className="pointer-events-none absolute left-2.5" />
+      <select
+        ref={selectRef}
+        aria-label={m.language_select_label()}
+        value={getLocale()}
+        onChange={event => void pick(event.target.value as Locale)}
+        className="cursor-pointer appearance-none bg-transparent py-1.5 pr-7 pl-7 text-inherit outline-none"
       >
-        <Languages size={14} />
-        <Select.Value />
-        <Select.Icon>
-          <ChevronsUpDown size={12} />
-        </Select.Icon>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Positioner className="z-20 outline-none select-none" sideOffset={4}>
-          <Select.Popup className="border-border bg-surface text-fg min-w-(--anchor-width) rounded-md border py-1 text-sm shadow-lg transition-all duration-150 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
-            {locales.map(locale => (
-              <Select.Item
-                key={locale}
-                value={locale}
-                className="data-highlighted:bg-surface-2 cursor-pointer px-3 py-1.5 outline-none"
-              >
-                <Select.ItemText>
-                  {LOCALE_LABELS[locale]} — {locale}
-                </Select.ItemText>
-              </Select.Item>
-            ))}
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
+        {locales.map(locale => (
+          <option key={locale} value={locale} lang={locale} className="bg-surface text-fg">
+            {LOCALE_LABELS[locale]}
+          </option>
+        ))}
+      </select>
+      <ChevronsUpDown size={12} aria-hidden className="pointer-events-none absolute right-2.5" />
+    </span>
   )
 }
