@@ -1,8 +1,8 @@
 import { createMiddleware } from "hono/factory"
+import { unauthorized } from "../../core/errors"
 import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
 import type { ResolvedWidget } from "../../services/widget"
-import { unauthorized } from "../../types/errors"
 
 export type WidgetVariables = { widget: ResolvedWidget }
 

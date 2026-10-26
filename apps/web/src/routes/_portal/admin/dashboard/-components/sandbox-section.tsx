@@ -9,7 +9,6 @@ import {
   type SandboxStats
 } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
-import { cn } from "@kaja/shared/ui"
 import { useQuery } from "@tanstack/react-query"
 import { ErrorNotice } from "../../../../../components/ui/error-notice"
 import { Loader } from "../../../../../components/ui/loader"
@@ -17,6 +16,7 @@ import { Section } from "../../../../../components/ui/section"
 import { StatusDot } from "../../../../../components/ui/status-dot"
 import { ValueBox } from "../../../../../components/ui/value-box"
 import { useApiFetch } from "../../../../../lib/api-fetch"
+import { cn } from "../../../../../lib/cn"
 import { formatBytes, hardware, place, runCommand } from "../../../../../lib/sandbox"
 import { m } from "../../../../../paraglide/messages.js"
 

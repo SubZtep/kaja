@@ -1,6 +1,6 @@
 import type { ModelTask } from "@kaja/schema/config"
 import { uniqueModelSlug } from "@kaja/shared/text"
-import { groupTomlTables } from "@kaja/shared/toml"
+import { groupTomlTables } from "../config/toml"
 
 /** One model a provider serves, and every task it can do. */
 export type CatalogModel = {

@@ -9,6 +9,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **Local**: `@kaja/nasi` with the user's `models.toml`, never a silent fallback to cloud
 - `components/layout/app.tsx` is the one UI for both (`LocalApp`/`CloudApp`)
 - The app writes `~/.config/kaja/*.toml` only in first-run setup and `kaja config wizard|fetch|hooks`. Language, thinking, toolDisplay and voice are read once at startup
+- Every TOML file the app writes goes through `lib/config/toml.ts`'s `stringifyToml`: sub-tables grouped under their parent's header
 - Quitting kills every tracked child (`installShutdownHandlers`)
 
 ## UI

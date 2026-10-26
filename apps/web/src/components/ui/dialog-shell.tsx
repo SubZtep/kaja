@@ -1,7 +1,7 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog"
 import { Dialog } from "@base-ui/react/dialog"
-import { cn } from "@kaja/shared/ui"
 import type { ReactNode } from "react"
+import { cn } from "../../lib/cn"
 
 /** A dialog's title, in the site's display type. */
 export const DIALOG_TITLE = "m-0 mb-1 font-display font-extrabold text-fg text-lg"

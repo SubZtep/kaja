@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import type { CSSProperties, ReactNode } from "react"
+import { cn } from "../../lib/cn"
 
 const BORDERED = {
   always: "paper-card",

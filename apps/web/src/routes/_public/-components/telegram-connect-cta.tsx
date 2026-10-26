@@ -1,8 +1,8 @@
 import type { StartTelegramLinkResponse } from "@kaja/schema/api"
-import { cn } from "@kaja/shared/ui"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../../lib/api-fetch"
+import { cn } from "../../../lib/cn"
 import { m } from "../../../paraglide/messages.js"
 
 /** Signed-in Telegram card body: one-time deep link via the existing link API. */

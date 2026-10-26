@@ -6,17 +6,16 @@ import {
   sandboxSettingsPatchSchema,
   sandboxSettingsSchema
 } from "@kaja/schema/api"
+import { errorSchema, notFound } from "../../core/errors"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import { sandboxService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { notFound } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
 import { sandboxConnect, sandboxOwnerMiddleware } from "./connect"
 import { relayMcp } from "./relay"
 
 export { egressFor, mcpSandboxFor, rememberPlace, type SandboxKeys, tunnelFor, userForPseudonym } from "./registry"
 
-const errorSchema = z.object({ error: z.string() })
 const unauthorizedResponse = {
   description: "Unauthorized",
   content: { "application/json": { schema: errorSchema } }

@@ -1,10 +1,10 @@
 import { LOCALE_LABELS } from "@kaja/shared/locale"
-import { cn } from "@kaja/shared/ui"
 import { useMatch } from "@tanstack/react-router"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { toast, Zoom } from "react-toastify"
 import { loadAuthClient } from "../../hooks/load-auth-client"
+import { cn } from "../../lib/cn"
 import { m } from "../../paraglide/messages.js"
 import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 

@@ -7,13 +7,12 @@ import {
   widgetLinkRequestSchema,
   widgetSchema
 } from "@kaja/schema/api"
+import { badRequest, errorSchema, notFound } from "../../core/errors"
 import { modelService, widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badRequest, notFound } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
 import { generateDraft, regenerateAffected } from "../widget/generate"
 
-const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
   id: z.uuidv7().openapi({ param: { name: "id", in: "path" } })
 })

@@ -1,12 +1,11 @@
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { NoModelError } from "@kaja/nasi"
 import { aiChatRequestSchema, aiChatResponseSchema } from "@kaja/schema/api"
+import { errorSchema } from "../../core/errors"
 import { widgetSpendLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { widgetTokenAuth, type WidgetVariables } from "../widget/auth"
 import { completeWidgetChat, recordWidgetChat } from "../widget/complete"
-
-const errorSchema = z.object({ error: z.string() })
 
 export const aiRoutes = new OpenAPIHono<{ Variables: WidgetVariables }>()
 aiRoutes.use("*", widgetTokenAuth)

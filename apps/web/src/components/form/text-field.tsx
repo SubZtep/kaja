@@ -1,7 +1,7 @@
 import { Field } from "@base-ui/react/field"
-import { cn } from "@kaja/shared/ui"
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
+import { cn } from "../../lib/cn"
 import { useFieldContext } from "../../lib/form-contexts"
 import { m } from "../../paraglide/messages.js"
 import { FieldErrors } from "./field-errors"

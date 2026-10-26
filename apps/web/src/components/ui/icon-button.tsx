@@ -1,5 +1,5 @@
 import { Button as BaseButton } from "@base-ui/react/button"
-import { cn } from "@kaja/shared/ui"
+import { cn } from "../../lib/cn"
 
 const VARIANTS = {
   danger: "rounded-lg text-red-400 transition-all hover:bg-red-400/10",

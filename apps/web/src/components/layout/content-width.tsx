@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import type { ElementType, ReactNode } from "react"
+import { cn } from "../../lib/cn"
 
 /** Centered page column shared by headers, footers, and section bodies. */
 export function ContentWidth({

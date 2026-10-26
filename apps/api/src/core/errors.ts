@@ -1,7 +1,11 @@
-/** Standardized error response types for API routes */
+/** The JSON error responses API routes answer with */
 
+import { z } from "@hono/zod-openapi"
 import { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "@kaja/nasi"
 import type { Context } from "hono"
+
+/** The `{ error }` body every failing route answers with. */
+export const errorSchema = z.object({ error: z.string() })
 
 /** The statuses a known turn failure answers with; a route that runs turns declares all four. */
 export type KnownTurnErrorStatus = 404 | 409 | 502 | 503
@@ -43,14 +47,6 @@ export function internalError(c: Context, message = "Internal server error") {
 
 export function badGateway(c: Context, message = "Upstream provider error") {
   return c.json({ error: message }, 502)
-}
-
-export function forbidden(c: Context, message = "Forbidden") {
-  return c.json({ error: message }, 403)
-}
-
-export function conflict(c: Context, message: string) {
-  return c.json({ error: message }, 409)
 }
 
 export function serviceUnavailable(c: Context, message: string) {

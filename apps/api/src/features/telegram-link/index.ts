@@ -1,12 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { startTelegramLinkResponseSchema, telegramLinkStatusSchema } from "@kaja/schema/api"
+import { errorSchema, notFound } from "../../core/errors"
 import { getBotUsername } from "../../features/telegram"
 import { telegramLinkService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { notFound } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
-
-const errorSchema = z.object({ error: z.string() })
 
 export const telegramLinkRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 telegramLinkRoutes.use("*", requireAuthMiddleware)

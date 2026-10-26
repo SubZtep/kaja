@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import type { ReactNode } from "react"
+import { cn } from "../../lib/cn"
 import { Footer } from "../../routes/_public/-components/footer"
 import { GritDefs } from "../../routes/_public/-components/grit-defs"
 import { Header } from "../../routes/_public/-components/header"

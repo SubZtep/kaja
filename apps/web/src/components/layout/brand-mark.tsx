@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import { Link } from "@tanstack/react-router"
+import { cn } from "../../lib/cn"
 import { m } from "../../paraglide/messages.js"
 
 export function BrandMark({

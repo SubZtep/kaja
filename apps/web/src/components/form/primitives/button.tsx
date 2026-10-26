@@ -1,6 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button"
-import { cn } from "@kaja/shared/ui"
 import { LoaderCircle } from "lucide-react"
+import { cn } from "../../../lib/cn"
 
 const VARIANTS = {
   "3d": "border border-fg/35 bg-surface-2 shadow-[2px_3px_0_var(--color-border)] not-disabled:hover:border-fg/50 not-disabled:hover:bg-border/60",

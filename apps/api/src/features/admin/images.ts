@@ -11,13 +11,12 @@ import {
   removeOrphansResponseSchema,
   statsQuerySchema
 } from "@kaja/schema/api"
+import { errorSchema } from "../../core/errors"
 import { imageService, statsService } from "../../services"
 import { BadCursorError } from "../../services/image"
 import type { RouteRegProps } from "../../types"
 import { sessionUser } from "../auth"
 import { cloudDescriber } from "../nasi/chat"
-
-const errorSchema = z.object({ error: z.string() })
 
 const userImagesRoute = createRoute({
   method: "get",

@@ -1,9 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { resolvedModelSchema } from "@kaja/schema/api"
+import { errorSchema, notFound } from "../../core/errors"
 import type { RouteRegProps } from "../../types"
-import { notFound } from "../../types/errors"
 
-const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
   id: z.string().openapi({ param: { name: "id", in: "path" }, example: "01945678-1234-7abc-9def-0123456789ab" })
 })

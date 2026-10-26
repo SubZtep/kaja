@@ -7,6 +7,7 @@ import { HTTPException } from "hono/http-exception"
 import pkg from "../package.json" with { type: "json" }
 import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
+import { knownTurnError } from "./core/errors"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
 import { aiRoutes } from "./features/ai"
@@ -22,7 +23,6 @@ import { telegramLinkRoutes } from "./features/telegram-link"
 import { widgetRoutes } from "./features/widget"
 import { widgetManageRoutes } from "./features/widget-manage"
 import type { RouteProps } from "./types"
-import { knownTurnError } from "./types/errors"
 
 export const app = new OpenAPIHono<RouteProps>()
 

@@ -1,5 +1,4 @@
 import { capitalized } from "@kaja/shared/text"
-import { cn } from "@kaja/shared/ui"
 import {
   type Column,
   type ColumnFiltersState,
@@ -13,6 +12,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { type ReactNode, useState } from "react"
+import { cn } from "../../lib/cn"
 import { periodDay, periodEnd, periodStart } from "../../lib/period"
 import { tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"

@@ -1,10 +1,9 @@
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { statsQuerySchema, usageStatsResponseSchema } from "@kaja/schema/api"
+import { errorSchema } from "../../core/errors"
 import { statsService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { requireAuthMiddleware, sessionUser } from "../auth"
-
-const errorSchema = z.object({ error: z.string() })
 
 /** /stats: the signed-in user's own activity, worked out from their saved sessions. */
 export const statsRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()

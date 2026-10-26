@@ -1,16 +1,16 @@
 import { createHash } from "node:crypto"
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi"
 import { SoundsManifestSchema } from "@kaja/schema/config"
+import { tombiSchemas } from "@kaja/schema/tombi"
 import type { Context } from "hono"
-import { defaultSchemas } from "../../services/config-defaults"
+import { errorSchema, notFound } from "../../core/errors"
 import { soundFile, sounds } from "../../services/sounds"
 import type { RouteProps } from "../../types"
-import { notFound } from "../../types/errors"
-
-const errorSchema = z.object({ error: z.string() })
 
 const etagOf = (text: string) => `"${createHash("sha256").update(text).digest("hex")}"`
 
+// JSON Schemas for the TOML files, derived from the runtime validators so they match this build
+const defaultSchemas: ReadonlyMap<string, object> = new Map(Object.entries(tombiSchemas))
 const schemaEtags = new Map([...defaultSchemas].map(([file, schema]) => [file, etagOf(JSON.stringify(schema))]))
 
 // The content only changes with a deploy.

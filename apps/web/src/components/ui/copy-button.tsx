@@ -1,6 +1,6 @@
-import { cn } from "@kaja/shared/ui"
 import { Check, Copy } from "lucide-react"
 import { useState } from "react"
+import { cn } from "../../lib/cn"
 import { m } from "../../paraglide/messages.js"
 
 /** A small copy icon that puts `text` on the clipboard and shows a check for a moment. */

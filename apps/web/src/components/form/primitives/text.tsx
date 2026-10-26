@@ -1,6 +1,6 @@
 import { Input as BaseInput } from "@base-ui/react/input"
-import { cn } from "@kaja/shared/ui"
 import { type ComponentProps, useEffect, useEffectEvent, useState } from "react"
+import { cn } from "../../../lib/cn"
 
 const VARIANTS = {
   "3d": "w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 data-invalid:border-red-500/70 text-base text-fg focus:outline-2 focus:-outline-offset-1 focus:outline-neon/50 disabled:cursor-not-allowed disabled:opacity-50",

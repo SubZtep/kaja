@@ -1,10 +1,10 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
-import { stringifyToml } from "@kaja/shared/toml"
 import { file, TOML } from "bun"
 import { detectLanguage, t } from "../i18n"
 import { getPaths } from "../paths"
 import { writeConfigFile } from "./schema-file"
+import { stringifyToml } from "./toml"
 
 /** Test-only override: lets specs point config reads at a fresh temp directory instead of XDG_CONFIG_HOME. */
 let configDirOverride: string | undefined

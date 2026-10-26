@@ -24,19 +24,9 @@
     "./text": {
       "types": "./text/index.ts",
       "default": "./text/index.ts"
-    },
-    "./toml": {
-      "types": "./toml/index.ts",
-      "default": "./toml/index.ts"
-    },
-    "./ui": {
-      "types": "./ui/index.ts",
-      "default": "./ui/index.ts"
     }
   },
   "dependencies": {
-    "clsx": "^2.1.1",
-    "marked": "^18.1.1",
-    "tailwind-merge": "^3.7.0"
+    "marked": "^18.1.1"
   }
 }

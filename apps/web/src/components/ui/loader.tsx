@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import { LoaderCircle } from "lucide-react"
+import { cn } from "../../lib/cn"
 
 export function Loader({ slim = false }: Readonly<{ slim?: boolean }>) {
   return (

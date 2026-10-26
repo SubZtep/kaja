@@ -1,6 +1,6 @@
 import { OTPField } from "@base-ui/react/otp-field"
-import { cn } from "@kaja/shared/ui"
 import { Fragment } from "react"
+import { cn } from "../../../lib/cn"
 import { m } from "../../../paraglide/messages.js"
 
 /** A code typed one character per box; `groupSize` puts a dash between runs (4 → ABCD-EFGH, as the TUI shows it). */

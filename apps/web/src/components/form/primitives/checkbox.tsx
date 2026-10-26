@@ -1,7 +1,7 @@
 import { Checkbox as CheckboxBase } from "@base-ui/react/checkbox"
-import { cn } from "@kaja/shared/ui"
 import { Check } from "lucide-react"
 import type React from "react"
+import { cn } from "../../../lib/cn"
 
 type Props = {
   name?: string

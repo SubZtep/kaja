@@ -1,10 +1,10 @@
 import { join } from "node:path"
 import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
-import { groupTomlTables, stringifyToml } from "@kaja/shared/toml"
 import { file, TOML } from "bun"
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
 import { withSchemaLine, writeConfigFile } from "./schema-file"
+import { groupTomlTables, stringifyToml } from "./toml"
 
 export function getSecretsPath() {
   return join(getConfigDir(), "secrets.toml")

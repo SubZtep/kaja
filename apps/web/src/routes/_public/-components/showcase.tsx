@@ -1,7 +1,7 @@
-import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { ContentWidth } from "../../../components/layout/content-width"
+import { cn } from "../../../lib/cn"
 import { m } from "../../../paraglide/messages.js"
 import { BarkochbaGame } from "./barkochba-game"
 import { SectionTitle } from "./section-title"

@@ -1,5 +1,5 @@
 import { Avatar as BaseAvatar } from "@base-ui/react/avatar"
-import { cn } from "@kaja/shared/ui"
+import { cn } from "../../lib/cn"
 
 const SIZES = {
   sm: { box: "h-9 w-9", text: "text-xs" },

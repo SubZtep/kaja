@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared/ui"
+import { cn } from "../../lib/cn"
 
 /** A small paper stat card; its accent colour is a strip of tape across the top edge. */
 export function ValueBox({
