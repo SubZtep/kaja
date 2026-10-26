@@ -7,26 +7,26 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { Button } from "../../../components/form/primitives/button"
-import { Checkbox } from "../../../components/form/primitives/checkbox"
-import { RunCommand } from "../../../components/sandbox/run-command"
-import { ConfirmDialog } from "../../../components/ui/confirm-dialog"
-import { ErrorNotice } from "../../../components/ui/error-notice"
-import { IconButton } from "../../../components/ui/icon-button"
-import { Loader } from "../../../components/ui/loader"
-import { PageHeader } from "../../../components/ui/page-header"
-import { Section } from "../../../components/ui/section"
-import { StatusDot } from "../../../components/ui/status-dot"
-import { useApiFetch } from "../../../lib/api-fetch"
-import { userRequired } from "../../../lib/loaders"
-import { hardware, place } from "../../../lib/sandbox"
-import { seo } from "../../../lib/seo"
-import { m } from "../../../paraglide/messages.js"
+import { Button } from "../../components/form/primitives/button"
+import { Checkbox } from "../../components/form/primitives/checkbox"
+import { RunCommand } from "../../components/sandbox/run-command"
+import { ConfirmDialog } from "../../components/ui/confirm-dialog"
+import { ErrorNotice } from "../../components/ui/error-notice"
+import { IconButton } from "../../components/ui/icon-button"
+import { Loader } from "../../components/ui/loader"
+import { PageHeader } from "../../components/ui/page-header"
+import { Section } from "../../components/ui/section"
+import { StatusDot } from "../../components/ui/status-dot"
+import { useApiFetch } from "../../lib/api-fetch"
+import { userRequired } from "../../lib/loaders"
+import { hardware, place } from "../../lib/sandbox"
+import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_portal/agent/sandbox")({
+export const Route = createFileRoute("/_portal/sandboxes")({
   component: SandboxPage,
   loader: ({ context }) => userRequired(context.session),
-  head: () => ({ meta: seo({ title: m.nav_sandbox() }) })
+  head: () => ({ meta: seo({ title: m.nav_sandboxes() }) })
 })
 
 const QUERY_KEY = ["sandbox", "mine"]

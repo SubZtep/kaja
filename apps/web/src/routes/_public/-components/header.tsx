@@ -3,17 +3,27 @@ import { Link } from "@tanstack/react-router"
 import { getHeaderItems, type NavItem } from "../../../components/layout/nav-items"
 import { SignOutButton } from "../../../components/layout/sign-out-button"
 import { SiteHeader, useCloseMobileNav } from "../../../components/layout/site-header"
+import { useTelegramNudge } from "../../../hooks/telegram-link"
 import { useUser } from "../../../hooks/user"
 
 // Desktop shows an icon item as the bare icon (label as its accessible name); the mobile drawer shows both
 function MenuItemContent({ item, compact }: Readonly<{ item: NavItem; compact?: boolean }>) {
   const Icon = item.icon
-  if (!Icon) return item.label
+  if (!Icon) return item.badge ? <LabelWithDot label={item.label} /> : item.label
   if (compact) return <Icon className="size-4" aria-hidden />
   return (
     <span className="inline-flex items-center gap-2">
       <Icon className="size-4" aria-hidden />
       {item.label}
+    </span>
+  )
+}
+
+function LabelWithDot({ label }: Readonly<{ label: string }>) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {label}
+      <span className="bg-neon size-1.5 rounded-full" aria-hidden />
     </span>
   )
 }
@@ -72,7 +82,8 @@ function MobileNav({ menuItems, user }: Readonly<{ menuItems: NavItem[]; user: R
 
 export function Header() {
   const user = useUser()
-  const menuItems = getHeaderItems(user)
+  const nudge = useTelegramNudge()
+  const menuItems = getHeaderItems(user).map(item => (item.to === "/channels" ? { ...item, badge: nudge } : item))
 
   return (
     <SiteHeader

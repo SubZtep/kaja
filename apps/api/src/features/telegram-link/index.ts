@@ -24,7 +24,7 @@ const linkStatusRoute = createRoute({
 telegramLinkRoutes.openapi(linkStatusRoute, async c => {
   const user = sessionUser(c)
   const linkedAt = await telegramLinkService.linkedAt(user.id)
-  return c.json({ linked: linkedAt !== null, linkedAt }, 200)
+  return c.json({ linked: linkedAt !== null, linkedAt, botUsername: getBotUsername() ?? null }, 200)
 })
 
 const unlinkRoute = createRoute({

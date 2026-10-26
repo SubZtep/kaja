@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { sql } from "../../src/core/db"
+import { getBotUsername } from "../../src/features/telegram"
 import { telegramLinkService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 
@@ -14,9 +15,10 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
     (await app.request("/telegram/link", { headers })).json() as Promise<{
       linked: boolean
       linkedAt: string | null
+      botUsername: string | null
     }>
 
-  expect(await status()).toEqual({ linked: false, linkedAt: null })
+  expect(await status()).toEqual({ linked: false, linkedAt: null, botUsername: getBotUsername() ?? null })
   expect((await app.request("/telegram/link", { method: "DELETE", headers })).status).toBe(404)
 
   const telegramUserId = faker.number.int({ min: 1_000_000, max: 9_000_000_000 })
@@ -26,7 +28,7 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
   expect(Number.isNaN(Date.parse(linked.linkedAt!))).toBe(false)
 
   expect((await app.request("/telegram/link", { method: "DELETE", headers })).status).toBe(200)
-  expect(await status()).toEqual({ linked: false, linkedAt: null })
+  expect(await status()).toEqual({ linked: false, linkedAt: null, botUsername: getBotUsername() ?? null })
   expect(await telegramLinkService.resolveUserId(telegramUserId)).toBeUndefined()
 
   expect((await app.request("/telegram/link")).status).toBe(401)

@@ -10,7 +10,7 @@ export const userRequired = (session: SessionData | null, role?: "user" | "admin
     throw redirect({ to: "/signin", search: redirectTo ? { redirect: redirectTo } : undefined })
   }
   if (role && session.user.role !== role) {
-    throw redirect({ to: "/dashboard" })
+    throw redirect({ to: "/home" })
   }
   return session.user
 }
@@ -23,5 +23,5 @@ export const guestOnly = (session: SessionData | null, redirectTo?: string) => {
   if (!session?.user) return
   // Only a path here, never another site: `redirect` comes from the URL.
   if (redirectTo?.startsWith("/") && !redirectTo.startsWith("//")) throw redirect({ href: redirectTo })
-  throw redirect({ to: "/dashboard" })
+  throw redirect({ to: "/home" })
 }

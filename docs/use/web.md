@@ -27,13 +27,15 @@ The terminal's [device login](/start/modes#cloud-mode) lands here too: open
 
 The top menu has one item per section, and a section's pages are tabs inside it.
 
-| Page                     | What it's for                                                                                                                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Dashboard › Overview** | where you're signed in, the **Connect Telegram** card and a sandbox summary                                                                                                                                                    |
-| **Dashboard › Stats**    | your usage: sessions, messages, tokens and latency by day, channel, tool, persona and model                                                                                                                                    |
-| **Agent › Widget**       | create, edit, link, publish and revoke [widgets](/use/widget)                                                                                                                                                                  |
-| **Agent › Sandbox**      | your sandbox key and the `docker run` command for a [sandbox](/use/sandbox) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
-| **Profile**              | your name and avatar, email (a change takes a code from your current address, then one from the new one), and deleting your account with everything stored under it                                                            |
+| Page                    | What it's for                                                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Home**                | the first steps: until Telegram is linked, a **Connect Telegram** card sits at the top; afterwards a status summary                                                                                                            |
+| **Channels › Telegram** | link or disconnect your account on the cloud [Telegram bot](/use/telegram)                                                                                                                                                     |
+| **Channels › Widgets**  | create, edit, link, publish and revoke [widgets](/use/widget)                                                                                                                                                                  |
+| **Sandboxes**           | your sandbox key and the `docker run` command for a [sandbox](/use/sandbox) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
+| **Usage**               | sessions, messages, tokens and latency by day, channel, tool, persona and model                                                                                                                                                |
+| **Account › Profile**   | your name and avatar, email (a change takes a code from your current address, then one from the new one), and deleting your account with everything stored under it                                                            |
+| **Account › Devices**   | the browsers and terminals signed in to your account, and signing any of them out                                                                                                                                              |
 
 The language picker at the bottom of every page switches the site. Signed in, it also saves to your
 account, so emails, the Telegram bot and the terminal's cloud mode follow.

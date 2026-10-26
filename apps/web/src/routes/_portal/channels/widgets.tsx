@@ -25,10 +25,10 @@ import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../
 import { m } from "../../../paraglide/messages.js"
 import { EditWidgetDialog } from "./-components/edit-widget-dialog"
 
-export const Route = createFileRoute("/_portal/agent/widget")({
+export const Route = createFileRoute("/_portal/channels/widgets")({
   component: WidgetPage,
   loader: ({ context }) => userRequired(context.session),
-  head: () => ({ meta: seo({ title: m.nav_widget() }) })
+  head: () => ({ meta: seo({ title: m.nav_widgets() }) })
 })
 
 const createFormSchema = z.object({

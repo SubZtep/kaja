@@ -84,7 +84,7 @@ function SignUp() {
       // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
       forgetSession()
       await router.invalidate()
-      navigate({ to: "/dashboard" })
+      navigate({ to: "/home" })
     }
   }
 
