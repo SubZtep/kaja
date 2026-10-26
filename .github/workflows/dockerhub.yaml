@@ -35,7 +35,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release API
-        uses: SubZtep/dockerhub-action@348c277fdc4b9fab1673ab7be6c3092014d5858c # v0.2.0
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_API || 'subztep/kaja-api' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -43,6 +43,7 @@ jobs:
           dockerfile: ./apps/api/Dockerfile
           version: ${{ steps.version.outputs.version }}
           cache_scope: api
+          checkout: false
 
   web-docker:
     name: Web Build and Push
@@ -62,7 +63,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release Web
-        uses: SubZtep/dockerhub-action@348c277fdc4b9fab1673ab7be6c3092014d5858c # v0.2.0
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_WEB || 'subztep/kaja-web' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -70,6 +71,7 @@ jobs:
           dockerfile: ./apps/web/Dockerfile
           version: ${{ steps.version.outputs.version }}
           cache_scope: web
+          checkout: false
 
   sandbox-docker:
     name: Sandbox Build and Push
@@ -89,7 +91,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release Sandbox
-        uses: SubZtep/dockerhub-action@348c277fdc4b9fab1673ab7be6c3092014d5858c # v0.2.0
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -97,5 +99,6 @@ jobs:
           dockerfile: ./apps/sandbox/Dockerfile
           version: ${{ steps.version.outputs.version }}
           cache_scope: sandbox
+          checkout: false
           # amd64 only: Chrome for Testing has no Linux arm64 build
           platforms: linux/amd64
