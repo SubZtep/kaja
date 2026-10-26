@@ -29,7 +29,7 @@ export function scriptedChat(
             async *[Symbol.asyncIterator]() {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
             },
-            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
+            finalChatCompletion: () => Promise.resolve({ choices: [{ message: { role: "assistant", ...message } }] })
           }
         }
       }
@@ -64,7 +64,7 @@ export function scriptedCalls(script: { content: string | null; calls?: FakeCall
           const message = { role: "assistant", content: next.content, ...(tool_calls ? { tool_calls } : {}) }
           return {
             async *[Symbol.asyncIterator]() {},
-            finalChatCompletion: async () => ({ choices: [{ message }] })
+            finalChatCompletion: () => Promise.resolve({ choices: [{ message }] })
           }
         }
       }
