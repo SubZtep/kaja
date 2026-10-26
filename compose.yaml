@@ -29,7 +29,7 @@ services:
       timeout: 5s
 
   storage:
-    image: rustfs/rustfs:1.0.3
+    image: rustfs/rustfs:1.0.4
     restart: unless-stopped
     ports:
       - "127.0.0.1:9000:9000" # S3 API
@@ -117,6 +117,7 @@ services:
     environment:
       KAJA_API_URL: http://api:3001
       KAJA_SANDBOX_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only: the api's SANDBOX_SYSTEM_KEY
+      # The image's own paths, pinned over any host paths apps/sandbox/.env holds for `bun dev:sandbox`
       MARKETPLACE_DIR: /home/node/app/marketplace
       SANDBOX_OVERRIDES: /home/node/app/overrides.json
       SANDBOX_CACHE_DIR: /home/node/.cache/mcp

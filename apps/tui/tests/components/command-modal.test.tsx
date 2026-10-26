@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Box } from "ink"
-import { ModalHost } from "../../components/elem/modal"
-import { CommandModal } from "../../components/layout/command-modal"
+import { ModalHost } from "../../src/components/elem/modal"
+import { CommandModal } from "../../src/components/layout/command-modal"
 import { renderForTest } from "../test-utils"
 
 test("shows the whole command, however long it is for the chat's preview", async () => {

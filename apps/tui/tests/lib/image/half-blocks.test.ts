@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
 import { deflateSync } from "node:zlib"
 import chalk from "chalk"
-import { halfBlocks } from "../../../lib/image/half-blocks"
+import { halfBlocks } from "../../../src/lib/image/half-blocks"
 
 const level = chalk.level
 beforeAll(() => {

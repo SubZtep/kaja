@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Marked } from "marked"
-import { markedTerminal } from "../../../lib/markdown/marked-terminal"
-import { type Align, renderTable } from "../../../lib/markdown/table"
+import { markedTerminal } from "../../../src/lib/markdown/marked-terminal"
+import { type Align, renderTable } from "../../../src/lib/markdown/table"
 
 const plain = (text: string) => text
 const draw = (head: string[], rows: string[][], maxWidth = 80, align: Align[] = []) =>

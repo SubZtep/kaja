@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { detectBackends, installHint } from "../../../lib/hooks/detect"
+import { detectBackends, installHint } from "../../../src/lib/hooks/detect"
 
 const only =
   (...programs: string[]) =>

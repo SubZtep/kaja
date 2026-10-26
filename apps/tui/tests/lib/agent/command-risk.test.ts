@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { isDangerousCommand } from "../../../lib/agent/command-risk"
+import { isDangerousCommand } from "../../../src/lib/agent/command-risk"
 
 test("flags rm -rf as dangerous", () => {
   expect(isDangerousCommand("rm -rf /tmp/build")).toBe(true)

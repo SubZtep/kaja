@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { formatBytes, formatImageReport } from "../../../lib/image/report"
+import { formatBytes, formatImageReport } from "../../../src/lib/image/report"
 
 test("sizes read in binary units, with a decimal from a megabyte up", () => {
   expect(formatBytes(512)).toBe("512 B")

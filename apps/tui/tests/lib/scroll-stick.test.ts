@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
+import { isAtBottom, STICK_SLOP } from "../../src/lib/scroll-stick"
 
 test("isAtBottom treats slop rows near the end as stuck", () => {
   expect(isAtBottom(100, 100, STICK_SLOP)).toBe(true)

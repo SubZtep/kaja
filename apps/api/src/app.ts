@@ -7,9 +7,9 @@ import { HTTPException } from "hono/http-exception"
 import pkg from "../package.json" with { type: "json" }
 import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
+import { knownTurnError } from "./core/errors"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
-import { aiRoutes } from "./features/ai"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { configExportRoutes } from "./features/config-export"
@@ -18,11 +18,10 @@ import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { sandboxRoutes } from "./features/sandbox"
 import { statsRoutes } from "./features/stats"
-import { telegramAdminRoutes } from "./features/telegram-admin"
-import { widgetRoutes } from "./features/widget"
-import { widgetAdminRoutes } from "./features/widget-admin"
+import { telegramLinkRoutes } from "./features/telegram-link"
+import { widgetChatRoutes, widgetRoutes } from "./features/widget"
+import { widgetManageRoutes } from "./features/widget-manage"
 import type { RouteProps } from "./types"
-import { knownTurnError } from "./types/errors"
 
 export const app = new OpenAPIHono<RouteProps>()
 
@@ -71,10 +70,10 @@ app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
-app.route("/telegram/admin", telegramAdminRoutes)
-app.route("/ai", aiRoutes)
+app.route("/telegram", telegramLinkRoutes)
+app.route("/ai", widgetChatRoutes)
 app.route("/widget", widgetRoutes)
-app.route("/widget/admin", widgetAdminRoutes)
+app.route("/widget/manage", widgetManageRoutes)
 
 // API documentation
 if (env.NODE_ENV === "development") {

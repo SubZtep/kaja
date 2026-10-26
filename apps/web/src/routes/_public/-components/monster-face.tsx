@@ -1,5 +1,5 @@
-import { cn } from "@kaja/shared/ui"
 import { useEffect, useRef } from "react"
+import { cn } from "../../../lib/cn"
 
 /**
  * Interactive stand-in for `/monster.gif`, traced pixel-for-pixel off the gif's own 8px grid (41x14 cells) and split

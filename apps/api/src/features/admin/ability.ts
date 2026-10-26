@@ -6,13 +6,12 @@ import {
   saveAbilityKeyRequestSchema,
   saveAbilityKeyResponseSchema
 } from "@kaja/schema/api"
+import { badGateway, badRequest, errorSchema, notFound, serviceUnavailable } from "../../core/errors"
 import { abilityService, marketplaceService } from "../../services"
 import type { RouteRegProps } from "../../types"
-import { badGateway, badRequest, notFound, serviceUnavailable } from "../../types/errors"
 import { sessionUser } from "../auth"
 import { cloudEgress, cloudSandbox } from "../nasi/chat"
 
-const errorSchema = z.object({ error: z.string() })
 const keyParams = z.object({
   name: z
     .string()

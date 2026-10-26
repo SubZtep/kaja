@@ -126,6 +126,15 @@ typeCheck   = true
       considerDefaultExhaustiveForUnions = true
     }
   ]
+  "unicorn/filename-case"                             = [
+    "error",
+    {
+      case   = "kebabCase",
+      ignore = [
+        "^\\$"
+      ]
+    }
+  ]
   "unicorn/prefer-array-find"                         = "warn"
 
 

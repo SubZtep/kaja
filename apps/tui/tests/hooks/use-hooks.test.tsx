@@ -6,9 +6,9 @@ import { Text } from "ink"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-use-hooks`
 
-const { useHooks } = await import("../../hooks/use-hooks")
-const { getConfigDir } = await import("../../lib/config/config")
-const { getHooksPath, resetHooks } = await import("../../lib/config/hooks")
+const { useHooks } = await import("../../src/hooks/use-hooks")
+const { getConfigDir } = await import("../../src/lib/config/config")
+const { getHooksPath, resetHooks } = await import("../../src/lib/config/hooks")
 const { renderForTest } = await import("../test-utils")
 const { write, file } = await import("bun")
 

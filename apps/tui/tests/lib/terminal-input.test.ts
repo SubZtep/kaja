@@ -9,7 +9,7 @@ import {
   parseWheelDirection,
   splitTerminalReports,
   windowFocusReport
-} from "../../lib/terminal-input"
+} from "../../src/lib/terminal-input"
 
 test("splits a raw stdin chunk into its escape sequences, ESC kept, text skipped", () => {
   expect(splitTerminalReports("\x1b[<64;10;5M\x1b[<65;10;5Mhi\x1b[I")).toEqual([

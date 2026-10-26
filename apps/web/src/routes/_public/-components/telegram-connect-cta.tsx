@@ -1,8 +1,8 @@
 import type { StartTelegramLinkResponse } from "@kaja/schema/api"
-import { cn } from "@kaja/shared/ui"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../../lib/api-fetch"
+import { cn } from "../../../lib/cn"
 import { m } from "../../../paraglide/messages.js"
 
 /** Signed-in Telegram card body: one-time deep link via the existing link API. */
@@ -10,7 +10,7 @@ export function TelegramConnectCta({ actionClassName }: Readonly<{ actionClassNa
   const apiFetch = useApiFetch()
 
   const createLink = useMutation({
-    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/admin/link", {}),
+    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/link", {}),
     onError: (err: Error) => toast.error(err.message || m.telegram_cta_error())
   })
   const link = createLink.data ? `https://t.me/${createLink.data.botUsername}?start=${createLink.data.token}` : null

@@ -7,7 +7,7 @@ import { sessionUser } from "../auth"
 import { mcpSandboxFor } from "./registry"
 
 /** How long a user's relay lives without a request before it closes (and releases servers on a borrowed sandbox). */
-export const RELAY_IDLE_MS = 15 * 60_000
+const RELAY_IDLE_MS = 15 * 60_000
 
 // Hop-by-hop or the caller's own: never sent on to the sandbox.
 const DROPPED_HEADERS = ["authorization", "cookie", "host", "connection", "content-length", SANDBOX_RELAY_KEY_HEADER]

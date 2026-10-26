@@ -15,7 +15,6 @@ COPY packages ./packages
 COPY marketplace/personas ./marketplace/personas
 COPY apps/api ./apps/api
 RUN bun run --filter @kaja/api build
-RUN bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/migrate.ts
 
 FROM oven/bun:1.4.4-slim AS runner
 WORKDIR /home/bun/app
@@ -23,7 +22,7 @@ ENV NODE_ENV=production
 
 USER bun
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/server.js ./server.js
-COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/migrate.js ./migrate.js
+COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/migrate.js ./scripts/migrate.js
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/public ./public
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/migrations ./migrations
 

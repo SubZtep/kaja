@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
 
-const { clearToken, loadToken, saveToken } = await import("../../../lib/auth/credentials")
-const { runLogout } = await import("../../../lib/auth/logout")
+const { clearToken, loadToken, saveToken } = await import("../../../src/lib/auth/credentials")
+const { runLogout } = await import("../../../src/lib/auth/logout")
 
 afterEach(async () => {
   await clearToken()

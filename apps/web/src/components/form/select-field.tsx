@@ -1,0 +1,57 @@
+import { Field } from "@base-ui/react/field"
+import { cn } from "../../lib/cn"
+import { useFieldContext } from "../../lib/form-contexts"
+import { FieldErrors } from "./field-errors"
+
+export function SelectField({
+  label,
+  options,
+  layout = "horizontal",
+  ...props
+}: Readonly<
+  { label: string; options: { value: string; label: string }[]; layout?: "horizontal" | "stack" } & Omit<
+    React.ComponentProps<"select">,
+    "value"
+  >
+>) {
+  const field = useFieldContext<string>()
+  const isStack = layout === "stack"
+
+  return (
+    <Field.Root
+      name={field.name}
+      invalid={!field.state.meta.isValid}
+      dirty={field.state.meta.isDirty}
+      touched={field.state.meta.isTouched}
+    >
+      <div className={cn(isStack ? "flex flex-col gap-1.5" : "md:flex")}>
+        <Field.Label
+          htmlFor={field.name}
+          className={cn(
+            isStack ? "text-muted text-[13px] font-medium" : "flex w-48 items-center justify-between align-middle"
+          )}
+        >
+          {isStack ? label : `${label}:`}
+        </Field.Label>
+        <select
+          id={field.name}
+          name={field.name}
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onChange={e => field.handleChange(e.target.value)}
+          className="border-border/60 text-fg focus:outline-neon/50 w-full rounded-sm border bg-black/25 px-3 py-2 text-base focus:outline-2 focus:-outline-offset-1 data-invalid:border-red-500/70 dark:scheme-dark"
+          {...props}
+        >
+          {options.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <Field.Error match={!field.state.meta.isValid}>
+        <FieldErrors field={field} />
+      </Field.Error>
+    </Field.Root>
+  )
+}

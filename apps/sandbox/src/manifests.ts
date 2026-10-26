@@ -27,7 +27,7 @@ function serverKey(ability: ReturnType<typeof parseMcpManifest>): Pick<SandboxSe
  * as its browser's. Cooperative: Node (with NODE_USE_ENV_PROXY), Bun, Python, npm and uv follow them, but a process
  * that ignores them still connects directly. Loopback stays direct, where chrome-devtools reaches its own Chrome.
  */
-export function proxyEnv(port: number): Record<string, string> {
+function proxyEnv(port: number): Record<string, string> {
   const proxy = `http://127.0.0.1:${port}`
   const direct = "localhost,127.0.0.1,::1"
   return {

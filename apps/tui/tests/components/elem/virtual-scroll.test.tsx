@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Box, Text } from "ink"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { useRemeasure, VirtualScroll } from "../../../components/elem/virtual-scroll"
+import { useRemeasure, VirtualScroll } from "../../../src/components/elem/virtual-scroll"
 import { renderForTest } from "../../test-utils"
 
 // Grows after mounting, like an image that loads after its alt text

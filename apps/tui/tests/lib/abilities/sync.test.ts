@@ -3,7 +3,7 @@ import { createHash } from "node:crypto"
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { LOCK_FILE, readSyncLock, syncMarketplace } from "../../../lib/abilities/sync"
+import { LOCK_FILE, readSyncLock, syncMarketplace } from "../../../src/lib/abilities/sync"
 
 let upstream: string
 let local: string

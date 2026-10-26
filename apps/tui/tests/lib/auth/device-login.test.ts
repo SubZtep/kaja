@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { localizeWebUrl } from "../../../lib/auth/device-login"
+import { localizeWebUrl } from "../../../src/lib/auth/device-login"
 
 test("the device page opens in the terminal's language", () => {
   expect(localizeWebUrl("https://kaja.io/device?user_code=ABCD", "hu-HU")).toBe(

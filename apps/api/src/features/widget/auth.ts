@@ -1,15 +1,15 @@
 import { createMiddleware } from "hono/factory"
+import { unauthorized } from "../../core/errors"
 import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
 import type { ResolvedWidget } from "../../services/widget"
-import { unauthorized } from "../../types/errors"
 
 export type WidgetVariables = { widget: ResolvedWidget }
 
 const TOKEN_PREFIX = "kwt_"
 
 /** The raw widget token from `Authorization: Bearer kwt_…`, or undefined when this request is not one. */
-export function widgetBearer(header: string | undefined): string | undefined {
+function widgetBearer(header: string | undefined): string | undefined {
   if (!header?.startsWith(`Bearer ${TOKEN_PREFIX}`)) return undefined
   return header.slice("Bearer ".length).trim()
 }

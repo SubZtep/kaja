@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { stripVTControlCharacters } from "node:util"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { groupModelsByTask, type ModelIo, runModelPass } from "../../../lib/doctor/models"
+import { groupModelsByTask, type ModelIo, runModelPass } from "../../../src/lib/doctor/models"
 
 const model = (id: string, task: CliResolvedModel["task"], provider: string, name: string): CliResolvedModel => ({
   id,

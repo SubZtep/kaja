@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Header, infoParts, tokensLabel } from "../../components/layout/header"
+import { Header, infoParts, tokensLabel } from "../../src/components/layout/header"
 import { renderForTest } from "../test-utils"
 
 test("tokensLabel is empty before the first reply", () => {

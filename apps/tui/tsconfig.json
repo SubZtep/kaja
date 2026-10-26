@@ -1,24 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    // Environment setup & latest features
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "target": "ESNext",
-    "module": "Preserve",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "types": ["bun", "react"],
-    "outDir": "./dist",
-    // Bundler mode
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-    "erasableSyntaxOnly": true,
-    // Best practices
-    "strict": true,
-    "skipLibCheck": true
+    "erasableSyntaxOnly": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }

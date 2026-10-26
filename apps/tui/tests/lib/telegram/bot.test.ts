@@ -59,7 +59,7 @@ mock.module("grammy", () => ({
   InputFile: class {}
 }))
 
-const { createTelegramBot } = await import("../../../lib/telegram/bot")
+const { createTelegramBot } = await import("../../../src/lib/telegram/bot")
 
 function makeBot(opts: Partial<Parameters<typeof createTelegramBot>[0]> = {}) {
   return createTelegramBot({

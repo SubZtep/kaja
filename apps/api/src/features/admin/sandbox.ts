@@ -1,11 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { type AdminSandboxEntry, adminSandboxResponseSchema, sandboxSamplesResponseSchema } from "@kaja/schema/api"
 import { sql } from "../../core/db"
+import { errorSchema } from "../../core/errors"
 import { sandboxService } from "../../services"
 import type { RouteRegProps } from "../../types"
 import { tunnelFor, userForPseudonym } from "../sandbox"
-
-const errorSchema = z.object({ error: z.string() })
 
 const sandboxStatsRoute = createRoute({
   method: "get",

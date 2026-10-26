@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Box, Text } from "ink"
 import { createRef } from "react"
-import { VirtualScroll, type VirtualScrollRef } from "../../components/elem/virtual-scroll"
+import { VirtualScroll, type VirtualScrollRef } from "../../src/components/elem/virtual-scroll"
 import { renderForTest } from "../test-utils"
 
 // Ten two-row items in a three-row viewport

@@ -1,6 +1,6 @@
 # @kaja/tui
 
-Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram bot. The entry point is `cli.ts` at the package root (not `src/`). `memory.sqlite` is nasi's `createSqlStore` over `Bun.SQL` (`lib/store/sqlite.ts`), every row under `LOCAL_USER_ID`.
+Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram bot. The entry point is `src/cli.ts`; paths below are under `src/`, except `tests/` and `locales/` at the package root. `memory.sqlite` is nasi's `createSqlStore` over `Bun.SQL` (`lib/store/sqlite.ts`), every row under `LOCAL_USER_ID`.
 
 ## Modes
 
@@ -9,6 +9,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **Local**: `@kaja/nasi` with the user's `models.toml`, never a silent fallback to cloud
 - `components/layout/app.tsx` is the one UI for both (`LocalApp`/`CloudApp`)
 - The app writes `~/.config/kaja/*.toml` only in first-run setup and `kaja config wizard|fetch|hooks`. Language, thinking, toolDisplay and voice are read once at startup
+- Every TOML file the app writes goes through `lib/config/toml.ts`'s `stringifyToml`: sub-tables grouped under their parent's header
 - Quitting kills every tracked child (`installShutdownHandlers`)
 
 ## UI
@@ -22,6 +23,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - **Images**: a drawn picture is cached by source and size (`lib/image/render-terminal-image.ts`), not in row state: unmounted rows would come back without it and the viewport flickers. Failures aren't cached
 - **Monster**: every face lives in `components/layout/monster.tsx` (`<Monster mood wand>`, never a copied string). `emote(mood)` from anywhere shows a face for a moment; each `fireHook` pulls one through `onHook`, hooks.toml or not
 - **Ink is patched** (`patches/ink@8.0.0.patch`, soft-wrap leading space): bumping Ink means redoing the patch or dropping it if upstream fixed it
+- **`react-devtools-core` devDependency** looks unused but must stay: `bun build --compile` bundles Ink's `devtools.js`, whose static import fails without it (`--external` crashes the binary at startup)
 - **Hooks**: optional `hooks.toml` (`kaja config hooks`); no file = silence. `fireHook(name, event)` is the one entry point; commands are unref'd to outlive a quit. Sounds/notifications use system utilities (`lib/hooks/detect.ts`), no npm packages; wav files are downloaded by `syncSounds` since an external player can't open files inside the binary
 - **Logging**: `lib/logger.ts`, a JSON-lines file, silent unless `KAJA_LOG_LEVEL` and `KAJA_LOG_FILE` are set; never the terminal (Ink owns it)
 
@@ -38,7 +40,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 
 ## First-run wizard
 
-`components/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml.
+`components/wizard/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml. Its step order and answer model are `wizard/steps.ts`, the answered trail (lines, folds, progress, hints) `wizard/trail.tsx`; the runner that applies the result is `lib/cli/config-wizard.tsx`.
 
 - Every step opens on the current value (`readPrefill`), so Enter throughout keeps a machine unchanged. `--cloud`/`--local` skip the mode step; a prefilled mode does not
 - Steps are grouped into blocks (`BLOCK_OF_KIND`) shown in the header; Esc pops `history`, and the trail is drawn from it each render (not Ink `<Static>`), so finished blocks fold and a changed answer updates its line

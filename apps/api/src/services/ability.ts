@@ -47,7 +47,7 @@ export function cloudMcpProblem(ability: McpAbility): string | undefined {
 }
 
 /** What a stdio ability's catalog entry names as where its calls go: whichever MCP sandbox the user's turn runs in. */
-export const SANDBOX_DOMAIN = "sandbox"
+const SANDBOX_DOMAIN = "sandbox"
 
 const KEY_PREFIX = "ability:"
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { ConfirmCommand } from "../../components/layout/confirm-command"
+import { ConfirmCommand } from "../../src/components/layout/confirm-command"
 import { renderForTest } from "../test-utils"
 
 type Answer = [boolean, string | undefined]

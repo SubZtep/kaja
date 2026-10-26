@@ -5,17 +5,18 @@ import {
   widgetStatePutSchema,
   widgetStateResponseSchema
 } from "@kaja/schema/api"
+import { badRequest, errorSchema, notFound, unauthorized } from "../../core/errors"
 import { widgetService } from "../../services"
-import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { widgetTokenAuth, type WidgetVariables } from "./auth"
 
-const errorSchema = z.object({ error: z.string() })
+export { widgetChatRoutes } from "./chat-route"
+
 const visitorParam = z.object({
   visitorId: z.uuid().openapi({ param: { name: "visitorId", in: "path" } })
 })
 
 export const widgetRoutes = new OpenAPIHono<{ Variables: WidgetVariables }>()
-// Not `*`: this router is mounted at /widget, and a blanket middleware would 401 /widget/admin before that router runs.
+// Not `*`: this router is mounted at /widget, and a blanket middleware would 401 /widget/manage before that router runs.
 widgetRoutes.use("/me", widgetTokenAuth)
 widgetRoutes.use("/source", widgetTokenAuth)
 widgetRoutes.use("/state/*", widgetTokenAuth)

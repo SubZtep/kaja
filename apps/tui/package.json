@@ -3,18 +3,12 @@
   "version": "0.30.26",
   "private": true,
   "type": "module",
-  "scripts": {
-    "clean:temp": "bun run scripts/clean-temp.ts",
-    "gen-schema": "bun run scripts/gen-schema.ts",
-    "start": "bun run cli.ts",
-    "test": "bun test"
-  },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "better-auth": "^1.7.12",
+    "better-auth": "^1.7.13",
     "chalk": "^6.0.1",
     "cli-highlight": "^2.1.11",
     "env-paths": "^4.0.0",

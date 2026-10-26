@@ -1,3 +1,4 @@
+// Used by `bun sync:locales` (pre-commit), `bun check:locales` (pre-push, CI) and the /translate skill (`--todo`, `--apply`).
 import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 import { $ } from "bun"

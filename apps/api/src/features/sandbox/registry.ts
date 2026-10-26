@@ -42,7 +42,7 @@ export function userForPseudonym(pseudonym: string): string | undefined {
 const pseudonymKey = Buffer.from(hkdfSync("sha256", env.BETTER_AUTH_SECRET, "", "kaja sandbox pseudonym", 32))
 
 /** What a sandbox calls `userId`: stable for that pair, and meaningless to its operator or to any other sandbox. */
-export function pseudonymFor(userId: string, sandboxId: string): string {
+function pseudonymFor(userId: string, sandboxId: string): string {
   const pseudonym = createHmac("sha256", pseudonymKey)
     .update(`sandbox:${sandboxId}:${userId}`)
     .digest("base64url")
@@ -151,7 +151,7 @@ const TRUST_ORDER: SandboxTrust[] = ["any", "trusted", "official"]
  * Where a call carrying `key` may go: anywhere without one, the user's own or the official sandbox with their own, only
  * the official one with a server-wide key (an operator could log it).
  */
-export function keyTrust(key: AbilityKeyValue | undefined): SandboxTrust {
+function keyTrust(key: AbilityKeyValue | undefined): SandboxTrust {
   if (!key) return "any"
   return key.own ? "trusted" : "official"
 }

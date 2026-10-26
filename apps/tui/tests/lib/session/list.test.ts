@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import type { SessionMeta } from "@kaja/schema/store"
-import { formatSessionList } from "../../../lib/session/list"
+import { formatSessionList } from "../../../src/lib/session/list"
 
 const NOW = new Date("2026-09-23T12:00:00Z")
 

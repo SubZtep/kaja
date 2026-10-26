@@ -8,9 +8,9 @@ process.env.XDG_CACHE_HOME = join(base, "cache")
 process.env.XDG_CONFIG_HOME = join(base, "config")
 
 const { checkGit, fetchMarketplace, getMarketplaceCacheDir, MarketplaceFetchError, MIN_GIT_VERSION, parseGitVersion } =
-  await import("../../../lib/abilities/fetch")
-const { runAbilityUpdate, UPDATE_STEPS } = await import("../../../lib/abilities/cli")
-const { getMarketplaceDir } = await import("../../../lib/abilities/abilities-file")
+  await import("../../../src/lib/abilities/fetch")
+const { runAbilityUpdate, UPDATE_STEPS } = await import("../../../src/lib/abilities/cli")
+const { getMarketplaceDir } = await import("../../../src/lib/abilities/abilities-file")
 
 function git(cwd: string, ...args: string[]) {
   const proc = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd, windowsHide: true })

@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, mock, spyOn, test } from "bun:test"
-import { clearToken, loadToken, saveToken } from "../../../lib/auth/credentials"
+import { clearToken, loadToken, saveToken } from "../../../src/lib/auth/credentials"
 
 // In-memory stand-in for the OS credential store, so tests never touch (or wipe) the real TUI login token
 const store = new Map<string, string>()
@@ -38,8 +38,8 @@ test("a KAJA_PROFILE keeps its own token", async () => {
   Bun.env.KAJA_PROFILE = "second"
   try {
     // A query string makes Bun evaluate the module again, now seeing the profile
-    const specifier = "../../../lib/auth/credentials?profile=second"
-    const second = (await import(specifier)) as typeof import("../../../lib/auth/credentials")
+    const specifier = "../../../src/lib/auth/credentials?profile=second"
+    const second = (await import(specifier)) as typeof import("../../../src/lib/auth/credentials")
     expect(await second.loadToken()).toBeUndefined()
     await second.saveToken("tok_second")
     expect(await loadToken()).toBe("tok_default")

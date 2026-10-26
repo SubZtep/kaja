@@ -1,5 +1,5 @@
 #!/bin/sh
-# pre-push: when locales have untranslated placeholders, runs /translate headless, commits the translations and pushes them; $1 is the remote git passes to the hook
+# Used by the last pre-push job in .lefthook.toml: when locales have untranslated placeholders, runs /translate headless, commits the translations and pushes them; $1 is the remote git passes to the hook
 set -eu
 
 remote="${1:-origin}"

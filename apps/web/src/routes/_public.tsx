@@ -1,8 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
-import { SiteShell } from "../components/layout/SiteShell"
-import { Footer } from "./_public/-components/footer"
-import { GritDefs } from "./_public/-components/grit-defs"
-import { Header } from "./_public/-components/header"
+import { SiteShell } from "../components/layout/site-shell"
 
 export const Route = createFileRoute("/_public")({
   component: PublicLayout
@@ -10,8 +7,7 @@ export const Route = createFileRoute("/_public")({
 
 function PublicLayout() {
   return (
-    <SiteShell className="public-grit" header={<Header />} footer={<Footer />}>
-      <GritDefs />
+    <SiteShell>
       <Outlet />
     </SiteShell>
   )

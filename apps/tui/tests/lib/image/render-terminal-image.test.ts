@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { deflateSync } from "node:zlib"
-import { imageBox, maxImageColumns, maxImageRows } from "../../../components/elem/terminal-image"
-import { renderTerminalImage } from "../../../lib/image/render-terminal-image"
+import { imageBox, maxImageColumns, maxImageRows } from "../../../src/components/elem/terminal-image"
+import { renderTerminalImage } from "../../../src/lib/image/render-terminal-image"
 
 function chunk(type: string, data: Uint8Array): Uint8Array {
   const body = new Uint8Array(4 + data.length)

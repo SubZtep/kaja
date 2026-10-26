@@ -1,0 +1,123 @@
+type Align = "left" | "center" | "right"
+
+// Sentinels to mark cell/row boundaries. Callbacks only give us strings,
+// so we join with these and split them back in the `table` callback.
+const CELL = "\x00"
+const ROW = "\x01"
+
+// oxlint-disable-next-line no-control-regex -- matches ANSI SGR escape sequences
+const ANSI_RE = /\x1b\[[0-9;]*m/g
+const stripAnsi = (s: string) => s.replace(ANSI_RE, "")
+/** Visible width (ANSI escapes take no columns). */
+const vlen = (s: string) => stripAnsi(s).length
+
+function padTo(s: string, w: number, align: Align): string {
+  const gap = w - vlen(s)
+  if (gap <= 0) return s
+  if (align === "right") return " ".repeat(gap) + s
+  if (align === "center") {
+    const left = gap >> 1
+    return " ".repeat(left) + s + " ".repeat(Math.ceil(gap / 2))
+  }
+  return s + " ".repeat(gap)
+}
+
+function drawTable(raw: string, aligns: Align[]): string {
+  const rows = raw
+    .split(ROW)
+    .filter(r => r.length > 0)
+    .map(r =>
+      r
+        .split(CELL)
+        .slice(0, -1)
+        .map(c => c.trim())
+    )
+
+  if (rows.length === 0) return ""
+
+  const cols = Math.max(...rows.map(r => r.length))
+  const widths: number[] = []
+  for (let i = 0; i < cols; i++) {
+    widths[i] = Math.max(...rows.map(r => vlen(r[i] ?? "")))
+  }
+
+  const align = (i: number): Align => aligns[i] ?? "left"
+  const line = (l: string, mid: string, r: string) => l + widths.map(w => "─".repeat(w + 2)).join(mid) + r
+  const body = (cells: string[]) => `│ ${widths.map((w, i) => padTo(cells[i] ?? "", w, align(i))).join(" │ ")} │`
+
+  const [head, ...rest] = rows
+  if (!head) return ""
+  return [line("┌", "┬", "┐"), body(head), line("├", "┼", "┤"), ...rest.map(body), line("└", "┴", "┘")].join("\n")
+}
+
+/**
+ * Renders markdown as ANSI-formatted terminal text via `Bun.markdown.render()`. Requires Bun >= 1.4 (`Bun.markdown` is
+ * marked unstable).
+ */
+export function markdownToTerminal(md: string, opts: { color?: boolean } = {}): string {
+  const color = opts.color ?? Bun.enableANSIColors
+  // Use paired on/off codes (not \x1b[0m) so nested styles survive.
+  const sgr = (on: string, off: string, s: string) => (color ? `\x1b[${on}m${s}\x1b[${off}m` : s)
+
+  let aligns: Align[] = []
+
+  return `${Bun.markdown
+    .render(md, {
+      // --- blocks ---
+      heading: (children, { level }) =>
+        `${level === 1 ? sgr("1;4", "0", children.toUpperCase()) : sgr("1", "22", children)}\n\n`,
+      paragraph: children => `${children}\n\n`,
+      blockquote: children =>
+        `${children
+          .trimEnd()
+          .split("\n")
+          .map(l => sgr("2", "22", "│ ") + l)
+          .join("\n")}\n\n`,
+      code: (children, meta) => {
+        const lang = meta?.language ? sgr("2", "22", ` ${meta.language}`) : ""
+        const langLine = lang ? `${lang}\n` : ""
+        const body = children
+          .replace(/\n$/, "")
+          .split("\n")
+          .map(l => `  ${sgr("36", "39", l)}`)
+          .join("\n")
+        return `${langLine}${body}\n\n`
+      },
+      hr: () => `${sgr("2", "22", "─".repeat(48))}\n\n`,
+      list: (children, { depth }) => (depth === 0 ? `${children}\n` : `\n${children}`),
+      listItem: (children, { index, depth, ordered, start, checked }) => {
+        const n = (start ?? 1) + index
+        let marker: string
+        if (checked !== undefined) marker = checked ? "[x]" : "[ ]"
+        else if (ordered) marker = `${n}.`
+        else marker = depth === 0 ? "•" : "◦"
+        return `${"  ".repeat(depth) + marker} ${children.trimEnd()}\n`
+      },
+
+      // --- tables ---
+      th: (children, meta) => {
+        aligns.push((meta?.align as Align) ?? "left")
+        return sgr("1", "22", children) + CELL
+      },
+      td: children => children + CELL,
+      tr: children => children + ROW,
+      thead: children => children,
+      tbody: children => children,
+      table: children => {
+        const out = drawTable(children, aligns)
+        aligns = [] // reset for the next table
+        return `${out}\n\n`
+      },
+
+      // --- inline ---
+      strong: children => sgr("1", "22", children),
+      emphasis: children => sgr("3", "23", children),
+      strikethrough: children => sgr("9", "29", children),
+      codespan: children => sgr("36", "39", children),
+      link: (children, { href }) =>
+        children === href ? sgr("4;34", "24;39", href) : `${children} (${sgr("4;34", "24;39", href)})`,
+      image: () => null, // drop images entirely
+      html: () => null
+    })
+    .trimEnd()}\n`
+}

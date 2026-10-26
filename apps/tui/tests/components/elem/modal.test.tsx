@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { Box, Text } from "ink"
 import { useState } from "react"
-import { Backdrop, Modal, ModalHost, paleLine } from "../../../components/elem/modal"
-import { useKey } from "../../../hooks/use-key"
+import { Backdrop, Modal, ModalHost, paleLine } from "../../../src/components/elem/modal"
+import { useKey } from "../../../src/hooks/use-key"
 import { renderForTest } from "../../test-utils"
 
 function Background({ onKey }: Readonly<{ onKey: (input: string) => void }>) {

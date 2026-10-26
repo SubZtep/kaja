@@ -3,9 +3,9 @@ import { mkdtemp, rm, utimes, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { TOML } from "bun"
-import { AUTO_UPDATE_INTERVAL_MS, autoUpdateAbilities } from "../../../lib/abilities/auto-update"
-import { LOCK_FILE } from "../../../lib/abilities/sync"
-import { invalidateConfigCache, setConfigDirOverride } from "../../../lib/config/config"
+import { AUTO_UPDATE_INTERVAL_MS, autoUpdateAbilities } from "../../../src/lib/abilities/auto-update"
+import { LOCK_FILE } from "../../../src/lib/abilities/sync"
+import { invalidateConfigCache, setConfigDirOverride } from "../../../src/lib/config/config"
 
 describe("autoUpdateAbilities", () => {
   let dir: string

@@ -12,7 +12,7 @@ import {
   themeFor,
   themes,
   useKajaTheme
-} from "../../components/theme"
+} from "../../src/components/theme"
 import { renderForTest } from "../test-utils"
 
 function Probe() {

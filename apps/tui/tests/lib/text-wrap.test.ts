@@ -8,7 +8,7 @@ import {
   moveVertical,
   offsetAtDisplayColumn,
   softWrapLines
-} from "../../lib/text-wrap"
+} from "../../src/lib/text-wrap"
 
 test("softWrapLines breaks on column width", () => {
   const lines = softWrapLines("abcdefghij", 4)

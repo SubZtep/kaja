@@ -7,7 +7,7 @@ import {
   coloursFromReply,
   queryTerminalColours,
   resolveTheme
-} from "../../lib/terminal-background"
+} from "../../src/lib/terminal-background"
 
 const ESC = "\u001b"
 

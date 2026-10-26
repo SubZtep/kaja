@@ -2,9 +2,9 @@ import { timingSafeEqual } from "node:crypto"
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { createMiddleware } from "hono/factory"
 import { env } from "../../core/env"
+import { unauthorized } from "../../core/errors"
 import { modelService } from "../../services"
 import type { RouteProps, RouteVariables } from "../../types"
-import { unauthorized } from "../../types/errors"
 import { registerGetModel } from "./model-route"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {

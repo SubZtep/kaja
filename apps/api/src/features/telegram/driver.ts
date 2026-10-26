@@ -41,7 +41,7 @@ export type TelegramButton = { text: string; data: string }
  * Buttons (rows of them) serve tool approvals (`confirm_tool`); cloud Nasi never emits confirm_command. Editing a
  * message without `rows` removes its buttons.
  */
-export type TelegramSender = {
+type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
   deleteMessage(chatId: number, messageId: number): Promise<void>
@@ -73,12 +73,12 @@ function errorLine(error: unknown, t: Translate): string {
 }
 
 /**
- * Cloud counterpart to apps/tui/lib/telegram/driver.ts. Each Telegram user must link their own Kaja account first (see
- * bot.ts's /start handler); the owning `userId` is resolved fresh per message via `resolveLinkedUser`, never fixed.
- * `telegramOwner(userId)` is still used as the `owner` within that account's Postgres partition, so a linked user's bot
- * conversations stay separate from their web/lite ones. No
- * per-user Agent cache: `openNasiFor` is called fresh per turn, same as every HTTP /nasi/turn call — state round-trips
- * through Postgres via the session id instead of living in memory.
+ * Cloud counterpart to apps/tui/src/lib/telegram/driver.ts. Each Telegram user must link their own Kaja account first
+ * (see bot.ts's /start handler); the owning `userId` is resolved fresh per message via `resolveLinkedUser`, never
+ * fixed. `telegramOwner(userId)` is still used as the `owner` within that account's Postgres partition, so a linked
+ * user's bot conversations stay separate from their web/lite ones. No per-user Agent cache: `openNasiFor` is called
+ * fresh per turn, same as every HTTP /nasi/turn call — state round-trips through Postgres via the session id instead of
+ * living in memory.
  */
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   const { resolveLinkedUser, sender } = config

@@ -5,8 +5,8 @@ import { renderForTest } from "../test-utils"
 // fireHook would otherwise run the machine's own hooks.toml
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-monster`
 
-const { emote, Monster, monsterWidth } = await import("../../components/layout/monster")
-const { fireHook } = await import("../../lib/config/hooks")
+const { emote, Monster, monsterWidth } = await import("../../src/components/layout/monster")
+const { fireHook } = await import("../../src/lib/config/hooks")
 
 /** Polls the last frame; a loaded machine gets a generous deadline. */
 async function waitForFrame(view: ReturnType<typeof renderForTest>, match: (frame: string) => boolean) {

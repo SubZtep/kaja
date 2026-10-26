@@ -1,10 +1,10 @@
 import { expect, spyOn, test } from "bun:test"
 import { Box } from "ink"
 import * as tinyclip from "tinyclip"
-import { ChatViewport } from "../../components/layout/chat-viewport"
-import type { TimelineEvent } from "../../hooks/use-agent"
-import * as dedentModule from "../../lib/markdown/dedent"
-import { uiEvents } from "../../lib/ui-events"
+import { ChatViewport } from "../../src/components/layout/chat-viewport"
+import type { TimelineEvent } from "../../src/hooks/use-agent"
+import * as dedentModule from "../../src/lib/markdown/dedent"
+import { uiEvents } from "../../src/lib/ui-events"
 import { renderForTest } from "../test-utils"
 
 const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({

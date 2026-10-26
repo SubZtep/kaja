@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
-import App from "../../components/layout/app"
+import App from "../../src/components/layout/app"
 import { renderForTest } from "../test-utils"
 
 const originalFetch = globalThis.fetch

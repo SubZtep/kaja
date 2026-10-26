@@ -4,8 +4,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
 import { APIError } from "openai"
-import type { Agent, Tool } from "../../../lib/agent/agents"
-import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
+import type { Agent, Tool } from "../../../src/lib/agent/agents"
+import type { InlineKeyboardLike, TelegramSender } from "../../../src/lib/telegram/driver"
 import { TINY_PNG, TINY_PNG_BASE64 } from "../../fixtures/images"
 
 // Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env vars and a minimal settings.toml fixture must be in place before lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever evaluated, since lib/openai.ts reads config() at its own module top level.
@@ -32,14 +32,14 @@ provider = "default"
 `
 )
 
-const { invalidateConfigCache } = await import("../../../lib/config/config")
-const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../lib/agent/agents")
-const { peekStore } = await import("../../../lib/memory/store")
+const { invalidateConfigCache } = await import("../../../src/lib/config/config")
+const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../src/lib/agent/agents")
+const { peekStore } = await import("../../../src/lib/memory/store")
 const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } =
-  await import("../../../lib/session/store")
+  await import("../../../src/lib/session/store")
 const { telegramOwner } = await import("@kaja/schema/store")
-const { createTelegramDriver } = await import("../../../lib/telegram/driver")
-const { t } = await import("../../../lib/i18n")
+const { createTelegramDriver } = await import("../../../src/lib/telegram/driver")
+const { t } = await import("../../../src/lib/i18n")
 const { approvalToken } = await import("@kaja/shared/telegram")
 const { notApprovedPrompt } = await import("@kaja/nasi")
 

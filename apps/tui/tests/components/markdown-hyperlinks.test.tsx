@@ -25,7 +25,7 @@ const hostileEnv = {
 async function renderLinkInSubprocess(env: Record<string, string>) {
   const script = `
     if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
-    const { markedTerminal } = await import("./lib/markdown/marked-terminal")
+    const { markedTerminal } = await import("./src/lib/markdown/marked-terminal")
     const { marked } = await import("marked")
     marked.use(markedTerminal())
     process.stdout.write(marked.parse("[click me](https://example.com)"))

@@ -5,7 +5,7 @@ import type { SQL } from "bun"
 
 const TOKEN_PREFIX = "kwt_"
 /** Game transcripts stay small; a larger body is refused rather than stored. */
-export const WIDGET_STATE_MAX_BYTES = 16 * 1024
+const WIDGET_STATE_MAX_BYTES = 16 * 1024
 
 type WidgetRow = {
   id: string

@@ -3,7 +3,7 @@ import type { WidgetMe } from "@kaja/schema/api"
 export const BARKOCHBA_ANSWERS = ["Yes", "No", "Sometimes", "Unknown"] as const
 export const BARKOCHBA_MAX_QUESTIONS = 20
 
-export type BarkochbaAnswer = (typeof BARKOCHBA_ANSWERS)[number]
+type BarkochbaAnswer = (typeof BARKOCHBA_ANSWERS)[number]
 
 export type GameState = {
   phase: "idle" | "playing" | "won" | "lost"

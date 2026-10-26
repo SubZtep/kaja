@@ -4,9 +4,9 @@ import { TOML, write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-bootstrap`
 
-const { setConfigDirOverride } = await import("../../../lib/config/config")
-const { getLanguage, setLanguage } = await import("../../../lib/i18n")
-const { detectAndSetLanguage } = await import("../../../lib/cli/bootstrap")
+const { setConfigDirOverride } = await import("../../../src/lib/config/config")
+const { getLanguage, setLanguage } = await import("../../../src/lib/i18n")
+const { detectAndSetLanguage } = await import("../../../src/lib/cli/bootstrap")
 
 const originalArgv = process.argv
 const originalLang = process.env.LANG

@@ -6,33 +6,14 @@ import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions, pendingQuestionOptions } from "../src/nasi"
 import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
+import { call, scriptedChat, type ScriptedMessage } from "./fixtures/chat"
 import { TINY_PNG, TINY_PNG_BASE64 } from "./fixtures/images"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
 
-function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[], sent?: SentMessage[][]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: (params: { messages: SentMessage[] }) => {
-          sent?.push(structuredClone(params.messages))
-          const message = script[i++]
-          if (!message) throw new Error("script exhausted")
-          return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
-            },
-            finalChatCompletion: async () => ({
-              choices: [{ message: { role: "assistant", ...message } }]
-            })
-          }
-        }
-      }
-    }
-  }
-}
+const fakeClient = (script: ScriptedMessage[], sent?: SentMessage[][]) =>
+  scriptedChat(script, { onCall: params => sent?.push(structuredClone(params.messages)) })
 
 function open(
   script: { content: string | null; tool_calls?: unknown[] }[],
@@ -389,11 +370,6 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
     auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " },
     approval: "writes",
     tools: ["read_thing", "write_thing"]
-  })
-  const call = (id: string, name: string, args: object) => ({
-    id,
-    type: "function",
-    function: { name, arguments: JSON.stringify(args) }
   })
   const sent: SentMessage[][] = []
   const nasi = await open(

@@ -1,8 +1,8 @@
 import { getDisplayName } from "@kaja/shared/text"
 import { Link } from "@tanstack/react-router"
 import { getHeaderItems, type NavItem } from "../../../components/layout/nav-items"
-import { SignOutButton } from "../../../components/layout/SignOutButton"
-import { SiteHeader, useCloseMobileNav } from "../../../components/layout/SiteHeader"
+import { SignOutButton } from "../../../components/layout/sign-out-button"
+import { SiteHeader, useCloseMobileNav } from "../../../components/layout/site-header"
 import { useUser } from "../../../hooks/user"
 
 // Desktop shows an icon item as the bare icon (label as its accessible name); the mobile drawer shows both

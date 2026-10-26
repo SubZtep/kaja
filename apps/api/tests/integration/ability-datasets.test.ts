@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { faker } from "@faker-js/faker"
+import { type ChatParams, scriptedChat, type ScriptedMessage } from "../../../../packages/nasi/tests/fixtures/chat"
 import { app } from "../../src/app"
 import { sql } from "../../src/core/db"
 import { registerAbilityDatasets, setNasiChatResolver } from "../../src/features/nasi/chat"
@@ -35,28 +36,11 @@ function marketplace(base: string) {
   return root
 }
 
-type Sent = { messages: { role: string; content?: unknown }[] }
+type Sent = ChatParams
 
-/** Chat client that plays `script` (one assistant message per model call) and records what each call was sent. */
-function scriptedChat(script: { content: string | null; tool_calls?: unknown[] }[], sent: Sent[]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: (params: never) => {
-          sent.push(structuredClone(params))
-          const message = script[i++] ?? { content: "done" }
-          return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
-            },
-            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
-          }
-        }
-      }
-    }
-  }
-}
+/** Plays `script` (then "done"), recording what each model call was sent. */
+const chatClient = (script: ScriptedMessage[], sent: Sent[]) =>
+  scriptedChat(script, { onCall: params => sent.push(structuredClone(params)), fallback: { content: "done" } })
 
 describe("datasets in the cloud", () => {
   let base: string
@@ -99,7 +83,7 @@ describe("datasets in the cloud", () => {
         arguments: JSON.stringify({ action: "answer", dataset: topic, field: "name", value: "Ada" })
       }
     }
-    const client = scriptedChat(
+    const client = chatClient(
       [{ content: null, tool_calls: [answer] }, { content: "Nice to meet you, Ada." }, { content: "Hi Ada!" }],
       sent
     )

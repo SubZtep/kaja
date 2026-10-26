@@ -3,9 +3,6 @@ name: Release api/web
 on:
   workflow_dispatch:
     inputs:
-      app:
-        description: "Workspace name (api or web)"
-        required: true
       tag:
         description: "Tag to release, e.g. api@1.2.3"
         required: true
@@ -17,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -25,10 +22,10 @@ jobs:
         id: changelog
         shell: bash
         env:
-          APP_NAME: ${{ inputs.app }}
           TAG: ${{ inputs.tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          APP_NAME="${TAG%@*}"
           PREV_TAG=$(git tag --list "${APP_NAME}@*" --sort=-v:refname | grep -v "^${TAG}\$" | head -n1)
           if [[ -n "$PREV_TAG" ]]; then
             RANGE="${PREV_TAG}..${TAG}"
@@ -39,7 +36,7 @@ jobs:
           cat changelog.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ inputs.tag }}
           draft: false

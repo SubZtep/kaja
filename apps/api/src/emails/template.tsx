@@ -36,7 +36,7 @@ const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, 
 const mono = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace"
 
 /** The web app's address, for the wordmark and footer links. */
-export const siteUrl = (env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN).replace(/\/$/, "")
+const siteUrl = (env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN).replace(/\/$/, "")
 
 /** Every email's frame: the wordmark, a card holding `children`, and a footer; `preview` is the inbox list's snippet. */
 export function EmailContainer({

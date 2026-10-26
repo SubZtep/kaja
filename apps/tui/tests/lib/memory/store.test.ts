@@ -11,7 +11,7 @@ import {
   markDatasetVersionComplete,
   saveDatasetAnswer,
   saveMemory
-} from "../../../lib/memory/store"
+} from "../../../src/lib/memory/store"
 
 // XDG_DATA_HOME/XDG_CONFIG_HOME are read fresh on every call (see getConfigPath/getDefaultMemoryDbPath) rather than cached at module load, so setting them per-test — even though this module was likely already imported by another test file earlier in the same `bun test` process — still isolates each test from the real ~/.local/share/kaja and ~/.config/kaja.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data`
@@ -109,7 +109,7 @@ test("data persists across a fresh process (module re-import)", async () => {
 
   // Simulate a process restart by running a fresh `bun` invocation against the same on-disk database, instead of re-importing within this process (module-level singletons like the cached Database connection would survive a same-process re-import and wouldn't prove real persistence).
   const result = await Bun.$`XDG_DATA_HOME=${dataDir} XDG_CONFIG_HOME=${configDir} bun -e ${`
-      import { loadMemory } from "${join(import.meta.dir, "../../../lib/memory/store.ts")}"
+      import { loadMemory } from "${join(import.meta.dir, "../../../src/lib/memory/store.ts")}"
       console.log(JSON.stringify(await loadMemory(null)))
     `}`.text()
   expect(JSON.parse(result.trim())).toEqual({ "test:persist": note })

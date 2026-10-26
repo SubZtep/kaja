@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 
 // lib/models/openai.ts does `const { models } = await config()` at its own module top level, so the module-scope `client` singleton depends on whichever test file's fixtures happened to be in place at first import across the whole `bun test` run (see the same note in tests/lib/agent/agents.test.ts). createOpenAIClient itself takes all inputs as parameters, so it's tested directly here instead of relying on that load-order-sensitive singleton.
-const { createOpenAIClient } = await import("../../../lib/models/openai")
+const { createOpenAIClient } = await import("../../../src/lib/models/openai")
 
 test("createOpenAIClient merges custom headers into outgoing requests without dropping the SDK's own headers", async () => {
   let seenHeaders: Headers | undefined

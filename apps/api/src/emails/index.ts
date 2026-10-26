@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer"
 import { env } from "../core/env"
 import { toLocale, translator } from "../core/i18n"
-import { getCodeHtml } from "./CodeEmail"
+import { getCodeHtml } from "./code-email"
 import type { CodeEmailPayload } from "./template"
 
 const transporter = nodemailer.createTransport({

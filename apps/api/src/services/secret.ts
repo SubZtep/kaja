@@ -5,7 +5,7 @@ const ALGORITHM = "aes-256-gcm"
 const IV_BYTES = 12
 
 /** Thrown when a secret is written while USER_SECRET_KEY isn't set. */
-export class SecretsUnavailableError extends Error {
+class SecretsUnavailableError extends Error {
   constructor() {
     super("secrets_unavailable")
     this.name = "SecretsUnavailableError"

@@ -13,7 +13,7 @@ export function getBotUsername(): string | undefined {
 
 /**
  * Always-on cloud Telegram bot: opt-in via TELEGRAM_BOT_TOKEN. Every Telegram user links their own Kaja account via a
- * one-time deep link (see bot.ts's /start handler and features/telegram-admin) — there's no shared account and no
+ * one-time deep link (see bot.ts's /start handler and features/telegram-link) — there's no shared account and no
  * allowedUserIds. Returns undefined when the token is unset.
  */
 export function createTelegramBotService() {

@@ -2,14 +2,14 @@ import { afterEach, beforeAll, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { setCatalog } from "../../../lib/models/catalog"
+import { setCatalog } from "../../../src/lib/models/catalog"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
-const { runConfigCli } = await import("../../../lib/config/cli")
-const { getConfigDir, getConfigPath } = await import("../../../lib/config/config")
-const { getModelsPath } = await import("../../../lib/models/models")
-const { getPaths } = await import("../../../lib/paths")
+const { runConfigCli } = await import("../../../src/lib/config/cli")
+const { getConfigDir, getConfigPath } = await import("../../../src/lib/config/config")
+const { getModelsPath } = await import("../../../src/lib/models/models")
+const { getPaths } = await import("../../../src/lib/paths")
 const { join } = await import("node:path")
 // Where an old install kept its own MCP servers; fetch must never write it.
 const getMcpPath = () => join(getConfigDir(), "mcp.toml")

@@ -1,5 +1,5 @@
 import type { ModelTask } from "@kaja/schema/config"
-import type { CatalogModel, CatalogProvider } from "../../lib/models/catalog"
+import type { CatalogModel, CatalogProvider } from "../../src/lib/models/catalog"
 
 // A model for `tasks`; a chat one calls tools, and takes images when it can do vision.
 const model = (name: string, tasks: ModelTask[], released?: string): CatalogModel => ({

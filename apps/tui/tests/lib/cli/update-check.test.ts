@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { isNewer, latestVersion, manifestVersion } from "../../../lib/cli/update-check"
+import { isNewer, latestVersion, manifestVersion } from "../../../src/lib/cli/update-check"
 
 test("manifestVersion reads the TUI tag's version", () => {
   expect(manifestVersion({ version: "tui@0.30.6", base_url: "x" })).toBe("0.30.6")

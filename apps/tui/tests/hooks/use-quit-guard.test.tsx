@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Text } from "ink"
-import { useQuitGuard } from "../../hooks/use-quit-guard"
+import { useQuitGuard } from "../../src/hooks/use-quit-guard"
 import { renderForTest } from "../test-utils"
 
 function Probe({ busy }: { busy: boolean }) {

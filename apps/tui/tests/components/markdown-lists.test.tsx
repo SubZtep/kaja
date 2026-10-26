@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { Box } from "ink"
 import { Marked } from "marked"
-import Markdown, { hangingRuns } from "../../components/elem/markdown"
-import { markedTerminal } from "../../lib/markdown/marked-terminal"
+import Markdown, { hangingRuns } from "../../src/components/elem/markdown"
+import { markedTerminal } from "../../src/lib/markdown/marked-terminal"
 import { renderForTest } from "../test-utils"
 
 const parse = (source: string) =>

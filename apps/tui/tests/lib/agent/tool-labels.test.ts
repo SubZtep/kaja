@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { describeToolCall } from "../../../lib/agent/tool-labels"
+import { describeToolCall } from "../../../src/lib/agent/tool-labels"
 
 test("describes a known tool call in plain language", () => {
   expect(describeToolCall("web_search", JSON.stringify({ q: "puppies" }))).toBe('Searching "puppies"...')

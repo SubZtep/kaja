@@ -4,41 +4,21 @@ import type { AbilityStore } from "../src/abilities/types"
 import { Nasi } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
 import { httpAbility, mcpAbility } from "./fixtures/abilities"
+import { call, scriptedChat, type ScriptedMessage } from "./fixtures/chat"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
-type Round = { content: string | null; tool_calls?: unknown[] }
+type Round = ScriptedMessage
 type Sent = { tools: string[]; messages: { role: string; content?: unknown; tool_call_id?: string }[] }
 
-/** Plays `script`, one assistant message per model call, recording the tool names and messages each call was sent. */
-function fakeClient(script: Round[], sent: Sent[]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: (params: { messages: Sent["messages"]; tools?: { function: { name: string } }[] }) => {
-          sent.push({
-            tools: (params.tools ?? []).map(tool => tool.function.name),
-            messages: structuredClone(params.messages)
-          })
-          const message = script[i++]
-          if (!message) throw new Error("script exhausted")
-          return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
-            },
-            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
-          }
-        }
-      }
-    }
-  }
-}
-
-const call = (id: string, name: string, args: object) => ({
-  id,
-  type: "function",
-  function: { name, arguments: JSON.stringify(args) }
-})
+/** Plays `script`, recording the tool names and messages each model call was sent. */
+const fakeClient = (script: Round[], sent: Sent[]) =>
+  scriptedChat(script, {
+    onCall: params =>
+      sent.push({
+        tools: (params.tools ?? []).map(tool => tool.function.name),
+        messages: structuredClone(params.messages)
+      })
+  })
 
 const weather = httpAbility({
   name: "weather",

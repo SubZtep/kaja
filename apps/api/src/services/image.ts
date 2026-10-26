@@ -20,7 +20,7 @@ import type { SQL } from "bun"
 import { imageUrl, listObjects, objects } from "../core/files"
 
 /** A page of the admin images list. */
-export const IMAGES_PAGE = 48
+const IMAGES_PAGE = 48
 
 /** A `source_url` column's host, lowercased and without `www.`; null when it isn't an http(s) URL. */
 export const sourceHost = (sql: SQL, column: "source_url" | "i.source_url") =>
@@ -69,11 +69,11 @@ function decodeCursor(text: string): Cursor | undefined {
 export class BadCursorError extends Error {}
 
 /** The sweep gives an image up after this many tries; the admin's buttons still try it. */
-export const MAX_DESCRIBE_ATTEMPTS = 3
+const MAX_DESCRIBE_ATTEMPTS = 3
 /** Images one sweep describes at most. */
-export const SWEEP_BATCH = 20
+const SWEEP_BATCH = 20
 /** A sweep leaves images this young to the turn that stored them, which is still describing them. */
-export const SWEEP_MIN_AGE_MS = 10 * 60 * 1000
+const SWEEP_MIN_AGE_MS = 10 * 60 * 1000
 /** Most images "describe all matching" queues at once. */
 const MAX_QUEUED = 1000
 /** Vision model calls running at once, per sweep or queue. */

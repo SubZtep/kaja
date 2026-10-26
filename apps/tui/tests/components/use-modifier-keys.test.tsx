@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Text } from "ink"
-import { type HotkeyModifier, modifierLabel, useModifierHeld, useModifierKeys } from "../../hooks/use-modifier-keys"
+import { type HotkeyModifier, modifierLabel, useModifierHeld, useModifierKeys } from "../../src/hooks/use-modifier-keys"
 import { renderForTest } from "../test-utils"
 
 function Harness({ modifier, presses }: { modifier: HotkeyModifier; presses: string[] }) {

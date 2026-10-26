@@ -3,10 +3,10 @@ import { tmpdir } from "node:os"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-mode`
 
-const { resolveMode, modeFromFlags } = await import("../../../lib/config/mode")
-const { getConfigDir, getConfigPath, setConfigDirOverride } = await import("../../../lib/config/config")
-const { getModelsPath } = await import("../../../lib/models/models")
-const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
+const { resolveMode, modeFromFlags } = await import("../../../src/lib/config/mode")
+const { getConfigDir, getConfigPath, setConfigDirOverride } = await import("../../../src/lib/config/config")
+const { getModelsPath } = await import("../../../src/lib/models/models")
+const { getSecretsPath, invalidateSecretsCache } = await import("../../../src/lib/config/secrets")
 
 // Both of these are module-wide and outlive the spec file that set them, so this one reads its own
 // config only if it clears them first: an override left behind by another spec would point

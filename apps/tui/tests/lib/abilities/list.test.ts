@@ -6,9 +6,9 @@ import { stripVTControlCharacters } from "node:util"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-ability-list`
 
-const { getConfigDir } = await import("../../../lib/config/config")
-const { getMarketplaceDir } = await import("../../../lib/abilities/abilities-file")
-const { abilityListLines } = await import("../../../lib/abilities/list")
+const { getConfigDir } = await import("../../../src/lib/config/config")
+const { getMarketplaceDir } = await import("../../../src/lib/abilities/abilities-file")
+const { abilityListLines } = await import("../../../src/lib/abilities/list")
 
 afterEach(() => rmSync(getConfigDir(), { recursive: true, force: true }))
 

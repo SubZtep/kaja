@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { type Tool, tool } from "@kaja/nasi"
-import { toolReportLines } from "../../subcommands/doctor"
+import { toolReportLines } from "../../src/subcommands/doctor"
 
 const named = (name: string, origin: Tool<unknown>["origin"], source?: string): Tool<unknown> => ({
   ...tool({ name, description: name, parameters: { type: "object", properties: {} }, execute: async () => name }),

@@ -1,9 +1,9 @@
 import { afterAll, afterEach, beforeEach, expect, test } from "bun:test"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { CATALOG, catalogProvider, setCatalog } from "../../../lib/models/catalog"
-import { providersFromModelsDev, refreshCatalog } from "../../../lib/models/modelsdev"
-import { getPaths } from "../../../lib/paths"
+import { CATALOG, catalogProvider, setCatalog } from "../../../src/lib/models/catalog"
+import { providersFromModelsDev, refreshCatalog } from "../../../src/lib/models/modelsdev"
+import { getPaths } from "../../../src/lib/paths"
 
 // One models.dev provider with a chat model, shaped like api.json's entries.
 const provider = (id: string, extra: Record<string, unknown> = { api: "https://api.example.com/v1/" }) => ({

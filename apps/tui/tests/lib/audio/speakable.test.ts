@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { toSpeakable } from "../../../lib/audio/speakable"
+import { toSpeakable } from "../../../src/lib/audio/speakable"
 
 test("strips emphasis, links, and inline code", () => {
   expect(toSpeakable("**No**, it's _not_ a `pet`.")).toBe("No, it's not a pet.")

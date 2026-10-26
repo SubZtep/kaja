@@ -18,19 +18,20 @@ import {
   NasiTurnResponseSchema
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
-import { imageUrl } from "../../core/files"
-import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
-import { reportError } from "../../core/report"
-import { abilityService } from "../../services"
-import type { RouteVariables } from "../../types"
 import {
   badRequest,
+  errorSchema,
   internalError,
   knownTurnError,
   knownTurnErrorResponse,
   notFound,
   serviceUnavailable
-} from "../../types/errors"
+} from "../../core/errors"
+import { imageUrl } from "../../core/files"
+import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
+import { reportError } from "../../core/report"
+import { abilityService } from "../../services"
+import type { RouteVariables } from "../../types"
 import { requireAuthMiddleware, sessionUser } from "../auth/middleware"
 import { rememberPlace } from "../sandbox"
 import {
@@ -57,8 +58,6 @@ nasiRoutes.use("*", async (c, next) => {
 nasiRoutes.use("/turn", nasiTurnRateLimiter)
 nasiRoutes.use("/turn/stream", nasiTurnRateLimiter)
 nasiRoutes.use("/compact", nasiTurnRateLimiter)
-
-const errorSchema = z.object({ error: z.string() })
 
 /** An `{ error }` JSON response for a route's `responses`. */
 const jsonError = (description: string) => ({ description, content: { "application/json": { schema: errorSchema } } })

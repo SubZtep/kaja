@@ -7,10 +7,10 @@ import { stripVTControlCharacters } from "node:util"
 const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
 
-const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
+const { invalidateSecretsCache } = await import("../../../src/lib/config/secrets")
 const { collectCredentials, outcomeLine, placeholdersFor, resolveCredentials, summaryLines } =
-  await import("../../../lib/doctor/credentials")
-type CredentialItem = import("../../../lib/doctor/credentials").CredentialItem
+  await import("../../../src/lib/doctor/credentials")
+type CredentialItem = import("../../../src/lib/doctor/credentials").CredentialItem
 
 const kajaDir = join(configRoot, "kaja")
 

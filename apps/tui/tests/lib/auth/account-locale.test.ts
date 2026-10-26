@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
 
-const { clearToken, saveToken } = await import("../../../lib/auth/credentials")
-const { saveAccountLocale } = await import("../../../lib/auth/account-locale")
+const { clearToken, saveToken } = await import("../../../src/lib/auth/credentials")
+const { saveAccountLocale } = await import("../../../src/lib/auth/account-locale")
 
 const realFetch = globalThis.fetch
 const calls: { url: string; init?: RequestInit }[] = []

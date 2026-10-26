@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { runTelegramCli } from "../../../lib/telegram/cli"
+import { runTelegramCli } from "../../../src/lib/telegram/cli"
 
 test("without a bot token, exits 1 without ever importing telegram-bot", async () => {
   const code = await runTelegramCli({

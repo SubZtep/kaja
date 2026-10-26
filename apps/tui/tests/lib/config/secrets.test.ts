@@ -5,7 +5,7 @@ import { write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-secrets`
 
-const { setConfigDirOverride, getConfigDir } = await import("../../../lib/config/config")
+const { setConfigDirOverride, getConfigDir } = await import("../../../src/lib/config/config")
 const {
   getSecretsPath,
   loadSecretsFile,
@@ -16,7 +16,7 @@ const {
   secretsText,
   invalidateSecretsCache,
   updateSecretPlaceholders
-} = await import("../../../lib/config/secrets")
+} = await import("../../../src/lib/config/secrets")
 
 // Other test files sharing this bun test process may have already cached secrets() with their
 // own fixtures — invalidate before every test, not just after.

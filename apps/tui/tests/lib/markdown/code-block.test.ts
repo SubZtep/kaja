@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Marked } from "marked"
-import { guessLanguage } from "../../../lib/markdown/guess-language"
-import { markedTerminal } from "../../../lib/markdown/marked-terminal"
+import { guessLanguage } from "../../../src/lib/markdown/guess-language"
+import { markedTerminal } from "../../../src/lib/markdown/marked-terminal"
 
 const render = (source: string, max: number) =>
   new Marked(markedTerminal({ codeLines: () => max, codeMore: (n: number) => `+${n} more`, tab: 2 })).parse(

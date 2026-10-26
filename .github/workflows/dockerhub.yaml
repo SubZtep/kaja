@@ -7,10 +7,6 @@ on:
         description: "Release API"
         type: boolean
         default: false
-      release_tui:
-        description: "Release TUI"
-        type: boolean
-        default: false
       release_web:
         description: "Release Web"
         type: boolean
@@ -30,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get API version
         id: version
@@ -39,39 +35,15 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release API
-        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
-          dockerhub_repository: ${{ vars.DOCKER_IMAGE_API }}
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_API || 'subztep/kaja-api' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/api/Dockerfile
           version: ${{ steps.version.outputs.version }}
-
-  tui-docker:
-    name: TUI Build and Push
-    if: ${{ inputs.release_tui }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Get TUI version
-        id: version
-        run: |
-          VERSION=$(jq -r .version ./apps/tui/package.json)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Release TUI
-        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
-        with:
-          dockerhub_repository: ${{ vars.DOCKER_IMAGE_TUI }}
-          dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          dockerfile: ./apps/tui/Dockerfile
-          version: ${{ steps.version.outputs.version }}
+          cache_scope: api
+          checkout: false
 
   web-docker:
     name: Web Build and Push
@@ -82,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get Web version
         id: version
@@ -91,13 +63,15 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release Web
-        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
-          dockerhub_repository: ${{ vars.DOCKER_IMAGE_WEB }}
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_WEB || 'subztep/kaja-web' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/web/Dockerfile
           version: ${{ steps.version.outputs.version }}
+          cache_scope: web
+          checkout: false
 
   sandbox-docker:
     name: Sandbox Build and Push
@@ -108,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get Sandbox version
         id: version
@@ -117,11 +91,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release Sandbox
-        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
+        uses: SubZtep/dockerhub-action@292185e57c59912f0e7ba7890d8f9cc2a2bec384 # v1.1.0
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/sandbox/Dockerfile
           version: ${{ steps.version.outputs.version }}
+          cache_scope: sandbox
+          checkout: false
+          # amd64 only: Chrome for Testing has no Linux arm64 build
           platforms: linux/amd64

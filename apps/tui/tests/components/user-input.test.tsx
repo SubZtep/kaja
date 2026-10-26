@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { UserInput } from "../../components/layout/user-input"
+import { UserInput } from "../../src/components/layout/user-input"
 import { renderForTest } from "../test-utils"
 
 test('plain typing works, and "/" is just a literal character', async () => {

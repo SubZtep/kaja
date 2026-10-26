@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test"
 import { baseLocale, locales } from "@kaja/shared/locale"
-import { detectLanguage, dictionaries, setLanguage, t } from "../../lib/i18n"
+import { detectLanguage, dictionaries, setLanguage, t } from "../../src/lib/i18n"
 
 afterEach(() => setLanguage("en-GB"))
 

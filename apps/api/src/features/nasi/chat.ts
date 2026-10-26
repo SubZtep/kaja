@@ -200,17 +200,9 @@ const SHARED_SANDBOX_NOTE =
   " Some tools may run on another person's computer, who can see what they do. The browser does not: it stays on " +
   "this user's own sandbox or the official one. Never send the user's personal data through a tool that runs elsewhere."
 
-type SandboxPicker = (userId: string, keys: SandboxKeys) => McpSandbox
-let sandboxOverride: SandboxPicker | undefined
-
-/** Test seam: how a user's turns reach an MCP sandbox. Pass undefined to restore the connected sandboxes. */
-export function setNasiSandboxOverride(picker: SandboxPicker | undefined) {
-  sandboxOverride = picker
-}
-
 /** Where a user's stdio abilities run: a sandbox, with the key each one starts with (`keys`). The caller closes it. */
 export function cloudSandbox(userId: string, keys: SandboxKeys): McpSandbox {
-  return (sandboxOverride ?? mcpSandboxFor)(userId, keys)
+  return mcpSandboxFor(userId, keys)
 }
 
 /**
@@ -280,7 +272,7 @@ export type TurnClient = {
 }
 
 /** The terminal's declarations in a turn request, or undefined when it declared none (every non-terminal caller). */
-export function clientOf(body: NasiTurnRequest): TurnClient | undefined {
+function clientOf(body: NasiTurnRequest): TurnClient | undefined {
   if (!body.clientTools && !body.clientSkills && !body.clientPersonas) return undefined
   return { tools: body.clientTools ?? [], skills: body.clientSkills ?? [], personas: body.clientPersonas ?? [] }
 }
@@ -289,7 +281,7 @@ export function clientOf(body: NasiTurnRequest): TurnClient | undefined {
  * The catalog with the user's own personas added; one with a catalog persona's id takes its place, `default` staying
  * first.
  */
-export function withOwnPersonas(catalog: Persona[], own: Persona[]): Persona[] {
+function withOwnPersonas(catalog: Persona[], own: Persona[]): Persona[] {
   if (own.length === 0) return catalog
   const mine = new Map(own.map(persona => [persona.id, persona]))
   return [

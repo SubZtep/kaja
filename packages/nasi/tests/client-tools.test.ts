@@ -5,37 +5,13 @@ import { Agent, type Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore, memoryObjects } from "../src/store"
 import { mcpAbility } from "./fixtures/abilities"
+import { call, type ChatParams, scriptedChat, type ScriptedMessage } from "./fixtures/chat"
 import { TINY_PNG_BASE64 } from "./fixtures/images"
 
-type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
-type Sent = { messages: SentMessage[]; tools?: { function: { name: string } }[] }
+type Sent = ChatParams
 
-function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[], sent: Sent[]) {
-  let i = 0
-  return {
-    chat: {
-      completions: {
-        stream: (params: Sent) => {
-          sent.push(structuredClone(params))
-          const message = script[i++]
-          if (!message) throw new Error("script exhausted")
-          return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
-            },
-            finalChatCompletion: async () => ({ choices: [{ message: { role: "assistant", ...message } }] })
-          }
-        }
-      }
-    }
-  }
-}
-
-const call = (id: string, name: string, args: object) => ({
-  id,
-  type: "function",
-  function: { name, arguments: JSON.stringify(args) }
-})
+const fakeClient = (script: ScriptedMessage[], sent: Sent[]) =>
+  scriptedChat(script, { onCall: params => sent.push(structuredClone(params)) })
 
 const readFile = {
   name: "read_file",

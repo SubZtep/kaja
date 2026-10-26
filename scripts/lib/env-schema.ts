@@ -1,8 +1,9 @@
+// Used by env.ts and env-types.ts to read field metadata from the env schemas.
 import type { z } from "zod"
 
 type EnvDefault = string | number | boolean
 
-export interface EnvFieldMeta {
+interface EnvFieldMeta {
   description?: string
   example?: string
   secret?: boolean

@@ -1,5 +1,5 @@
 import { Brain, Drama, Globe, Image, PanelsTopLeft, Puzzle } from "lucide-react"
-import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { ContentWidth } from "../../../components/layout/content-width"
 import { m } from "../../../paraglide/messages.js"
 import { SectionTitle } from "./section-title"
 

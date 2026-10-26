@@ -1,4 +1,3 @@
-import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import {
   BrainCircuit,
@@ -17,6 +16,7 @@ import { useEffect, useRef, useState } from "react"
 import type { BarkochbaAction } from "../../../lib/barkochba/game"
 import { BARKOCHBA_MAX_QUESTIONS } from "../../../lib/barkochba/rules"
 import { type BarkochbaResponse, playBarkochba } from "../../../lib/barkochba/server"
+import { cn } from "../../../lib/cn"
 import { m } from "../../../paraglide/messages.js"
 import { getLocale } from "../../../paraglide/runtime.js"
 

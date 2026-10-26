@@ -18,7 +18,7 @@ export function gravatarHash(email: string): string {
 }
 
 /** The address's Gravatar picture; `d=404` makes one without a picture answer 404 instead of a placeholder. */
-export function gravatarImageUrl(email: string): string {
+function gravatarImageUrl(email: string): string {
   return `https://gravatar.com/avatar/${gravatarHash(email)}?s=${AVATAR_SIZE}&r=pg&d=404`
 }
 
@@ -46,7 +46,7 @@ export async function gravatarName(email: string, fetcher: Fetch = fetch): Promi
  * Copies a picture into the user's images as a WebP of at most {@link AVATAR_SIZE} (no EXIF), returning its public URL;
  * undefined when the source has none.
  */
-export async function storeAvatar(userId: string, source: string, fetcher: Fetch = fetch): Promise<string | undefined> {
+async function storeAvatar(userId: string, source: string, fetcher: Fetch = fetch): Promise<string | undefined> {
   const res = await fetcher(source, { signal: AbortSignal.timeout(TIMEOUT_MS) })
   if (!res.ok) return undefined
   const bytes = new Uint8Array(await res.arrayBuffer())

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createAsyncQueue } from "../../../lib/audio/audio"
+import { createAsyncQueue } from "../../../src/lib/audio/audio"
 
 describe("createAsyncQueue", () => {
   test("yields pushed items in order and ends", async () => {
