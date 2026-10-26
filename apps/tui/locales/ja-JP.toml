@@ -7,6 +7,7 @@ bye                    = "じゃあね!"
 localNoProvider        = "--local にはチャットモデルが必要です。`kaja config wizard` で設定するか、クラウドチャットなら `kaja --cloud` を使ってください。"
 headlessNoSubcommand   = "--headless は対応するサブコマンド(`telegram` など)と一緒に使います。単独のヘッドレスモードはまだありません。"
 pleaseSignIn           = "サインインしてください!"
+signInExpired          = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing"
 deviceLoginGoTo        = "アクセス先:"
 deviceLoginEnterCode   = "コードを入力:"
 deviceLoginScan        = "スマホでスキャン:"
@@ -475,6 +476,12 @@ network = "ネットワークエラー"
 tool    = "ツールが失敗しました"
 agent   = "問題が発生しました"
 unknown = "不明なエラー"
+
+
+[cloudError]
+signedOut   = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+rateLimited = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing"
+server      = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing {status}"
 
 
 [doctor]

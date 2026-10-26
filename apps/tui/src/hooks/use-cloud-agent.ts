@@ -1,4 +1,10 @@
-import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
+import {
+  createNasiClient,
+  type NasiClientOptions,
+  NasiHttpError,
+  NasiStreamError,
+  type NasiStreamEvent
+} from "@kaja/nasi/client"
 import type { NasiClientCall, NasiInfoResponse, NasiToolResult, NasiTurnRequest } from "@kaja/schema/nasi"
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -19,7 +25,19 @@ function isCloudErrorCategory(value: string | undefined): value is CloudErrorCat
   return value === "network" || value === "tool" || value === "agent" || value === "unknown"
 }
 
+// The API turned the token away: expired or revoked, so only a new sign-in helps.
+const isSignedOut = (error: unknown) => error instanceof NasiHttpError && error.status === 401
+
+// What the user is told about a failed request: a known status in their language, else the server's own text.
+function httpErrorMessage(error: NasiHttpError): string {
+  if (error.status === 401) return t("cloudError.signedOut")
+  if (error.status === 429) return t("cloudError.rateLimited")
+  if (error.status >= 500) return t("cloudError.server", { status: error.status })
+  return error.message
+}
+
 function categorizeCloudError(error: unknown): { category: CloudErrorCategory; message: string } {
+  if (error instanceof NasiHttpError) return { category: "agent", message: httpErrorMessage(error) }
   if (error instanceof NasiStreamError) {
     return { category: isCloudErrorCategory(error.category) ? error.category : "network", message: error.message }
   }
@@ -91,8 +109,11 @@ function withHeldResults(first: TurnRequest, held: NasiToolResult[] | undefined)
 export function useCloudAgent({
   yolo,
   computer,
+  onSignedOut,
   ...options
 }: NasiClientOptions & {
+  /** The API refused the token (401): the caller forgets it, so the next start signs in again. */
+  onSignedOut?: () => void
   /** Settings.toml's `yolo`: every `confirm_tool` is approved straight away instead of asking. */
   yolo?: boolean
   /**
@@ -112,6 +133,15 @@ export function useCloudAgent({
     eventsRef.current = [...eventsRef.current, event]
     setEvents(eventsRef.current)
   }, [])
+
+  const reportError = useCallback(
+    (error: unknown) => {
+      const { category, message } = categorizeCloudError(error)
+      pushEvent({ type: "error", text: message, category })
+      if (isSignedOut(error)) onSignedOut?.()
+    },
+    [pushEvent, onSignedOut]
+  )
 
   const [partial, setPartial] = useState<CloudPartialMessage | null>(null)
   const [pending, setPending] = useState(false)
@@ -143,12 +173,15 @@ export function useCloudAgent({
       result => {
         if (!cancelled) setInfo(result)
       },
-      () => {}
+      // Only a refused sign-in is worth saying before the first message; the turn itself reports anything else
+      error => {
+        if (!cancelled && isSignedOut(error)) reportError(error)
+      }
     )
     return () => {
       cancelled = true
     }
-  }, [client])
+  }, [client, reportError])
 
   const switchPersona = useCallback(
     (next: { id: string; label: string }) => {
@@ -350,14 +383,13 @@ export function useCloudAgent({
       try {
         await sendFrom(request, 0)
       } catch (error) {
-        const { category, message } = categorizeCloudError(error)
-        pushEvent({ type: "error", text: message, category })
+        reportError(error)
       } finally {
         setPartial(null)
         setPending(false)
       }
     },
-    [client, pushEvent, followPersonaSwitch, yolo, computer, resumeOnComputer]
+    [client, pushEvent, reportError, followPersonaSwitch, yolo, computer, resumeOnComputer]
   )
 
   // `/compact [focus]`: the server summarises the session now instead of running a turn.
@@ -373,13 +405,12 @@ export function useCloudAgent({
           setPromptTokens(compacted.afterTokens)
         } else pushEvent({ type: "notice", text: t("timeline.nothingToCompact") })
       } catch (error) {
-        const { category, message } = categorizeCloudError(error)
-        pushEvent({ type: "error", text: message, category })
+        reportError(error)
       } finally {
         setPending(false)
       }
     },
-    [client, pushEvent]
+    [client, pushEvent, reportError]
   )
 
   const send = useCallback(

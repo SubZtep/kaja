@@ -163,6 +163,36 @@ test("a tool error from the server renders as a tool failure, not a network erro
   await t.waitUntilExit()
 })
 
+test("a refused sign-in mid-chat says so and forgets the token", async () => {
+  nextTurnResponse = () => Response.json({ error: "Unauthorized" }, { status: 401 })
+  let signedOut = 0
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" onSignedOut={() => signedOut++} />)
+  await t.tick()
+  await t.press("hi")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  const frame = t.lastFrame()
+  expect(frame).toContain("Your sign-in has expired or was revoked")
+  expect(frame).not.toContain("401")
+  expect(signedOut).toBe(1)
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a rate-limited turn is told in the user's words, not as a raw status", async () => {
+  nextTurnResponse = () => Response.json({ error: "Too many requests" }, { status: 429 })
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.press("hi")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Too many requests right now")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test('hotkeyModifier: "ctrl" in preferences switches the persona-picker hotkey to Ctrl+P', async () => {
   const t = renderForTest(
     <App mode="cloud" apiUrl="https://api.kaja.io" token="tok" initialPreferences={{ hotkeyModifier: "ctrl" }} />

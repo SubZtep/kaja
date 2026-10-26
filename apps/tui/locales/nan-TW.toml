@@ -5,6 +5,7 @@ bye                    = "拜拜！"
 localNoProvider        = "--local 需要聊天模型。執行 `kaja config wizard` 來設定，抑是執行 `kaja --cloud` 來用雲端聊天。"
 headlessNoSubcommand   = "--headless 需要一个有支援个子指令，比如 `telegram`。這馬猶未有獨立个 headless 模式。"
 pleaseSignIn           = "請登入！"
+signInExpired          = "[nan-TW] lorem ipsum dolor sit amet consectetur"
 deviceLoginGoTo        = "請去："
 deviceLoginEnterCode   = "輸入代碼："
 deviceLoginScan        = "用手機掃描："
@@ -473,6 +474,12 @@ network = "網路錯誤"
 tool    = "工具執行失敗"
 agent   = "發生錯誤"
 unknown = "毋知影个錯誤"
+
+
+[cloudError]
+signedOut   = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+rateLimited = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+server      = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing {status}"
 
 
 [doctor]

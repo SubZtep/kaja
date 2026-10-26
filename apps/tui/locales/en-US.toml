@@ -5,6 +5,7 @@ bye                    = "Bye, bye!"
 localNoProvider        = "--local needs a chat model. Run `kaja config wizard` to set one up, or `kaja --cloud` for cloud chat."
 headlessNoSubcommand   = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 pleaseSignIn           = "Please sign in!"
+signInExpired          = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
 deviceLoginGoTo        = "Go to:"
 deviceLoginEnterCode   = "Enter code:"
 deviceLoginScan        = "Scan it with your phone:"
@@ -473,6 +474,12 @@ network = "Network error"
 tool    = "Tool failed"
 agent   = "Something went wrong"
 unknown = "Unknown error"
+
+
+[cloudError]
+signedOut   = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+rateLimited = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+server      = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {status}"
 
 
 [doctor]

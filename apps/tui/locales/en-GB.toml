@@ -5,6 +5,7 @@ bye                    = "Bye, bye!"
 localNoProvider        = "--local needs a chat model. Run `kaja config wizard` to set one up, or `kaja --cloud` for cloud chat."
 headlessNoSubcommand   = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 pleaseSignIn           = "Please sign in!"
+signInExpired          = "Your sign-in has expired. Please sign in again."
 deviceLoginGoTo        = "Go to:"
 deviceLoginEnterCode   = "Enter code:"
 deviceLoginScan        = "Scan it with your phone:"
@@ -473,6 +474,12 @@ network = "Network error"
 tool    = "Tool failed"
 agent   = "Something went wrong"
 unknown = "Unknown error"
+
+
+[cloudError]
+signedOut   = "Your sign-in has expired or was revoked. Quit and start kaja again to sign in."
+rateLimited = "Too many requests right now. Wait a moment and try again."
+server      = "Kaja's servers had a problem ({status}). Try again in a moment."
 
 
 [doctor]

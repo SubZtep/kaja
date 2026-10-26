@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { createNasiClient, NasiStreamError } from "../../src/client"
+import { createNasiClient, NasiHttpError, NasiStreamError } from "../../src/client"
 
 let server: ReturnType<typeof Bun.serve> | undefined
 
@@ -45,6 +45,16 @@ test("turn() throws with status and body on a non-ok response", async () => {
   server = Bun.serve({ port: 0, fetch: () => new Response("nope", { status: 401 }) })
   const client = createNasiClient({ baseUrl: server.url.toString(), getToken: async () => undefined })
   await expect(client.turn({ message: "hi" })).rejects.toThrow(/401/)
+})
+
+test("a failed request carries its status, with the server's own { error } text", async () => {
+  server = Bun.serve({ port: 0, fetch: () => Response.json({ error: "Too many requests" }, { status: 429 }) })
+  const client = createNasiClient({ baseUrl: server.url.toString(), getToken: async () => undefined })
+  for (const request of [() => client.info(), () => client.turn_stream({ message: "hi" }).next()]) {
+    const error = await request().catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(NasiHttpError)
+    expect(error).toMatchObject({ status: 429, message: "Too many requests" })
+  }
 })
 
 test("turn_stream() yields events split across chunk boundaries and returns done", async () => {
