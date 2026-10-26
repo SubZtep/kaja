@@ -40,7 +40,7 @@ All outbound traffic goes through `src/egress.ts`: it refuses non-public address
 - `overrides.json` changes only what the host needs; chrome-devtools gets the pinned `/opt/mcp` copy with the headless shell
 - `SANDBOX_CACHE_DIR` keeps fetched packages across starts and users (bun's excepted: per uid, in its HOME); new packages are fetched through the egress proxy
 - Bump `CHROME_DEVTOOLS_MCP_VERSION` and `CHROME_HEADLESS_SHELL_VERSION` together (the shell must match its Puppeteer's `PUPPETEER_REVISIONS`). amd64 only: Chrome for Testing has no Linux arm64
-- Docker Scout scans a `buildx` OCI archive with provenance and SBOM, like the release build: a plain `docker build` lacks attestations and Scout reports them missing
+- Docker Scout scans a `buildx` OCI archive with provenance and SBOM, like the release build (`SubZtep/dockerhub-action` in `dockerhub.yaml`): keep the two in step, or the PR compare reports package changes that aren't real. A weekly run scans the released image and fails only on fixable critical/high CVEs
 
 ## Testing
 
