@@ -51,7 +51,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - `detectLocalServers` (`lib/models/detect.ts`) probes the usual local ports and OLLAMA_HOST etc. alongside the models.dev fetch; found servers arrive as `WizardResult.local`, ticked, with tasks guessed from model ids. A models.toml provider at the same address keeps its id
 - Typed answers are tested live through the `probe` prop (`GET /models` with the key: 401/403 is refused, anything else unverified); the component itself does no I/O. A key found in the provider's env var can be saved as `api_key_env` (secrets.toml names the variable; `providerKey` resolves it)
 - The setup grid (`components/elem/rail.tsx`): gutter mark in column 2, labels from 4, values from 18 (`padLabel`), nothing past 78 (`textWidth`). `Question` brackets a question from ◆ to a └ hint (`KeyHint`); menus inside one draw rail rows (`useInRail`), elsewhere their old look until the chat screen is redesigned
-- Every config file is written through `lib/config/schema-file.ts`'s `writeConfigFile` (or edited in place): a `#:schema ./schemas/<f>.json` line on top, and this build's schema copied beside it. Defaults live in code and the Zod schemas (`PREFERENCE_DEFAULTS`), never in templates
+- Every config file is written through `lib/config/schema-file.ts`'s `writeConfigFile` (or edited in place): a `#:schema` line on top pointing at `packages/schema/json/<f>.json` on GitHub main (the checkout's copy under `KAJA_PROFILE=dev`). Defaults live in code and the Zod schemas (`PREFERENCE_DEFAULTS`), never in templates
 
 ## Abilities and personas (local)
 

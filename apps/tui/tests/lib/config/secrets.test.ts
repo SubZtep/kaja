@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { write } from "bun"
+import { SCHEMA_BASE_URL } from "../../../src/lib/config/schema-file"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-secrets`
 
@@ -40,12 +41,11 @@ test("a missing file holds no keys, and reading it writes nothing", async () => 
   expect(data.providers).toEqual({})
 })
 
-test("the first key saved creates the file, pointing at the schema copy beside it", async () => {
+test("the first key saved creates the file, pointing at the published schema", async () => {
   const dir = `${tmpdir()}/kaja-test-secrets-first-${Math.random()}`
   setConfigDirOverride(dir)
   await saveSecrets({ providers: { xai: { api_key: "k" } } })
-  expect(await Bun.file(getSecretsPath()).text()).toStartWith("#:schema ./schemas/secrets.json\n")
-  expect(await Bun.file(join(dir, "schemas", "secrets.json")).exists()).toBe(true)
+  expect(await Bun.file(getSecretsPath()).text()).toStartWith(`#:schema ${SCHEMA_BASE_URL}/secrets.json\n`)
   expect((await loadSecretsFile()).providers).toEqual({ xai: { api_key: "k" } })
 })
 
