@@ -1,3 +1,4 @@
+// Used by `bun generate:env-types`: the pre-commit hook (.lefthook.toml) and by hand after an env schema change.
 import { join } from "node:path"
 import type { z } from "zod"
 import { ApiEnvSchema, SandboxEnvSchema, TuiEnvSchema, WebEnvSchema } from "../packages/schema/env"

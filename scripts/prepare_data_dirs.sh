@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Used by hand once, before the first `docker compose up` (README setup).
 set -euo pipefail
 
 mkdir -p data/postgres data/sandbox data/storage

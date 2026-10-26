@@ -18,7 +18,7 @@ Translations: edit only the en-GB locale files and leave every other language to
 
 - Infra: `docker compose up -d db mail storage`, then `scripts/storage_init.sh` once per fresh volume (needs the `rc` CLI)
 - `bun dev:sandbox` needs Chromium (or `docker compose up -d sandbox`)
-- Start the TUI with `bun dev:tui`: `--filter @kaja/tui start` doesn't pass the TTY through (Ink: "Raw mode is not supported")
+- Start the TUI with `bun dev:tui` (loads `apps/tui/.env`)
 - Run `bun test` from the repo root: the test preloads (and the API's test database switch) live in the root `bunfig.toml`
 - `bun tailwind:fix` needs a clean tree and also bumps Tailwind; CI fails if it would change `apps/web/src`
 
@@ -27,10 +27,11 @@ Translations: edit only the en-GB locale files and leave every other language to
 - Comments: one line, no wrapping. `/** ... */` (TSDoc) on exported functions/values, `// ...` for internal notes
 - Import packages by name: `@kaja/nasi` exports its root (and `./client`); `@kaja/schema` and `@kaja/shared` only subpaths (e.g. `@kaja/schema/api`)
 - TOML: `tombi format && tombi lint`, using the machine's `tombi` (not a dependency)
+- File names: shell scripts are snake_case (Google style), TS files kebab-case (lint)
 
 ## Generated files and hooks
 
-- Lefthook runs lint, fmt and typecheck on commit, lint and typecheck on push (plus `bun test` and the headless `/translate` when pushing `main`). Let them catch issues; run them yourself only when you need feedback sooner
+- Lefthook runs lint, fmt and typecheck on commit, lint, typecheck and the headless `/translate` on push (plus `bun test` when pushing `main`). Let them catch issues; run them yourself only when you need feedback sooner
 - Model defaults live nowhere in the repo: the TUI wizard reads [models.dev](https://models.dev) directly (`apps/tui/lib/models/modelsdev.ts`, cached with its ETag) and `kaja config fetch` refreshes models.toml from it. Offline, the wizard asks for every detail of the user's own provider
 - Env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env` and `bun generate:env-types`; the api/web/sandbox `.env.example` are generated (tui's is hand-written)
-- `bun check:env` fails CI and pre-commit on drift
+- `bun check:env` fails CI and pre-push on drift (pre-commit regenerates instead)

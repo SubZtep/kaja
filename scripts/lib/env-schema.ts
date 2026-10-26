@@ -1,3 +1,4 @@
+// Used by env.ts and env-types.ts to read field metadata from the env schemas.
 import type { z } from "zod"
 
 type EnvDefault = string | number | boolean

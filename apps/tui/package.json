@@ -3,11 +3,6 @@
   "version": "0.30.26",
   "private": true,
   "type": "module",
-  "scripts": {
-    "clean:temp": "bun run scripts/clean-temp.ts",
-    "start": "bun run cli.ts",
-    "test": "bun test"
-  },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "@kaja/nasi": "workspace:*",

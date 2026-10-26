@@ -1,3 +1,4 @@
+// Used by `bun generate:env` (pre-commit) and `bun check:env` (pre-push, CI).
 import { join } from "node:path"
 import type { z } from "zod"
 import { ApiEnvSchema, SandboxEnvSchema, WebEnvSchema } from "../packages/schema/env"

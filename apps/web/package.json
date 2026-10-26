@@ -9,8 +9,7 @@
     "generate:paraglide": "bun scripts/generate-paraglide.ts",
     "generate:routes": "tsr generate",
     "preview": "vite preview",
-    "tailwind:fix": "bunx @tailwindcss/upgrade",
-    "test": "echo \"no tests\""
+    "tailwind:fix": "bunx @tailwindcss/upgrade"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

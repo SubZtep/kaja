@@ -1,6 +1,7 @@
 #!/bin/sh
 # Readies the dev object storage (RustFS from compose) with the rc CLI: the bucket, and anyone may read images/ but never list it.
 # Defaults match apps/api/.env.example; Hetzner's bucket and policy are set up by hand.
+# Used by hand once per fresh storage volume (README, CLAUDE.md) and by CI (ci.yaml) before the API tests.
 set -eu
 
 endpoint="${STORAGE_ENDPOINT:-http://localhost:9000}"

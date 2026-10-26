@@ -1,3 +1,4 @@
+// Used on deploy (built into the image as scripts/migrate.js, run by disco.json), by CI (ci.yaml) and by hand to catch up a dev database.
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { SQL } from "bun"

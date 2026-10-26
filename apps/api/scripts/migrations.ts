@@ -1,3 +1,4 @@
+// Used by migrate.ts, the API test database (tests/test-database.ts) and tests/integration/migrations.test.ts.
 import { createHash } from "node:crypto"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"

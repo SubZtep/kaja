@@ -15,9 +15,6 @@
       "default": "./src/client/index.ts"
     }
   },
-  "scripts": {
-    "test": "bun test"
-  },
   "dependencies": {
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",

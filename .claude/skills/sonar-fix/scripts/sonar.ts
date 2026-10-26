@@ -1,5 +1,6 @@
 // Lists the open SonarCloud issues and unreviewed security hotspots of a branch's pull request, one Markdown line each, for the /sonar-fix skill; prints nothing when the branch has no PR.
-// Usage: bun scripts/sonar.ts <branch>
+// Usage: bun .claude/skills/sonar-fix/scripts/sonar.ts <branch>
+export {}
 
 const API = "https://sonarcloud.io/api"
 const PROJECT = "SubZtep_kaja"
@@ -21,7 +22,7 @@ function where(component: string, line?: number) {
 
 const branch = Bun.argv[2]
 if (!branch) {
-  console.error("usage: bun scripts/sonar.ts <branch>")
+  console.error("usage: bun .claude/skills/sonar-fix/scripts/sonar.ts <branch>")
   process.exit(2)
 }
 

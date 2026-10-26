@@ -48,7 +48,7 @@ afterEach(async () => {
   for (const session of await listSessions()) await deleteSessionRow(session.id)
 })
 
-// A second connection to the store's file, as `bun session dump` would open it while the TUI runs
+// A second, read-only connection to the store's file, as another process would open it while the TUI runs
 const openDb = () => new SQL({ adapter: "sqlite", filename: peekStorePath()!, readonly: true })
 
 test("create then load round-trips through the TUI's store, pending call and timeline included", async () => {
