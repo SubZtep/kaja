@@ -12,6 +12,7 @@ import type { ApprovalAnswer, Approve, Computer } from "../lib/cloud/computer"
 import { fitTurnBody } from "../lib/cloud/turn-body"
 import { getLanguage, t } from "../lib/i18n"
 import { withDescription } from "../lib/image/rows"
+import { useFailures } from "./use-failures"
 
 /**
  * Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's
@@ -133,6 +134,7 @@ export function useCloudAgent({
     eventsRef.current = [...eventsRef.current, event]
     setEvents(eventsRef.current)
   }, [])
+  useFailures(pushEvent)
 
   const reportError = useCallback(
     (error: unknown) => {

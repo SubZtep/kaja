@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
 import App from "../../src/components/layout/app"
+import { uiEvents } from "../../src/lib/ui-events"
 import { renderForTest } from "../test-utils"
 
 const originalFetch = globalThis.fetch
@@ -191,6 +192,18 @@ test("a rate-limited turn is told in the user's words, not as a raw status", asy
   expect(t.lastFrame()).toContain("Too many requests right now")
   t.unmount()
   await t.waitUntilExit()
+})
+
+test("an error nothing else caught shows in the chat instead of ending it", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  uiEvents.emit("failure", "boom from a background promise")
+  await t.tick()
+  expect(t.lastFrame()).toContain("boom from a background promise")
+  t.unmount()
+  await t.waitUntilExit()
+  // Unmounted, the chat stops listening
+  expect(uiEvents.listenerCount("failure")).toBe(0)
 })
 
 test('hotkeyModifier: "ctrl" in preferences switches the persona-picker hotkey to Ctrl+P', async () => {
