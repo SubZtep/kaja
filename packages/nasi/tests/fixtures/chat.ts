@@ -26,8 +26,9 @@ export function scriptedChat(
           const message = script[i++] ?? fallback
           if (!message) throw new Error("script exhausted")
           return {
-            async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
+            [Symbol.asyncIterator]() {
+              const chunks = (message.content ? [{ choices: [{ delta: { content: message.content } }] }] : []).values()
+              return { next: () => Promise.resolve(chunks.next()) }
             },
             finalChatCompletion: () => Promise.resolve({ choices: [{ message: { role: "assistant", ...message } }] })
           }
