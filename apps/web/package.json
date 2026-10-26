@@ -8,6 +8,7 @@
     "dev": "vite dev --port 3000",
     "generate:paraglide": "bun scripts/generate-paraglide.ts",
     "generate:routes": "tsr generate",
+    "generate:sitemap": "bun scripts/generate-sitemap.ts",
     "preview": "vite preview",
     "tailwind:fix": "bunx @tailwindcss/upgrade"
   },
