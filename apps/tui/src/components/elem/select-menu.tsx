@@ -3,8 +3,8 @@ import { useState } from "react"
 import { useKey } from "../../hooks/use-key"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
+import { FilterLine, Matched, matchesFilter, useFilter } from "./menu-filter"
 import { InputFrame, MenuRow, useInRail } from "./rail"
-import { FilterLine, Matched, matchesFilter, useFilter } from "./use-filter"
 
 /**
  * Keyboard-driven selection list: up/down to move, return to pick, escape (or backspace/delete) to dismiss. With

@@ -10,11 +10,11 @@ import {
   useRef,
   useState
 } from "react"
+import { useClick } from "../../hooks/use-click"
 import { InputBlockedContext } from "../../hooks/use-input-blocked"
 import { useKey } from "../../hooks/use-key"
 import { t } from "../../lib/i18n"
 import { mix, paint, useKajaTheme, usePalette } from "../theme"
-import { useClick } from "./use-click"
 
 type ModalState = { open: boolean; register: () => () => void }
 

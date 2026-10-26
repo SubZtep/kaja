@@ -1,6 +1,6 @@
 import { useLoaderData } from "@tanstack/react-router"
 import { useCallback } from "react"
-import { loadAuthClient } from "../hooks/load-auth-client"
+import { loadAuthClient } from "./load-auth-client"
 import { captureError } from "./sentry"
 
 async function apiFetch<T = unknown>(

@@ -1,8 +1,8 @@
 import { type DOMElement, measureElement } from "ink"
 import type { RefObject } from "react"
-import { useInputBlocked } from "../../hooks/use-input-blocked"
-import { useTerminalReports } from "../../hooks/use-terminal-reports"
-import { parseMouse } from "../../lib/terminal-input"
+import { parseMouse } from "../lib/terminal-input"
+import { useInputBlocked } from "./use-input-blocked"
+import { useTerminalReports } from "./use-terminal-reports"
 
 type Rect = { left: number; top: number; right: number; bottom: number }
 

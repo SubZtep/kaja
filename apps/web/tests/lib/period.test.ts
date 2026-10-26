@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test"
-import { periodDay, periodEnd, periodStart } from "./period"
+import { periodDay, periodEnd, periodStart } from "../../src/lib/period"
 
 const ZONES = ["UTC", "Asia/Tokyo", "America/Los_Angeles", "Pacific/Kiritimati", "Pacific/Pago_Pago"]
 const originalTz = process.env.TZ

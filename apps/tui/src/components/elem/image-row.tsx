@@ -1,12 +1,12 @@
 import { pathToFileURL } from "node:url"
 import { Box, type DOMElement, Text, useWindowSize } from "ink"
 import { useRef, useState } from "react"
+import { useClick } from "../../hooks/use-click"
 import { t } from "../../lib/i18n"
 import { openImage } from "../../lib/image/open-image"
 import { sourceName } from "../../lib/image/source"
 import { useKajaTheme } from "../theme"
 import { TerminalImage } from "./terminal-image"
-import { useClick } from "./use-click"
 
 /** Below this many columns the text goes under the image: beside it, it would wrap to a few words a line. */
 const IMAGE_ROW_MIN_COLUMNS = 100

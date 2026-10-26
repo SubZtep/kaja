@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { AUTH_MESSAGES } from "@kaja/schema/api"
-import { m } from "../paraglide/messages.js"
-import { authErrorMessage, VALIDATION, validationMessage } from "./error-messages"
+import { authErrorMessage, VALIDATION, validationMessage } from "../../src/lib/error-messages"
+import { m } from "../../src/paraglide/messages.js"
 
 test("every schema validation message has a translation", () => {
   for (const message of Object.values(AUTH_MESSAGES)) expect(VALIDATION[message]).toBeFunction()

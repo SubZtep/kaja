@@ -2,7 +2,7 @@ import { useLoaderData, useNavigate } from "@tanstack/react-router"
 import { LoaderCircle, LogOut } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { loadAuthClient } from "../../hooks/load-auth-client"
+import { loadAuthClient } from "../../lib/load-auth-client"
 import { m } from "../../paraglide/messages.js"
 import { ConfirmDialog } from "../ui/confirm-dialog"
 

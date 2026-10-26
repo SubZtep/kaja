@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test"
-import { forwardSentryEnvelope, SENTRY_DSN } from "./sentry-tunnel"
+import { forwardSentryEnvelope, SENTRY_DSN } from "../../src/lib/sentry-tunnel"
 
 const post = (body: string) => new Request("http://localhost/t", { method: "POST", body })
 const envelope = (dsn: string) => `${JSON.stringify({ dsn })}\n{"type":"event"}\n{}`

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import type { WidgetMe } from "@kaja/schema/api"
-import { handleBarkochba } from "./game"
-import { type PlayerChat, runPlayer } from "./player"
+import { handleBarkochba } from "../../../src/lib/barkochba/game"
+import { type PlayerChat, runPlayer } from "../../../src/lib/barkochba/player"
 import {
   BARKOCHBA_MAX_QUESTIONS,
   GameRuleError,
@@ -9,7 +9,7 @@ import {
   homepagePairProblem,
   IDLE_GAME,
   stepGame
-} from "./rules"
+} from "../../../src/lib/barkochba/rules"
 
 const board = (links: string[]): WidgetMe => ({
   id: "01900000-0000-7000-8000-000000000001",

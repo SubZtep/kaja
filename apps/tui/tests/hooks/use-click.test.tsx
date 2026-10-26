@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
 import { Box, type DOMElement, Text } from "ink"
 import { useRef } from "react"
-import { useClick } from "../../../src/components/elem/use-click"
-import { renderForTest } from "../../test-utils"
+import { useClick } from "../../src/hooks/use-click"
+import { renderForTest } from "../test-utils"
 
 // A press at screen column `col`, row `row` (0-based), as an SGR mouse report.
 const press = (col: number, row: number) => `\u001B[<0;${col + 1};${row + 1}M`

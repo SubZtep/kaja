@@ -1,8 +1,8 @@
 import { Box, type DOMElement } from "ink"
 import { type ReactNode, useRef, useState } from "react"
+import { useClick } from "../../hooks/use-click"
 import { copyToClipboard } from "../../lib/copy"
 import { useKajaTheme } from "../theme"
-import { useClick } from "./use-click"
 
 /**
  * Wraps a timeline block (an agent message, a question) in a hover tint; a click copies `text`. No layout of its own,
