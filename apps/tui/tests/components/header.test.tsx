@@ -47,21 +47,21 @@ async function frame(props: Partial<Parameters<typeof Header>[0]>, width = 80) {
 test("one row: the persona, then the model's line, then where it runs as a tag", async () => {
   const rows = await frame({ provider: "fireworks", promptTokens: 7_517, contextWindow: 1_000_000, profile: "dev" })
   expect(rows).toHaveLength(1)
-  expect(rows[0]!).toMatch(/Kaja +Model · Fireworks · 1% +local · dev$/)
+  expect(rows[0]!).toMatch(/Kaja +Model · Fireworks · 1% · local · dev$/)
 })
 
-test("YOLO comes before the mode tag", async () => {
+test("YOLO comes before the mode tag, dot-separated like the rest", async () => {
   const rows = await frame({ yolo: true, mode: "cloud" })
-  expect(rows[0]!).toMatch(/Model +YOLO +cloud$/)
+  expect(rows[0]!).toMatch(/Model · YOLO · cloud$/)
 })
 
 test("a narrow header drops the provider, then the model, and stays one row", async () => {
   const props = { model: "a-long-model-name", provider: "openrouter", promptTokens: 1200, contextWindow: 32_000 }
-  expect((await frame(props, 70))[0]!).toMatch(/A Long Model Name · Openrouter · 4% +local$/)
-  expect((await frame(props, 50))[0]!).toMatch(/A Long Model Name · 4% +local$/)
+  expect((await frame(props, 70))[0]!).toMatch(/A Long Model Name · Openrouter · 4% · local$/)
+  expect((await frame(props, 50))[0]!).toMatch(/A Long Model Name · 4% · local$/)
   const narrow = await frame(props, 32)
   expect(narrow).toHaveLength(1)
-  expect(narrow[0]!).toMatch(/4% +local$/)
+  expect(narrow[0]!).toMatch(/4% · local$/)
 })
 
 test("a long tool label or model name keeps the header at one row", async () => {

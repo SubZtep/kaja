@@ -6,8 +6,9 @@ import { writeText } from "tinyclip"
 import { renderUnicodeCompact } from "uqr"
 import App from "../components/layout/app"
 import { consolePalette, paint } from "../components/theme"
-import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
+import { clearToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { usableStoredToken } from "../lib/auth/token-check"
 import { getApiBaseUrl } from "../lib/config/api-url"
 import { config } from "../lib/config/config"
 import { fireHook } from "../lib/config/hooks"
@@ -70,13 +71,22 @@ function listenForKeys(onKey: (key: string) => void): () => void {
   }
 }
 
-/** The stored cloud token, else a device login (the browser opens on the code; L and Q keys for the link and a QR code). */
-export async function resolveToken(apiUrl: string): Promise<string> {
+/**
+ * The stored cloud token while the API takes it (`onStored` runs), else a device login (the browser opens on the code;
+ * L and Q keys for the link and a QR code).
+ */
+export async function resolveToken(apiUrl: string, options: { onStored?: () => void } = {}): Promise<string> {
   try {
-    const stored = await loadToken()
-    if (stored) return stored
+    let expired = false
+    const stored = await usableStoredToken(apiUrl, () => {
+      expired = true
+    })
+    if (stored) {
+      options.onStored?.()
+      return stored
+    }
 
-    console.log(t("cli.pleaseSignIn"))
+    console.log(expired ? t("cli.signInExpired") : t("cli.pleaseSignIn"))
 
     let stopKeys: (() => void) | undefined
     let signedIn = false
@@ -178,6 +188,9 @@ export async function runCloudSubcommand() {
         apiUrl={apiUrl}
         token={token}
         computer={computer}
+        onSignedOut={() =>
+          void clearToken().catch(error => log.warn("Couldn't clear the refused cloud token", { error }))
+        }
       />,
       {
         alternateScreen: true,

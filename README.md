@@ -11,6 +11,8 @@ Kaja is an agentic AI harness. Give it a task and it keeps looping with an LLM, 
 
 Point it at a local model or a cloud-based one, and chat with it in a terminal or on Telegram. A cloud widget can call the same models for a program you publish, such as the homepage game.
 
+The terminal client runs on macOS and Linux (x64 and arm64). The Windows build is experimental and untested; shell commands don't work there yet.
+
 Under the hood it’s a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent.
 
 ## Repository map

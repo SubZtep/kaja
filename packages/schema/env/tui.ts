@@ -12,10 +12,10 @@ export const TuiEnvSchema = z.object({
     ),
   KAJA_LOG_LEVEL: trimmed
     .optional()
-    .describe("Minimum level written to KAJA_LOG_FILE (trace, debug, info, warn, error, fatal); unset means no log")
+    .describe("Minimum level written to the log (trace, debug, info, warn, error, fatal, or off); unset means warn")
     .meta({ section: "Logging" }),
   KAJA_LOG_FILE: trimmed
     .optional()
-    .describe("Append JSON-lines logs here (needs KAJA_LOG_LEVEL); the TUI never logs to the terminal")
+    .describe("Append JSON-lines logs here instead of kaja.log in the state folder; the TUI never logs to the terminal")
     .meta({ section: "Logging" })
 })

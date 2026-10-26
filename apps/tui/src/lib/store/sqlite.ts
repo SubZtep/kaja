@@ -10,6 +10,8 @@ import {
 } from "@kaja/nasi"
 import { SQL } from "bun"
 import { log } from "../logger"
+import { getPaths } from "../paths"
+import { makePrivate } from "../private-file"
 
 /** The store's SQLite file, opened with foreign keys on and its schema in place. */
 export async function openLocalDb(dbPath: string): Promise<SQL> {
@@ -20,6 +22,10 @@ export async function openLocalDb(dbPath: string): Promise<SQL> {
   await sql`PRAGMA busy_timeout = 5000`
   await sql`PRAGMA foreign_keys = ON`
   await sql.unsafe(SQLITE_SCHEMA)
+  // Chats and memory notes are the user's alone; SQLite gives -wal/-shm the database file's mode
+  await Promise.all(["", "-wal", "-shm"].map(suffix => makePrivate(`${dbPath}${suffix}`)))
+  // Kaja's own data folder (images sit in it too); a dbPath set elsewhere keeps its folder as the user made it
+  if (dirname(dbPath) === getPaths().data) await makePrivate(getPaths().data)
   return sql
 }
 

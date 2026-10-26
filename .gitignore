@@ -2,7 +2,6 @@
 .output/
 .tanstack/
 .tsbuildinfo
-.tmp-test-xdg-config-*/
 dist/
 node_modules/
 data/

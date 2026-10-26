@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "Arquivo de configuração inválido: {path}"
-startupError           = """
-O Kaja encontrou um erro inesperado e não conseguiu iniciar: {message}
-Os detalhes foram gravados no arquivo de log."""
+startupError           = "O Kaja encontrou um erro inesperado e não conseguiu iniciar: {message}"
+logWritten             = "Os detalhes estão em {path}"
 bye                    = "Tchau, tchau!"
 localNoProvider        = "--local precisa de um modelo de chat. Execute `kaja config wizard` para configurar um, ou `kaja --cloud` para o chat na nuvem."
 headlessNoSubcommand   = "--headless precisa de um subcomando compatível, como `telegram`. Ainda não existe um modo headless puro."
 pleaseSignIn           = "Faça login, por favor!"
+signInExpired          = "Sua sessão expirou. Faça login novamente."
 deviceLoginGoTo        = "Acesse:"
 deviceLoginEnterCode   = "Digite o código:"
 deviceLoginScan        = "Escaneie com o celular:"
@@ -46,6 +46,7 @@ settings       = "configurações"
 memorySessions = "memória e sessões"
 images         = "imagens da sessão"
 sounds         = "efeitos sonoros"
+log            = "arquivo de log"
 backups        = "backups de arquivos"
 models         = "modelos"
 commands       = "comandos seguros"
@@ -475,6 +476,12 @@ network = "Erro de rede"
 tool    = "A ferramenta falhou"
 agent   = "Algo deu errado"
 unknown = "Erro desconhecido"
+
+
+[cloudError]
+signedOut   = "Sua sessão expirou ou foi revogada. Feche e abra o kaja de novo para fazer login."
+rateLimited = "Muitas solicitações no momento. Aguarde um instante e tente novamente."
+server      = "Os servidores do Kaja tiveram um problema ({status}). Tente novamente daqui a pouco."
 
 
 [doctor]

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
 import App from "../../src/components/layout/app"
+import { uiEvents } from "../../src/lib/ui-events"
 import { renderForTest } from "../test-utils"
 
 const originalFetch = globalThis.fetch
@@ -161,6 +162,48 @@ test("a tool error from the server renders as a tool failure, not a network erro
   expect(frame).toContain("fetch_url: Blocked non-public URL: http://localhost/x")
   t.unmount()
   await t.waitUntilExit()
+})
+
+test("a refused sign-in mid-chat says so and forgets the token", async () => {
+  nextTurnResponse = () => Response.json({ error: "Unauthorized" }, { status: 401 })
+  let signedOut = 0
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" onSignedOut={() => signedOut++} />)
+  await t.tick()
+  await t.press("hi")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  const frame = t.lastFrame()
+  expect(frame).toContain("Your sign-in has expired or was revoked")
+  expect(frame).not.toContain("401")
+  expect(signedOut).toBe(1)
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a rate-limited turn is told in the user's words, not as a raw status", async () => {
+  nextTurnResponse = () => Response.json({ error: "Too many requests" }, { status: 429 })
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.press("hi")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Too many requests right now")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("an error nothing else caught shows in the chat instead of ending it", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  uiEvents.emit("failure", "boom from a background promise")
+  await t.tick()
+  expect(t.lastFrame()).toContain("boom from a background promise")
+  t.unmount()
+  await t.waitUntilExit()
+  // Unmounted, the chat stops listening
+  expect(uiEvents.listenerCount("failure")).toBe(0)
 })
 
 test('hotkeyModifier: "ctrl" in preferences switches the persona-picker hotkey to Ctrl+P', async () => {

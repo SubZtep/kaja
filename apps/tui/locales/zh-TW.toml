@@ -1,10 +1,12 @@
 [cli]
 invalidConfig          = "設定檔無效：{path}"
-startupError           = "Kaja 發生未預期的錯誤，無法啟動：{message}\n詳細資訊已寫入記錄檔。"
+startupError           = "Kaja 發生意外錯誤，無法啟動：{message}"
+logWritten             = "詳情請見 {path}"
 bye                    = "掰掰！"
 localNoProvider        = "--local 需要聊天模型。執行 `kaja config wizard` 來設定，或執行 `kaja --cloud` 改用雲端聊天。"
 headlessNoSubcommand   = "--headless 需要搭配支援它的子指令，例如 `telegram`。目前沒有單獨的無介面模式。"
 pleaseSignIn           = "請先登入！"
+signInExpired          = "登入已過期，請重新登入。"
 deviceLoginGoTo        = "前往："
 deviceLoginEnterCode   = "輸入代碼："
 deviceLoginScan        = "用手機掃描："
@@ -44,6 +46,7 @@ settings       = "設定"
 memorySessions = "記憶與對話"
 images         = "對話圖片"
 sounds         = "音效"
+log            = "記錄檔"
 backups        = "檔案備份"
 models         = "模型"
 commands       = "安全指令"
@@ -473,6 +476,12 @@ network = "網路錯誤"
 tool    = "工具執行失敗"
 agent   = "發生了一些問題"
 unknown = "未知的錯誤"
+
+
+[cloudError]
+signedOut   = "登入已過期或已被撤銷。請結束並重新啟動 kaja 來登入。"
+rateLimited = "目前請求過多，請稍候再試。"
+server      = "Kaja 的伺服器發生問題（{status}），請稍後再試。"
 
 
 [doctor]

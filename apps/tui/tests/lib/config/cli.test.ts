@@ -2,6 +2,7 @@ import { afterEach, beforeAll, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
+import { SCHEMA_BASE_URL } from "../../../src/lib/config/schema-file"
 import { setCatalog } from "../../../src/lib/models/catalog"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
@@ -199,7 +200,7 @@ test("fetch writes only models.toml: never settings.toml, secrets.toml or comman
     expect(await Bun.file(join(getConfigDir(), name)).exists()).toBe(false)
 })
 
-test("a file fetch writes points at the schema copy it puts beside it", async () => {
+test("a file fetch writes points at the published schema", async () => {
   await Bun.write(getModelsPath(), OUTDATED)
   const restore = mockCatalogFetch()
   try {
@@ -207,16 +208,14 @@ test("a file fetch writes points at the schema copy it puts beside it", async ()
   } finally {
     restore()
   }
-  expect(await Bun.file(getModelsPath()).text()).toStartWith("#:schema ./schemas/models.json\n")
-  const schema = await Bun.file(join(getConfigDir(), "schemas", "models.json")).json()
-  expect(schema.properties.models).toBeDefined()
+  expect(await Bun.file(getModelsPath()).text()).toStartWith(`#:schema ${SCHEMA_BASE_URL}/models.json\n`)
 })
 
 test("wizard --headless writes default config without prompting", async () => {
   const { code, text } = await runConfigCli(["wizard"], { headless: true })
   expect(code).toBe(0)
   expect(text.length).toBeGreaterThan(0)
-  expect(await Bun.file(getConfigPath()).text()).toStartWith("#:schema ./schemas/settings.json\n")
+  expect(await Bun.file(getConfigPath()).text()).toStartWith(`#:schema ${SCHEMA_BASE_URL}/settings.json\n`)
 })
 
 test("diff says models.toml would update when the catalog has moved on", async () => {

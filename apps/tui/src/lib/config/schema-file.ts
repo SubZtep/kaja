@@ -1,6 +1,13 @@
-import { basename, dirname, join } from "node:path"
-import { tombiSchemas } from "@kaja/schema/tombi"
-import { file, write } from "bun"
+import { existsSync, realpathSync } from "node:fs"
+import { basename, join } from "node:path"
+import type { tombiSchemas } from "@kaja/schema/tombi"
+import { write } from "bun"
+
+/** Where the published JSON Schemas live: the schema package on main. */
+export const SCHEMA_BASE_URL = "https://raw.githubusercontent.com/SubZtep/kaja/refs/heads/main/packages/schema/json"
+
+// The checkout's schemas (apps/tui/src/lib/config → packages/schema/json); a compiled binary has none.
+const REPO_SCHEMA_DIR = join(import.meta.dir, "../../../../../packages/schema/json")
 
 /** The JSON Schema that validates each file Kaja writes into the config dir, backups included. */
 const SCHEMA_OF: Record<string, keyof typeof tombiSchemas> = {
@@ -17,30 +24,25 @@ function schemaFor(path: string): keyof typeof tombiSchemas | undefined {
   return SCHEMA_OF[stem]
 }
 
+/** Where a `#:schema` line points: the checkout's real path under `KAJA_PROFILE=dev`, else the published copy on main. */
+export function schemaRef(schema: keyof typeof tombiSchemas, repoDir = REPO_SCHEMA_DIR): string {
+  const local = join(repoDir, schema)
+  if (Bun.env.KAJA_PROFILE === "dev" && existsSync(local)) return realpathSync(local)
+  return `${SCHEMA_BASE_URL}/${schema}`
+}
+
 /**
- * `text` with a `#:schema` line on top pointing at the schema copy beside it, so an editor with a TOML language server
- * (Tombi, Taplo) validates and documents the file. Unchanged for a file without a schema, or one that already names
- * one.
+ * `text` with a `#:schema` line on top, so an editor with a TOML language server (Tombi, Taplo) validates and documents
+ * the file. An existing `#:schema` line is replaced; a file without a schema is unchanged.
  */
 export function withSchemaLine(path: string, text: string): string {
   const schema = schemaFor(path)
-  if (!schema || text.startsWith("#:schema")) return text
-  return `#:schema ./schemas/${schema}\n\n${text}`
+  if (!schema) return text
+  const body = text.replace(/^#:schema [^\n]*\n\n?/, "")
+  return `#:schema ${schemaRef(schema)}\n\n${body}`
 }
 
-/** Writes this build's schema for `path` into the `schemas/` folder beside it, when it isn't there already. */
-export async function writeSchemaCopy(path: string): Promise<void> {
-  const schema = schemaFor(path)
-  if (!schema) return
-  const target = file(join(dirname(path), "schemas", schema))
-  // Compared as data, so a reformatted copy (or a dev link to the repo's formatted schemas) is left alone
-  const current = await target.json().catch(() => undefined)
-  if (!Bun.deepEquals(current, tombiSchemas[schema]))
-    await write(target, `${JSON.stringify(tombiSchemas[schema], null, 2)}\n`)
-}
-
-/** Writes a config file with its `#:schema` line, and the schema it points at. */
+/** Writes a config file with its `#:schema` line. */
 export async function writeConfigFile(path: string, text: string): Promise<void> {
-  await writeSchemaCopy(path)
   await write(path, withSchemaLine(path, text))
 }

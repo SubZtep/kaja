@@ -27,6 +27,10 @@ mkdirSync(testTmp, { recursive: true })
 Bun.env.TMPDIR = testTmp
 // The cached provider catalog (getPaths().cache) must never be the user's own.
 Bun.env.XDG_CACHE_HOME = join(testTmp, "cache")
+// The logger writes warnings by default: never into the user's own state folder or log
+Bun.env.XDG_STATE_HOME = join(testTmp, "state")
+Bun.env.KAJA_LOG_FILE = join(testTmp, "kaja.log")
+delete Bun.env.KAJA_LOG_LEVEL
 // A KAJA_PROFILE from the user's shell would rename every config/data dir the tests expect.
 delete Bun.env.KAJA_PROFILE
 // Run in a terminal or not (a hook, CI), the code under test sees a pipe: no wrapping to the terminal's width

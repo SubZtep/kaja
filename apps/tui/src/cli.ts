@@ -4,7 +4,8 @@ import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { create, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { modeFromFlags, resolveMode } from "./lib/config/mode"
 import { t } from "./lib/i18n"
-import { log } from "./lib/logger"
+import { log, logTarget } from "./lib/logger"
+import { uiEvents } from "./lib/ui-events"
 import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
@@ -18,6 +19,12 @@ import { runTelegramSubcommand } from "./subcommands/telegram"
 
 // The agent brain reports skipped abilities and failed MCP connections here; the TUI keeps them in its opt-in log file.
 setWarnHandler((message, payload) => log.warn(message, payload))
+
+// A stray rejected promise (a tool, a hook, a background fetch) must not end the chat: it's logged and shown instead
+process.on("unhandledRejection", reason => {
+  log.error("Unhandled promise rejection", { error: reason })
+  uiEvents.emit("failure", reason instanceof Error ? reason.message : String(reason))
+})
 
 try {
   // MARK: On-Boarding
@@ -119,5 +126,7 @@ try {
   log.error("Unhandled startup error", { error })
   const message = error instanceof Error ? error.message : String(error)
   console.log(paint(consolePalette().danger)(t("cli.startupError", { message })))
+  const target = logTarget()
+  if (target) console.log(t("cli.logWritten", { path: target.file }))
   process.exit(1)
 }
