@@ -39,7 +39,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 
 ## First-run wizard
 
-`components/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml.
+`components/wizard/config-wizard.tsx` is the one setup flow (first run in a TTY, and `kaja config wizard`); non-interactive writes a minimal settings.toml. Its step order and answer model are `wizard/steps.ts`, the answered trail (lines, folds, progress, hints) `wizard/trail.tsx`; the runner that applies the result is `lib/cli/config-wizard.tsx`.
 
 - Every step opens on the current value (`readPrefill`), so Enter throughout keeps a machine unchanged. `--cloud`/`--local` skip the mode step; a prefilled mode does not
 - Steps are grouped into blocks (`BLOCK_OF_KIND`) shown in the header; Esc pops `history`, and the trail is drawn from it each render (not Ink `<Static>`), so finished blocks fold and a changed answer updates its line

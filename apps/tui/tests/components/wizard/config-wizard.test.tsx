@@ -1,16 +1,11 @@
 import { expect, test } from "bun:test"
-import {
-  chosenHooks,
-  chosenProviders,
-  ConfigWizard,
-  providerGroups,
-  type WizardResult
-} from "../../src/components/config-wizard"
-import { padLabel } from "../../src/components/elem/rail"
-import { setLanguage } from "../../src/lib/i18n"
-import { CATALOG, setCatalog } from "../../src/lib/models/catalog"
-import { TEST_CATALOG } from "../fixtures/catalog"
-import { renderForTest } from "../test-utils"
+import { padLabel } from "../../../src/components/elem/rail"
+import { ConfigWizard } from "../../../src/components/wizard/config-wizard"
+import { chosenHooks, chosenProviders, providerGroups, type WizardResult } from "../../../src/components/wizard/steps"
+import { setLanguage } from "../../../src/lib/i18n"
+import { CATALOG, setCatalog } from "../../../src/lib/models/catalog"
+import { TEST_CATALOG } from "../../fixtures/catalog"
+import { renderForTest } from "../../test-utils"
 
 setCatalog(TEST_CATALOG)
 

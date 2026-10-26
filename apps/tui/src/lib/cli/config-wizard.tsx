@@ -1,9 +1,9 @@
 import { homedir } from "node:os"
 import { type ModelTask, providerKey } from "@kaja/schema/config"
 import { Box, render, renderToString, Text } from "ink"
-import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/config-wizard"
 import { Monster } from "../../components/layout/monster"
 import type { LiveCheck } from "../../components/secret-prompt"
+import type { ProbeTarget, WizardResult, WizardSaved } from "../../components/wizard/steps"
 import { create, getConfigDir, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
@@ -51,7 +51,7 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   }
 
   // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
-  const { chosenPicks, chosenProviders } = await import("../../components/config-wizard")
+  const { chosenPicks, chosenProviders } = await import("../../components/wizard/steps")
   const providers = chosenProviders(result)
   if (providers.length === 0) return
 
@@ -371,7 +371,8 @@ export async function runConfigWizard({
     return { code: 0, text: t("wizard.headlessDone") }
   }
 
-  const { ConfigWizard, chosenHooks } = await import("../../components/config-wizard")
+  const { ConfigWizard } = await import("../../components/wizard/config-wizard")
+  const { chosenHooks } = await import("../../components/wizard/steps")
   const { applyHooks, hooksPrefill } = await import("../hooks/offer")
   const hooks = hooksPrefill()
   const { marketplaceSettings } = await import("../abilities/abilities-file")
