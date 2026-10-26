@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "Érvénytelen konfigurációs fájl: {path}"
-startupError           = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {message}"
-logWritten             = "[hu-HU] lorem ipsum {path}"
+startupError           = "A Kaja váratlan hibába ütközött, és nem tudott elindulni: {message}"
+logWritten             = "A részletek itt találhatók: {path}"
 bye                    = "Pá, pá!"
 localNoProvider        = "A --local módhoz csevegőmodell kell. Futtasd a `kaja config wizard` parancsot a beállításához, vagy a `kaja --cloud` parancsot felhő alapú csevegéshez."
 headlessNoSubcommand   = "A --headless kapcsolóhoz ezt támogató alparancs szükséges, például `telegram`. Önálló headless mód még nem létezik."
 pleaseSignIn           = "Kérlek, jelentkezz be!"
-signInExpired          = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+signInExpired          = "A bejelentkezésed lejárt. Jelentkezz be újra."
 deviceLoginGoTo        = "Nyisd meg:"
 deviceLoginEnterCode   = "Add meg a kódot:"
 deviceLoginScan        = "Olvasd be a telefonoddal:"
@@ -46,7 +46,7 @@ settings       = "beállítások"
 memorySessions = "memória és munkamenetek"
 images         = "munkamenet-képek"
 sounds         = "hangeffektek"
-log            = "[hu-HU] lorem"
+log            = "naplófájl"
 backups        = "fájlmentések"
 models         = "modellek"
 commands       = "biztonságos parancsok"
@@ -479,9 +479,9 @@ unknown = "Ismeretlen hiba"
 
 
 [cloudError]
-signedOut   = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-rateLimited = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-server      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+signedOut   = "A bejelentkezésed lejárt, vagy visszavonták. Lépj ki, és indítsd újra a kaját a bejelentkezéshez."
+rateLimited = "Most túl sok a kérés. Várj egy kicsit, majd próbáld újra."
+server      = "A Kaja szervereinél hiba történt ({status}). Próbáld újra egy kicsit később."
 
 
 [doctor]

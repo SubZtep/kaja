@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "Fichier de configuration invalide : {path}"
-startupError           = "[fr-FR] lorem ipsum dolor sit amet consectetur adipiscing {message}"
-logWritten             = "[fr-FR] lorem ipsum {path}"
+startupError           = "Kaja a rencontré une erreur inattendue et n'a pas pu démarrer : {message}"
+logWritten             = "Vous trouverez les détails dans {path}"
 bye                    = "À bientôt !"
 localNoProvider        = "--local nécessite un modèle de chat. Lancez `kaja config wizard` pour en configurer un, ou `kaja --cloud` pour le chat cloud."
 headlessNoSubcommand   = "--headless nécessite une sous-commande compatible, comme `telegram`. Il n'existe pas encore de mode headless seul."
 pleaseSignIn           = "Connectez-vous !"
-signInExpired          = "[fr-FR] lorem ipsum dolor sit amet consectetur adipiscing"
+signInExpired          = "Votre connexion a expiré. Veuillez vous reconnecter."
 deviceLoginGoTo        = "Allez sur :"
 deviceLoginEnterCode   = "Saisissez le code :"
 deviceLoginScan        = "Scannez-le avec votre téléphone :"
@@ -46,7 +46,7 @@ settings       = "paramètres"
 memorySessions = "mémoire et sessions"
 images         = "images de session"
 sounds         = "effets sonores"
-log            = "[fr-FR] lorem"
+log            = "fichier journal"
 backups        = "sauvegardes de fichiers"
 models         = "modèles"
 commands       = "commandes sûres"
@@ -479,9 +479,9 @@ unknown = "Erreur inconnue"
 
 
 [cloudError]
-signedOut   = "[fr-FR] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-rateLimited = "[fr-FR] lorem ipsum dolor sit amet consectetur adipiscing"
-server      = "[fr-FR] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+signedOut   = "Votre connexion a expiré ou a été révoquée. Quittez puis relancez kaja pour vous reconnecter."
+rateLimited = "Il y a trop de requêtes en ce moment. Patientez un instant, puis réessayez."
+server      = "Les serveurs de Kaja ont rencontré un problème ({status}). Réessayez dans quelques instants."
 
 
 [doctor]

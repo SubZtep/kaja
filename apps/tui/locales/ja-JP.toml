@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "設定ファイルが無効です: {path}"
-startupError           = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing {message}"
-logWritten             = "[ja-JP] lorem ipsum {path}"
+startupError           = "Kaja で予期しないエラーが発生し、起動できませんでした: {message}"
+logWritten             = "詳細は {path} にあります"
 bye                    = "じゃあね!"
 localNoProvider        = "--local にはチャットモデルが必要です。`kaja config wizard` で設定するか、クラウドチャットなら `kaja --cloud` を使ってください。"
 headlessNoSubcommand   = "--headless は対応するサブコマンド(`telegram` など)と一緒に使います。単独のヘッドレスモードはまだありません。"
 pleaseSignIn           = "サインインしてください!"
-signInExpired          = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing"
+signInExpired          = "サインインの有効期限が切れました。もう一度サインインしてください。"
 deviceLoginGoTo        = "アクセス先:"
 deviceLoginEnterCode   = "コードを入力:"
 deviceLoginScan        = "スマホでスキャン:"
@@ -46,7 +46,7 @@ settings       = "設定"
 memorySessions = "メモリとセッション"
 images         = "セッション画像"
 sounds         = "効果音"
-log            = "[ja-JP] lorem"
+log            = "ログファイル"
 backups        = "ファイルバックアップ"
 models         = "モデル"
 commands       = "安全なコマンド"
@@ -479,9 +479,9 @@ unknown = "不明なエラー"
 
 
 [cloudError]
-signedOut   = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-rateLimited = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing"
-server      = "[ja-JP] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+signedOut   = "サインインの有効期限が切れたか、取り消されました。kaja を終了して起動し直し、サインインしてください。"
+rateLimited = "現在リクエストが多すぎます。少し待ってからもう一度お試しください。"
+server      = "Kaja のサーバーで問題が発生しました ({status})。少ししてからもう一度お試しください。"
 
 
 [doctor]

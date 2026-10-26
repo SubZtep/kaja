@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "Arquivo de configuração inválido: {path}"
-startupError           = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing {message}"
-logWritten             = "[pt-BR] lorem ipsum {path}"
+startupError           = "O Kaja encontrou um erro inesperado e não conseguiu iniciar: {message}"
+logWritten             = "Os detalhes estão em {path}"
 bye                    = "Tchau, tchau!"
 localNoProvider        = "--local precisa de um modelo de chat. Execute `kaja config wizard` para configurar um, ou `kaja --cloud` para o chat na nuvem."
 headlessNoSubcommand   = "--headless precisa de um subcomando compatível, como `telegram`. Ainda não existe um modo headless puro."
 pleaseSignIn           = "Faça login, por favor!"
-signInExpired          = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing"
+signInExpired          = "Sua sessão expirou. Faça login novamente."
 deviceLoginGoTo        = "Acesse:"
 deviceLoginEnterCode   = "Digite o código:"
 deviceLoginScan        = "Escaneie com o celular:"
@@ -46,7 +46,7 @@ settings       = "configurações"
 memorySessions = "memória e sessões"
 images         = "imagens da sessão"
 sounds         = "efeitos sonoros"
-log            = "[pt-BR] lorem"
+log            = "arquivo de log"
 backups        = "backups de arquivos"
 models         = "modelos"
 commands       = "comandos seguros"
@@ -479,9 +479,9 @@ unknown = "Erro desconhecido"
 
 
 [cloudError]
-signedOut   = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-rateLimited = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing"
-server      = "[pt-BR] lorem ipsum dolor sit amet consectetur adipiscing {status}"
+signedOut   = "Sua sessão expirou ou foi revogada. Feche e abra o kaja de novo para fazer login."
+rateLimited = "Muitas solicitações no momento. Aguarde um instante e tente novamente."
+server      = "Os servidores do Kaja tiveram um problema ({status}). Tente novamente daqui a pouco."
 
 
 [doctor]
