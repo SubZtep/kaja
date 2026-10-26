@@ -4,17 +4,18 @@ import { aiChatRequestSchema, aiChatResponseSchema } from "@kaja/schema/api"
 import { errorSchema } from "../../core/errors"
 import { widgetSpendLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
-import { widgetTokenAuth, type WidgetVariables } from "../widget/auth"
-import { completeWidgetChat, recordWidgetChat } from "../widget/complete"
+import { widgetTokenAuth, type WidgetVariables } from "./auth"
+import { completeWidgetChat, recordWidgetChat } from "./complete"
 
-export const aiRoutes = new OpenAPIHono<{ Variables: WidgetVariables }>()
-aiRoutes.use("*", widgetTokenAuth)
-aiRoutes.use("*", widgetSpendLimiter)
+/** `POST /ai/chat`: mounted apart from /widget, so its blanket auth and spend limit never touch the other widget routes. */
+export const widgetChatRoutes = new OpenAPIHono<{ Variables: WidgetVariables }>()
+widgetChatRoutes.use("*", widgetTokenAuth)
+widgetChatRoutes.use("*", widgetSpendLimiter)
 
 const chatRoute = createRoute({
   method: "post",
   path: "/chat",
-  tags: ["AI"],
+  tags: ["Widget"],
   summary: "One chat completion on the widget's pinned model",
   security: [{ bearerAuth: [] }],
   request: { body: { content: { "application/json": { schema: aiChatRequestSchema } } } },
@@ -28,7 +29,7 @@ const chatRoute = createRoute({
   }
 })
 
-aiRoutes.openapi(chatRoute, async c => {
+widgetChatRoutes.openapi(chatRoute, async c => {
   const widget = c.get("widget")
   const { messages } = c.req.valid("json")
   try {

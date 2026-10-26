@@ -9,6 +9,8 @@ import { badRequest, errorSchema, notFound, unauthorized } from "../../core/erro
 import { widgetService } from "../../services"
 import { widgetTokenAuth, type WidgetVariables } from "./auth"
 
+export { widgetChatRoutes } from "./chat-route"
+
 const visitorParam = z.object({
   visitorId: z.uuid().openapi({ param: { name: "visitorId", in: "path" } })
 })

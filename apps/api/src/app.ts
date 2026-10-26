@@ -10,7 +10,6 @@ import { env } from "./core/env"
 import { knownTurnError } from "./core/errors"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
-import { aiRoutes } from "./features/ai"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { configExportRoutes } from "./features/config-export"
@@ -20,7 +19,7 @@ import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { sandboxRoutes } from "./features/sandbox"
 import { statsRoutes } from "./features/stats"
 import { telegramLinkRoutes } from "./features/telegram-link"
-import { widgetRoutes } from "./features/widget"
+import { widgetChatRoutes, widgetRoutes } from "./features/widget"
 import { widgetManageRoutes } from "./features/widget-manage"
 import type { RouteProps } from "./types"
 
@@ -72,7 +71,7 @@ app.route("/nasi", nasiRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram", telegramLinkRoutes)
-app.route("/ai", aiRoutes)
+app.route("/ai", widgetChatRoutes)
 app.route("/widget", widgetRoutes)
 app.route("/widget/manage", widgetManageRoutes)
 
