@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
+import { tmpdir } from "node:os"
 
-process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-embeddings`
+process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-embeddings`
 
 const { saveConfig } = await import("../../../src/lib/config/config")
 const { getModelsPath } = await import("../../../src/lib/models/models")

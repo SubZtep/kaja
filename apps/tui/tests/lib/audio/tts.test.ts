@@ -1,10 +1,11 @@
 // Verifies createTts's pipelining contract against a fake sink: utterance N+1 must start synthesizing (fetching) while N is still audibly playing, and utterances must reach the sink in call order.
 
 import { afterEach, expect, test } from "bun:test"
+import { tmpdir } from "node:os"
 import type { AudioSink } from "../../../src/lib/audio/audio"
 
 // [models.tts]/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
-process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts`
+process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-tts`
 
 const { saveConfig } = await import("../../../src/lib/config/config")
 const { getModelsPath } = await import("../../../src/lib/models/models")
