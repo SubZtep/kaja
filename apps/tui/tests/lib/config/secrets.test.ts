@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
+import { chmod, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { write } from "bun"
@@ -62,6 +63,18 @@ bot_token = "custom-token"
 
   const data = await loadSecretsFile()
   expect(data.telegram).toEqual({ bot_token: "custom-token", owner_ids: [] })
+})
+
+test.skipIf(process.platform === "win32")("the file is kept readable by its owner only", async () => {
+  const dir = `${tmpdir()}/kaja-test-secrets-mode-${Math.random()}`
+  setConfigDirOverride(dir)
+  await saveSecrets({ providers: { xai: { api_key: "k" } } })
+  expect((await stat(getSecretsPath())).mode & 0o777).toBe(0o600)
+
+  // One written before Kaja kept it private is fixed when it's next read
+  await chmod(getSecretsPath(), 0o644)
+  await loadSecretsFile()
+  expect((await stat(getSecretsPath())).mode & 0o777).toBe(0o600)
 })
 
 test("readSecretsLoose returns {} when the file is missing, without writing anything", async () => {
