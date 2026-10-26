@@ -23,7 +23,7 @@ export async function openLocalDb(dbPath: string): Promise<SQL> {
   await sql`PRAGMA foreign_keys = ON`
   await sql.unsafe(SQLITE_SCHEMA)
   // Chats and memory notes are the user's alone; SQLite gives -wal/-shm the database file's mode
-  for (const suffix of ["", "-wal", "-shm"]) await makePrivate(`${dbPath}${suffix}`)
+  await Promise.all(["", "-wal", "-shm"].map(suffix => makePrivate(`${dbPath}${suffix}`)))
   // Kaja's own data folder (images sit in it too); a dbPath set elsewhere keeps its folder as the user made it
   if (dirname(dbPath) === getPaths().data) await makePrivate(getPaths().data)
   return sql

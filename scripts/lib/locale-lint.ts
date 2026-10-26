@@ -44,6 +44,22 @@ export function wrongScript(locale: string, english: string, value: string): str
   return undefined
 }
 
+// One key's translations long enough to compare, each mapped to the locales using it
+function localesByValue(
+  key: string,
+  source: string,
+  byLocale: Map<string, Map<string, string>>
+): Map<string, string[]> {
+  const seen = new Map<string, string[]>()
+  for (const [locale, values] of byLocale) {
+    const value = values.get(key)
+    if (value === undefined || value === source || isPlaceholder(value, locale)) continue
+    if (withoutParams(value).trim().length < COPY_MIN_LENGTH) continue
+    seen.set(value, [...(seen.get(value) ?? []), locale])
+  }
+  return seen
+}
+
 /**
  * The keys whose translation is the same prose in two unrelated languages while it isn't the English: one language
  * copied into another (the same-script swap {@link wrongScript} can't see). Maps each such key to the locales sharing
@@ -55,14 +71,7 @@ export function copiedAcross(
 ): Map<string, string[]> {
   const copies = new Map<string, string[]>()
   for (const [key, source] of english) {
-    const seen = new Map<string, string[]>()
-    for (const [locale, values] of byLocale) {
-      const value = values.get(key)
-      if (value === undefined || value === source || isPlaceholder(value, locale)) continue
-      if (withoutParams(value).trim().length < COPY_MIN_LENGTH) continue
-      seen.set(value, [...(seen.get(value) ?? []), locale])
-    }
-    for (const locales of seen.values()) {
+    for (const locales of localesByValue(key, source, byLocale).values()) {
       const related = locales.length === 2 && RELATED.some(pair => locales.every(locale => pair.has(locale)))
       if (locales.length > 1 && !related) copies.set(key, locales)
     }

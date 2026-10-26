@@ -276,25 +276,39 @@ function validEntries(file: string, entries: Translation[], english: Values, err
   })
 }
 
-/** Translations in the wrong language: another script, or the same text as an unrelated language (a copy). */
-async function wrongLanguage(): Promise<string[]> {
+// One locale file's entries written in another language's script
+function scriptProblems(path: string, locale: string, english: Values, values: Values): string[] {
   const problems: string[] = []
-  for (const dir of LOCALE_DIRS) {
-    const { json, sourcePath, targets } = await localesOf(dir)
-    const english = new Map([...valuesOf(await Bun.file(sourcePath).text(), json)].filter(([k]) => !k.startsWith("$")))
-    const byLocale = new Map<string, Values>()
-    for (const { locale, path } of targets) {
-      const values = valuesOf(await readLocale(path, json), json)
-      byLocale.set(locale, values)
-      for (const [key, value] of values) {
-        const script = english.has(key) ? wrongScript(locale, english.get(key) as string, value) : undefined
-        if (script) problems.push(`${path} ${key}: ${script}`)
-      }
-    }
-    for (const [key, shared] of copiedAcross(english, byLocale))
-      problems.push(`${dir} ${key}: the same translation in ${shared.join(" and ")}`)
+  for (const [key, value] of values) {
+    const script = english.has(key) ? wrongScript(locale, english.get(key) as string, value) : undefined
+    if (script) problems.push(`${path} ${key}: ${script}`)
   }
   return problems
+}
+
+/** Translations in the wrong language: another script, or the same text as an unrelated language (a copy). */
+async function wrongLanguage(): Promise<string[]> {
+  const perDir = await Promise.all(
+    LOCALE_DIRS.map(async dir => {
+      const { json, sourcePath, targets } = await localesOf(dir)
+      const english = new Map(
+        [...valuesOf(await Bun.file(sourcePath).text(), json)].filter(([k]) => !k.startsWith("$"))
+      )
+      const loaded = await Promise.all(
+        targets.map(async ({ locale, path }) => ({
+          locale,
+          path,
+          values: valuesOf(await readLocale(path, json), json)
+        }))
+      )
+      const problems = loaded.flatMap(({ locale, path, values }) => scriptProblems(path, locale, english, values))
+      const byLocale = new Map(loaded.map(({ locale, values }) => [locale, values]))
+      for (const [key, shared] of copiedAcross(english, byLocale))
+        problems.push(`${dir} ${key}: the same translation in ${shared.join(" and ")}`)
+      return problems
+    })
+  )
+  return perDir.flat()
 }
 
 function withTranslations(text: string, json: boolean, entries: Translation[]): string {

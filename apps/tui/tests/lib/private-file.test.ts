@@ -31,5 +31,5 @@ test.skipIf(process.platform === "win32")("leaves an owner-only mode as it is", 
 })
 
 test("a missing path is no error", async () => {
-  await makePrivate(join(tmpdir(), `kaja-private-missing-${Math.random()}`))
+  await expect(makePrivate(join(tmpdir(), `kaja-private-missing-${Math.random()}`))).resolves.toBeUndefined()
 })
