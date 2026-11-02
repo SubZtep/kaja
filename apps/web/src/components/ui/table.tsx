@@ -139,7 +139,11 @@ function TableHeaderCell<TData extends RowData>({
       <button
         type="button"
         aria-label={sortLabelByState[sorted as keyof typeof sortLabelByState] ?? sortLabelByState.none}
-        className={cn("flex cursor-pointer items-center gap-2", sorted && "select-none", !sorted && "mr-7.25")}
+        className={cn(
+          "flex cursor-pointer items-center gap-2 uppercase",
+          sorted && "select-none",
+          !sorted && "mr-7.25"
+        )}
         onClick={() => onToggleSort(header.column.id)}
       >
         {headerContent}
@@ -156,7 +160,7 @@ function TableHeaderCell<TData extends RowData>({
   return (
     <th
       aria-sort={ariaSort}
-      className="border-border text-muted border-b p-3 text-left align-top font-mono text-xs tracking-wider uppercase"
+      className="border-border text-muted border-b p-3 text-left align-top font-mono text-xs tracking-wider whitespace-nowrap uppercase"
     >
       {cellContent}
     </th>

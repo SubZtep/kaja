@@ -6,7 +6,10 @@ import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/device")({
   component: DeviceLayout,
-  loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
+  // Before the pages' loaders, so a signed-out visit goes to sign-in (and back here) before the code is stashed
+  beforeLoad: ({ context, location }) => {
+    userRequired(context.session, undefined, location.href)
+  },
   head: () => ({ meta: noindexSeo() })
 })
 

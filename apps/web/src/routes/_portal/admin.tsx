@@ -5,7 +5,9 @@ import { userRequired } from "../../lib/loaders"
 
 export const Route = createFileRoute("/_portal/admin")({
   component: AdminLayout,
-  beforeLoad: ({ context }) => userRequired(context.session, "admin")
+  beforeLoad: ({ context }) => {
+    userRequired(context.session, "admin")
+  }
 })
 
 function AdminLayout() {

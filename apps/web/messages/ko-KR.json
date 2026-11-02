@@ -451,7 +451,7 @@
   "device_invalid_code_title": "잘못된 코드",
   "device_invalid_code_desc": "코드나 링크를 확인한 후 다시 시도해 주세요.",
   "device_invalid_or_expired_code": "유효하지 않거나 만료된 코드",
-  "device_go_dashboard": "대시보드로 이동",
+  "device_go_home": "[ko-KR] lorem",
   "device_approve_title": "TUI 접근 승인",
   "device_approve_description": "Kaja TUI가 내 계정에 접근하도록 요청했습니다.",
   "device_approve_code_label": "Code:",

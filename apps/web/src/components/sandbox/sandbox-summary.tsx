@@ -1,18 +1,12 @@
-import { mySandboxesResponseSchema } from "@kaja/schema/api"
-import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Box } from "lucide-react"
-import { useApiFetch } from "../../lib/api-fetch"
+import { useMySandboxes } from "../../hooks/sandboxes"
 import { m } from "../../paraglide/messages.js"
 import { Loader } from "../ui/loader"
 
 /** How many of the user's own sandboxes are online, with the way to the Sandbox page. */
 export function SandboxSummary() {
-  const apiFetch = useApiFetch()
-  const mine = useQuery({
-    queryKey: ["sandbox", "mine"],
-    queryFn: () => apiFetch("/sandbox").then(r => mySandboxesResponseSchema.parse(r))
-  })
+  const mine = useMySandboxes()
 
   if (mine.isLoading) return <Loader slim />
   const sandboxes = mine.data?.sandboxes ?? []

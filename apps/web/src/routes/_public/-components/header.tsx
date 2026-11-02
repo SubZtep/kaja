@@ -6,54 +6,28 @@ import { SiteHeader, useCloseMobileNav } from "../../../components/layout/site-h
 import { useTelegramNudge } from "../../../hooks/telegram-link"
 import { useUser } from "../../../hooks/user"
 
-// Desktop shows an icon item as the bare icon (label as its accessible name); the mobile drawer shows both
-function MenuItemContent({ item, compact }: Readonly<{ item: NavItem; compact?: boolean }>) {
-  const Icon = item.icon
-  if (!Icon) return item.badge ? <LabelWithDot label={item.label} /> : item.label
-  if (compact) return <Icon className="size-4" aria-hidden />
-  return (
-    <span className="inline-flex items-center gap-2">
-      <Icon className="size-4" aria-hidden />
-      {item.label}
-    </span>
-  )
-}
-
-function LabelWithDot({ label }: Readonly<{ label: string }>) {
+function MenuItemContent({ item }: Readonly<{ item: NavItem }>) {
+  if (!item.badge) return item.label
   return (
     <span className="inline-flex items-center gap-1.5">
-      {label}
+      {item.label}
       <span className="bg-neon size-1.5 rounded-full" aria-hidden />
     </span>
   )
 }
 
-function MenuItem({
-  item,
-  compact,
-  onNavigate
-}: Readonly<{ item: NavItem; compact?: boolean; onNavigate?: () => void }>) {
-  const iconOnly = compact && item.icon
-  const a11y = iconOnly ? { "aria-label": item.label, title: item.label } : {}
-  const className = iconOnly ? "nav-stamp inline-flex items-center" : "nav-stamp"
-
+function MenuItem({ item, onNavigate }: Readonly<{ item: NavItem; onNavigate?: () => void }>) {
   if (item.to) {
     return (
-      <Link
-        to={item.to}
-        activeProps={{ className: "nav-stamp-active" }}
-        className={className}
-        onClick={onNavigate}
-        {...a11y}
-      >
-        <MenuItemContent item={item} compact={compact} />
+      <Link to={item.to} activeProps={{ className: "nav-stamp-active" }} className="nav-stamp" onClick={onNavigate}>
+        <MenuItemContent item={item} />
       </Link>
     )
   }
 
   return (
-    <a href={item.href} target="_blank" rel="noopener" className={className} onClick={onNavigate} {...a11y}>
-      <MenuItemContent item={item} compact={compact} />
+    <a href={item.href} target="_blank" rel="noopener" className="nav-stamp" onClick={onNavigate}>
+      <MenuItemContent item={item} />
     </a>
   )
 }
@@ -91,7 +65,7 @@ export function Header() {
       desktopNav={
         <>
           {menuItems.map(item => (
-            <MenuItem key={item.label} item={item} compact />
+            <MenuItem key={item.label} item={item} />
           ))}
           {user ? <SignOutButton compact /> : null}
         </>

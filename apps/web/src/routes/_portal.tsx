@@ -8,7 +8,10 @@ import { noindexSeo } from "../lib/seo"
 
 export const Route = createFileRoute("/_portal")({
   component: PortalLayoutRoute,
-  loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
+  // beforeLoad, not loader: it runs before the pages' loaders, so a signed-out visit never starts them
+  beforeLoad: ({ context, location }) => {
+    userRequired(context.session, undefined, location.href)
+  },
   head: () => ({ meta: noindexSeo() })
 })
 

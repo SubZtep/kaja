@@ -1,17 +1,10 @@
-import type { LucideIcon } from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
-/**
- * An internal link (`to`) or an external one (`href`, opens in a new tab); with an `icon` the desktop menu shows only
- * the icon and `label` becomes its accessible name; `exact` marks a section's index tab, active only on its own path;
- * `badge` adds an attention dot.
- */
+/** An internal link (`to`) or an external one (`href`, opens in a new tab); `badge` adds an attention dot. */
 export type NavItem = {
   label: string
-  icon?: LucideIcon
   to?: string
   href?: string
-  exact?: boolean
   badge?: boolean
 }
 
@@ -20,17 +13,14 @@ export type NavItem = {
  * inside it), plus Admin for admins.
  */
 export const getHeaderItems = (user: { role?: string | null } | null): NavItem[] => {
-  // const home = { to: "/", label: m.nav_home() }
   if (!user) {
     return [
-      // home,
       { to: "/signin", label: m.nav_sign_in() },
       { to: "/signup", label: m.nav_sign_up() },
       { href: "https://docs.kaja.io", label: m.nav_docs() }
     ]
   }
   return [
-    // home,
     { to: "/home", label: m.nav_home() },
     { to: "/channels", label: m.nav_channels() },
     { to: "/sandboxes", label: m.nav_sandboxes() },

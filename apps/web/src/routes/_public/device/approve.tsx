@@ -61,7 +61,7 @@ function DeviceApprovePage() {
           {m.device_invalid_code_desc()}
         </p>
         <Button onClick={() => navigate({ to: "/home" })} variant="primary" size="md">
-          {m.device_go_dashboard()}
+          {m.device_go_home()}
         </Button>
       </>
     )

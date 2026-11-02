@@ -12,7 +12,6 @@ export function SectionTabs({ items }: Readonly<{ items: NavItem[] }>) {
         <Link
           key={item.to}
           to={item.to!}
-          activeOptions={{ exact: item.exact ?? false }}
           className="font-stamp hover:text-fg -mb-px shrink-0 border-b-2 px-3 py-2.5 text-[11px] tracking-[0.07em] whitespace-nowrap uppercase"
           activeProps={{ className: "border-neon text-fg" }}
           inactiveProps={{ className: "border-transparent text-muted" }}

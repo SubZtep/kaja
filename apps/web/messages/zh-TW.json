@@ -451,7 +451,7 @@
   "device_invalid_code_title": "代碼無效",
   "device_invalid_code_desc": "請檢查代碼或連結，然後再試一次。",
   "device_invalid_or_expired_code": "代碼無效或已過期",
-  "device_go_dashboard": "前往儀表板",
+  "device_go_home": "[zh-TW] lorem",
   "device_approve_title": "核准 TUI 存取",
   "device_approve_description": "Kaja TUI 請求存取你的帳號。",
   "device_approve_code_label": "代碼：",

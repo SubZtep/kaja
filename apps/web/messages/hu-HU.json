@@ -451,7 +451,7 @@
   "device_invalid_code_title": "Érvénytelen kód",
   "device_invalid_code_desc": "Ellenőrizd a kódot vagy a linket, és próbáld újra.",
   "device_invalid_or_expired_code": "Érvénytelen vagy lejárt kód",
-  "device_go_dashboard": "Ugrás a vezérlőpultra",
+  "device_go_home": "[hu-HU] lorem",
   "device_approve_title": "TUI-hozzáférés jóváhagyása",
   "device_approve_description": "A Kaja TUI hozzáférést kért a fiókodhoz.",
   "device_approve_code_label": "Kód:",

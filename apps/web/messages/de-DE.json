@@ -451,7 +451,7 @@
   "device_invalid_code_title": "Ungültiger Code",
   "device_invalid_code_desc": "Bitte prüfe den Code oder den Link und versuche es erneut.",
   "device_invalid_or_expired_code": "Ungültiger oder abgelaufener Code",
-  "device_go_dashboard": "Zum Dashboard",
+  "device_go_home": "[de-DE] lorem",
   "device_approve_title": "TUI-Zugriff genehmigen",
   "device_approve_description": "Die Kaja-TUI hat um Zugriff auf dein Konto gebeten.",
   "device_approve_code_label": "Code:",

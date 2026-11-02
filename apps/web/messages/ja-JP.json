@@ -451,7 +451,7 @@
   "device_invalid_code_title": "無効なコード",
   "device_invalid_code_desc": "コードまたはリンクを確認して、もう一度お試しください。",
   "device_invalid_or_expired_code": "コードが無効か期限切れです",
-  "device_go_dashboard": "ダッシュボードへ",
+  "device_go_home": "[ja-JP] lorem",
   "device_approve_title": "TUIのアクセスを承認",
   "device_approve_description": "Kaja TUIがあなたのアカウントへのアクセスを求めています。",
   "device_approve_code_label": "コード:",

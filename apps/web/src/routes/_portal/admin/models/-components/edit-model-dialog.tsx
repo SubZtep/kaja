@@ -30,7 +30,7 @@ export function EditModelDialog({
 }: Readonly<{
   model: Model
   providers: Provider[]
-  onSave: (payload: UpdateModelRequest) => Promise<unknown>
+  onSave: (payload: UpdateModelRequest) => Promise<boolean>
   isPending: boolean
   children: React.ReactElement
 }>) {
@@ -46,7 +46,7 @@ export function EditModelDialog({
     },
     validators: { onSubmit: editFormSchema },
     onSubmit: async ({ value }) => {
-      await onSave({
+      const saved = await onSave({
         providerId: value.providerId,
         model: value.model.trim(),
         tasks: value.tasks as ModelTask[],
@@ -55,7 +55,7 @@ export function EditModelDialog({
       })
       // Closed here rather than by a Dialog.Close on the submit button, so a validation error or a
       // failed request leaves the dialog open with the user's edits intact.
-      setOpen(false)
+      if (saved) setOpen(false)
     }
   })
 

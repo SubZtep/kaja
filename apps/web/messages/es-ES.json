@@ -451,7 +451,7 @@
   "device_invalid_code_title": "Código no válido",
   "device_invalid_code_desc": "Revisa el código o el enlace e inténtalo de nuevo.",
   "device_invalid_or_expired_code": "Código no válido o caducado",
-  "device_go_dashboard": "Ir al panel",
+  "device_go_home": "[es-ES] lorem",
   "device_approve_title": "Aprobar el acceso de la TUI",
   "device_approve_description": "La TUI de Kaja ha pedido acceso a tu cuenta.",
   "device_approve_code_label": "Código:",
