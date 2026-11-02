@@ -55,12 +55,11 @@ export class TelegramLinkService {
    * account.
    */
   async link(telegramUserId: number, userId: string): Promise<boolean> {
-    const existing = await this.resolveUserId(telegramUserId)
-    if (existing && existing !== userId) return false
-    await this.#db`
+    // One statement, so two confirms at once can't both pass a separate "linked elsewhere?" check
+    const result = await this.#db`
       INSERT INTO telegram_link (telegram_user_id, user_id) VALUES (${telegramUserId}, ${userId})
-      ON CONFLICT (telegram_user_id) DO UPDATE SET user_id = EXCLUDED.user_id`
-    return true
+      ON CONFLICT (telegram_user_id) DO UPDATE SET user_id = EXCLUDED.user_id WHERE telegram_link.user_id = EXCLUDED.user_id`
+    return result.affectedRows > 0
   }
 
   /** When the Kaja account was last linked to a Telegram account, or null when it isn't. */
@@ -89,11 +88,5 @@ export class TelegramLinkService {
       SELECT l.user_id, u.locale FROM telegram_link l JOIN "user" u ON u.id = l.user_id
       WHERE l.telegram_user_id = ${telegramUserId}`
     return row ? { userId: row.user_id, locale: row.locale } : undefined
-  }
-
-  async resolveUserId(telegramUserId: number): Promise<string | undefined> {
-    const [row] = await this.#db<{ user_id: string }[]>`
-      SELECT user_id FROM telegram_link WHERE telegram_user_id = ${telegramUserId}`
-    return row?.user_id
   }
 }

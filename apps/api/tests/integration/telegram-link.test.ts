@@ -29,9 +29,26 @@ test("the web sees whether the account is linked to Telegram, and can disconnect
 
   expect((await app.request("/telegram/link", { method: "DELETE", headers })).status).toBe(200)
   expect(await status()).toEqual({ linked: false, linkedAt: null, botUsername: getBotUsername() ?? null })
-  expect(await telegramLinkService.resolveUserId(telegramUserId)).toBeUndefined()
+  expect(await telegramLinkService.resolveUser(telegramUserId)).toBeUndefined()
 
   expect((await app.request("/telegram/link")).status).toBe(401)
+})
+
+test("a Telegram account linked to one Kaja account can't be linked to another", async () => {
+  const userIds: string[] = []
+  for (const name of ["First", "Second"]) {
+    const email = faker.internet.email().toLowerCase()
+    await signUpAndSignIn(email, name)
+    const [{ id }] = await sql`SELECT id FROM "user" WHERE email = ${email}`
+    userIds.push(id)
+  }
+  const [first, second] = userIds as [string, string]
+  const telegramUserId = faker.number.int({ min: 1_000_000, max: 9_000_000_000 })
+
+  expect(await telegramLinkService.link(telegramUserId, first)).toBe(true)
+  expect(await telegramLinkService.link(telegramUserId, first)).toBe(true)
+  expect(await telegramLinkService.link(telegramUserId, second)).toBe(false)
+  expect(await telegramLinkService.resolveUser(telegramUserId)).toMatchObject({ userId: first })
 })
 
 test("a link token is consumed once: the second delete finds no row", async () => {
