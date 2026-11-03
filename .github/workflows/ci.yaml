@@ -28,7 +28,7 @@ jobs:
           paraglide: true
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@4039f278ab5f7cf5140af99e46986b412fc672ca # v1.9.5
+        uses: tombi-toml/setup-tombi@865293658362cc5a3c0ba075e875af683d39fb44 # v1.9.9
 
       - name: Lint
         run: bun lint
