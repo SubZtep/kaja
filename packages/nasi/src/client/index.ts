@@ -41,6 +41,26 @@ export class NasiStreamError extends Error {
   }
 }
 
+/**
+ * A request the server answered with an error status (401 signed out, 429 rate limited, 5xx); `message` is the server's
+ * own `{ error }` text when it sent one.
+ */
+export class NasiHttpError extends NasiStreamError {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+// The error for a failed response: the server's `{ error }` text, else what it sent, after `what` and the status.
+async function httpError(what: string, res: Response): Promise<NasiHttpError> {
+  const text = await res.text()
+  const body = NasiStreamErrorSchema.safeParse(parseJson(text))
+  return new NasiHttpError(res.status, body.success ? body.data.error : `${what} failed: ${res.status} ${text}`)
+}
+
 function parseJson(data: string): unknown {
   try {
     return JSON.parse(data)
@@ -132,10 +152,7 @@ export function createNasiClient(opts: NasiClientOptions) {
       const url = new URL("/nasi/info", opts.baseUrl)
       if (session) url.searchParams.set("session", session)
       const res = await fetch(url, { headers: await headers() })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(`Nasi info failed: ${res.status} ${text}`)
-      }
+      if (!res.ok) throw await httpError("Nasi info", res)
       return NasiInfoResponseSchema.parse(await res.json())
     },
 
@@ -146,10 +163,7 @@ export function createNasiClient(opts: NasiClientOptions) {
         headers: await headers(),
         body: JSON.stringify(NasiCompactRequestSchema.parse(body))
       })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(`Nasi compact failed: ${res.status} ${text}`)
-      }
+      if (!res.ok) throw await httpError("Nasi compact", res)
       return NasiCompactResponseSchema.parse(await res.json())
     },
 
@@ -160,10 +174,7 @@ export function createNasiClient(opts: NasiClientOptions) {
         headers: await headers(),
         body: JSON.stringify(parsed)
       })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(`Nasi turn failed: ${res.status} ${text}`)
-      }
+      if (!res.ok) throw await httpError("Nasi turn", res)
       return NasiTurnResponseSchema.parse(await res.json())
     },
 
@@ -181,10 +192,7 @@ export function createNasiClient(opts: NasiClientOptions) {
         headers: await headers(),
         body: JSON.stringify(parsed)
       })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new NasiStreamError(`Nasi turn stream failed: ${res.status} ${text}`)
-      }
+      if (!res.ok) throw await httpError("Nasi turn stream", res)
       if (!res.body) throw new NasiStreamError("Nasi turn stream returned no body")
 
       for await (const { event, data } of parseSseStream(res.body)) {

@@ -39,7 +39,7 @@ function GoogleMark() {
  */
 export function GoogleButton({
   className,
-  callbackPath = "/dashboard",
+  callbackPath = "/home",
   signUp = false,
   disabled = false,
   label,

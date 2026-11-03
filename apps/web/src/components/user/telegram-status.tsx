@@ -1,8 +1,8 @@
-import { telegramLinkStatusSchema } from "@kaja/schema/api"
 import { getDateTime } from "@kaja/shared/date"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Send } from "lucide-react"
 import { toast } from "react-toastify"
+import { TELEGRAM_LINK_QUERY_KEY, useTelegramLink } from "../../hooks/telegram-link"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
@@ -10,20 +10,15 @@ import { ConfirmDialog } from "../ui/confirm-dialog"
 import { Loader } from "../ui/loader"
 import { ConnectTelegram } from "./connect-telegram"
 
-const LINK_QUERY_KEY = ["telegram", "link"]
-
 /** Linked: since when, and a way to disconnect; not linked (or the status can't be read): the connect button. */
 export function TelegramStatus() {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
-  const status = useQuery({
-    queryKey: LINK_QUERY_KEY,
-    queryFn: () => apiFetch("/telegram/link").then(r => telegramLinkStatusSchema.parse(r))
-  })
+  const status = useTelegramLink()
   const unlink = useMutation({
     mutationFn: () => apiFetch("/telegram/link", undefined, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: LINK_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: TELEGRAM_LINK_QUERY_KEY })
       toast.success(m.telegram_unlinked())
     },
     onError: (err: Error) => toast.error(err.message || m.telegram_unlink_error())

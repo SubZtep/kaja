@@ -39,4 +39,4 @@ A tool's `approval(args)` returning a summary pauses `run()` with `confirm_tool`
 - Messages hold `kaja-image:<id>` refs; `resolveImageRefs` loads bytes right before the provider call. Sessions get an id from `createSession()` so images have a home before the first save
 - Each image's label starts as its alt; `Agent.describer` (the `vision` model) replaces it with a description. A model that can't see (`seesImages`) waits for descriptions; images before `KEEP_IMAGE_TURNS` keep only labels
 - `run()` places `kaja-image:` links in `message`/`final`/`ask_user` events (public URL in the cloud, file locally). A reply's remote `![](https://…)` images are stored too (`storeRemoteImages`), only where the agent has `fetch_url`
-- `view_image` never reads secrets.toml or the store; `edit_image` is one operation per step
+- File tools (`read_file`, `list_files`, `view_image`) never read credentials or the store (`tools/path-guard.ts`), and ask before a hidden path; `edit_image` is one operation per step

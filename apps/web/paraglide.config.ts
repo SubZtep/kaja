@@ -9,6 +9,8 @@ export const paraglideOptions: CompilerOptions = {
   project: "./project.inlang",
   outdir: "./src/paraglide",
   emitTsDeclarations: true,
+  // Physical message files: Paraglide 3's Vite plugin defaults to virtual modules, which `bun test` (no Vite) can't resolve
+  outputStructure: "message-modules",
   strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
   cookieName: "locale",
   urlPatterns: [

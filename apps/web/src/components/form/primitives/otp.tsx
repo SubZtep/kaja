@@ -12,7 +12,7 @@ export function Otp({
   ...props
 }: Readonly<{ groupSize?: number; className?: string } & Omit<OTPField.Root.Props, "className" | "render">>) {
   return (
-    <OTPField.Root length={length} className={cn("flex items-center gap-1.5 sm:gap-2", className)} {...props}>
+    <OTPField.Root length={length} className={cn("flex w-full items-center gap-1.5 sm:gap-2", className)} {...props}>
       {Array.from({ length }, (_, index) => (
         <Fragment key={index}>
           {groupSize && index > 0 && index % groupSize === 0 ? (
@@ -21,7 +21,7 @@ export function Otp({
           <OTPField.Input
             autoFocus={autoFocus && index === 0}
             aria-label={m.otp_slot_label({ index: index + 1, length })}
-            className="border-border/60 text-fg focus:outline-neon/50 data-filled:border-border h-11 w-8 rounded-sm border bg-black/25 text-center font-mono text-lg uppercase focus:outline-2 focus:-outline-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-red-500/70 sm:w-10"
+            className="border-border/60 text-fg focus:outline-neon/50 data-filled:border-border h-11 min-w-0 flex-1 rounded-sm border bg-black/25 text-center font-mono text-lg uppercase focus:outline-2 focus:-outline-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-red-500/70"
           />
         </Fragment>
       ))}

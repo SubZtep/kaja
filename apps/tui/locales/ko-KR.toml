@@ -1,12 +1,12 @@
 [cli]
 invalidConfig          = "잘못된 설정 파일: {path}"
-startupError           = """
-Kaja에 예기치 않은 오류가 발생해 시작할 수 없습니다: {message}
-자세한 내용은 로그 파일에 기록했습니다."""
+startupError           = "Kaja에서 예기치 않은 오류가 발생해 시작할 수 없습니다: {message}"
+logWritten             = "자세한 내용은 {path}에 있습니다"
 bye                    = "안녕, 또 봐요!"
 localNoProvider        = "--local에는 채팅 모델이 필요합니다. `kaja config wizard`로 설정하거나, 클라우드 채팅은 `kaja --cloud`를 사용하세요."
 headlessNoSubcommand   = "--headless에는 이를 지원하는 하위 명령(예: `telegram`)이 필요합니다. 단독 headless 모드는 아직 없습니다."
 pleaseSignIn           = "로그인해 주세요!"
+signInExpired          = "로그인이 만료되었습니다. 다시 로그인해 주세요."
 deviceLoginGoTo        = "이동할 주소:"
 deviceLoginEnterCode   = "코드 입력:"
 deviceLoginScan        = "휴대폰으로 스캔하세요:"
@@ -46,6 +46,7 @@ settings       = "설정"
 memorySessions = "메모리 및 세션"
 images         = "세션 이미지"
 sounds         = "효과음"
+log            = "로그 파일"
 backups        = "파일 백업"
 models         = "모델"
 commands       = "안전한 명령"
@@ -475,6 +476,12 @@ network = "네트워크 오류"
 tool    = "도구 실패"
 agent   = "문제가 발생했습니다"
 unknown = "알 수 없는 오류"
+
+
+[cloudError]
+signedOut   = "로그인이 만료되었거나 취소되었습니다. kaja를 종료하고 다시 실행해서 로그인해 주세요."
+rateLimited = "지금은 요청이 너무 많습니다. 잠시 기다렸다가 다시 시도해 주세요."
+server      = "Kaja 서버에 문제가 발생했습니다({status}). 잠시 후 다시 시도해 주세요."
 
 
 [doctor]

@@ -25,7 +25,7 @@ export function EditProviderDialog({
   children
 }: Readonly<{
   provider: Provider
-  onSave: (payload: UpdateProviderRequest) => Promise<unknown>
+  onSave: (payload: UpdateProviderRequest) => Promise<boolean>
   isPending: boolean
   children: React.ReactElement
 }>) {
@@ -39,14 +39,14 @@ export function EditProviderDialog({
     },
     validators: { onSubmit: editFormSchema },
     onSubmit: async ({ value }) => {
-      await onSave({
+      const saved = await onSave({
         name: value.name.trim(),
         baseUrl: value.baseUrl.trim(),
         apiKey: value.apiKey.trim() || undefined
       })
       // Closed here rather than by a Dialog.Close on the submit button, so a validation error or a
       // failed request leaves the dialog open with the user's edits intact.
-      setOpen(false)
+      if (saved) setOpen(false)
     }
   })
 

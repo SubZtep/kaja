@@ -3,7 +3,7 @@ import { Box, Text } from "ink"
 import { useState } from "react"
 import { t } from "../../lib/i18n"
 import { useKajaTheme } from "../theme"
-import { textWidth } from "./rail"
+import { useTextWidth } from "./rail"
 
 /** Whether a menu row matches what was typed: every word of it, anywhere, in any case. */
 export function matchesFilter(label: string, query: string): boolean {
@@ -50,7 +50,7 @@ export function useFilter(enabled: boolean) {
 export function FilterLine({ query, count }: Readonly<{ query: string; count?: string }>) {
   const { accent } = useKajaTheme()
   return (
-    <Box width={textWidth()} justifyContent="space-between">
+    <Box width={useTextWidth()} justifyContent="space-between">
       <Text>
         <Text {...accent()}>›</Text>{" "}
         {query ? (

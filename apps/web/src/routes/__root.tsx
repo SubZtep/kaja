@@ -14,6 +14,7 @@ import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/locale-sync"
 import { Providers } from "../components/providers"
 import { captureError, loadSentry } from "../lib/sentry"
+import { canonicalLocale, indexedLocales } from "../lib/seo-locales"
 import { getSession, type SessionData } from "../lib/session"
 import { getPageTitle, loadRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
@@ -90,13 +91,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           property: "og:url",
-          content: `https://kaja.io${localizeHref(pathname)}`
+          content: `https://kaja.io${localizeHref(pathname, { locale: canonicalLocale(getLocale()) })}`
         }
       ],
       links: [
         {
           rel: "canonical",
-          href: `https://kaja.io${localizeHref(pathname)}`
+          href: `https://kaja.io${localizeHref(pathname, { locale: canonicalLocale(getLocale()) })}`
         },
         {
           rel: "stylesheet",
@@ -113,6 +114,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           rel: "apple-touch-icon",
           sizes: "180x180",
           href: "/apple-touch-icon.png"
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "48x48",
+          href: "/favicon-48x48.png"
         },
         {
           rel: "icon",
@@ -136,7 +143,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           title: "LLM-friendly version",
           href: "/llms.txt"
         },
-        ...locales.map(locale => ({
+        ...indexedLocales.map(locale => ({
           rel: "alternate",
           hrefLang: locale,
           href: `https://kaja.io${localizeHref(pathname, { locale })}`

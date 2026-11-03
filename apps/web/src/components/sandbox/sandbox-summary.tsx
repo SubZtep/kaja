@@ -1,18 +1,12 @@
-import { mySandboxesResponseSchema } from "@kaja/schema/api"
-import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Box } from "lucide-react"
-import { useApiFetch } from "../../lib/api-fetch"
+import { useMySandboxes } from "../../hooks/sandboxes"
 import { m } from "../../paraglide/messages.js"
 import { Loader } from "../ui/loader"
 
 /** How many of the user's own sandboxes are online, with the way to the Sandbox page. */
 export function SandboxSummary() {
-  const apiFetch = useApiFetch()
-  const mine = useQuery({
-    queryKey: ["sandbox", "mine"],
-    queryFn: () => apiFetch("/sandbox").then(r => mySandboxesResponseSchema.parse(r))
-  })
+  const mine = useMySandboxes()
 
   if (mine.isLoading) return <Loader slim />
   const sandboxes = mine.data?.sandboxes ?? []
@@ -25,7 +19,7 @@ export function SandboxSummary() {
           {sandboxes.length === 0 ? m.sandbox_summary_none() : m.sandbox_summary({ online, count: sandboxes.length })}
         </span>
       </p>
-      <Link to="/agent/sandbox" className="text-muted hover:text-fg text-xs underline-offset-2 hover:underline">
+      <Link to="/sandboxes" className="text-muted hover:text-fg text-xs underline-offset-2 hover:underline">
         {m.sandbox_summary_manage()}
       </Link>
     </div>

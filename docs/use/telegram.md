@@ -18,8 +18,8 @@ There are two ways to chat with Kaja on Telegram:
 
 1. Install [Telegram](https://telegram.org/apps) and log in, on the phone or computer where you'll open the link.
 2. Register or log in on [kaja.io](https://kaja.io).
-3. Go to the **Dashboard**.
-4. In the **Connect Telegram** card, click **Get Telegram link**.
+3. Open **Channels › Telegram** (the **Home** page also shows a **Connect Telegram** card until you're linked).
+4. Click **Get Telegram link**.
 5. Open the link within 10 minutes. The bot recognises you and starts a chat.
 
 ## Your own bot

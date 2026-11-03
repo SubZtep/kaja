@@ -189,7 +189,7 @@ describe("authentication flow", () => {
         const res = await app.request("/auth/sign-in/social", {
           method: "POST",
           headers: { "Content-Type": "application/json", Origin: env.CORS_ORIGIN },
-          body: JSON.stringify({ provider: "google", callbackURL: new URL("/dashboard", env.CORS_ORIGIN).toString() })
+          body: JSON.stringify({ provider: "google", callbackURL: new URL("/home", env.CORS_ORIGIN).toString() })
         })
         expect(res.status).toBe(200)
         const { url } = (await res.json()) as { url: string }

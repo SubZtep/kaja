@@ -303,12 +303,14 @@ describe("MCP servers in the cloud", () => {
 
       // Telegram gets it too; Telegram can't fetch a signed URL on the local dev storage, so it goes as the bytes
       const { user } = await (await app.request("/auth/get-session", { headers: auth() })).json()
+      // A text-only chat model makes the turn wait for the description; one that sees takes only those already written, a race
       setNasiChatResolver(async () => ({
         client: chatClient(
           [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
           []
         ) as never,
-        model: "fake-model"
+        model: "fake-model",
+        seesImages: false
       }))
       const photos: (string | Uint8Array)[] = []
       const captions: (string | undefined)[] = []

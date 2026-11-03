@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test"
+import { tmpdir } from "node:os"
 import { APIConnectionError } from "openai"
 import { categorizeError } from "../../../src/lib/agent/error-category"
 
 // lib/agent/agents.ts (imported below, only for the ToolError class) pulls in lib/models/openai.ts, which calls config() at module scope — so this file needs its own isolated, populated config dir regardless of what other test files leave XDG_CONFIG_HOME pointing at when this module first loads.
-process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-error-category`
+process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-error-category`
 const { saveConfig } = await import("../../../src/lib/config/config")
 const { getModelsPath } = await import("../../../src/lib/models/models")
 await saveConfig({})

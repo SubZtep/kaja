@@ -31,6 +31,7 @@ import { log } from "../lib/logger"
 import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
+import { useFailures } from "./use-failures"
 
 /**
  * What the chat timeline is made of: the human's own messages, the agent's finalized events, and errors from failed
@@ -147,6 +148,7 @@ export function useAgent(
     eventsRef.current = [...eventsRef.current, event]
     setEvents(eventsRef.current)
   }, [])
+  useFailures(pushEvent)
   const [partial, setPartial] = useState<PartialMessage | null>(null)
   const [pending, setPending] = useState(false)
   // The in-flight tool call, if the most recent event is one and a run is still pending — there's no separate "tool finished" event, so this is derived rather than tracked: any later event naturally supersedes it.

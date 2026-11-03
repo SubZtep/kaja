@@ -7,13 +7,19 @@ import { DIALOG_TITLE, DialogShell } from "../../../../components/ui/dialog-shel
 import { useAppForm } from "../../../../lib/form"
 import { m } from "../../../../paraglide/messages.js"
 
-const editFormSchema = z.object({
-  label: z.string().min(1, m.validation_required()),
-  intent: z.string().min(1, m.validation_required()),
-  model: z.string().min(1, m.validation_required()),
-  kind: z.enum(["browser", "server"]),
-  selector: z.string()
-})
+/** The create and edit forms' fields; the selector only counts for a browser target, where it is shown. */
+export const widgetFormSchema = z
+  .object({
+    label: z.string().min(1, m.validation_required()),
+    intent: z.string().min(1, m.validation_required()),
+    model: z.string().min(1, m.validation_required()),
+    kind: z.enum(["browser", "server"]),
+    selector: z.string()
+  })
+  .refine(value => value.kind === "server" || value.selector.trim() !== "", {
+    path: ["selector"],
+    message: m.validation_required()
+  })
 
 function targetLabel(widget: Widget): string {
   return widget.target.kind === "browser" ? widget.target.selector : m.widget_target_server()
@@ -47,12 +53,12 @@ export function EditWidgetDialog({
 }: Readonly<{
   widget: Widget
   widgets: Widget[]
-  onSave: (payload: UpdateWidgetRequest) => Promise<unknown>
-  onPublish: () => Promise<unknown>
-  onDiscard: () => Promise<unknown>
-  onGenerate: () => Promise<unknown>
-  onLink: (to: string) => Promise<unknown>
-  onUnlink: (to: string) => Promise<unknown>
+  onSave: (payload: UpdateWidgetRequest) => Promise<boolean>
+  onPublish: () => Promise<boolean>
+  onDiscard: () => Promise<boolean>
+  onGenerate: () => Promise<boolean>
+  onLink: (to: string) => Promise<boolean>
+  onUnlink: (to: string) => Promise<boolean>
   isPending: boolean
   children: React.ReactElement
 }>) {
@@ -68,9 +74,9 @@ export function EditWidgetDialog({
       kind: widget.target.kind,
       selector: widget.target.kind === "browser" ? widget.target.selector : "#kaja-barkochba"
     },
-    validators: { onSubmit: editFormSchema },
+    validators: { onSubmit: widgetFormSchema },
     onSubmit: async ({ value }) => {
-      await onSave({
+      const saved = await onSave({
         label: value.label.trim(),
         intent: value.intent.trim(),
         model: value.model.trim(),
@@ -79,7 +85,7 @@ export function EditWidgetDialog({
             ? { kind: "browser", page: "home", selector: value.selector.trim() }
             : { kind: "server" }
       })
-      setOpen(false)
+      if (saved) setOpen(false)
     }
   })
 
@@ -185,7 +191,7 @@ export function EditWidgetDialog({
                 <Button
                   type="button"
                   disabled={!linkTo}
-                  onClick={() => linkTo && onLink(linkTo).then(() => setLinkTo(""))}
+                  onClick={() => linkTo && onLink(linkTo).then(linked => linked && setLinkTo(""))}
                 >
                   {m.widget_link()}
                 </Button>

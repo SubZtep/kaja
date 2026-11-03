@@ -11,26 +11,29 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/_portal'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as PortalAccountRouteImport } from './routes/_portal/account'
 import { Route as PortalAdminRouteImport } from './routes/_portal/admin'
-import { Route as PortalAgentRouteImport } from './routes/_portal/agent'
-import { Route as PortalDashboardRouteImport } from './routes/_portal/dashboard'
-import { Route as PortalProfileRouteImport } from './routes/_portal/profile'
+import { Route as PortalChannelsRouteImport } from './routes/_portal/channels'
+import { Route as PortalHomeRouteImport } from './routes/_portal/home'
+import { Route as PortalSandboxesRouteImport } from './routes/_portal/sandboxes'
+import { Route as PortalUsageRouteImport } from './routes/_portal/usage'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
+import { Route as PortalAccountIndexRouteImport } from './routes/_portal/account/index'
+import { Route as PortalAccountDevicesRouteImport } from './routes/_portal/account/devices'
+import { Route as PortalAccountProfileRouteImport } from './routes/_portal/account/profile'
 import { Route as PortalAdminIndexRouteImport } from './routes/_portal/admin/index'
-import { Route as PortalAgentIndexRouteImport } from './routes/_portal/agent/index'
-import { Route as PortalAgentSandboxRouteImport } from './routes/_portal/agent/sandbox'
-import { Route as PortalAgentWidgetRouteImport } from './routes/_portal/agent/widget'
-import { Route as PortalDashboardIndexRouteImport } from './routes/_portal/dashboard/index'
-import { Route as PortalDashboardStatsRouteImport } from './routes/_portal/dashboard/stats'
+import { Route as PortalChannelsIndexRouteImport } from './routes/_portal/channels/index'
+import { Route as PortalChannelsTelegramRouteImport } from './routes/_portal/channels/telegram'
+import { Route as PortalChannelsWidgetsRouteImport } from './routes/_portal/channels/widgets'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
 import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
-import { Route as PortalAdminDashboardIndexRouteImport } from './routes/_portal/admin/dashboard/index'
 import { Route as PortalAdminImagesIndexRouteImport } from './routes/_portal/admin/images/index'
 import { Route as PortalAdminModelsIndexRouteImport } from './routes/_portal/admin/models/index'
+import { Route as PortalAdminStatusIndexRouteImport } from './routes/_portal/admin/status/index'
 import { Route as PortalAdminUsersIndexRouteImport } from './routes/_portal/admin/users/index'
 import { Route as PortalAdminUsersUserIdRouteImport } from './routes/_portal/admin/users/$userId'
 
@@ -42,24 +45,34 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalAccountRoute = PortalAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalAdminRoute = PortalAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => PortalRoute,
 } as any)
-const PortalAgentRoute = PortalAgentRouteImport.update({
-  id: '/agent',
-  path: '/agent',
+const PortalChannelsRoute = PortalChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
   getParentRoute: () => PortalRoute,
 } as any)
-const PortalDashboardRoute = PortalDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const PortalHomeRoute = PortalHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => PortalRoute,
 } as any)
-const PortalProfileRoute = PortalProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const PortalSandboxesRoute = PortalSandboxesRouteImport.update({
+  id: '/sandboxes',
+  path: '/sandboxes',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalUsageRoute = PortalUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
   getParentRoute: () => PortalRoute,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -82,35 +95,40 @@ const PublicSignupRoute = PublicSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => PublicRoute,
 } as any)
+const PortalAccountIndexRoute = PortalAccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortalAccountRoute,
+} as any)
+const PortalAccountDevicesRoute = PortalAccountDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => PortalAccountRoute,
+} as any)
+const PortalAccountProfileRoute = PortalAccountProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PortalAccountRoute,
+} as any)
 const PortalAdminIndexRoute = PortalAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PortalAdminRoute,
 } as any)
-const PortalAgentIndexRoute = PortalAgentIndexRouteImport.update({
+const PortalChannelsIndexRoute = PortalChannelsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => PortalAgentRoute,
+  getParentRoute: () => PortalChannelsRoute,
 } as any)
-const PortalAgentSandboxRoute = PortalAgentSandboxRouteImport.update({
-  id: '/sandbox',
-  path: '/sandbox',
-  getParentRoute: () => PortalAgentRoute,
+const PortalChannelsTelegramRoute = PortalChannelsTelegramRouteImport.update({
+  id: '/telegram',
+  path: '/telegram',
+  getParentRoute: () => PortalChannelsRoute,
 } as any)
-const PortalAgentWidgetRoute = PortalAgentWidgetRouteImport.update({
-  id: '/widget',
-  path: '/widget',
-  getParentRoute: () => PortalAgentRoute,
-} as any)
-const PortalDashboardIndexRoute = PortalDashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PortalDashboardRoute,
-} as any)
-const PortalDashboardStatsRoute = PortalDashboardStatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
-  getParentRoute: () => PortalDashboardRoute,
+const PortalChannelsWidgetsRoute = PortalChannelsWidgetsRouteImport.update({
+  id: '/widgets',
+  path: '/widgets',
+  getParentRoute: () => PortalChannelsRoute,
 } as any)
 const PublicDeviceIndexRoute = PublicDeviceIndexRouteImport.update({
   id: '/',
@@ -127,12 +145,6 @@ const PublicDeviceDoneRoute = PublicDeviceDoneRouteImport.update({
   path: '/done',
   getParentRoute: () => PublicDeviceRoute,
 } as any)
-const PortalAdminDashboardIndexRoute =
-  PortalAdminDashboardIndexRouteImport.update({
-    id: '/dashboard/',
-    path: '/dashboard/',
-    getParentRoute: () => PortalAdminRoute,
-  } as any)
 const PortalAdminImagesIndexRoute = PortalAdminImagesIndexRouteImport.update({
   id: '/images/',
   path: '/images/',
@@ -141,6 +153,11 @@ const PortalAdminImagesIndexRoute = PortalAdminImagesIndexRouteImport.update({
 const PortalAdminModelsIndexRoute = PortalAdminModelsIndexRouteImport.update({
   id: '/models/',
   path: '/models/',
+  getParentRoute: () => PortalAdminRoute,
+} as any)
+const PortalAdminStatusIndexRoute = PortalAdminStatusIndexRouteImport.update({
+  id: '/status/',
+  path: '/status/',
   getParentRoute: () => PortalAdminRoute,
 } as any)
 const PortalAdminUsersIndexRoute = PortalAdminUsersIndexRouteImport.update({
@@ -156,145 +173,163 @@ const PortalAdminUsersUserIdRoute = PortalAdminUsersUserIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/account': typeof PortalAccountRouteWithChildren
   '/admin': typeof PortalAdminRouteWithChildren
-  '/agent': typeof PortalAgentRouteWithChildren
-  '/dashboard': typeof PortalDashboardRouteWithChildren
-  '/profile': typeof PortalProfileRoute
+  '/channels': typeof PortalChannelsRouteWithChildren
+  '/home': typeof PortalHomeRoute
+  '/sandboxes': typeof PortalSandboxesRoute
+  '/usage': typeof PortalUsageRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/agent/sandbox': typeof PortalAgentSandboxRoute
-  '/agent/widget': typeof PortalAgentWidgetRoute
-  '/dashboard/stats': typeof PortalDashboardStatsRoute
+  '/account/devices': typeof PortalAccountDevicesRoute
+  '/account/profile': typeof PortalAccountProfileRoute
+  '/channels/telegram': typeof PortalChannelsTelegramRoute
+  '/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
+  '/account/': typeof PortalAccountIndexRoute
   '/admin/': typeof PortalAdminIndexRoute
-  '/agent/': typeof PortalAgentIndexRoute
-  '/dashboard/': typeof PortalDashboardIndexRoute
+  '/channels/': typeof PortalChannelsIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof PortalAdminUsersUserIdRoute
-  '/admin/dashboard/': typeof PortalAdminDashboardIndexRoute
   '/admin/images/': typeof PortalAdminImagesIndexRoute
   '/admin/models/': typeof PortalAdminModelsIndexRoute
+  '/admin/status/': typeof PortalAdminStatusIndexRoute
   '/admin/users/': typeof PortalAdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
-  '/profile': typeof PortalProfileRoute
+  '/home': typeof PortalHomeRoute
+  '/sandboxes': typeof PortalSandboxesRoute
+  '/usage': typeof PortalUsageRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/agent/sandbox': typeof PortalAgentSandboxRoute
-  '/agent/widget': typeof PortalAgentWidgetRoute
-  '/dashboard/stats': typeof PortalDashboardStatsRoute
+  '/account/devices': typeof PortalAccountDevicesRoute
+  '/account/profile': typeof PortalAccountProfileRoute
+  '/channels/telegram': typeof PortalChannelsTelegramRoute
+  '/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
+  '/account': typeof PortalAccountIndexRoute
   '/admin': typeof PortalAdminIndexRoute
-  '/agent': typeof PortalAgentIndexRoute
-  '/dashboard': typeof PortalDashboardIndexRoute
+  '/channels': typeof PortalChannelsIndexRoute
   '/device': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof PortalAdminUsersUserIdRoute
-  '/admin/dashboard': typeof PortalAdminDashboardIndexRoute
   '/admin/images': typeof PortalAdminImagesIndexRoute
   '/admin/models': typeof PortalAdminModelsIndexRoute
+  '/admin/status': typeof PortalAdminStatusIndexRoute
   '/admin/users': typeof PortalAdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_portal': typeof PortalRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_portal/account': typeof PortalAccountRouteWithChildren
   '/_portal/admin': typeof PortalAdminRouteWithChildren
-  '/_portal/agent': typeof PortalAgentRouteWithChildren
-  '/_portal/dashboard': typeof PortalDashboardRouteWithChildren
-  '/_portal/profile': typeof PortalProfileRoute
+  '/_portal/channels': typeof PortalChannelsRouteWithChildren
+  '/_portal/home': typeof PortalHomeRoute
+  '/_portal/sandboxes': typeof PortalSandboxesRoute
+  '/_portal/usage': typeof PortalUsageRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/': typeof PublicIndexRoute
-  '/_portal/agent/sandbox': typeof PortalAgentSandboxRoute
-  '/_portal/agent/widget': typeof PortalAgentWidgetRoute
-  '/_portal/dashboard/stats': typeof PortalDashboardStatsRoute
+  '/_portal/account/devices': typeof PortalAccountDevicesRoute
+  '/_portal/account/profile': typeof PortalAccountProfileRoute
+  '/_portal/channels/telegram': typeof PortalChannelsTelegramRoute
+  '/_portal/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
   '/_public/device/done': typeof PublicDeviceDoneRoute
+  '/_portal/account/': typeof PortalAccountIndexRoute
   '/_portal/admin/': typeof PortalAdminIndexRoute
-  '/_portal/agent/': typeof PortalAgentIndexRoute
-  '/_portal/dashboard/': typeof PortalDashboardIndexRoute
+  '/_portal/channels/': typeof PortalChannelsIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
   '/_portal/admin/users/$userId': typeof PortalAdminUsersUserIdRoute
-  '/_portal/admin/dashboard/': typeof PortalAdminDashboardIndexRoute
   '/_portal/admin/images/': typeof PortalAdminImagesIndexRoute
   '/_portal/admin/models/': typeof PortalAdminModelsIndexRoute
+  '/_portal/admin/status/': typeof PortalAdminStatusIndexRoute
   '/_portal/admin/users/': typeof PortalAdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/admin'
-    | '/agent'
-    | '/dashboard'
-    | '/profile'
+    | '/channels'
+    | '/home'
+    | '/sandboxes'
+    | '/usage'
     | '/device'
     | '/signin'
     | '/signup'
-    | '/agent/sandbox'
-    | '/agent/widget'
-    | '/dashboard/stats'
+    | '/account/devices'
+    | '/account/profile'
+    | '/channels/telegram'
+    | '/channels/widgets'
     | '/device/approve'
     | '/device/done'
+    | '/account/'
     | '/admin/'
-    | '/agent/'
-    | '/dashboard/'
+    | '/channels/'
     | '/device/'
     | '/admin/users/$userId'
-    | '/admin/dashboard/'
     | '/admin/images/'
     | '/admin/models/'
+    | '/admin/status/'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/profile'
+    | '/home'
+    | '/sandboxes'
+    | '/usage'
     | '/signin'
     | '/signup'
-    | '/agent/sandbox'
-    | '/agent/widget'
-    | '/dashboard/stats'
+    | '/account/devices'
+    | '/account/profile'
+    | '/channels/telegram'
+    | '/channels/widgets'
     | '/device/approve'
     | '/device/done'
+    | '/account'
     | '/admin'
-    | '/agent'
-    | '/dashboard'
+    | '/channels'
     | '/device'
     | '/admin/users/$userId'
-    | '/admin/dashboard'
     | '/admin/images'
     | '/admin/models'
+    | '/admin/status'
     | '/admin/users'
   id:
     | '__root__'
     | '/_portal'
     | '/_public'
+    | '/_portal/account'
     | '/_portal/admin'
-    | '/_portal/agent'
-    | '/_portal/dashboard'
-    | '/_portal/profile'
+    | '/_portal/channels'
+    | '/_portal/home'
+    | '/_portal/sandboxes'
+    | '/_portal/usage'
     | '/_public/device'
     | '/_public/signin'
     | '/_public/signup'
     | '/_public/'
-    | '/_portal/agent/sandbox'
-    | '/_portal/agent/widget'
-    | '/_portal/dashboard/stats'
+    | '/_portal/account/devices'
+    | '/_portal/account/profile'
+    | '/_portal/channels/telegram'
+    | '/_portal/channels/widgets'
     | '/_public/device/approve'
     | '/_public/device/done'
+    | '/_portal/account/'
     | '/_portal/admin/'
-    | '/_portal/agent/'
-    | '/_portal/dashboard/'
+    | '/_portal/channels/'
     | '/_public/device/'
     | '/_portal/admin/users/$userId'
-    | '/_portal/admin/dashboard/'
     | '/_portal/admin/images/'
     | '/_portal/admin/models/'
+    | '/_portal/admin/status/'
     | '/_portal/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -319,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_portal/account': {
+      id: '/_portal/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof PortalAccountRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/_portal/admin': {
       id: '/_portal/admin'
       path: '/admin'
@@ -326,25 +368,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalAdminRouteImport
       parentRoute: typeof PortalRoute
     }
-    '/_portal/agent': {
-      id: '/_portal/agent'
-      path: '/agent'
-      fullPath: '/agent'
-      preLoaderRoute: typeof PortalAgentRouteImport
+    '/_portal/channels': {
+      id: '/_portal/channels'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof PortalChannelsRouteImport
       parentRoute: typeof PortalRoute
     }
-    '/_portal/dashboard': {
-      id: '/_portal/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof PortalDashboardRouteImport
+    '/_portal/home': {
+      id: '/_portal/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof PortalHomeRouteImport
       parentRoute: typeof PortalRoute
     }
-    '/_portal/profile': {
-      id: '/_portal/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof PortalProfileRouteImport
+    '/_portal/sandboxes': {
+      id: '/_portal/sandboxes'
+      path: '/sandboxes'
+      fullPath: '/sandboxes'
+      preLoaderRoute: typeof PortalSandboxesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/_portal/usage': {
+      id: '/_portal/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof PortalUsageRouteImport
       parentRoute: typeof PortalRoute
     }
     '/_public/': {
@@ -375,6 +424,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicSignupRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_portal/account/': {
+      id: '/_portal/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof PortalAccountIndexRouteImport
+      parentRoute: typeof PortalAccountRoute
+    }
+    '/_portal/account/devices': {
+      id: '/_portal/account/devices'
+      path: '/devices'
+      fullPath: '/account/devices'
+      preLoaderRoute: typeof PortalAccountDevicesRouteImport
+      parentRoute: typeof PortalAccountRoute
+    }
+    '/_portal/account/profile': {
+      id: '/_portal/account/profile'
+      path: '/profile'
+      fullPath: '/account/profile'
+      preLoaderRoute: typeof PortalAccountProfileRouteImport
+      parentRoute: typeof PortalAccountRoute
+    }
     '/_portal/admin/': {
       id: '/_portal/admin/'
       path: '/'
@@ -382,40 +452,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalAdminIndexRouteImport
       parentRoute: typeof PortalAdminRoute
     }
-    '/_portal/agent/': {
-      id: '/_portal/agent/'
+    '/_portal/channels/': {
+      id: '/_portal/channels/'
       path: '/'
-      fullPath: '/agent/'
-      preLoaderRoute: typeof PortalAgentIndexRouteImport
-      parentRoute: typeof PortalAgentRoute
+      fullPath: '/channels/'
+      preLoaderRoute: typeof PortalChannelsIndexRouteImport
+      parentRoute: typeof PortalChannelsRoute
     }
-    '/_portal/agent/sandbox': {
-      id: '/_portal/agent/sandbox'
-      path: '/sandbox'
-      fullPath: '/agent/sandbox'
-      preLoaderRoute: typeof PortalAgentSandboxRouteImport
-      parentRoute: typeof PortalAgentRoute
+    '/_portal/channels/telegram': {
+      id: '/_portal/channels/telegram'
+      path: '/telegram'
+      fullPath: '/channels/telegram'
+      preLoaderRoute: typeof PortalChannelsTelegramRouteImport
+      parentRoute: typeof PortalChannelsRoute
     }
-    '/_portal/agent/widget': {
-      id: '/_portal/agent/widget'
-      path: '/widget'
-      fullPath: '/agent/widget'
-      preLoaderRoute: typeof PortalAgentWidgetRouteImport
-      parentRoute: typeof PortalAgentRoute
-    }
-    '/_portal/dashboard/': {
-      id: '/_portal/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof PortalDashboardIndexRouteImport
-      parentRoute: typeof PortalDashboardRoute
-    }
-    '/_portal/dashboard/stats': {
-      id: '/_portal/dashboard/stats'
-      path: '/stats'
-      fullPath: '/dashboard/stats'
-      preLoaderRoute: typeof PortalDashboardStatsRouteImport
-      parentRoute: typeof PortalDashboardRoute
+    '/_portal/channels/widgets': {
+      id: '/_portal/channels/widgets'
+      path: '/widgets'
+      fullPath: '/channels/widgets'
+      preLoaderRoute: typeof PortalChannelsWidgetsRouteImport
+      parentRoute: typeof PortalChannelsRoute
     }
     '/_public/device/': {
       id: '/_public/device/'
@@ -438,13 +494,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicDeviceDoneRouteImport
       parentRoute: typeof PublicDeviceRoute
     }
-    '/_portal/admin/dashboard/': {
-      id: '/_portal/admin/dashboard/'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard/'
-      preLoaderRoute: typeof PortalAdminDashboardIndexRouteImport
-      parentRoute: typeof PortalAdminRoute
-    }
     '/_portal/admin/images/': {
       id: '/_portal/admin/images/'
       path: '/images'
@@ -457,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/models'
       fullPath: '/admin/models/'
       preLoaderRoute: typeof PortalAdminModelsIndexRouteImport
+      parentRoute: typeof PortalAdminRoute
+    }
+    '/_portal/admin/status/': {
+      id: '/_portal/admin/status/'
+      path: '/status'
+      fullPath: '/admin/status/'
+      preLoaderRoute: typeof PortalAdminStatusIndexRouteImport
       parentRoute: typeof PortalAdminRoute
     }
     '/_portal/admin/users/': {
@@ -476,21 +532,37 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalAccountRouteChildren {
+  PortalAccountDevicesRoute: typeof PortalAccountDevicesRoute
+  PortalAccountProfileRoute: typeof PortalAccountProfileRoute
+  PortalAccountIndexRoute: typeof PortalAccountIndexRoute
+}
+
+const PortalAccountRouteChildren: PortalAccountRouteChildren = {
+  PortalAccountDevicesRoute: PortalAccountDevicesRoute,
+  PortalAccountProfileRoute: PortalAccountProfileRoute,
+  PortalAccountIndexRoute: PortalAccountIndexRoute,
+}
+
+const PortalAccountRouteWithChildren = PortalAccountRoute._addFileChildren(
+  PortalAccountRouteChildren,
+)
+
 interface PortalAdminRouteChildren {
   PortalAdminIndexRoute: typeof PortalAdminIndexRoute
   PortalAdminUsersUserIdRoute: typeof PortalAdminUsersUserIdRoute
-  PortalAdminDashboardIndexRoute: typeof PortalAdminDashboardIndexRoute
   PortalAdminImagesIndexRoute: typeof PortalAdminImagesIndexRoute
   PortalAdminModelsIndexRoute: typeof PortalAdminModelsIndexRoute
+  PortalAdminStatusIndexRoute: typeof PortalAdminStatusIndexRoute
   PortalAdminUsersIndexRoute: typeof PortalAdminUsersIndexRoute
 }
 
 const PortalAdminRouteChildren: PortalAdminRouteChildren = {
   PortalAdminIndexRoute: PortalAdminIndexRoute,
   PortalAdminUsersUserIdRoute: PortalAdminUsersUserIdRoute,
-  PortalAdminDashboardIndexRoute: PortalAdminDashboardIndexRoute,
   PortalAdminImagesIndexRoute: PortalAdminImagesIndexRoute,
   PortalAdminModelsIndexRoute: PortalAdminModelsIndexRoute,
+  PortalAdminStatusIndexRoute: PortalAdminStatusIndexRoute,
   PortalAdminUsersIndexRoute: PortalAdminUsersIndexRoute,
 }
 
@@ -498,48 +570,38 @@ const PortalAdminRouteWithChildren = PortalAdminRoute._addFileChildren(
   PortalAdminRouteChildren,
 )
 
-interface PortalAgentRouteChildren {
-  PortalAgentSandboxRoute: typeof PortalAgentSandboxRoute
-  PortalAgentWidgetRoute: typeof PortalAgentWidgetRoute
-  PortalAgentIndexRoute: typeof PortalAgentIndexRoute
+interface PortalChannelsRouteChildren {
+  PortalChannelsTelegramRoute: typeof PortalChannelsTelegramRoute
+  PortalChannelsWidgetsRoute: typeof PortalChannelsWidgetsRoute
+  PortalChannelsIndexRoute: typeof PortalChannelsIndexRoute
 }
 
-const PortalAgentRouteChildren: PortalAgentRouteChildren = {
-  PortalAgentSandboxRoute: PortalAgentSandboxRoute,
-  PortalAgentWidgetRoute: PortalAgentWidgetRoute,
-  PortalAgentIndexRoute: PortalAgentIndexRoute,
+const PortalChannelsRouteChildren: PortalChannelsRouteChildren = {
+  PortalChannelsTelegramRoute: PortalChannelsTelegramRoute,
+  PortalChannelsWidgetsRoute: PortalChannelsWidgetsRoute,
+  PortalChannelsIndexRoute: PortalChannelsIndexRoute,
 }
 
-const PortalAgentRouteWithChildren = PortalAgentRoute._addFileChildren(
-  PortalAgentRouteChildren,
-)
-
-interface PortalDashboardRouteChildren {
-  PortalDashboardStatsRoute: typeof PortalDashboardStatsRoute
-  PortalDashboardIndexRoute: typeof PortalDashboardIndexRoute
-}
-
-const PortalDashboardRouteChildren: PortalDashboardRouteChildren = {
-  PortalDashboardStatsRoute: PortalDashboardStatsRoute,
-  PortalDashboardIndexRoute: PortalDashboardIndexRoute,
-}
-
-const PortalDashboardRouteWithChildren = PortalDashboardRoute._addFileChildren(
-  PortalDashboardRouteChildren,
+const PortalChannelsRouteWithChildren = PortalChannelsRoute._addFileChildren(
+  PortalChannelsRouteChildren,
 )
 
 interface PortalRouteChildren {
+  PortalAccountRoute: typeof PortalAccountRouteWithChildren
   PortalAdminRoute: typeof PortalAdminRouteWithChildren
-  PortalAgentRoute: typeof PortalAgentRouteWithChildren
-  PortalDashboardRoute: typeof PortalDashboardRouteWithChildren
-  PortalProfileRoute: typeof PortalProfileRoute
+  PortalChannelsRoute: typeof PortalChannelsRouteWithChildren
+  PortalHomeRoute: typeof PortalHomeRoute
+  PortalSandboxesRoute: typeof PortalSandboxesRoute
+  PortalUsageRoute: typeof PortalUsageRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalAccountRoute: PortalAccountRouteWithChildren,
   PortalAdminRoute: PortalAdminRouteWithChildren,
-  PortalAgentRoute: PortalAgentRouteWithChildren,
-  PortalDashboardRoute: PortalDashboardRouteWithChildren,
-  PortalProfileRoute: PortalProfileRoute,
+  PortalChannelsRoute: PortalChannelsRouteWithChildren,
+  PortalHomeRoute: PortalHomeRoute,
+  PortalSandboxesRoute: PortalSandboxesRoute,
+  PortalUsageRoute: PortalUsageRoute,
 }
 
 const PortalRouteWithChildren =

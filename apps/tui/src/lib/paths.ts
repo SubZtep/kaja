@@ -16,6 +16,11 @@ export function getBackupDir() {
   return join(getPaths().data, "backups")
 }
 
+/** The default log file (`lib/logger.ts`): the platform's state/log folder, e.g. `~/.local/state/kaja/kaja.log`. */
+export function getLogFile() {
+  return join(getPaths().log, "kaja.log")
+}
+
 /** Where `syncSounds` keeps the sound effects hooks.toml plays (`$KAJA_SOUNDS` in a hook command). */
 export function getSoundsDir() {
   return join(getPaths().data, "sounds")
@@ -32,7 +37,8 @@ export function listPaths(all = false, configDir = getPaths().config) {
     { label: t("paths.settings"), path: join(configDir, "settings.toml") },
     { label: t("paths.memorySessions"), path: join(paths.data, "memory.sqlite") },
     { label: t("paths.images"), path: join(paths.data, "files") },
-    { label: t("paths.sounds"), path: getSoundsDir() }
+    { label: t("paths.sounds"), path: getSoundsDir() },
+    { label: t("paths.log"), path: Bun.env.KAJA_LOG_FILE || getLogFile() }
   ]
 
   if (all) {

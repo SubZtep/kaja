@@ -17,11 +17,14 @@ On macOS or Linux:
 curl -fsSL https://kaja.io/install.sh | bash
 ```
 
-On Windows:
+On Windows (experimental):
 
 ```powershell
 irm https://kaja.io/install.ps1 | iex
 ```
+
+The Windows build is experimental and isn't tested: shell commands are known not to work there yet. macOS,
+Linux and WSL are supported.
 
 The script picks the right binary for your system and puts it in `~/.local/bin`, and tells you if that
 folder isn't on your `PATH`. Binaries (x64 or arm64) are also on

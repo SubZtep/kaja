@@ -2,7 +2,6 @@
 .output/
 .tanstack/
 .tsbuildinfo
-.tmp-test-xdg-config-*/
 dist/
 node_modules/
 data/
@@ -20,3 +19,7 @@ docs/vendor/
 
 # A dev sandbox's registration (SANDBOX_STATE_DIR)
 apps/sandbox/.sandbox/
+
+# Inlang writes caches beside settings.json; Paraglide 3 no longer adds its own .gitignore there
+apps/web/project.inlang/*
+!apps/web/project.inlang/settings.json

@@ -2,6 +2,7 @@ import { join } from "node:path"
 import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { t } from "../i18n"
+import { makePrivate } from "../private-file"
 import { getConfigDir } from "./config"
 import { withSchemaLine, writeConfigFile } from "./schema-file"
 import { groupTomlTables, stringifyToml } from "./toml"
@@ -30,7 +31,10 @@ export async function readSecretsLoose(): Promise<Partial<SecretsFile>> {
 export async function loadSecretsFile(): Promise<SecretsFile> {
   const secretsPath = getSecretsPath()
   const f = file(secretsPath)
-  const text = (await f.exists()) ? await f.text() : ""
+  const exists = await f.exists()
+  // A file written before Kaja kept it private (or edited by hand) is fixed the next time it's read
+  if (exists) await makePrivate(secretsPath)
+  const text = exists ? await f.text() : ""
   try {
     return SecretsFileSchema.parse(TOML.parse(text))
   } catch (error) {
@@ -139,6 +143,7 @@ export async function saveSecrets(
   const kept = placeholders ?? readSecretPlaceholders(existing)
   const text = secretsText(next, kept)
   if (existing !== withSchemaLine(getSecretsPath(), text)) await writeConfigFile(getSecretsPath(), text)
+  await makePrivate(getSecretsPath())
   cached = undefined
 }
 

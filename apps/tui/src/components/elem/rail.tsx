@@ -1,4 +1,4 @@
-import { Box, type BoxProps, Text } from "ink"
+import { Box, type BoxProps, Text, useStdout } from "ink"
 import { createContext, Fragment, type ReactElement, type ReactNode, useContext, useEffect, useState } from "react"
 import { useKajaTheme } from "../theme"
 
@@ -14,8 +14,20 @@ export const LABEL_WIDTH = 14
 const TEXT_COLUMN = 3
 
 /** The width left for a row's text at this terminal width, never past column 78. */
-export function textWidth(columns = process.stdout.columns || 80): number {
+export function textWidth(columns: number): number {
   return Math.min(FRAME_WIDTH, columns - 2) - TEXT_COLUMN
+}
+
+/** The size of the terminal Ink draws to (a test's fake one included), not necessarily `process.stdout`'s. */
+export function useTerminalSize(): { columns: number; rows: number } {
+  // Ink types it as any writable, but render() is always given a TTY stream
+  const stdout = useStdout().stdout as NodeJS.WriteStream
+  return { columns: stdout.columns || 80, rows: stdout.rows || 24 }
+}
+
+/** {@link textWidth} for the terminal Ink draws to. */
+export function useTextWidth(): number {
+  return textWidth(useTerminalSize().columns)
 }
 
 /** Pads `label` to the value column, always leaving at least one space. */
@@ -76,10 +88,11 @@ export function Question({
   children
 }: Readonly<{ title: string; hint?: ReactNode; children: ReactNode }>) {
   const { accent } = useKajaTheme()
+  const width = useTextWidth()
   return (
     <Box flexDirection="column">
       <RailLine marker={<Text {...accent()}>◆</Text>}>
-        <Box width={textWidth()}>
+        <Box width={width}>
           <Text bold>{title}</Text>
         </Box>
       </RailLine>
@@ -88,7 +101,7 @@ export function Question({
         <InRail value>{children}</InRail>
       </Box>
       <RailLine marker={<Text dimColor>└</Text>}>
-        <Box width={textWidth()}>
+        <Box width={width}>
           {typeof hint === "string" ? (
             <Text dimColor wrap="truncate-end">
               {hint}
@@ -170,7 +183,7 @@ export function MenuRow({
 }>) {
   const { accent, highlightRow } = useKajaTheme()
   return (
-    <Box width={textWidth()} gap={1} {...(focused ? (band ?? highlightRow()) : {})}>
+    <Box width={useTextWidth()} gap={1} {...(focused ? (band ?? highlightRow()) : {})}>
       <Text dimColor={dim} {...(focused && !dim ? accent() : {})}>
         {focused ? "❯" : " "}
       </Text>

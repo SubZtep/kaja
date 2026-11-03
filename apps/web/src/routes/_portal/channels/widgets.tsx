@@ -19,24 +19,15 @@ import { Table } from "../../../components/ui/table"
 import { ValueBox } from "../../../components/ui/value-box"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
-import { userRequired } from "../../../lib/loaders"
+import { succeeded } from "../../../lib/mutation"
 import { seo } from "../../../lib/seo"
 import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 import { m } from "../../../paraglide/messages.js"
-import { EditWidgetDialog } from "./-components/edit-widget-dialog"
+import { EditWidgetDialog, widgetFormSchema } from "./-components/edit-widget-dialog"
 
-export const Route = createFileRoute("/_portal/agent/widget")({
+export const Route = createFileRoute("/_portal/channels/widgets")({
   component: WidgetPage,
-  loader: ({ context }) => userRequired(context.session),
-  head: () => ({ meta: seo({ title: m.nav_widget() }) })
-})
-
-const createFormSchema = z.object({
-  label: z.string().min(1, m.validation_required()),
-  intent: z.string().min(1, m.validation_required()),
-  model: z.string().min(1, m.validation_required()),
-  kind: z.enum(["browser", "server"]),
-  selector: z.string().min(1, m.validation_required())
+  head: () => ({ meta: seo({ title: m.nav_widgets() }) })
 })
 
 const columnHelper = tableColumnHelper<Widget>()
@@ -91,12 +82,12 @@ function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Widget, Da
 type WidgetActionsMeta = Readonly<{
   widgets: Widget[]
   isSaving: boolean
-  onSave: (id: string, payload: UpdateWidgetRequest) => Promise<unknown>
-  onPublish: (id: string) => Promise<unknown>
-  onDiscard: (id: string) => Promise<unknown>
-  onGenerate: (id: string) => Promise<unknown>
-  onLink: (id: string, to: string) => Promise<unknown>
-  onUnlink: (id: string, to: string) => Promise<unknown>
+  onSave: (id: string, payload: UpdateWidgetRequest) => Promise<boolean>
+  onPublish: (id: string) => Promise<boolean>
+  onDiscard: (id: string) => Promise<boolean>
+  onGenerate: (id: string) => Promise<boolean>
+  onLink: (id: string, to: string) => Promise<boolean>
+  onUnlink: (id: string, to: string) => Promise<boolean>
   onRevoke: (id: string) => void
 }>
 
@@ -224,9 +215,9 @@ function WidgetPage() {
       kind: "server" as "browser" | "server",
       selector: "#kaja-barkochba"
     },
-    validators: { onSubmit: createFormSchema },
+    validators: { onSubmit: widgetFormSchema },
     onSubmit: async ({ value, formApi }) => {
-      await createWidget.mutateAsync({
+      const created = createWidget.mutateAsync({
         label: value.label.trim(),
         intent: value.intent.trim(),
         model: value.model.trim(),
@@ -235,7 +226,7 @@ function WidgetPage() {
             ? { kind: "browser", page: "home", selector: value.selector.trim() }
             : { kind: "server" }
       })
-      formApi.reset()
+      if (await succeeded(created)) formApi.reset()
     }
   })
 
@@ -275,12 +266,12 @@ function WidgetPage() {
         actions: {
           widgets: data ?? [],
           isSaving: busy,
-          onSave: (id, payload) => updateWidget.mutateAsync({ id, payload }),
-          onPublish: id => publishWidget.mutateAsync(id),
-          onDiscard: id => discardDraft.mutateAsync(id),
-          onGenerate: id => generateWidget.mutateAsync(id),
-          onLink: (id, to) => linkWidget.mutateAsync({ id, to }),
-          onUnlink: (id, to) => unlinkWidget.mutateAsync({ id, to }),
+          onSave: (id, payload) => succeeded(updateWidget.mutateAsync({ id, payload })),
+          onPublish: id => succeeded(publishWidget.mutateAsync(id)),
+          onDiscard: id => succeeded(discardDraft.mutateAsync(id)),
+          onGenerate: id => succeeded(generateWidget.mutateAsync(id)),
+          onLink: (id, to) => succeeded(linkWidget.mutateAsync({ id, to })),
+          onUnlink: (id, to) => succeeded(unlinkWidget.mutateAsync({ id, to })),
           onRevoke: id => revokeWidget.mutate(id)
         } satisfies WidgetActionsMeta
       },

@@ -57,7 +57,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Compare with the released sandbox
-        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
+        uses: docker/scout-action@e7e2a72bf1485d10a58f30696b6c513b261ce4fa # v1.29.0
         with:
           command: compare
           image: oci-dir://${{ runner.temp }}/sandbox
@@ -68,7 +68,7 @@ jobs:
           write-comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Scout the sandbox
-        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
+        uses: docker/scout-action@e7e2a72bf1485d10a58f30696b6c513b261ce4fa # v1.29.0
         with:
           command: quickview,cves
           image: oci-dir://${{ runner.temp }}/sandbox
@@ -90,7 +90,7 @@ jobs:
 
       # Fails (and emails) only when a fix exists, so an unfixed Debian CVE doesn't keep it red
       - name: Scout the released sandbox
-        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
+        uses: docker/scout-action@e7e2a72bf1485d10a58f30696b6c513b261ce4fa # v1.29.0
         with:
           command: quickview,cves
           image: registry://${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}:latest

@@ -2,12 +2,16 @@ import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { ContentWidth } from "../components/layout/content-width"
 import { SiteShell } from "../components/layout/site-shell"
+import { TelegramBanner } from "../components/user/telegram-banner"
 import { userRequired } from "../lib/loaders"
 import { noindexSeo } from "../lib/seo"
 
 export const Route = createFileRoute("/_portal")({
   component: PortalLayoutRoute,
-  loader: ({ context, location }) => userRequired(context.session, undefined, location.href),
+  // beforeLoad, not loader: it runs before the pages' loaders, so a signed-out visit never starts them
+  beforeLoad: ({ context, location }) => {
+    userRequired(context.session, undefined, location.href)
+  },
   head: () => ({ meta: noindexSeo() })
 })
 
@@ -19,6 +23,7 @@ function PortalLayoutRoute() {
     // Same grit as the public pages (torn header edge, the #wobble filters the stamps and cards use), without the scanline
     <SiteShell className="grit-still">
       <ContentWidth className="flex-1 py-10 md:py-14">
+        <TelegramBanner />
         <Outlet />
       </ContentWidth>
     </SiteShell>

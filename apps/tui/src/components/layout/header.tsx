@@ -14,6 +14,7 @@ const MONSTER_COLS = monsterWidth() + 1
 // Past this share of the window, the header gives the full count, not just the percent
 const FULL_COUNT_FROM = 50
 const TAG_GAP = 3
+const SEP = " · "
 
 /**
  * How full the context is: "1%" while there's room, "18,000 / 33K (55%)" past half, "12,345 tokens" while the window is
@@ -38,9 +39,9 @@ export function infoParts(model: string, provider: string | undefined, usage: st
 
 /**
  * Live top bar on one row: the monster and the persona (accent, bold) on the left; on the right, dim, the model,
- * provider and how full the context is (or the tool running, when `currentTool` is set), then where the agent runs as a
- * dim tag, with YOLO in the warning colour while every approval is skipped. What doesn't fit drops (the provider, then
- * the model), and the persona's name truncates last.
+ * provider and how full the context is (or the tool running, when `currentTool` is set), then where the agent runs, all
+ * dot-separated, with YOLO in the warning colour while every approval is skipped. What doesn't fit drops (the provider,
+ * then the model), and the persona's name truncates last.
  */
 export function Header({
   mode,
@@ -74,12 +75,12 @@ export function Header({
   const spinnerType = useRandomSpinner(!!currentTool, "block")
   const { accent, warning } = useKajaTheme()
 
-  const tag = [t(`header.${mode}`), profile].filter(Boolean).join(" · ")
+  const tag = [t(`header.${mode}`), profile].filter(Boolean).join(SEP)
   const yoloTag = yolo ? "YOLO" : ""
-  const tags = [yoloTag, tag].filter(Boolean).join("  ")
+  const tags = [yoloTag, tag].filter(Boolean).join(SEP)
   // What's left for the right side once the monster, a short persona and the tags have their place
   const personaCols = Math.min(Bun.stringWidth(persona), 16)
-  const room = Math.max(0, width - 2 - MONSTER_COLS - personaCols - TAG_GAP - Bun.stringWidth(tags) - TAG_GAP)
+  const room = Math.max(0, width - 2 - MONSTER_COLS - personaCols - TAG_GAP - Bun.stringWidth(tags) - SEP.length)
   const info = currentTool
     ? ""
     : infoParts(
@@ -102,29 +103,32 @@ export function Header({
         </Box>
       </Box>
       <Box flexGrow={1} flexShrink={1} minWidth={0} justifyContent="flex-end" overflow="hidden">
-        {currentTool ? (
-          <Box flexShrink={1} gap={1} overflow="hidden" minWidth={0}>
-            <Spinner type={spinnerType} />
+        <Box flexShrink={1} minWidth={0} overflow="hidden">
+          {currentTool ? (
+            <Box flexShrink={1} gap={1} overflow="hidden" minWidth={0}>
+              <Spinner type={spinnerType} />
+              <Text dimColor wrap="truncate-end">
+                {describeToolCall(currentTool.name, currentTool.arguments)}
+              </Text>
+            </Box>
+          ) : (
             <Text dimColor wrap="truncate-end">
-              {describeToolCall(currentTool.name, currentTool.arguments)}
+              {info}
             </Text>
-          </Box>
-        ) : (
-          <Text dimColor wrap="truncate-end">
-            {info}
+          )}
+        </Box>
+        <Box flexShrink={0}>
+          <Text>
+            {currentTool || info ? <Text dimColor>{SEP}</Text> : null}
+            {yoloTag ? (
+              <Text {...warning()} bold>
+                {yoloTag}
+              </Text>
+            ) : null}
+            {yoloTag ? <Text dimColor>{SEP}</Text> : null}
+            <Text dimColor>{tag}</Text>
           </Text>
-        )}
-      </Box>
-      <Box flexShrink={0}>
-        <Text>
-          {yoloTag ? (
-            <Text {...warning()} bold>
-              {yoloTag}
-            </Text>
-          ) : null}
-          {yoloTag ? "  " : ""}
-          <Text dimColor>{tag}</Text>
-        </Text>
+        </Box>
       </Box>
     </Box>
   )

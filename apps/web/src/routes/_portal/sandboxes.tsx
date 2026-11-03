@@ -1,35 +1,32 @@
 import { Field } from "@base-ui/react/field"
 import type { MySandboxesResponse, Sandbox, SandboxSettings } from "@kaja/schema/api"
-import { mySandboxesResponseSchema, sandboxKeyResponseSchema, sandboxSettingsSchema } from "@kaja/schema/api"
+import { sandboxKeyResponseSchema, sandboxSettingsSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { Button } from "../../../components/form/primitives/button"
-import { Checkbox } from "../../../components/form/primitives/checkbox"
-import { RunCommand } from "../../../components/sandbox/run-command"
-import { ConfirmDialog } from "../../../components/ui/confirm-dialog"
-import { ErrorNotice } from "../../../components/ui/error-notice"
-import { IconButton } from "../../../components/ui/icon-button"
-import { Loader } from "../../../components/ui/loader"
-import { PageHeader } from "../../../components/ui/page-header"
-import { Section } from "../../../components/ui/section"
-import { StatusDot } from "../../../components/ui/status-dot"
-import { useApiFetch } from "../../../lib/api-fetch"
-import { userRequired } from "../../../lib/loaders"
-import { hardware, place } from "../../../lib/sandbox"
-import { seo } from "../../../lib/seo"
-import { m } from "../../../paraglide/messages.js"
+import { Button } from "../../components/form/primitives/button"
+import { Checkbox } from "../../components/form/primitives/checkbox"
+import { RunCommand } from "../../components/sandbox/run-command"
+import { ConfirmDialog } from "../../components/ui/confirm-dialog"
+import { ErrorNotice } from "../../components/ui/error-notice"
+import { IconButton } from "../../components/ui/icon-button"
+import { Loader } from "../../components/ui/loader"
+import { PageHeader } from "../../components/ui/page-header"
+import { Section } from "../../components/ui/section"
+import { StatusDot } from "../../components/ui/status-dot"
+import { MY_SANDBOXES_QUERY_KEY, useMySandboxes } from "../../hooks/sandboxes"
+import { useApiFetch } from "../../lib/api-fetch"
+import { hardware, place } from "../../lib/sandbox"
+import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_portal/agent/sandbox")({
+export const Route = createFileRoute("/_portal/sandboxes")({
   component: SandboxPage,
-  loader: ({ context }) => userRequired(context.session),
-  head: () => ({ meta: seo({ title: m.nav_sandbox() }) })
+  head: () => ({ meta: seo({ title: m.nav_sandboxes() }) })
 })
-
-const QUERY_KEY = ["sandbox", "mine"]
 
 function KeySection({ settings }: Readonly<{ settings: SandboxSettings }>) {
   const apiFetch = useApiFetch()
@@ -40,7 +37,7 @@ function KeySection({ settings }: Readonly<{ settings: SandboxSettings }>) {
       apiFetch("/sandbox/key", undefined, { method: "POST" }).then(r => sandboxKeyResponseSchema.parse(r).key),
     onSuccess: created => {
       setKey(created)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: MY_SANDBOXES_QUERY_KEY })
     },
     onError: error => toast.error(error.message)
   })
@@ -88,7 +85,9 @@ function SettingsSection({ settings }: Readonly<{ settings: SandboxSettings }>) 
     mutationFn: (patch: Partial<Pick<SandboxSettings, "share" | "useShared">>) =>
       apiFetch("/sandbox/settings", patch, { method: "PATCH" }).then(r => sandboxSettingsSchema.parse(r)),
     onSuccess: saved =>
-      queryClient.setQueryData<MySandboxesResponse>(QUERY_KEY, old => (old ? { ...old, settings: saved } : old)),
+      queryClient.setQueryData<MySandboxesResponse>(MY_SANDBOXES_QUERY_KEY, old =>
+        old ? { ...old, settings: saved } : old
+      ),
     onError: error => toast.error(error.message)
   })
 
@@ -133,7 +132,7 @@ function SandboxRow({ sandbox }: Readonly<{ sandbox: Sandbox }>) {
   const queryClient = useQueryClient()
   const remove = useMutation({
     mutationFn: () => apiFetch(`/sandbox/${sandbox.id}`, undefined, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_SANDBOXES_QUERY_KEY }),
     onError: error => toast.error(error.message)
   })
   const info = sandbox.info
@@ -180,12 +179,7 @@ function SandboxRow({ sandbox }: Readonly<{ sandbox: Sandbox }>) {
  * sandbox's state.
  */
 function SandboxPage() {
-  const apiFetch = useApiFetch()
-  const { data, error, isLoading } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: () => apiFetch<MySandboxesResponse>("/sandbox").then(r => mySandboxesResponseSchema.parse(r)),
-    refetchInterval: 15_000
-  })
+  const { data, error, isLoading } = useMySandboxes(15_000)
 
   return (
     <div className="space-y-6">

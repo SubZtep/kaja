@@ -81,10 +81,10 @@ function SignUp() {
     }
     if (data?.user) {
       toast.success(m.signup_success())
-      // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
+      // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, Home, roles).
       forgetSession()
       await router.invalidate()
-      navigate({ to: "/dashboard" })
+      navigate({ to: "/home" })
     }
   }
 

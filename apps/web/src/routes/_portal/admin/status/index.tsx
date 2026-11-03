@@ -6,15 +6,15 @@ import { MarketplaceSection, ServiceKeysSection } from "./-components/marketplac
 import { SandboxSection } from "./-components/sandbox-section"
 import { StorageSection } from "./-components/storage-section"
 
-export const Route = createFileRoute("/_portal/admin/dashboard/")({
+export const Route = createFileRoute("/_portal/admin/status/")({
   component: AdminDashboard,
-  head: () => ({ meta: seo({ title: m.nav_dashboard() }) })
+  head: () => ({ meta: seo({ title: m.nav_status() }) })
 })
 
 function AdminDashboard() {
   return (
     <>
-      <PageHeader title={m.nav_dashboard()} description={m.admin_dashboard_description()} />
+      <PageHeader title={m.nav_status()} description={m.admin_dashboard_description()} />
       <MarketplaceSection />
       <ServiceKeysSection />
       <SandboxSection />

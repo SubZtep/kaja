@@ -31,6 +31,12 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `edit_image`                                                     | resize, rotate (by 90°) or flip a chat image, make it brighter or darker, or turn it greyscale |                             ✓                              |
 | `run_command`                                                    | run a shell command                                                                            |                   your computer, opt-in                    |
 
+`read_file`, `list_files` and `view_image` stay in the folder you started Kaja in (`view_image` asks before
+opening an image elsewhere). They ask before opening a hidden file or folder such as `.bashrc` or `.github/`.
+They never open credentials, wherever they are: `secrets.toml`, `.env` files (`.env.example` is fine),
+`~/.ssh`, `~/.gnupg`, `~/.aws`, `~/.azure`, `~/.kube/config`, `~/.docker/config.json`, the `gh` and `gcloud`
+logins, `.netrc`, `.npmrc`, `.pypirc`, `.pgpass`, `.git-credentials` and the password store.
+
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/config/models).
 

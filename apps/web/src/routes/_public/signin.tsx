@@ -79,7 +79,7 @@ function SignIn() {
     }
     document.body.classList.add("bg-drift")
     // A full load, so the root loader starts with the new session
-    window.location.assign(localizeHref(redirect ?? "/dashboard"))
+    window.location.assign(localizeHref(redirect ?? "/home"))
   }
 
   return (

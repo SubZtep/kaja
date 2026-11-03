@@ -27,6 +27,7 @@ import { Table } from "../../../../components/ui/table"
 import { ValueBox } from "../../../../components/ui/value-box"
 import { useApiFetch } from "../../../../lib/api-fetch"
 import { useAppForm } from "../../../../lib/form"
+import { succeeded } from "../../../../lib/mutation"
 import { seo } from "../../../../lib/seo"
 import { cellActions, tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
 import { m } from "../../../../paraglide/messages.js"
@@ -76,7 +77,7 @@ function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Pro
 
 type ProviderActionsMeta = Readonly<{
   onDelete: (id: string) => void
-  onSave: (id: string, payload: UpdateProviderRequest) => Promise<unknown>
+  onSave: (id: string, payload: UpdateProviderRequest) => Promise<boolean>
   isSaving: boolean
 }>
 
@@ -169,7 +170,7 @@ function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model
 type ModelActionsMeta = Readonly<{
   providers: Provider[]
   onDelete: (id: string) => void
-  onSave: (id: string, payload: UpdateModelRequest) => Promise<unknown>
+  onSave: (id: string, payload: UpdateModelRequest) => Promise<boolean>
   isSaving: boolean
 }>
 
@@ -303,12 +304,12 @@ function ModelsPage() {
     defaultValues: { name: "", baseUrl: "", apiKey: "" },
     validators: { onSubmit: providerFormSchema },
     onSubmit: async ({ value, formApi }) => {
-      await createProvider.mutateAsync({
+      const created = createProvider.mutateAsync({
         name: value.name,
         baseUrl: value.baseUrl,
         apiKey: value.apiKey || undefined
       })
-      formApi.reset()
+      if (await succeeded(created)) formApi.reset()
     }
   })
 
@@ -325,7 +326,7 @@ function ModelsPage() {
     },
     validators: { onSubmit: modelFormSchema },
     onSubmit: async ({ value, formApi }) => {
-      await createModel.mutateAsync({
+      const created = createModel.mutateAsync({
         providerId: value.providerId,
         model: value.model,
         tasks: value.tasks as ModelTask[],
@@ -333,7 +334,7 @@ function ModelsPage() {
         images: !value.textOnly,
         contextWindow: Number(value.contextWindow) || null
       })
-      formApi.reset()
+      if (await succeeded(created)) formApi.reset()
     }
   })
 
@@ -362,7 +363,7 @@ function ModelsPage() {
       meta: {
         actions: {
           onDelete: id => deleteProvider.mutate(id),
-          onSave: (id, payload) => updateProvider.mutateAsync({ id, payload }),
+          onSave: (id, payload) => succeeded(updateProvider.mutateAsync({ id, payload })),
           isSaving: updateProvider.isPending
         } satisfies ProviderActionsMeta
       },
@@ -420,7 +421,7 @@ function ModelsPage() {
         actions: {
           providers,
           onDelete: id => deleteModel.mutate(id),
-          onSave: (id, payload) => updateModel.mutateAsync({ id, payload }),
+          onSave: (id, payload) => succeeded(updateModel.mutateAsync({ id, payload })),
           isSaving: updateModel.isPending
         } satisfies ModelActionsMeta
       },

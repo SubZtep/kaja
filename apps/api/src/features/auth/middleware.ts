@@ -34,8 +34,8 @@ function toSessionUser(
 }
 
 /**
- * Sets `user` from the request's session: its bearer token when it sends one (the TUI, the web's API calls), else its
- * session cookie. A widget token (`kwt_`) is not a user session, so it is left for the widget routes. Without either
+ * Sets `user` from the request's session: its bearer token when it sends one (the TUI), else its session cookie (the
+ * web). A widget token (`kwt_`) is not a user session, so it is left for the widget routes. Without either
  * there's nothing to look up, so public traffic (health checks, the sandbox socket) costs no database query.
  */
 export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {

@@ -62,14 +62,17 @@ Run `kaja doctor` first. For the rest:
 
 ## Logs
 
-The terminal UI never logs to the screen. For a log file, set both variables:
+The terminal UI never logs to the screen. Warnings and errors go to a log file, `kaja.log` in your state
+folder (`~/.local/state/kaja/` on Linux, `~/Library/Logs/kaja/` on macOS); `kaja config paths` shows where.
+It starts over past 1 MB, keeping the previous one as `kaja.log.1`. For more detail, or another file:
 
 ```sh
 KAJA_LOG_LEVEL=debug KAJA_LOG_FILE=~/kaja.log kaja
 ```
 
-Levels are `trace`, `debug`, `info`, `warn`, `error` and `fatal`. The file is JSON lines and includes the
-agent's warnings: skipped abilities, missing keys, failed MCP connections.
+Levels are `trace`, `debug`, `info`, `warn`, `error` and `fatal`; `KAJA_LOG_LEVEL=off` turns the log off.
+The file is JSON lines and includes the agent's warnings: skipped abilities, missing keys, failed MCP
+connections. It never holds your messages or keys, so it's safe to attach to an issue.
 
 ## Still stuck?
 

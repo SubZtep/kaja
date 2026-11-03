@@ -6,9 +6,9 @@ declare module "bun" {
     KAJA_API_URL?: string
     /** Appended to the config, data, cache and temp folder names (kaja-<profile>), for separate setups side by side */
     KAJA_PROFILE?: string
-    /** Minimum level written to KAJA_LOG_FILE (trace, debug, info, warn, error, fatal); unset means no log */
+    /** Minimum level written to the log (trace, debug, info, warn, error, fatal, or off); unset means warn */
     KAJA_LOG_LEVEL?: string
-    /** Append JSON-lines logs here (needs KAJA_LOG_LEVEL); the TUI never logs to the terminal */
+    /** Append JSON-lines logs here instead of kaja.log in the state folder; the TUI never logs to the terminal */
     KAJA_LOG_FILE?: string
   }
 }

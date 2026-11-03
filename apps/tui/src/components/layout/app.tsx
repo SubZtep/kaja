@@ -480,12 +480,14 @@ function CloudApp({
   initialPreferences,
   apiUrl,
   token,
-  computer
+  computer,
+  onSignedOut
 }: Readonly<{
   initialPreferences?: KajaPreferences
   apiUrl: string
   token: string
   computer?: Computer | Promise<Computer | undefined>
+  onSignedOut?: () => void
 }>) {
   const {
     model,
@@ -506,7 +508,8 @@ function CloudApp({
     baseUrl: apiUrl,
     getToken: () => Promise.resolve(token),
     yolo: initialPreferences?.yolo,
-    computer
+    computer,
+    onSignedOut
   })
 
   const lastEvent = events.at(-1)
@@ -568,6 +571,8 @@ type CloudAppProps = Readonly<{
   token: string
   /** This computer, when cloud turns may use it (see lib/cloud/computer.ts); the first turn waits for it to open. */
   computer?: Computer | Promise<Computer | undefined>
+  /** The API refused the token mid-chat (expired or revoked): forget it, so the next start signs in again. */
+  onSignedOut?: () => void
 }>
 
 /**
