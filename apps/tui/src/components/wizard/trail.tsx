@@ -4,7 +4,7 @@ import { capitalized } from "@kaja/shared/text"
 import { Box, Text } from "ink"
 import { createContext, useContext } from "react"
 import { t } from "../../lib/i18n"
-import { KeyHint, LABEL_WIDTH, padLabel, RailLine, textWidth } from "../elem/rail"
+import { KeyHint, LABEL_WIDTH, padLabel, RailLine, useTextWidth } from "../elem/rail"
 import { Monster, monsterWidth } from "../layout/monster"
 import { useKajaTheme } from "../theme"
 import {
@@ -229,6 +229,7 @@ export function Progress({
   of
 }: Readonly<{ blocks: Block[]; current?: Block; at: number; of: number }>) {
   const { success, accent } = useKajaTheme()
+  const room = useTextWidth() + 1
   const reached = current ? blocks.indexOf(current) : blocks.length
   const count = t("wizard.progressCount", { at, of })
   const crumbs = blocks
@@ -237,7 +238,6 @@ export function Progress({
         (index < reached ? "✓ " : "") + t(BLOCK_LABEL_KEY[block]) + (index === reached ? ` ${count}` : "")
     )
     .join(" › ")
-  const room = textWidth() + 1
   // The monster smiles once every block is done
   const showMonster = monsterWidth(true) + 3 + Bun.stringWidth(crumbs) <= room
   return (
@@ -313,11 +313,12 @@ export const OPEN_BLOCK_LINES = 4
 /** A finished block folded into one line: "✓", its name to the value column, then its short answers, dim. */
 export function FoldedBlock({ block, parts }: Readonly<{ block: Block; parts: string[] }>) {
   const { success } = useKajaTheme()
+  const width = useTextWidth()
   return (
     <RailLine marker={<Text {...success()}>✓</Text>}>
       <Text wrap="truncate-end">
         {padLabel(t(BLOCK_LABEL_KEY[block]))}
-        <Text dimColor>{fitParts(parts, textWidth() - LABEL_WIDTH)}</Text>
+        <Text dimColor>{fitParts(parts, width - LABEL_WIDTH)}</Text>
       </Text>
     </RailLine>
   )

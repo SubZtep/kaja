@@ -10,7 +10,7 @@ import { candidatesByTask, CATALOG, type CatalogProvider, catalogProvider, TASK_
 import { sameAddress } from "../../lib/models/detect"
 import type { ThemeName } from "../../lib/terminal-background"
 import { CheckMenu } from "../elem/check-menu"
-import { Question, RailLine, RecentAnswer } from "../elem/rail"
+import { Question, RailLine, RecentAnswer, useTerminalSize } from "../elem/rail"
 import { SelectMenu } from "../elem/select-menu"
 import { emote } from "../layout/monster"
 import { InputPrompt, type LiveCheck, Problem } from "../secret-prompt"
@@ -106,6 +106,7 @@ export function ConfigWizard({
   onCancel: () => void
 }>) {
   const initial: WizardResult = { ...prefill, ...(mode ? { mode } : {}) }
+  const terminal = useTerminalSize()
   // Language is always first and never skipped: every question after it is only answerable by
   // someone who can read it.
   const [step, setStep] = useState<Step>("language")
@@ -757,7 +758,7 @@ export function ConfigWizard({
     Math.min(recent.length, OPEN_BLOCK_LINES) +
     (hidden > 0 ? 1 : 0) +
     10
-  listRows = Math.min(10, Math.max(5, (process.stdout.rows || 24) - around))
+  listRows = Math.min(10, Math.max(5, terminal.rows - around))
 
   return (
     <ThemeProvider theme={themeFor(preview)}>

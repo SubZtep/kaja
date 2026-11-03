@@ -2,7 +2,7 @@ import { Box, Text } from "ink"
 import { type ReactNode, useEffect, useEffectEvent, useState } from "react"
 import { useKey } from "../hooks/use-key"
 import { t } from "../lib/i18n"
-import { KeyHint, Question, Spinner, textWidth } from "./elem/rail"
+import { KeyHint, Question, Spinner, useTextWidth } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { useKajaTheme } from "./theme"
 
@@ -106,6 +106,7 @@ export function InputPrompt({
   /** Tests an answer over the network, e.g. a key against its provider; aborted when the answer changes. */
   check?: (value: string, signal: AbortSignal) => Promise<LiveCheck | undefined>
 }>) {
+  const width = useTextWidth()
   const [problem, setProblem] = useState<string>()
   const [typed, setTyped] = useState(secret ? "" : (defaultValue ?? ""))
   // Where the cursor is in `typed`; a secret's stays at the end, since its characters can't be seen
@@ -182,7 +183,7 @@ export function InputPrompt({
   return (
     <Question title={title} hint={below}>
       <Box flexDirection="column">
-        <Box width={textWidth()} justifyContent="space-between" gap={2}>
+        <Box width={width} justifyContent="space-between" gap={2}>
           <Text wrap="truncate-start">
             <Text {...accent()}>›</Text> {shown.slice(0, at)}
             <Text inverse>{shown[at] ?? " "}</Text>
