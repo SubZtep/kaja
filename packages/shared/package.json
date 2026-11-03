@@ -1,6 +1,6 @@
 {
   "name": "@kaja/shared",
-  "version": "0.5.22",
+  "version": "0.5.23",
   "private": true,
   "description": "Shared types and utilities",
   "sideEffects": false,
