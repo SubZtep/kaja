@@ -18,7 +18,7 @@
     "@scalar/hono-api-reference": "^0.12.17",
     "@sentry/bun": "^11.10.0",
     "@sentry/hono": "^11.10.0",
-    "better-auth": "^1.7.15",
+    "better-auth": "^1.7.17",
     "grammy": "^1.46.0",
     "hono": "^4.13.16",
     "hono-rate-limiter": "^0.5.4",
