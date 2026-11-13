@@ -101,6 +101,18 @@ test("with warnUnknown, a persona naming a missing ability or tool gets a warnin
   }
 })
 
+test("warnUnknown leaves alone an ability the host says exists elsewhere", async () => {
+  const warnings: string[] = []
+  setWarnHandler(message => warnings.push(message))
+  try {
+    const personas = [{ id: "a", label: "A", abilities: ["reading", "nope"] }]
+    await loadAbilities(storeWith([]), { personas, warnUnknown: true, knownAbilities: ["reading"] })
+    expect(warnings).toEqual(["Persona lists an ability that isn't there"])
+  } finally {
+    setWarnHandler(() => {})
+  }
+})
+
 test("with an MCP sandbox, only the stdio abilities `sandboxed` names go there; the rest start here", async () => {
   const time = parseMcp({
     name: "time",

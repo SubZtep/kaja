@@ -214,7 +214,7 @@ export {
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"
-export { fetchUrlTool } from "./tools/builtin/fetch-url"
+export { type Article, fetchUrlTool, readArticle } from "./tools/builtin/fetch-url"
 export { generateImageTool } from "./tools/builtin/generate-image"
 export { listFilesTool } from "./tools/builtin/list-files"
 export { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } from "./tools/builtin/memory"

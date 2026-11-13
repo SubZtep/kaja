@@ -3,7 +3,7 @@ import { parseHTML } from "linkedom"
 import TurndownService from "turndown"
 import { z } from "zod"
 import { tool, ToolError, type ToolResult } from "../../agent/agent"
-import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
+import { type FetchLike, fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /**
@@ -62,12 +62,10 @@ export const fetchUrlTool = tool({
   execute: async (args): Promise<string | ToolResult> => {
     let res: Response
     try {
-      res = await fetchPublicHttp(args.url, { maxBytes: MAX_IMAGE_SOURCE_BYTES, send: getToolDeps().fetchSend })
+      res = await openUrl(args.url, MAX_IMAGE_SOURCE_BYTES, getToolDeps().fetchSend)
     } catch (error) {
-      if (error instanceof UnsafeUrlError) throw new ToolError(NAME, error.message)
       throw new ToolError(NAME, error instanceof Error ? error.message : String(error))
     }
-    if (!res.ok) throw new ToolError(NAME, `Fetch failed: ${res.status} ${args.url}`)
     const contentType = res.headers.get("content-type") ?? ""
     if (contentType.startsWith("image/")) {
       const data = new Uint8Array(await res.arrayBuffer())
@@ -84,6 +82,33 @@ export const fetchUrlTool = tool({
   }
 })
 
+// The response for a public URL, or an error saying why there is none (an unsafe address, a failed status).
+async function openUrl(url: string, maxBytes: number, send: FetchLike | undefined): Promise<Response> {
+  const res = await fetchPublicHttp(url, { maxBytes, send })
+  if (!res.ok) throw new Error(`Fetch failed: ${res.status} ${url}`)
+  return res
+}
+
+/** A page read for keeping: its text as Markdown (no title heading), and what the page says about itself. */
+export type Article = { url: string; title?: string; markdown: string; siteName?: string; byline?: string }
+
+/**
+ * Reads a URL's main article (the whole page when it has none) the way `fetch_url` does, for a host that stores it.
+ * Throws when there is nothing to read: an unsafe address, a failed status, an image or another binary.
+ */
+export async function readArticle(url: string, opts: { send?: FetchLike } = {}): Promise<Article> {
+  const res = await openUrl(url, MAX_PAGE_BYTES, opts.send)
+  const contentType = res.headers.get("content-type") ?? ""
+  if (contentType.startsWith("image/") || !isTextual(contentType)) {
+    await res.body?.cancel()
+    throw new Error(`${url} is not a text page (${contentType.split(";")[0]}), so there is nothing to read.`)
+  }
+  const body = await res.text()
+  if (!contentType.includes("html")) return { url, markdown: body.trim() }
+  const page = pageParts(body, url)
+  return { url, title: page.title, markdown: tidy(page.markdown), siteName: page.siteName, byline: page.byline }
+}
+
 // A missing content type is read as text; anything else must name a text format
 function isTextual(contentType: string): boolean {
   if (!contentType) return true
@@ -92,21 +117,34 @@ function isTextual(contentType: string): boolean {
 
 /** A page as Markdown: Readability's article, or the whole body when there's no real article (or it's asked for). */
 export function pageMarkdown(html: string, url: string, opts: Omit<FetchArgs, "url"> = {}): string {
+  const page = pageParts(html, url, opts)
+  return tidy(withTitle(page.title, page.markdown))
+}
+
+type PageParts = { title?: string; markdown: string; siteName?: string; byline?: string }
+
+// The page's title and its text as Markdown, apart: the article's, else the whole body's.
+function pageParts(html: string, url: string, opts: Omit<FetchArgs, "url"> = {}): PageParts {
   const base = baseUrl(html, url)
   if (!opts.whole_page) {
     const { document } = parseHTML(html)
     prepareDocument(document, base)
     const article = new Readability(document).parse()
     if (article?.content && (article.textContent?.trim().length ?? 0) >= MIN_ARTICLE_CHARS) {
-      return tidy(withTitle(article.title, toMarkdown(article.content, opts)))
+      return {
+        title: article.title?.trim() || undefined,
+        markdown: toMarkdown(article.content, opts),
+        siteName: article.siteName?.trim() || undefined,
+        byline: article.byline?.trim() || undefined
+      }
     }
   }
   // Readability changes the document it reads, so the body comes from a fresh parse
   const { document } = parseHTML(html)
   prepareDocument(document, base)
   for (const node of document.querySelectorAll(CHROME_SELECTOR)) node.remove()
-  const title = document.querySelector("title")?.textContent
-  return tidy(withTitle(title, toMarkdown(document.body?.innerHTML ?? "", opts)))
+  const title = document.querySelector("title")?.textContent?.trim() || undefined
+  return { title, markdown: toMarkdown(document.body?.innerHTML ?? "", opts) }
 }
 
 function withTitle(title: string | null | undefined, markdown: string): string {

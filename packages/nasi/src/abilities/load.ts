@@ -71,6 +71,8 @@ export type LoadAbilitiesOptions = {
    * every ability the user has (the CLI), off where parts are left out on purpose (the cloud).
    */
   warnUnknown?: boolean
+  /** Ability names that exist without being in the store (a host's modules), so `warnUnknown` leaves them alone. */
+  knownAbilities?: Iterable<string>
 }
 
 /**
@@ -87,7 +89,11 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   // Importing a tool.ts runs it, so only the ones a persona lists load (every one without personas).
   const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(listed), "code tools") : []
   if (opts.warnUnknown && opts.personas)
-    warnUnknownEntries(opts.personas, knownTools(skills, abilities, mcpAbilities, codeTools))
+    warnUnknownEntries(
+      opts.personas,
+      knownTools(skills, abilities, mcpAbilities, codeTools),
+      new Set(opts.knownAbilities)
+    )
 
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though abilities switch it on.
   const groups: ToolGroup[] =
@@ -255,10 +261,14 @@ function warnRootsIgnored(personas: Persona[], ability: string): void {
 /** Warns once per persona entry that names an ability the store doesn't have, or a tool its ability doesn't offer. */
 const OPT_IN_NAMES = new Set(Object.values(OPT_IN_BUILTINS))
 
-function warnUnknownEntries(personas: Persona[], known: Map<string, Set<string> | undefined>): void {
+function warnUnknownEntries(
+  personas: Persona[],
+  known: Map<string, Set<string> | undefined>,
+  elsewhere: Set<string>
+): void {
   for (const persona of personas) {
     for (const entry of personaAbilities(persona).values()) {
-      if (OPT_IN_NAMES.has(entry.name)) continue
+      if (OPT_IN_NAMES.has(entry.name) || elsewhere.has(entry.name)) continue
       if (!known.has(entry.name)) {
         warn("Persona lists an ability that isn't there", { persona: persona.id, ability: entry.name })
         continue

@@ -22,7 +22,7 @@ import type { ImageSource } from "./store/images"
 import type { NasiStore } from "./store/types"
 import { viewLinkedImageTool } from "./tools/builtin/view-image"
 import type { NasiToolDeps } from "./tools/deps"
-import { createTools } from "./tools/registry"
+import { createTools, type ToolGroup } from "./tools/registry"
 import { warn } from "./warn"
 
 export type NasiOpenOptions = {
@@ -51,6 +51,8 @@ export type NasiOpenOptions = {
   deps?: Omit<NasiToolDeps, "chat">
   /** Where this caller's enabled abilities come from (the cloud: Postgres); their tools join through `loadAbilities`. */
   abilities?: AbilityStore
+  /** Tool groups the host brings itself (its modules' tools), merged under the same name rules as every other tool. */
+  extraTools?: ToolGroup[]
   /**
    * Sends the turn's tool requests (the cloud: through a sandbox): `egress()` for `fetch_url`, `egress(name)` for an
    * ability's HTTP tool or remote MCP server. Unset connects from this host; a cloud turn then has no `fetch_url`.
@@ -282,6 +284,7 @@ export class Nasi {
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
       extraTools: [
         ...(abilities?.groups ?? []),
+        ...(opts.extraTools ?? []),
         ...(client ? clientToolGroups(client) : []),
         // The conversation's own images by link; a computer that declares view_image takes its files too.
         ...(client?.tools.some(tool => tool.name === "view_image")

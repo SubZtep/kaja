@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { fetchUrlTool, largestInSrcset, pageMarkdown } from "../../src/tools/builtin/fetch-url"
+import { fetchUrlTool, largestInSrcset, pageMarkdown, readArticle } from "../../src/tools/builtin/fetch-url"
 import { getToolDeps, setToolDeps } from "../../src/tools/deps"
 
 // A public-looking URL through a sender pointed at a local Bun.serve, as in ssrf-size.test.ts
@@ -110,4 +110,24 @@ test("whole_page reads the whole body even when there's an article", () => {
 test("a srcset's largest candidate wins, by width or density", () => {
   expect(largestInSrcset("a.jpg 400w, b.jpg 1600w, c.jpg 800w")).toBe("b.jpg")
   expect(largestInSrcset("a.jpg, b.jpg 2x")).toBe("b.jpg")
+})
+
+// readArticle through a sender that answers with `response`, as a host that stores the page calls it
+function articleFrom(response: Response) {
+  return readArticle("https://example.com/city", { send: async () => response })
+}
+
+test("readArticle gives the article's parts apart: title, site, and the text without a title heading", async () => {
+  const html = ARTICLE.replace("<title>", '<meta property="og:site_name" content="Example"><title>')
+  const article = await articleFrom(new Response(html, { headers: { "content-type": "text/html" } }))
+  expect(article).toMatchObject({ url: "https://example.com/city", title: "Budapest", siteName: "Example" })
+  expect(article.markdown).toStartWith("Budapest is the capital")
+  expect(article.markdown).not.toContain("](")
+})
+
+test("readArticle takes plain text as it is, and refuses a failed status or a binary", async () => {
+  expect(await articleFrom(new Response("hello\n"))).toEqual({ url: "https://example.com/city", markdown: "hello" })
+  await expect(articleFrom(new Response("gone", { status: 404 }))).rejects.toThrow("Fetch failed: 404")
+  const image = new Response(new Uint8Array([1]), { headers: { "content-type": "image/png" } })
+  await expect(articleFrom(image)).rejects.toThrow("is not a text page")
 })

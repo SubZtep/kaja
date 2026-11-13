@@ -12,7 +12,7 @@ Hosts inject the store, model client, prompt context and `includeLocalTools` (fi
 - `run_command` skips approval only via `isSafeCommand` (`agent/command-risk.ts`); the model's `mutates` flag is only a hint. Children register with `trackProcess`
 - Built-in tools declare a zod `schema` in `tool()`; tools with an outside JSON Schema (MCP, HTTP, code tools) pass `parameters` only
 - A tool that throws never aborts the turn: its call gets `Error: <message>`; the run stops after `MAX_FAILING_TOOL_ROUNDS` all-failing rounds
-- Every tool goes through `mergeTools` (`tools/registry.ts`): official names are reserved, other clashes keep the first. Host tools enter via `createTools`' `extraTools`
+- Every tool goes through `mergeTools` (`tools/registry.ts`): official names are reserved, other clashes keep the first. Host tools enter via `createTools`' `extraTools` (`NasiOpenOptions.extraTools` over `Nasi`: the API's modules)
 - Telemetry: `run()` records rounds and calls on `session.telemetry`; a host answering a paused call itself calls `recordPausedCall` first
 - `ask_user` `options` (2-6) are optional shortcuts: the question must read fine without them. `pendingQuestionOptions(session)` lets a host check a later tap against the session alone
 
