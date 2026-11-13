@@ -169,6 +169,10 @@ describe("image maintenance", () => {
   }, 20_000)
 
   test("orphans of each kind are found, and removed only once they're old enough", async () => {
+    // Earlier runs' leftovers first (a rebuilt test database forgets their objects' rows): the scan lists only some examples
+    const now = new ImageService(sql, { orphanGraceMs: 0 })
+    for (const kind of ["objects", "rows", "unsaved"] as const) await now.removeOrphans(kind)
+
     // An object with no row
     const strayKey = `images/${owner.userId}/${Bun.randomUUIDv7()}/${faker.string.hexadecimal({ length: 16, prefix: "" }).toLowerCase()}`
     await objects.put(strayKey, noisyPng(2, 2), "image/png")
@@ -197,7 +201,6 @@ describe("image maintenance", () => {
     expect(kept.status).toBe(200)
     expect(await objects.exists(strayKey)).toBe(true)
 
-    const now = new ImageService(sql, { orphanGraceMs: 0 })
     expect(await now.removeOrphans("objects")).toBeGreaterThanOrEqual(1)
     expect(await objects.exists(strayKey)).toBe(false)
     expect(await now.removeOrphans("rows")).toBeGreaterThanOrEqual(1)
