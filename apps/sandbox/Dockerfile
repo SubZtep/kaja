@@ -17,7 +17,7 @@ COPY apps/sandbox ./apps/sandbox
 RUN bun run --filter @kaja/sandbox build
 
 # The Chrome for Testing headless shell chrome-devtools-mcp's Puppeteer is tested with (amd64 only: no Linux arm64 builds; 149+ for overrides.json's URL allowlist).
-FROM node:26.12.1-trixie-slim AS chrome
+FROM node:26.13.0-trixie-slim AS chrome
 ARG CHROME_HEADLESS_SHELL_VERSION=156.0.8078.47
 ARG PUPPETEER_BROWSERS_VERSION=3.2.6
 RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
   && mkdir -p /opt/lib && cp -a gbm/usr/lib/x86_64-linux-gnu/libgbm.so.1* /opt/lib/
 
 # One runtime for every stdio MCP server: node/npx for npm packages, uv/uvx with python3 for PyPI ones, bun/bunx for commands.
-FROM node:26.12.1-trixie-slim AS runner
+FROM node:26.13.0-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
