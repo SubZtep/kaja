@@ -142,9 +142,10 @@ describe("authentication flow", () => {
       expect((await requestChange(approve)).status).toBe(200)
 
       // The emailed code is stored hashed, so a fresh one replaces it
-      const identifier = `change-email-otp-${current}-${next}`
-      await sql`DELETE FROM verification WHERE identifier = ${identifier}`
-      const confirm = await emailCode(`${current}-${next}`, "change-email")
+      const [{ id }] = await sql`SELECT id FROM "user" WHERE email = ${current}`
+      const key = `${id}:${next}`
+      await sql`DELETE FROM verification WHERE identifier = ${`change-email-otp-${key}`}`
+      const confirm = await emailCode(key, "change-email")
       expect((await post("/auth/email-otp/change-email", { newEmail: next, otp: confirm }, token)).status).toBe(200)
 
       const rows = await sql`SELECT email, email_verified FROM "user" WHERE email = ${next}`
