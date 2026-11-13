@@ -79,6 +79,14 @@ function skillAgent(opts: { persona?: Persona; withRunCommand?: boolean; skills?
   })
 }
 
+test("a host's section shows only for a persona that has its tool", async () => {
+  const sections = [{ title: "Reading", body: "Links go to the inbox.", tool: "run_command" }]
+  const agent = (tools: Agent["tools"]) =>
+    new Agent({ model: "m", tools, promptContext: { environment: "test", sections } })
+  expect(await buildSystemPrompt(agent([runCommandTool]))).toContain("## Reading\nLinks go to the inbox.")
+  expect((await buildSystemPrompt(agent([]))) ?? "").not.toContain("## Reading")
+})
+
 test("## Skills lists enabled skills when load_skill is present", async () => {
   const prompt = (await buildSystemPrompt(skillAgent({}))) ?? ""
   expect(prompt).toContain("## Skills")

@@ -8,6 +8,7 @@ Hosts inject the store, model client, prompt context and `includeLocalTools` (fi
 
 - Never log prompts, memory content or API keys. Recoverable problems go through `warn` (hosts route it with `setWarnHandler`)
 - `createSqlStore` runs the same SQL on both engines: stay in their common dialect (no `::casts`, `NOW()`, `ANY()`, `INSERT OR IGNORE`, `PRAGMA`), values through `sql-codec.ts`. Scope every statement by `userId`; every write goes through `sql.begin` (on SQLite a plain query joins another save's open transaction). Columns must match `apps/api/migrations/2026-09-07-nasi.sql`
+- A host's own prompt sections (`PromptContext.sections`) show only while the persona has the section's tool
 - The system prompt is built when a conversation starts; `refreshAbilitiesInPrompt` rebuilds it only when its skills/personas sections change, keeping prompt caching
 - `run_command` skips approval only via `isSafeCommand` (`agent/command-risk.ts`); the model's `mutates` flag is only a hint. Children register with `trackProcess`
 - Built-in tools declare a zod `schema` in `tool()`; tools with an outside JSON Schema (MCP, HTTP, code tools) pass `parameters` only

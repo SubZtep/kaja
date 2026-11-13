@@ -10,6 +10,9 @@ import { type Tool, tool } from "./tools"
 export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResult, tool } from "./tools"
 
 /** Host-injected bits for system prompt assembly — never read from settings.toml. */
+/** A `## <title>` section of the system prompt, written by the host for the persona that has `tool`. */
+export type PromptSection = { title: string; body: string; tool: string }
+
 export type PromptContext = {
   /** Override the default OS/home line. Callers that are not a user machine should describe their environment. */
   environment?: string
@@ -24,6 +27,8 @@ export type PromptContext = {
    * guidance.
    */
   channelInstruction?: string
+  /** Sections the host adds for its own tools (the API's modules): each shows only while the persona has `tool`. */
+  sections?: PromptSection[]
   loadStickyNotes?: () => Promise<[string, { content: string }][]>
   loadDataset?: (topic: string) => Promise<{ label: string } | undefined>
   /** Every dataset by topic; profile ones feed the "About the user" section. Defaults to the host's registered loaders. */

@@ -60,13 +60,18 @@ const LANGUAGE_NAME: Record<string, string> = {
   "pt-BR": "Brazilian Portuguese"
 }
 
+/** A UI language code's name as a model is told it ("Hungarian" for `hu-HU`); undefined for an unknown code. */
+export function languageName(language: string): string | undefined {
+  return LANGUAGE_NAME[language]
+}
+
 /**
  * Builds a PromptContext.replyLanguageInstruction for a UI language code — "en-GB" is omitted (it's already the model's
  * default), any other known code tells the model to reply in that language.
  */
 export function replyLanguageInstructionFor(language: string): string | undefined {
   if (language === "en-GB") return undefined
-  const name = LANGUAGE_NAME[language]
+  const name = languageName(language)
   return name
     ? `Reply in ${name}, regardless of what language the user writes in, unless they ask you to switch.`
     : undefined
@@ -298,6 +303,9 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
       personasBlock ? `## Personas\n${personasBlock}` : undefined,
       skillsBlock ? `## Skills\n${skillsBlock}` : undefined,
       ...stickySkills,
+      ...(ctx.sections ?? [])
+        .filter(section => toolNames.has(section.tool))
+        .map(section => `## ${section.title}\n${section.body}`),
       datasetBlock ? `## Dataset collection\n${datasetBlock}` : undefined,
       profileBlock ? `## About the user\n${profileBlock}` : undefined,
       stickyBlock,

@@ -73,6 +73,7 @@ export {
   type FinalizedAgentEvent,
   type ModelCallStat,
   type PromptContext,
+  type PromptSection,
   REMEMBER_NOTE_TOOL,
   RUN_COMMAND_TOOL,
   runCommandTool,
@@ -105,6 +106,7 @@ export {
   applyPersonaToMessages,
   ASK_USER_OPTIONS_INSTRUCTION,
   buildSystemPrompt,
+  languageName,
   replyLanguageInstructionFor,
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "./agent/system-prompt"
@@ -231,4 +233,4 @@ export {
   type SkippedTool,
   type ToolGroup
 } from "./tools/registry"
-export { setWarnHandler, type WarnHandler } from "./warn"
+export { setWarnHandler, type WarnHandler, warn } from "./warn"
