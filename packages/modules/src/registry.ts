@@ -1,4 +1,4 @@
-import type { ToolGroup } from "@kaja/nasi"
+import type { PromptSection, ToolGroup } from "@kaja/nasi"
 import type { Module, ModuleContext } from "./contract"
 import { reading } from "./reading/module"
 
@@ -11,4 +11,9 @@ export const modules: readonly Module[] = [reading]
  */
 export function moduleToolGroups(ctx: ModuleContext, list: readonly Module[] = modules): ToolGroup[] {
   return list.map(module => ({ origin: "official", source: `ability:${module.id}`, tools: module.tools(ctx) }))
+}
+
+/** The modules' system prompt sections; nasi shows each only to a persona that has the section's tool. */
+export function modulePromptSections(list: readonly Module[] = modules): PromptSection[] {
+  return list.flatMap(module => module.prompt ?? [])
 }

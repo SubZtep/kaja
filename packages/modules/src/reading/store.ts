@@ -2,9 +2,11 @@ import { iso, pgText } from "@kaja/nasi"
 import type { SQL } from "bun"
 
 export type ArticleStatus = "inbox" | "read" | "archived"
+export type TopicState = "followed" | "neutral" | "muted"
 
 /** A saved link without its text, as lists show it. */
 export type ArticleSummary = {
+  id: string
   number: number
   url: string
   title?: string
@@ -16,6 +18,12 @@ export type ArticleSummary = {
   note?: string
   status: ArticleStatus
   savedAt: string
+  /** One line on what it says, written when it was tagged. */
+  gist?: string
+  /** Whether it ever got its topics (from the model or by hand). */
+  tagged: boolean
+  /** Its topics' names, in alphabetical order. */
+  topics: string[]
 }
 
 export type Article = ArticleSummary & { content?: string }
@@ -25,6 +33,8 @@ export type NewArticle = {
   url: string
   urlKey: string
   note?: string
+  /** `read` for a link the user read at once: kept, but never in the inbox. */
+  status: "inbox" | "read"
   page: PageWrite
 }
 
@@ -37,7 +47,20 @@ export type PageWrite = {
   fetchError?: string
 }
 
+/** One of the user's subjects, with how many of their articles carry it. */
+export type Topic = {
+  id: string
+  name: string
+  state: TopicState
+  /** Kaja already offered to follow it. */
+  offered: boolean
+  articles: number
+  /** Of those, how many are still in the inbox. */
+  inbox: number
+}
+
 type SummaryRow = {
+  id: string
   number: number
   url: string
   title: string | null
@@ -48,15 +71,24 @@ type SummaryRow = {
   note: string | null
   status: ArticleStatus
   saved_at: Date | string
+  gist: string | null
+  tagged_at: Date | string | null
 }
 
 /** Two saves at once can pick the same number; the loser tries again with the next. */
 const NUMBER_ATTEMPTS = 3
+const STATE_ORDER: TopicState[] = ["followed", "neutral", "muted"]
 
 const now = () => new Date().toISOString()
 
-function summaryOf(row: SummaryRow): ArticleSummary {
+/** What makes two topic names the same topic: case, width and spacing aside. */
+export function topicKey(name: string): string {
+  return name.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()
+}
+
+function summaryOf(row: SummaryRow, topics: string[]): ArticleSummary {
   return {
+    id: row.id,
     number: row.number,
     url: row.url,
     title: row.title ?? undefined,
@@ -66,39 +98,98 @@ function summaryOf(row: SummaryRow): ArticleSummary {
     fetchError: row.fetch_error ?? undefined,
     note: row.note ?? undefined,
     status: row.status,
-    savedAt: iso(row.saved_at)
+    savedAt: iso(row.saved_at),
+    gist: row.gist ?? undefined,
+    tagged: row.tagged_at !== null,
+    topics
   }
 }
 
 export type ReadingStore = ReturnType<typeof createReadingStore>
 
 /**
- * One account's reading inbox. Rows belong to the account, not to a channel's owner, so the web, Telegram and the
- * terminal share them. Writes go through `sql.begin`, as nasi's store does (see its SQLite note).
+ * One account's reading inbox and topics. Rows belong to the account, not to a channel's owner, so the web, Telegram
+ * and the terminal share them. Writes go through `sql.begin`, as nasi's store does (see its SQLite note).
  */
 export function createReadingStore(sql: SQL, userId: string) {
+  // Topic names by article, for the articles numbered `from` to `to`.
+  async function topicNames(db: SQL, from: number, to: number): Promise<Map<string, string[]>> {
+    const rows = await db<{ article_id: string; name: string }[]>`
+      SELECT l.article_id, t.name FROM reading_article_topic l
+      JOIN reading_topic t ON t.id = l.topic_id
+      JOIN reading_article a ON a.id = l.article_id
+      WHERE a.user_id = ${userId} AND a.number >= ${from} AND a.number <= ${to}
+      ORDER BY t.name`
+    const names = new Map<string, string[]>()
+    for (const row of rows) names.set(row.article_id, [...(names.get(row.article_id) ?? []), row.name])
+    return names
+  }
+
+  async function summaries(db: SQL, rows: SummaryRow[]): Promise<ArticleSummary[]> {
+    if (rows.length === 0) return []
+    const numbers = rows.map(row => row.number)
+    const names = await topicNames(db, Math.min(...numbers), Math.max(...numbers))
+    return rows.map(row => summaryOf(row, names.get(row.id) ?? []))
+  }
+
   async function byKey(db: SQL, key: string): Promise<ArticleSummary | undefined> {
-    const [row] = await db<SummaryRow[]>`
-      SELECT number, url, title, site, author, word_count, fetch_error, note, status, saved_at
+    const rows = await db<SummaryRow[]>`
+      SELECT id, number, url, title, site, author, word_count, fetch_error, note, status, saved_at, gist, tagged_at
       FROM reading_article WHERE user_id = ${userId} AND url_key = ${key}`
-    return row && summaryOf(row)
+    return (await summaries(db, rows))[0]
   }
 
   async function insert(article: NewArticle): Promise<ArticleSummary> {
     const { page } = article
+    const at = now()
     return sql.begin(async tx => {
       // The next number is read and written in one statement; a link saved meanwhile keeps its own row.
       await tx`
         INSERT INTO reading_article (id, user_id, number, url, url_key, title, site, author, content, word_count,
-                                     fetch_error, source, note, status, saved_at)
+                                     fetch_error, source, note, status, saved_at, read_at)
         SELECT ${Bun.randomUUIDv7()}, ${userId}, COALESCE(MAX(number), 0) + 1, ${pgText(article.url)},
                ${pgText(article.urlKey)}, ${pgText(page.title)}, ${pgText(page.site)}, ${pgText(page.author)},
                ${pgText(page.content)}, ${page.wordCount}, ${pgText(page.fetchError)}, 'saved',
-               ${pgText(article.note)}, 'inbox', ${now()}
+               ${pgText(article.note)}, ${article.status}, ${at}, ${article.status === "read" ? at : null}
         FROM reading_article WHERE user_id = ${userId}
         ON CONFLICT (user_id, url_key) DO NOTHING`
       return (await byKey(tx, article.urlKey))!
     })
+  }
+
+  async function topics(db: SQL = sql): Promise<Topic[]> {
+    const rows = await db<
+      {
+        id: string
+        name: string
+        state: TopicState
+        offered_at: Date | string | null
+        articles: number | string
+        inbox: number | string
+      }[]
+    >`
+      SELECT t.id, t.name, t.state, t.offered_at, COUNT(a.id) AS articles,
+             COALESCE(SUM(CASE WHEN a.status = 'inbox' THEN 1 ELSE 0 END), 0) AS inbox
+      FROM reading_topic t
+      LEFT JOIN reading_article_topic l ON l.topic_id = t.id
+      LEFT JOIN reading_article a ON a.id = l.article_id
+      WHERE t.user_id = ${userId}
+      GROUP BY t.id, t.name, t.state, t.offered_at`
+    return rows
+      .map(row => ({
+        id: row.id,
+        name: row.name,
+        state: row.state,
+        offered: row.offered_at !== null,
+        articles: Number(row.articles),
+        inbox: Number(row.inbox)
+      }))
+      .sort(
+        (a, b) =>
+          STATE_ORDER.indexOf(a.state) - STATE_ORDER.indexOf(b.state) ||
+          b.articles - a.articles ||
+          a.name.localeCompare(b.name)
+      )
   }
 
   return {
@@ -128,33 +219,56 @@ export function createReadingStore(sql: SQL, userId: string) {
       )
     },
 
-    /** One page of a status's articles, newest first, with how many there are in all. */
+    /** One page of articles, newest first, with how many there are in all: of a status (or all), of a topic (or any). */
     async list(opts: {
-      status: ArticleStatus
+      status: ArticleStatus | "all"
+      topicId?: string
       limit: number
       offset: number
     }): Promise<{ articles: ArticleSummary[]; total: number }> {
+      const anyStatus = opts.status === "all"
+      const anyTopic = opts.topicId === undefined
+      const topicId = opts.topicId ?? null
       const rows = await sql<SummaryRow[]>`
-        SELECT number, url, title, site, author, word_count, fetch_error, note, status, saved_at
-        FROM reading_article WHERE user_id = ${userId} AND status = ${opts.status}
-        ORDER BY number DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`
+        SELECT a.id, a.number, a.url, a.title, a.site, a.author, a.word_count, a.fetch_error, a.note, a.status,
+               a.saved_at, a.gist, a.tagged_at
+        FROM reading_article a
+        WHERE a.user_id = ${userId} AND (${anyStatus} OR a.status = ${opts.status})
+          AND (${anyTopic} OR EXISTS (
+            SELECT 1 FROM reading_article_topic l WHERE l.article_id = a.id AND l.topic_id = ${topicId}))
+        ORDER BY a.number DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`
       const [count] = await sql<{ n: number | string }[]>`
-        SELECT COUNT(*) AS n FROM reading_article WHERE user_id = ${userId} AND status = ${opts.status}`
-      return { articles: rows.map(summaryOf), total: Number(count?.n ?? 0) }
+        SELECT COUNT(*) AS n FROM reading_article a
+        WHERE a.user_id = ${userId} AND (${anyStatus} OR a.status = ${opts.status})
+          AND (${anyTopic} OR EXISTS (
+            SELECT 1 FROM reading_article_topic l WHERE l.article_id = a.id AND l.topic_id = ${topicId}))`
+      return { articles: await summaries(sql, rows), total: Number(count?.n ?? 0) }
     },
 
     /** An article with its text, noting the first time it's opened. */
     async open(number: number): Promise<Article | undefined> {
-      return sql.begin(async tx => {
-        const [row] = await tx<(SummaryRow & { content: string | null })[]>`
-          SELECT number, url, title, site, author, word_count, fetch_error, note, status, saved_at, content
+      const at = now()
+      let article: Article | undefined
+      await sql.begin(async tx => {
+        const rows = await tx<(SummaryRow & { content: string | null })[]>`
+          SELECT id, number, url, title, site, author, word_count, fetch_error, note, status, saved_at, gist,
+                 tagged_at, content
           FROM reading_article WHERE user_id = ${userId} AND number = ${number}`
-        if (!row) return undefined
+        const [summary] = await summaries(tx, rows)
+        if (!summary) return
         await tx`
-          UPDATE reading_article SET opened_at = ${now()}
+          UPDATE reading_article SET opened_at = ${at}
           WHERE user_id = ${userId} AND number = ${number} AND opened_at IS NULL`
-        return { ...summaryOf(row), content: row.content ?? undefined }
+        article = { ...summary, content: rows[0]!.content ?? undefined }
       })
+      return article
+    },
+
+    /** An article's stored text, without counting as opening it. */
+    async text(number: number): Promise<string | undefined> {
+      const [row] = await sql<{ content: string | null }[]>`
+        SELECT content FROM reading_article WHERE user_id = ${userId} AND number = ${number}`
+      return row?.content ?? undefined
     },
 
     /** Moves an article to a status, stamping when it was first read or archived; false when there's no such article. */
@@ -168,6 +282,78 @@ export function createReadingStore(sql: SQL, userId: string) {
           WHERE user_id = ${userId} AND number = ${number}`
       )
       return result.affectedRows > 0
+    },
+
+    /** The account's topics: followed first, then by how many articles carry them. */
+    topics: () => topics(),
+
+    /**
+     * Gives an article exactly these topics (new names become unfollowed topics) and, with `gist`, its one line. An
+     * unfollowed topic left without articles goes. Returns the article's topics, or undefined when there's no such
+     * article.
+     */
+    async setArticleTopics(number: number, names: string[], gist?: string): Promise<Topic[] | undefined> {
+      const at = now()
+      const keys = new Set(names.map(topicKey))
+      let found = false
+      await sql.begin(async tx => {
+        const [article] = await tx<{ id: string }[]>`
+          SELECT id FROM reading_article WHERE user_id = ${userId} AND number = ${number}`
+        if (!article) return
+        found = true
+        await tx`DELETE FROM reading_article_topic WHERE article_id = ${article.id}`
+        for (const name of names) {
+          const key = topicKey(name)
+          await tx`
+            INSERT INTO reading_topic (id, user_id, name, name_key, state, created_at)
+            VALUES (${Bun.randomUUIDv7()}, ${userId}, ${pgText(name.trim())}, ${pgText(key)}, 'neutral', ${at})
+            ON CONFLICT (user_id, name_key) DO NOTHING`
+          await tx`
+            INSERT INTO reading_article_topic (article_id, topic_id)
+            SELECT ${article.id}, id FROM reading_topic WHERE user_id = ${userId} AND name_key = ${pgText(key)}
+            ON CONFLICT (article_id, topic_id) DO NOTHING`
+        }
+        await tx`
+          UPDATE reading_article SET tagged_at = ${at}, gist = COALESCE(${pgText(gist)}, gist)
+          WHERE id = ${article.id}`
+        await tx`
+          DELETE FROM reading_topic
+          WHERE user_id = ${userId} AND state = 'neutral'
+            AND NOT EXISTS (SELECT 1 FROM reading_article_topic l WHERE l.topic_id = reading_topic.id)`
+      })
+      return found ? (await topics()).filter(topic => keys.has(topicKey(topic.name))) : undefined
+    },
+
+    /** Notes that Kaja offered to follow a topic (or the user decided about it), so it doesn't ask again. */
+    async markOffered(topicId: string): Promise<void> {
+      await sql.begin(
+        tx => tx`UPDATE reading_topic SET offered_at = ${now()} WHERE user_id = ${userId} AND id = ${topicId}`
+      )
+    },
+
+    /** Renames a topic and/or changes whether it's followed. The caller checks the new name is free. */
+    async updateTopic(topicId: string, change: { name?: string; state?: TopicState }): Promise<void> {
+      await sql.begin(async tx => {
+        if (change.name !== undefined)
+          await tx`
+            UPDATE reading_topic SET name = ${pgText(change.name.trim())}, name_key = ${pgText(topicKey(change.name))}
+            WHERE user_id = ${userId} AND id = ${topicId}`
+        if (change.state !== undefined)
+          await tx`UPDATE reading_topic SET state = ${change.state} WHERE user_id = ${userId} AND id = ${topicId}`
+      })
+    },
+
+    /** Moves every article of one topic to another and removes the first. */
+    async mergeTopics(fromId: string, intoId: string): Promise<void> {
+      await sql.begin(async tx => {
+        await tx`
+          INSERT INTO reading_article_topic (article_id, topic_id)
+          SELECT l.article_id, t.id FROM reading_article_topic l
+          JOIN reading_topic t ON t.id = ${intoId} AND t.user_id = ${userId}
+          WHERE l.topic_id = ${fromId}
+          ON CONFLICT (article_id, topic_id) DO NOTHING`
+        await tx`DELETE FROM reading_topic WHERE user_id = ${userId} AND id = ${fromId}`
+      })
     }
   }
 }

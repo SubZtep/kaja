@@ -47,7 +47,7 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 
 ## Modules
 
-- `openNasiFor` gives every turn each module's tools (`moduleToolGroups`, `packages/modules/CLAUDE.md`) with the user's id and the turn's egress; a persona gets them by listing the module's id in `abilities`
+- `openNasiFor` gives every turn each module's tools (`moduleToolGroups`, `packages/modules/CLAUDE.md`) with the user's id, the turn's egress, the summarize model (else chat) and the turn's language, plus the modules' prompt sections; a persona gets them by listing the module's id in `abilities`
 - No per-user switch: a module is there for everyone and starts by use
 
 ## Images

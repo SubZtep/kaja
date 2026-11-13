@@ -188,6 +188,7 @@ describe("reading module", () => {
     setNasiEgressOverride(() => () => web.send)
     web.pages["https://blog.example/turn"] = page("Saved in a turn")
     const offered: string[][] = []
+    const prompts: string[] = []
     const save = {
       id: "call_save",
       type: "function",
@@ -198,8 +199,15 @@ describe("reading module", () => {
     const client = {
       chat: {
         completions: {
-          stream: (params: { tools?: { function: { name: string } }[] }) => {
+          // The module's own model call: with no summarize model in the catalog, the chat model tags
+          create: async () => ({
+            model: "fake-model",
+            choices: [{ message: { content: '{"topics": ["AI agents"], "gist": "Saved in a turn."}' } }],
+            usage: { prompt_tokens: 9, completion_tokens: 4 }
+          }),
+          stream: (params: { tools?: { function: { name: string } }[]; messages: { content: string }[] }) => {
             offered.push((params.tools ?? []).map(tool => tool.function.name))
+            prompts.push(params.messages[0]!.content)
             const message = script[round++] ?? { content: "done" }
             return {
               async *[Symbol.asyncIterator]() {},
@@ -219,9 +227,15 @@ describe("reading module", () => {
     expect(offered[0]).toEqual(
       expect.arrayContaining(["save_article", "list_articles", "read_article", "mark_article"])
     )
+    expect(prompts[0]).toContain("## Reading\nThe user has a reading inbox")
     const [saved] = await sql`
-      SELECT title FROM reading_article WHERE user_id = ${userId} AND url_key = 'blog.example/turn'`
-    expect(saved).toEqual({ title: "Saved in a turn" })
+      SELECT title, gist FROM reading_article WHERE user_id = ${userId} AND url_key = 'blog.example/turn'`
+    expect(saved).toEqual({ title: "Saved in a turn", gist: "Saved in a turn." })
+    // The tagging call counts towards the session's usage, like the summarize tool's
+    const { session } = (await res.json()) as { session: string }
+    const calls = await sql`
+      SELECT kind, model, prompt_tokens, completion_tokens FROM nasi_model_call WHERE session_id = ${session}`
+    expect(calls).toEqual([{ kind: "summarize", model: "fake-model", prompt_tokens: 9, completion_tokens: 4 }])
 
     // What a client shows as the starting persona's tools (the route needs a model to exist)
     const { providerId } = await seedModel("reading")
