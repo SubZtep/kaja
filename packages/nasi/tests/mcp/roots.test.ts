@@ -11,7 +11,7 @@ writeFileSync(join(dir, "file.txt"), "x")
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
 test("~ is the home folder; relative paths, files and missing folders are left out with a warning", async () => {
-  const warnings: unknown[] = []
+  const warnings: { message: string; root: unknown }[] = []
   setWarnHandler((message, payload) => warnings.push({ message, root: payload?.root }))
   try {
     const roots = await expandRoots(
@@ -22,10 +22,11 @@ test("~ is the home folder; relative paths, files and missing folders are left o
       { folder: realpathSync(homedir()), readOnly: false },
       { folder: dir, readOnly: false }
     ])
-    expect(warnings).toEqual([
-      { message: "Root left out: not an absolute path or ~/…", root: "notes" },
+    // Roots are checked in parallel, so the warnings come in any order.
+    expect(warnings.toSorted((a, b) => String(a.root).localeCompare(String(b.root)))).toEqual([
       { message: "Root left out: no such folder", root: join(dir, "file.txt") },
-      { message: "Root left out: no such folder", root: join(dir, "gone") }
+      { message: "Root left out: no such folder", root: join(dir, "gone") },
+      { message: "Root left out: not an absolute path or ~/…", root: "notes" }
     ])
   } finally {
     setWarnHandler(() => {})
