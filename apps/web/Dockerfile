@@ -6,6 +6,7 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/tui/package.json ./apps/tui/package.json
 COPY apps/sandbox/package.json ./apps/sandbox/package.json
+COPY packages/modules/package.json ./packages/modules/package.json
 COPY packages/nasi/package.json ./packages/nasi/package.json
 COPY packages/schema/package.json ./packages/schema/package.json
 COPY packages/shared/package.json ./packages/shared/package.json

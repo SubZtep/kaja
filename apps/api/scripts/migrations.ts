@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import { moduleMigrations } from "@kaja/modules/manifest"
 import type { SQL } from "bun"
 import pkg from "../package.json" with { type: "json" }
 
@@ -10,15 +11,23 @@ const MIGRATION_LOCK = 7_261_948
 
 export type Migration = { name: string; sql: string; checksum: string }
 
+const withChecksum = (name: string, sql: string): Migration => ({
+  name,
+  sql,
+  checksum: createHash("sha256").update(sql).digest("hex")
+})
+
 /** The `.sql` files in `dir`, in the (lexicographic) order they apply in. */
 export function readMigrations(dir: string): Migration[] {
   return readdirSync(dir)
     .filter(name => name.endsWith(".sql"))
     .sort()
-    .map(name => {
-      const sql = readFileSync(join(dir, name), "utf8")
-      return { name, sql, checksum: createHash("sha256").update(sql).digest("hex") }
-    })
+    .map(name => withChecksum(name, readFileSync(join(dir, name), "utf8")))
+}
+
+/** Everything a database needs, in order: the files in `dir`, then each module's own tables (`@kaja/modules`). */
+export function allMigrations(dir: string): Migration[] {
+  return [...readMigrations(dir), ...moduleMigrations().map(({ name, sql }) => withChecksum(name, sql))]
 }
 
 /**

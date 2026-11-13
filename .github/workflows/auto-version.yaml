@@ -54,6 +54,8 @@ jobs:
               - 'marketplace/abilities/*/mcp.toml'
             nasi:
               - 'packages/nasi/**'
+            modules:
+              - 'packages/modules/**'
 
       - name: Setup Git
         if: steps.filter.outputs.changes != '[]'
@@ -72,6 +74,7 @@ jobs:
           FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
           FILTER_SANDBOX: ${{ steps.filter.outputs.sandbox }}
           FILTER_NASI: ${{ steps.filter.outputs.nasi }}
+          FILTER_MODULES: ${{ steps.filter.outputs.modules }}
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
@@ -171,6 +174,9 @@ jobs:
           fi
           if [[ "$FILTER_NASI" == "true" ]]; then
             bump_workspace "nasi" "packages/nasi"
+          fi
+          if [[ "$FILTER_MODULES" == "true" ]]; then
+            bump_workspace "modules" "packages/modules"
           fi
 
           if [[ ${#SUMMARY_PARTS[@]} -eq 0 ]]; then

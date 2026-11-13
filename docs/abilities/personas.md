@@ -48,6 +48,7 @@ A persona's `abilities` list is a filter: the model gets only what it names whil
 names skills, HTTP tools, MCP servers and code tools, plus three built-in tools that are opt-in: `fetch-url`
 (the `fetch_url` tool, which reads any public web page), `generate-image` (`generate_image`, which costs a
 call to an image model) and `edit-image` (`edit_image`, which resizes, rotates, flips and adjusts the chat's images). The other built-ins (memory, `ask_user`, `current_time` and the rest) are always there.
+A cloud module is named the same way: `reading` gives the persona the [reading inbox](/use/reading).
 A persona with no `abilities` list at all filters nothing out of the built-ins, the opt-in ones included, and
 gets no abilities.
 

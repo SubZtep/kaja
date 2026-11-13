@@ -374,4 +374,4 @@ project with their last 20 lines of stderr.
 
 Next:
 
-[Abilities](/abilities){: .btn .btn-green .fs-5 }
+[Reading inbox](/use/reading){: .btn .btn-green .fs-5 }

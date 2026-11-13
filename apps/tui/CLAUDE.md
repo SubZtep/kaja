@@ -58,6 +58,7 @@ Terminal chat with personas, tools, mic dictation, TTS, MCP and a local Telegram
 - `~/.config/kaja/marketplace/abilities/<name>/`: any mix of `SKILL.md`, `tool.toml`, `mcp.toml`, `tool.ts`. The folder name is the ability's name
 - Every valid ability loads; the active persona's `abilities` decide what a chat gets. MCP servers connect only for such a persona (`kaja doctor` connects all)
 - Personas load `default` first, then by id; ones `.sync-lock.json` doesn't record are the user's own (`local`)
+- Modules (`@kaja/modules`) run only in the cloud so far: `--local` has none of their tools, and `knownAbilities` keeps a persona listing one from being warned about
 
 ## Conventions
 

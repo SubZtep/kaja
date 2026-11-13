@@ -18,6 +18,7 @@
       "dependencies": {
         "@hono/bun": "^1.0.1",
         "@hono/zod-openapi": "^1.6.3",
+        "@kaja/modules": "workspace:*",
         "@kaja/nasi": "workspace:*",
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
@@ -58,6 +59,7 @@
       "version": "0.30.28",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
+        "@kaja/modules": "workspace:*",
         "@kaja/nasi": "workspace:*",
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
@@ -118,6 +120,14 @@
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.3.0",
         "vite": "^8.3.8",
+      },
+    },
+    "packages/modules": {
+      "name": "@kaja/modules",
+      "version": "0.1.0",
+      "dependencies": {
+        "@kaja/nasi": "workspace:*",
+        "zod": "^4.6.7",
       },
     },
     "packages/nasi": {
@@ -334,6 +344,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@kaja/api": ["@kaja/api@workspace:apps/api"],
+
+    "@kaja/modules": ["@kaja/modules@workspace:packages/modules"],
 
     "@kaja/nasi": ["@kaja/nasi@workspace:packages/nasi"],
 

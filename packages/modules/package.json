@@ -1,0 +1,22 @@
+{
+  "name": "@kaja/modules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kaja modules: features with their own tables and agent tools",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./manifest": {
+      "types": "./src/manifest.ts",
+      "default": "./src/manifest.ts"
+    }
+  },
+  "dependencies": {
+    "@kaja/nasi": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

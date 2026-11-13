@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { join } from "node:path"
 import { SQL } from "bun"
-import { applyMigrations, type Migration, readMigrations } from "../scripts/migrations"
+import { allMigrations, applyMigrations, type Migration } from "../scripts/migrations"
 
 const migrationsDir = join(import.meta.dir, "..", "migrations")
 // Any number works; it only has to be the same for every `bun test` that might race to build the database.
@@ -12,7 +12,7 @@ const BUILD_LOCK = 7_261_947
  * database.
  */
 function migrationsFingerprint(): { files: Migration[]; hash: string } {
-  const files = readMigrations(migrationsDir)
+  const files = allMigrations(migrationsDir)
   const hash = createHash("sha256")
   for (const file of files) hash.update(file.name).update("\0").update(file.checksum).update("\0")
   return { files, hash: hash.digest("hex") }

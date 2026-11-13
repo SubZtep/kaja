@@ -10,6 +10,7 @@
   "dependencies": {
     "@hono/bun": "^1.0.1",
     "@hono/zod-openapi": "^1.6.3",
+    "@kaja/modules": "workspace:*",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",

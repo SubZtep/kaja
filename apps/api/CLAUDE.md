@@ -1,14 +1,15 @@
 # @kaja/api
 
-Hono REST API: Better Auth, the cloud agent (`/nasi`), abilities, sandboxes, widgets, the cloud Telegram bot, admin config, emails.
+Hono REST API: Better Auth, the cloud agent (`/nasi`), abilities, modules, sandboxes, widgets, the cloud Telegram bot, admin config, emails.
 
 ## Migrations
 
 Files in `migrations/` apply in lexicographic order and only create. Until v1.0 a schema change is edited into the file that creates the table, and existing databases are recreated.
 
 - `scripts/migrate.ts` reads `../migrations`, so the image keeps the same layout (`scripts/migrate.js` beside `migrations/`, see the Dockerfile): it runs `applyMigrations` (`scripts/migrations.ts`); deploy, CI and the test database use it
+- Modules' tables come after the files (`allMigrations`): DDL strings from `@kaja/modules/manifest`, bundled into the script and recorded as `modules/<id>/<name>`
 - `schema_migrations` records each file's checksum: new or (before v1.0) edited files apply, each in its own transaction; from v1.0 an edited file is refused
-- Compose runs the raw files on first Postgres init; an existing `pgdata` volume catches up with `bun --env-file=apps/api/.env apps/api/scripts/migrate.ts`
+- Compose runs the raw files on first Postgres init, without the modules' tables; a fresh or existing `pgdata` volume catches up with `bun --env-file=apps/api/.env apps/api/scripts/migrate.ts`
 
 ## Tests
 
@@ -43,6 +44,11 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 - **Every caller of `openNasiFor` must `close()` the instance after the turn** (lazy MCP connections)
 - Ability keys are server-wide only: an admin's key per ability in `service_secret` (`services/secret.ts`, AES-256-GCM with `USER_SECRET_KEY`), write-only over `/admin/abilities/keys`. Without `USER_SECRET_KEY`, key routes answer 503 and keyed abilities are hidden
 - Approvals (flow in `packages/nasi/CLAUDE.md`): `approve_session` grants live in `nasi_session.granted_tools`. Telegram buttons carry a hash of the call id (`tool:…`, `ask:…:<index>`), matched against the pressing user's latest session; a stale tap says so
+
+## Modules
+
+- `openNasiFor` gives every turn each module's tools (`moduleToolGroups`, `packages/modules/CLAUDE.md`) with the user's id and the turn's egress; a persona gets them by listing the module's id in `abilities`
+- No per-user switch: a module is there for everyone and starts by use
 
 ## Images
 

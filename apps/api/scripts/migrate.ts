@@ -2,13 +2,13 @@
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { SQL } from "bun"
-import { applyMigrations, readMigrations } from "./migrations"
+import { allMigrations, applyMigrations } from "./migrations"
 
 // source tree and built image both keep migrate in scripts/ beside migrations/ (see Dockerfile)
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const migrationsDir = join(scriptDir, "..", "migrations")
 
-const migrations = readMigrations(migrationsDir)
+const migrations = allMigrations(migrationsDir)
 
 // Its own client, without the app's 15 s statement timeout: one file is one transaction, however long it takes
 const db = new SQL({ url: process.env.DATABASE_URL, max: 1 })

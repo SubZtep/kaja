@@ -1,3 +1,4 @@
+import { MODULE_IDS } from "@kaja/modules/manifest"
 import {
   createFolderAbilityStore,
   createTools,
@@ -54,7 +55,9 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
     allowPrivate: true,
     // The folder is every ability there is, so a persona naming another is a typo worth a warning.
-    warnUnknown: true
+    warnUnknown: true,
+    // Modules run only in the cloud so far; a persona listing one is right, there's just nothing to load here.
+    knownAbilities: MODULE_IDS
   })
 
   const tools = await createTools({

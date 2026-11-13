@@ -1,3 +1,4 @@
+import { moduleToolGroups } from "@kaja/modules"
 import {
   ASK_USER_OPTIONS_INSTRUCTION,
   ASK_USER_TOOL,
@@ -231,6 +232,7 @@ export async function openNasiFor(opts: {
     sandboxService.settings(opts.userId)
   ])
   const keyOf: SandboxKeys = name => keys.get(name)
+  const egress = cloudEgress(opts.userId, keyOf)
   return Nasi.open({
     store: nasiStore(opts.userId),
     chat,
@@ -238,8 +240,10 @@ export async function openNasiFor(opts: {
     describer,
     personas,
     owner: opts.owner,
-    egress: cloudEgress(opts.userId, keyOf),
+    egress,
     abilities: createPostgresAbilityStore(),
+    // A module's requests leave through the turn's sandbox, like fetch_url's.
+    extraTools: moduleToolGroups({ sql, userId: opts.userId, send: egress() }),
     abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
     mcpSandbox: cloudSandbox(opts.userId, keyOf),

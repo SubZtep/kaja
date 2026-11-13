@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import { modules } from "@kaja/modules"
 import {
   type AgentDelta,
   categorizeError,
@@ -7,7 +8,8 @@ import {
   LOAD_SKILL_TOOL,
   personaAbilities,
   personaGetsBuiltin,
-  personaLoadsSkills
+  personaLoadsSkills,
+  toolName
 } from "@kaja/nasi"
 import {
   NasiCompactRequestSchema,
@@ -18,6 +20,7 @@ import {
   NasiTurnResponseSchema
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
+import { sql } from "../../core/db"
 import {
   badRequest,
   errorSchema,
@@ -254,12 +257,17 @@ nasiRoutes.openapi(infoRoute, async c => {
   const mcpTools = (await abilityService.mcpAbilities())
     .filter(loads)
     .flatMap(ability => narrowed(ability.name, ability.tools ?? []))
+  // Modules' tools, gated like an ability's (a persona without a list gets none of them).
+  const moduleTools = modules.flatMap(module =>
+    entries.has(module.id) ? narrowed(module.id, module.tools({ sql, userId: user.id }).map(toolName)) : []
+  )
   const loadsSkills = persona ? personaLoadsSkills(persona, await createPostgresAbilityStore().listSkills()) : false
   const tools = [
     ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })).filter(
       name => !persona || personaGetsBuiltin(persona, name)
     ),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
+    ...moduleTools,
     ...httpTools,
     ...mcpTools
   ]
