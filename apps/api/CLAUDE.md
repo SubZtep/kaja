@@ -40,7 +40,7 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 - `services/marketplace.ts` syncs the `ability` table from `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (startup, hourly, `POST /admin/abilities/sync`). Rows are never deleted; a removed ability gets `removed_at`
 - Each ability is stored as one row per part the cloud can run: a skill (never one with `scripts/`), `tool.toml` (public `baseUrl` only), `mcp.toml` (needs a `tools` allowlist; see `cloudMcpProblem`). Widgets do not load abilities; they call `POST /ai/chat`
 - No per-user switches: everyone has every ability and persona, and the turn's persona picks. A terminal's turn declares what runs on the user's computer (`clientTools`, `clientSkills`, `clientPersonas` → `openNasiFor`'s `client`)
-- Every tool request goes out through a sandbox, never from the API (`features/sandbox/registry.ts`'s `egressFor`)
+- Every tool request goes out through a sandbox, never from the API (`features/sandbox/registry.ts`'s `egressFor`); the one exception is a module's global job (Modules)
 - **Every caller of `openNasiFor` must `close()` the instance after the turn** (lazy MCP connections)
 - Ability keys are server-wide only: an admin's key per ability in `service_secret` (`services/secret.ts`, AES-256-GCM with `USER_SECRET_KEY`), write-only over `/admin/abilities/keys`. Without `USER_SECRET_KEY`, key routes answer 503 and keyed abilities are hidden
 - Approvals (flow in `packages/nasi/CLAUDE.md`): `approve_session` grants live in `nasi_session.granted_tools`. Telegram buttons carry a hash of the call id (`tool:…`, `ask:…:<index>`), matched against the pressing user's latest session; a stale tap says so
@@ -48,7 +48,10 @@ Integration tests need Postgres at `DATABASE_URL` but use `<dev database>_test` 
 ## Modules
 
 - `openNasiFor` gives every turn each module's tools (`moduleToolGroups`, `packages/modules/CLAUDE.md`) with the user's id, the turn's egress, the summarize model (else chat) and the turn's language, plus the modules' prompt sections; a persona gets them by listing the module's id in `abilities`
-- No per-user switch: a module is there for everyone and starts by use
+- No per-user switch: a module is there for everyone and starts by use. An admin's server-wide switch is `GET/PATCH /admin/modules` (`module_state`, `services/module.ts`): off, a module has no tools, no prompt section and no jobs; turns and the runner only ever ask `moduleService.enabled()`
+- `features/nasi/module-jobs.ts` runs the modules' jobs (`CronService` ticks it every minute, not under tests). A user's job gets `moduleJobContext`: what a turn would, with `user.locale` as the language. An account without a conversation for 14 days is quiet and its jobs wait
+- A global job's requests are the one thing a module sends from this host instead of a sandbox: through `createGuardedFetch`, and only to the hosts the job names
+- A job's model calls go to `module_model_call`; `services/stats.ts` adds them to the user's tokens and models
 
 ## Images
 

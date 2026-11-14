@@ -3,7 +3,7 @@ layout: page
 title: Reading inbox
 parent: Using Kaja
 nav_order: 7
-summary: Save links from any chat and read them later.
+summary: Save links from any chat, read them later, and let Kaja find more on what you follow.
 icon: ðŸ“š
 ---
 
@@ -36,17 +36,36 @@ Each saved article gets one to three topics and a one-line gist. Topics are spec
 internals") and your own: Kaja reuses the ones you already have before it makes a new one, and writes them in
 your account's language.
 
-| You say                                     | Kaja does                                                |
-| ------------------------------------------- | -------------------------------------------------------- |
-| "What topics do I have?"                    | lists them with how many articles each has               |
-| "What have I been reading about Rust?"      | lists that topic's articles, read ones included          |
-| "Follow AI agents" / "Mute crypto"          | marks a standing interest, or a subject you're done with |
-| "Rename LLM agents to AI agents"            | renames the topic                                        |
-| "Merge LLM agents into AI agents"           | moves its articles over and removes it                   |
-| "Number 4 isn't about Rust, it's about Zig" | replaces that article's topics                           |
+| You say                                     | Kaja does                                        |
+| ------------------------------------------- | ------------------------------------------------ |
+| "What topics do I have?"                    | lists them with how many articles each has       |
+| "What have I been reading about Rust?"      | lists that topic's articles, read ones included  |
+| "Follow AI agents" / "Mute crypto"          | looks for more on it, or never suggests it again |
+| "Rename LLM agents to AI agents"            | renames the topic                                |
+| "Merge LLM agents into AI agents"           | moves its articles over and removes it           |
+| "Number 4 isn't about Rust, it's about Zig" | replaces that article's topics                   |
 
-When a topic reaches three saved articles, Kaja asks once whether you want to follow it. Following doesn't
-bring in new articles yet; it marks the interests that discovery will use.
+When a topic reaches three saved articles, Kaja asks once whether you want to follow it.
+
+## Found for you
+
+Kaja looks for new stories about the topics you follow. For now it looks on
+[Hacker News](https://news.ycombinator.com): about once a day it goes through the day's popular stories and
+keeps the ones that fit, five a day at most. The first ones arrive a few minutes after you follow a topic.
+
+What it finds waits in a list of its own, beside the inbox, each story with its topic, its points and a line on
+what it says. Nothing lands in your inbox unless you keep it.
+
+| You say                        | Kaja does                                                    |
+| ------------------------------ | ------------------------------------------------------------ |
+| "What did you find for me?"    | lists the suggestions that are waiting                       |
+| "Keep 12" / "Read 12"          | moves it to the inbox (reading one keeps it too)             |
+| "Dismiss 13 and 14"            | takes them off the list                                      |
+| "Anything new on Hacker News?" | looks again right away, at most once an hour                 |
+| "Stop suggesting stories"      | switches the search off; "suggest stories again" turns it on |
+
+A suggestion you haven't touched disappears after two weeks. A muted topic is never suggested. If you haven't
+talked to Kaja for two weeks, the search pauses and picks up again after your next message.
 
 ## A link on its own
 
@@ -63,7 +82,10 @@ A link that comes with a question ("what does this say about pricing? https://â€
 - A page that can't be fetched (a dead link, a login wall) is still saved as a link. Ask Kaja to save it again
   later and it tries once more.
 - If the topics can't be worked out right then, the article is saved without them; saving it again tries once more.
-- Pages are fetched through a [sandbox](/use/sandbox), like every other web request a cloud chat makes.
+- Pages are fetched through a [sandbox](/use/sandbox), like every other web request a cloud chat makes. Only
+  the Hacker News story list, which is the same for everyone, is fetched by Kaja's server itself.
+- Finding stories calls a model a few times a day for your account; those calls count in your
+  [usage](/use/web) like any other.
 - A [persona](/abilities/personas) has the inbox when its `abilities` list names `reading`. The default
   persona does.
 

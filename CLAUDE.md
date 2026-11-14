@@ -11,7 +11,7 @@ Translations: edit only the en-GB locale files and leave every other language to
 - **TUI** (`apps/tui`): Ink; cloud mode talks to the API's `/nasi/*`, `--local` embeds `@kaja/nasi` against the user's own provider
 - **Widget**: a cloud principal (secret token, pinned model, generated source) served by the API. The homepage Barkochba board and player are the first programs.
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers and tool egress for cloud turns; dials out to the API, nothing connects in
-- **Packages**: `@kaja/nasi` (agent brain), `@kaja/modules` (features with their own tables and tools; `reading` is the first), `@kaja/schema`, `@kaja/shared`
+- **Packages**: `@kaja/nasi` (agent brain), `@kaja/modules` (features with their own tables, tools and background jobs; `reading` is the first), `@kaja/schema`, `@kaja/shared`
 - **Image bytes** never go in a database: object storage (API) or files beside the SQLite file (TUI), metadata in `nasi_image`, messages hold `kaja-image:<id>` refs (`packages/nasi/CLAUDE.md`, Images)
 
 ## Development

@@ -50,7 +50,7 @@ flowchart LR
 | [`apps/tui`](./apps/tui/)                 | Ink terminal UI and Telegram bot, with local config and storage                                                   |
 | [`apps/sandbox`](./apps/sandbox/)         | Runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |
 | [`packages/nasi`](./packages/nasi/)       | The agent brain: the loop, tools, personas, memory                                                                |
-| [`packages/modules`](./packages/modules/) | Features with their own tables and agent tools; the reading inbox is the first                                    |
+| [`packages/modules`](./packages/modules/) | Features with their own tables, agent tools and jobs; the reading inbox is the first                              |
 | [`packages/schema`](./packages/schema/)   | Every Zod schema and type, in role-based subpaths                                                                 |
 | [`packages/shared`](./packages/shared/)   | Small pure utilities, including the Telegram plumbing both bots share                                             |
 
