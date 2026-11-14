@@ -148,7 +148,7 @@ test("a complete, non-stale version is resumed as complete rather than restarted
   expect(status).not.toContain("started fresh version")
 })
 
-test("start_new_version explicitly bumps the version without waiting for staleness", async () => {
+test("start_new_version opens the next version without waiting for staleness", async () => {
   const owner = "test:new-version"
   await datasetInfoTool.execute(
     {
@@ -161,9 +161,56 @@ test("start_new_version explicitly bumps the version without waiting for stalene
   )
   const result = await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, ctx(owner))
   expect(result).toContain("started fresh version 2")
+  expect(result).toContain("version 1 keeps the previous answers")
   const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))
-  // get_status resolves the latest version independently of start_new_version's (not-yet-persisted) bump — since no answer was saved under version 2 yet, version 1 (complete, never expiring) is still what's active.
-  expect(status).toContain("complete, never expires")
+  expect(status).toContain("Version 2.")
+  expect(status).toContain("Still need")
+  expect(status).not.toContain("Already answered")
+})
+
+test("answers after start_new_version land in the new version and leave the old one as it was", async () => {
+  const owner = "test:new-version-answers"
+  const answer = (value: string) =>
+    datasetInfoTool.execute({ action: "answer", dataset: "never_expires", field: "name", value }, ctx(owner))
+  await answer("Andras")
+  await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, ctx(owner))
+  const opened = await store.loadDatasetVersionCompletedAt("never_expires", owner, 2)
+  await Bun.sleep(5)
+  const result = await answer("Andy")
+  expect(result).toContain("Version 2.")
+  expect((await store.loadDatasetAnswers("never_expires", owner, 1)).map(a => a.value)).toEqual(["Andras"])
+  expect((await store.loadDatasetAnswers("never_expires", owner, 2)).map(a => a.value)).toEqual(["Andy"])
+  // The new version's time moves from when it was opened to when it was completed
+  const completed = await store.loadDatasetVersionCompletedAt("never_expires", owner, 2)
+  expect(completed! > opened!).toBe(true)
+})
+
+test("start_new_version doesn't open a version while the current one has no answers", async () => {
+  const owner = "test:new-version-empty"
+  const start = () => datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, ctx(owner))
+  expect(await start()).toContain("Version 1.")
+  expect(await store.latestDatasetVersion("never_expires", owner)).toBe(0)
+
+  await datasetInfoTool.execute(
+    { action: "answer", dataset: "never_expires", field: "name", value: "Andras" },
+    ctx(owner)
+  )
+  expect(await start()).toContain("started fresh version 2")
+  // Asked twice in a row: still version 2
+  expect(await start()).toContain("Version 2.")
+  expect(await store.latestDatasetVersion("never_expires", owner)).toBe(2)
+})
+
+test("changing an answer of a complete version keeps its completion time", async () => {
+  const owner = "test:complete-once"
+  const answer = (value: string) =>
+    datasetInfoTool.execute({ action: "answer", dataset: "never_expires", field: "name", value }, ctx(owner))
+  await answer("Andras")
+  const completed = await store.loadDatasetVersionCompletedAt("never_expires", owner, 1)
+  await Bun.sleep(5)
+  await answer("Andy")
+  expect(await store.loadDatasetVersionCompletedAt("never_expires", owner, 1)).toBe(completed!)
+  expect((await store.loadDatasetAnswers("never_expires", owner, 1)).map(a => a.value)).toEqual(["Andy"])
 })
 
 test("owner scoping: two owners answering the same dataset don't see each other's progress", async () => {

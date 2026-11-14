@@ -35,6 +35,9 @@ export type NasiStore = {
   latestDatasetVersion(topic: string, owner: string | null): Promise<number>
   loadDatasetAnswers(topic: string, owner: string | null, version: number): Promise<DatasetAnswer[]>
   saveDatasetAnswer(topic: string, owner: string | null, version: number, field: string, value: string): Promise<void>
+  /** Opens `version` before it has an answer, so the next answers land in it and the one before stays as it is. */
+  startDatasetVersion(topic: string, owner: string | null, version: number): Promise<void>
+  /** Stamps `version` complete now, replacing the time it was opened at by {@link startDatasetVersion}. */
   markDatasetVersionComplete(topic: string, owner: string | null, version: number): Promise<void>
   loadDatasetVersionCompletedAt(topic: string, owner: string | null, version: number): Promise<string | undefined>
 }

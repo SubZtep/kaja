@@ -350,7 +350,7 @@ test("memory notes round-trip, and saving one owner's set replaces only that own
   await store.saveMemory(null, {})
 })
 
-test("dataset answers upsert per field, and a version is completed once", async () => {
+test("dataset answers upsert per field, and a version opened early is stamped again when completed", async () => {
   expect(await store.latestDatasetVersion("profile", null)).toBe(0)
   await store.saveDatasetAnswer("profile", null, 1, "name", "Ann")
   await Bun.sleep(2)
@@ -364,11 +364,14 @@ test("dataset answers upsert per field, and a version is completed once", async 
   ])
   expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toBeUndefined()
   await store.markDatasetVersionComplete("profile", null, 1)
-  const completed = await store.loadDatasetVersionCompletedAt("profile", null, 1)
-  await store.markDatasetVersionComplete("profile", null, 1)
-  expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toBe(completed!)
-  await store.markDatasetVersionComplete("profile", null, 2)
+  expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toMatch(/Z$/)
+  await store.startDatasetVersion("profile", null, 2)
   expect(await store.latestDatasetVersion("profile", null)).toBe(2)
+  expect(await store.loadDatasetAnswers("profile", null, 2)).toEqual([])
+  const opened = await store.loadDatasetVersionCompletedAt("profile", null, 2)
+  await Bun.sleep(5)
+  await store.markDatasetVersionComplete("profile", null, 2)
+  expect((await store.loadDatasetVersionCompletedAt("profile", null, 2))! > opened!).toBe(true)
   expect(await store.latestDatasetVersion("profile", "telegram:1")).toBe(0)
   expect(await storeFor(OTHER).latestDatasetVersion("profile", null)).toBe(0)
 })

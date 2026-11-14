@@ -135,14 +135,15 @@ test("saveDatasetAnswer upserts by (topic, owner, version, field)", async () => 
   expect(answers[0]!.value).toBe("red")
 })
 
-test("markDatasetVersionComplete is idempotent and records a stable completedAt", async () => {
+test("markDatasetVersionComplete records completedAt, and marking again moves it", async () => {
   await saveDatasetAnswer("topic-complete", null, 1, "favorite_color", "blue")
   await markDatasetVersionComplete("topic-complete", null, 1)
   const first = await loadDatasetVersionCompletedAt("topic-complete", null, 1)
   expect(first).toBeDefined()
+  await Bun.sleep(5)
   await markDatasetVersionComplete("topic-complete", null, 1)
   const second = await loadDatasetVersionCompletedAt("topic-complete", null, 1)
-  expect(second).toBe(first!)
+  expect(second! > first!).toBe(true)
 })
 
 test("owner scoping isolates answers between terminal (null) and a Telegram user", async () => {

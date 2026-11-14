@@ -156,6 +156,11 @@ describe("nasi store on Postgres", () => {
     expect(answer!.answeredAt).toMatch(/Z$/)
     expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toMatch(/Z$/)
     expect(await store.latestDatasetVersion("profile", null)).toBe(1)
+    // A version opened early exists before it has an answer, and completing it replaces its time
+    await store.startDatasetVersion("profile", null, 2)
+    expect(await store.latestDatasetVersion("profile", null)).toBe(2)
+    await store.markDatasetVersionComplete("profile", null, 2)
+    expect(await store.loadDatasetVersionCompletedAt("profile", null, 2)).toMatch(/Z$/)
   })
 
   test("delete stays inside the account, and the rows go with the session", async () => {

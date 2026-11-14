@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS nasi_dataset_version (
   topic text NOT NULL,
   owner text NOT NULL DEFAULT '',
   version integer NOT NULL,
+  -- when its last field was answered; until then, when it was opened early (start_new_version)
   completed_at timestamptz NOT NULL,
   PRIMARY KEY (user_id, topic, owner, version)
 );

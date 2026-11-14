@@ -299,6 +299,16 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
     return undefined
   }
 
+  // A version's row holds one time: when it was opened early, then when its last field was answered
+  async function stampDatasetVersion(topic: string, owner: string | null, version: number) {
+    await sql.begin(
+      tx => tx`
+        INSERT INTO nasi_dataset_version (user_id, topic, owner, version, completed_at)
+        VALUES (${userId}, ${topic}, ${ownerKey(owner)}, ${version}, ${now()})
+        ON CONFLICT (user_id, topic, owner, version) DO UPDATE SET completed_at = excluded.completed_at`
+    )
+  }
+
   return {
     async createSession(data) {
       const id = sessionIdOf(data.session)
@@ -460,14 +470,8 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
       )
     },
 
-    async markDatasetVersionComplete(topic, owner, version) {
-      await sql.begin(
-        tx => tx`
-          INSERT INTO nasi_dataset_version (user_id, topic, owner, version, completed_at)
-          VALUES (${userId}, ${topic}, ${ownerKey(owner)}, ${version}, ${now()})
-          ON CONFLICT (user_id, topic, owner, version) DO NOTHING`
-      )
-    },
+    startDatasetVersion: stampDatasetVersion,
+    markDatasetVersionComplete: stampDatasetVersion,
 
     async loadDatasetVersionCompletedAt(topic, owner, version) {
       const [row] = await sql<{ completed_at: Date | string }[]>`

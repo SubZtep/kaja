@@ -41,6 +41,12 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
       imageRows.get(id) ?? imageRows.set(id, memoryImageRows()).get(id)!
     )
 
+  // A version's row holds one time: when it was opened early, then when its last field was answered
+  const stampDatasetVersion = (topic: string, owner: string | null, version: number) =>
+    Promise.try(() => {
+      versions.set(datasetKey(topic, owner, version), { topic, owner, version, completedAt: new Date().toISOString() })
+    })
+
   return {
     createSession(data: SessionWrite & { title: string }) {
       return Promise.try(() => {
@@ -175,13 +181,8 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
       })
     },
 
-    markDatasetVersionComplete(topic, owner, version) {
-      return Promise.try(() => {
-        const key = datasetKey(topic, owner, version)
-        if (versions.has(key)) return
-        versions.set(key, { topic, owner, version, completedAt: new Date().toISOString() })
-      })
-    },
+    startDatasetVersion: stampDatasetVersion,
+    markDatasetVersionComplete: stampDatasetVersion,
 
     loadDatasetVersionCompletedAt(topic, owner, version) {
       return Promise.try(() => {

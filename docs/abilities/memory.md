@@ -110,7 +110,7 @@ you can compare with the last.
 
 The agent drives all of this through one tool, `dataset_info`, with four actions: `list_datasets`,
 `get_status` (progress, and what's still unanswered), `answer` (record one field) and `start_new_version`
-(redo the set early, when you ask).
+(redo the set early, when you ask; the answers you gave before stay as the previous version).
 
 ---
 
