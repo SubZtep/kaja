@@ -1,6 +1,6 @@
 /** The reading module's Postgres tables. Edited in place until v1.0, like the API's migrations. */
 export const READING_SCHEMA = `
--- The reading inbox: one row per link a user saved, with the page's text as it was read then.
+-- One row per link a user saved or Kaja found for them, with the page's text as it was read then.
 CREATE TABLE IF NOT EXISTS reading_article (
   id uuid PRIMARY KEY,
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
@@ -19,10 +19,16 @@ CREATE TABLE IF NOT EXISTS reading_article (
   -- one line on what the article says, written with its topics; tagged_at is NULL until that worked
   gist text,
   tagged_at timestamptz,
-  source text NOT NULL CHECK (source IN ('saved')),
+  -- saved by the user, or where Kaja found it (a source's id)
+  source text NOT NULL CHECK (source IN ('saved', 'hn')),
+  -- for a found story: where it is talked about, and its points there when found
+  discussion_url text,
+  score integer,
   -- why the user saved it, in their words
   note text,
-  status text NOT NULL CHECK (status IN ('inbox', 'read', 'archived')),
+  -- suggested: found by Kaja and not looked at yet (deleted after two weeks); dismissed: a suggestion turned down
+  status text NOT NULL CHECK (status IN ('suggested', 'inbox', 'read', 'archived', 'dismissed')),
+  -- when it was saved or found
   saved_at timestamptz NOT NULL,
   opened_at timestamptz,
   read_at timestamptz,
@@ -54,4 +60,24 @@ CREATE TABLE IF NOT EXISTS reading_article_topic (
 );
 
 CREATE INDEX IF NOT EXISTS reading_article_topic_topic_idx ON reading_article_topic (topic_id);
+
+-- What the sources offered lately, for everyone: each account's search picks from here. Pruned after a week.
+CREATE TABLE IF NOT EXISTS reading_source_item (
+  id uuid PRIMARY KEY,
+  source text NOT NULL,
+  -- the source's own id for the story
+  external_id text NOT NULL,
+  title text NOT NULL,
+  url text NOT NULL,
+  url_key text NOT NULL,
+  discussion_url text,
+  score integer NOT NULL DEFAULT 0,
+  comments integer NOT NULL DEFAULT 0,
+  published_at timestamptz NOT NULL,
+  -- an account's search only looks at what it hasn't seen: items first seen since its last run
+  first_seen_at timestamptz NOT NULL,
+  UNIQUE (source, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS reading_source_item_seen_idx ON reading_source_item (first_seen_at);
 `

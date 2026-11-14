@@ -1,0 +1,39 @@
+{
+  "hitsPerPage": 100,
+  "nbHits": 4,
+  "nbPages": 1,
+  "page": 0,
+  "hits": [
+    {
+      "created_at_i": 1794603953,
+      "num_comments": 632,
+      "objectID": "50489641",
+      "points": 1061,
+      "title": "FAA issues national ground stop",
+      "url": "https://www.nbcnews.com/news/us-news/faa-orders-nationwide-ground-stop-departing-flights-reasons-safety-rcna609247"
+    },
+    {
+      "created_at_i": 1794589798,
+      "num_comments": 248,
+      "objectID": "50486482",
+      "points": 790,
+      "title": "LibreOffice actually works 365 days a year",
+      "url": "https://twitter.com/LibreOffice/status/2121205272479998268"
+    },
+    {
+      "created_at_i": 1794536184,
+      "num_comments": 645,
+      "objectID": "50477231",
+      "points": 786,
+      "title": "Nvidia employees petition to bring back Jensen Huang",
+      "url": "https://www.wired.com/story/nvidia-employees-petition-for-jensen-huangs-return/"
+    },
+    {
+      "created_at_i": 1794581612,
+      "num_comments": 202,
+      "objectID": "50484421",
+      "points": 163,
+      "title": "U.S. October PPI Rises 6.5% YoY, Highest in Nearly Four Years"
+    }
+  ]
+}

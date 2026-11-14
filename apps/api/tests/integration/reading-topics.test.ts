@@ -113,7 +113,7 @@ describe("reading topics", () => {
 
   test("articles list by topic across statuses, each line with its topics", async () => {
     const call = toolsFor(userId)
-    await call("mark_article", { number: 2, status: "read" })
+    await call("mark_article", { numbers: [2], status: "read" })
     const today = new Date().toISOString().slice(0, 10)
     expect(await call("list_articles", { topic: "ai agents", status: "all", limit: 2 })).toBe(
       [
@@ -139,7 +139,12 @@ describe("reading topics", () => {
     expect(await call("list_topics")).toBe(
       "2 topics, followed first\nAI agents — 4 articles (3 in the inbox)\nPlanning — 1 article (1 in the inbox)"
     )
-    expect(await call("update_topic", { topic: "planning", state: "followed" })).toBe('"Planning" is followed.')
+    expect(await call("update_topic", { topic: "planning", state: "followed" })).toBe(
+      '"Planning" is followed. Kaja looks for stories about it from now on; the first ones can be there in a few ' +
+        "minutes (list_articles with status suggested)."
+    )
+    // Following is what starts the account's search
+    expect(await sql`SELECT job FROM module_job WHERE user_id = ${userId}`).toEqual([{ job: "discover" }])
     expect(await call("update_topic", { topic: "AI agents", state: "muted" })).toBe('"AI agents" is muted.')
     expect(await call("list_topics")).toBe(
       "2 topics, followed first\nPlanning — followed, 1 article (1 in the inbox)\nAI agents — muted, 4 articles (3 in the inbox)"
@@ -179,10 +184,10 @@ describe("reading topics", () => {
 
   test("an article's topics can be set by hand; an unfollowed topic left without articles goes", async () => {
     const call = toolsFor(userId)
-    expect(await call("mark_article", { number: 4, topics: ["Rust", " ai agents "] })).toBe(
+    expect(await call("mark_article", { numbers: [4], topics: ["Rust", " ai agents "] })).toBe(
       "#4's topics are now: AI Agents, Rust."
     )
-    expect(await call("mark_article", { number: 4, topics: ["AI Agents"], status: "archived" })).toBe(
+    expect(await call("mark_article", { numbers: [4], topics: ["AI Agents"], status: "archived" })).toBe(
       "#4's topics are now: AI Agents. #4 is archived."
     )
     expect((await topicRows()).map(topic => topic.name)).toEqual(["AI Agents"])
@@ -190,8 +195,8 @@ describe("reading topics", () => {
     expect((await sql`SELECT gist FROM reading_article WHERE user_id = ${userId} AND number = 4`)[0].gist).toBe(
       "What it says."
     )
-    await expect(call("mark_article", { number: 99, topics: ["Rust"] })).rejects.toThrow("There is no article #99.")
-    await expect(call("mark_article", { number: 4 })).rejects.toThrow("Give a status, topics, or both.")
+    await expect(call("mark_article", { numbers: [99], topics: ["Rust"] })).rejects.toThrow("There is no article #99.")
+    await expect(call("mark_article", { numbers: [4] })).rejects.toThrow("Give a status, topics, or both.")
   })
 
   test("an article the model couldn't tag is saved all the same, and tagged when it's saved again", async () => {
@@ -239,15 +244,16 @@ describe("reading topics", () => {
 
   test("the link preference can be changed by asking", async () => {
     const call = toolsFor(userId)
-    expect(await call("set_link_preference", { preference: "save" })).toBe(
+    expect(await call("update_reading_settings", { bare_links: "save" })).toBe(
       "Links sent on their own are saved to the inbox from now on."
     )
     expect(await call("link_received", { url: "https://blog.example/eight" })).toStartWith("Saved as #8: About eight")
-    expect(await call("set_link_preference", { preference: "ask" })).toBe(
+    expect(await call("update_reading_settings", { bare_links: "ask" })).toBe(
       "The next link sent on its own asks what to do with it."
     )
     expect(await call("link_received", { url: "https://blog.example/nine" })).toContain("Ask them once")
     await expect(call("link_received", { url: "not a link" })).rejects.toThrow("Not a web link")
+    await expect(call("update_reading_settings")).rejects.toThrow("Give bare_links, suggestions, or both.")
   })
 })
 

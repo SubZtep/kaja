@@ -1,10 +1,14 @@
 import { iso, pgText } from "@kaja/nasi"
 import type { SQL } from "bun"
+import { type Candidate, candidateOf, type Source } from "./sources"
 
-export type ArticleStatus = "inbox" | "read" | "archived"
+/** `suggested`: found by Kaja, not looked at yet. `dismissed`: a suggestion the user turned down. */
+export type ArticleStatus = "suggested" | "inbox" | "read" | "archived" | "dismissed"
+/** Where an article came from: the user saved it, or the source Kaja found it at. */
+export type ArticleSource = "saved" | Source["id"]
 export type TopicState = "followed" | "neutral" | "muted"
 
-/** A saved link without its text, as lists show it. */
+/** An article without its text, as lists show it. */
 export type ArticleSummary = {
   id: string
   number: number
@@ -17,7 +21,12 @@ export type ArticleSummary = {
   fetchError?: string
   note?: string
   status: ArticleStatus
+  /** When it was saved, or found. */
   savedAt: string
+  source: ArticleSource
+  /** A found story's discussion page, and its points there when it was found. */
+  discussionUrl?: string
+  score?: number
   /** One line on what it says, written when it was tagged. */
   gist?: string
   /** Whether it ever got its topics (from the model or by hand). */
@@ -33,8 +42,10 @@ export type NewArticle = {
   url: string
   urlKey: string
   note?: string
-  /** `read` for a link the user read at once: kept, but never in the inbox. */
-  status: "inbox" | "read"
+  /** `read` for a link the user read at once: kept, but never in the inbox. `suggested` for a story Kaja found. */
+  status: "inbox" | "read" | "suggested"
+  /** Where Kaja found it; unset for a link the user saved. */
+  found?: { source: Source["id"]; discussionUrl?: string; score: number }
   page: PageWrite
 }
 
@@ -54,6 +65,7 @@ export type Topic = {
   state: TopicState
   /** Kaja already offered to follow it. */
   offered: boolean
+  /** Suggestions (and dismissed ones) don't count: only what the user saved or kept. */
   articles: number
   /** Of those, how many are still in the inbox. */
   inbox: number
@@ -71,6 +83,9 @@ type SummaryRow = {
   note: string | null
   status: ArticleStatus
   saved_at: Date | string
+  source: ArticleSource
+  discussion_url: string | null
+  score: number | null
   gist: string | null
   tagged_at: Date | string | null
 }
@@ -99,10 +114,27 @@ function summaryOf(row: SummaryRow, topics: string[]): ArticleSummary {
     note: row.note ?? undefined,
     status: row.status,
     savedAt: iso(row.saved_at),
+    source: row.source,
+    discussionUrl: row.discussion_url ?? undefined,
+    score: row.score ?? undefined,
     gist: row.gist ?? undefined,
     tagged: row.tagged_at !== null,
     topics
   }
+}
+
+/**
+ * Deletes every account's suggestions found before `before` that nobody looked at, and the unfollowed topics that
+ * leaves without an article.
+ */
+export async function expireSuggestions(sql: SQL, before: Date): Promise<void> {
+  await sql.begin(async tx => {
+    await tx`DELETE FROM reading_article WHERE status = 'suggested' AND saved_at < ${before.toISOString()}`
+    await tx`
+      DELETE FROM reading_topic
+      WHERE state = 'neutral'
+        AND NOT EXISTS (SELECT 1 FROM reading_article_topic l WHERE l.topic_id = reading_topic.id)`
+  })
 }
 
 export type ReadingStore = ReturnType<typeof createReadingStore>
@@ -112,6 +144,11 @@ export type ReadingStore = ReturnType<typeof createReadingStore>
  * and the terminal share them. Writes go through `sql.begin`, as nasi's store does (see its SQLite note).
  */
 export function createReadingStore(sql: SQL, userId: string) {
+  // A summary's columns, for a query that calls the table `a`.
+  const columns = (db: SQL) => db`
+    a.id, a.number, a.url, a.title, a.site, a.author, a.word_count, a.fetch_error, a.note, a.status, a.saved_at,
+    a.source, a.discussion_url, a.score, a.gist, a.tagged_at`
+
   // Topic names by article, for the articles numbered `from` to `to`.
   async function topicNames(db: SQL, from: number, to: number): Promise<Map<string, string[]>> {
     const rows = await db<{ article_id: string; name: string }[]>`
@@ -134,23 +171,23 @@ export function createReadingStore(sql: SQL, userId: string) {
 
   async function byKey(db: SQL, key: string): Promise<ArticleSummary | undefined> {
     const rows = await db<SummaryRow[]>`
-      SELECT id, number, url, title, site, author, word_count, fetch_error, note, status, saved_at, gist, tagged_at
-      FROM reading_article WHERE user_id = ${userId} AND url_key = ${key}`
+      SELECT ${columns(db)} FROM reading_article a WHERE a.user_id = ${userId} AND a.url_key = ${key}`
     return (await summaries(db, rows))[0]
   }
 
   async function insert(article: NewArticle): Promise<ArticleSummary> {
-    const { page } = article
+    const { page, found } = article
     const at = now()
     return sql.begin(async tx => {
       // The next number is read and written in one statement; a link saved meanwhile keeps its own row.
       await tx`
         INSERT INTO reading_article (id, user_id, number, url, url_key, title, site, author, content, word_count,
-                                     fetch_error, source, note, status, saved_at, read_at)
+                                     fetch_error, source, discussion_url, score, note, status, saved_at, read_at)
         SELECT ${Bun.randomUUIDv7()}, ${userId}, COALESCE(MAX(number), 0) + 1, ${pgText(article.url)},
                ${pgText(article.urlKey)}, ${pgText(page.title)}, ${pgText(page.site)}, ${pgText(page.author)},
-               ${pgText(page.content)}, ${page.wordCount}, ${pgText(page.fetchError)}, 'saved',
-               ${pgText(article.note)}, ${article.status}, ${at}, ${article.status === "read" ? at : null}
+               ${pgText(page.content)}, ${page.wordCount}, ${pgText(page.fetchError)}, ${found?.source ?? "saved"},
+               ${pgText(found?.discussionUrl)}, ${found?.score ?? null}, ${pgText(article.note)}, ${article.status},
+               ${at}, ${article.status === "read" ? at : null}
         FROM reading_article WHERE user_id = ${userId}
         ON CONFLICT (user_id, url_key) DO NOTHING`
       return (await byKey(tx, article.urlKey))!
@@ -168,7 +205,8 @@ export function createReadingStore(sql: SQL, userId: string) {
         inbox: number | string
       }[]
     >`
-      SELECT t.id, t.name, t.state, t.offered_at, COUNT(a.id) AS articles,
+      SELECT t.id, t.name, t.state, t.offered_at,
+             COALESCE(SUM(CASE WHEN a.status IN ('inbox', 'read', 'archived') THEN 1 ELSE 0 END), 0) AS articles,
              COALESCE(SUM(CASE WHEN a.status = 'inbox' THEN 1 ELSE 0 END), 0) AS inbox
       FROM reading_topic t
       LEFT JOIN reading_article_topic l ON l.topic_id = t.id
@@ -219,30 +257,59 @@ export function createReadingStore(sql: SQL, userId: string) {
       )
     },
 
-    /** One page of articles, newest first, with how many there are in all: of a status (or all), of a topic (or any). */
+    /**
+     * One page of articles, newest first, with how many there are in all: of a status, or `all` the user saved or kept
+     * (suggestions and dismissed ones aside); of a topic, or any.
+     */
     async list(opts: {
       status: ArticleStatus | "all"
       topicId?: string
       limit: number
       offset: number
     }): Promise<{ articles: ArticleSummary[]; total: number }> {
-      const anyStatus = opts.status === "all"
+      const kept = opts.status === "all"
       const anyTopic = opts.topicId === undefined
       const topicId = opts.topicId ?? null
+      const matching = sql`
+        a.user_id = ${userId}
+        AND ((${kept} AND a.status IN ('inbox', 'read', 'archived')) OR a.status = ${opts.status})
+        AND (${anyTopic} OR EXISTS (
+          SELECT 1 FROM reading_article_topic l WHERE l.article_id = a.id AND l.topic_id = ${topicId}))`
       const rows = await sql<SummaryRow[]>`
-        SELECT a.id, a.number, a.url, a.title, a.site, a.author, a.word_count, a.fetch_error, a.note, a.status,
-               a.saved_at, a.gist, a.tagged_at
-        FROM reading_article a
-        WHERE a.user_id = ${userId} AND (${anyStatus} OR a.status = ${opts.status})
-          AND (${anyTopic} OR EXISTS (
-            SELECT 1 FROM reading_article_topic l WHERE l.article_id = a.id AND l.topic_id = ${topicId}))
+        SELECT ${columns(sql)} FROM reading_article a WHERE ${matching}
         ORDER BY a.number DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`
-      const [count] = await sql<{ n: number | string }[]>`
-        SELECT COUNT(*) AS n FROM reading_article a
-        WHERE a.user_id = ${userId} AND (${anyStatus} OR a.status = ${opts.status})
-          AND (${anyTopic} OR EXISTS (
-            SELECT 1 FROM reading_article_topic l WHERE l.article_id = a.id AND l.topic_id = ${topicId}))`
+      const [count] = await sql<{ n: number | string }[]>`SELECT COUNT(*) AS n FROM reading_article a WHERE ${matching}`
       return { articles: await summaries(sql, rows), total: Number(count?.n ?? 0) }
+    },
+
+    /** How many suggestions wait to be looked at. */
+    async suggestedCount(): Promise<number> {
+      const [count] = await sql<{ n: number | string }[]>`
+        SELECT COUNT(*) AS n FROM reading_article WHERE user_id = ${userId} AND status = 'suggested'`
+      return Number(count?.n ?? 0)
+    },
+
+    /** How many stories Kaja found for the account since `since`, whatever became of them. */
+    async foundSince(since: Date): Promise<number> {
+      const [count] = await sql<{ n: number | string }[]>`
+        SELECT COUNT(*) AS n FROM reading_article
+        WHERE user_id = ${userId} AND source <> 'saved' AND saved_at >= ${since.toISOString()}`
+      return Number(count?.n ?? 0)
+    },
+
+    /**
+     * The sources' stories first seen after `since` (all of them when unset) that the account doesn't have yet, the
+     * most popular first.
+     */
+    async candidates(since: string | undefined, limit: number): Promise<Candidate[]> {
+      const all = since === undefined
+      const rows = await sql<Parameters<typeof candidateOf>[0][]>`
+        SELECT i.source, i.external_id, i.title, i.url, i.url_key, i.discussion_url, i.score, i.comments, i.published_at
+        FROM reading_source_item i
+        WHERE (${all} OR i.first_seen_at > ${since ?? null})
+          AND NOT EXISTS (SELECT 1 FROM reading_article a WHERE a.user_id = ${userId} AND a.url_key = i.url_key)
+        ORDER BY i.score DESC, i.external_id LIMIT ${limit}`
+      return rows.map(candidateOf)
     },
 
     /** An article with its text, noting the first time it's opened. */
@@ -251,9 +318,7 @@ export function createReadingStore(sql: SQL, userId: string) {
       let article: Article | undefined
       await sql.begin(async tx => {
         const rows = await tx<(SummaryRow & { content: string | null })[]>`
-          SELECT id, number, url, title, site, author, word_count, fetch_error, note, status, saved_at, gist,
-                 tagged_at, content
-          FROM reading_article WHERE user_id = ${userId} AND number = ${number}`
+          SELECT ${columns(tx)}, a.content FROM reading_article a WHERE a.user_id = ${userId} AND a.number = ${number}`
         const [summary] = await summaries(tx, rows)
         if (!summary) return
         await tx`
@@ -271,15 +336,19 @@ export function createReadingStore(sql: SQL, userId: string) {
       return row?.content ?? undefined
     },
 
-    /** Moves an article to a status, stamping when it was first read or archived; false when there's no such article. */
-    async setStatus(number: number, status: ArticleStatus): Promise<boolean> {
+    /**
+     * Moves an article to a status, stamping when it was first read or archived; with `from`, only an article in that
+     * status. False when no article was moved.
+     */
+    async setStatus(number: number, status: ArticleStatus, from?: ArticleStatus): Promise<boolean> {
       const at = now()
+      const fromAny = from === undefined
       const result = await sql.begin(
         tx => tx`
           UPDATE reading_article
           SET status = ${status}, read_at = COALESCE(read_at, ${status === "read" ? at : null}),
               archived_at = COALESCE(archived_at, ${status === "archived" ? at : null})
-          WHERE user_id = ${userId} AND number = ${number}`
+          WHERE user_id = ${userId} AND number = ${number} AND (${fromAny} OR status = ${from ?? null})`
       )
       return result.affectedRows > 0
     },
@@ -289,10 +358,14 @@ export function createReadingStore(sql: SQL, userId: string) {
 
     /**
      * Gives an article exactly these topics (new names become unfollowed topics) and, with `gist`, its one line. An
-     * unfollowed topic left without articles goes. Returns the article's topics, or undefined when there's no such
-     * article.
+     * unfollowed topic left without articles goes. `tagged: false` leaves the article to be tagged later (a found
+     * story whose page hasn't been read). Returns the article's topics, or undefined when there's no such article.
      */
-    async setArticleTopics(number: number, names: string[], gist?: string): Promise<Topic[] | undefined> {
+    async setArticleTopics(
+      number: number,
+      names: string[],
+      opts: { gist?: string; tagged?: boolean } = {}
+    ): Promise<Topic[] | undefined> {
       const at = now()
       const keys = new Set(names.map(topicKey))
       let found = false
@@ -313,9 +386,10 @@ export function createReadingStore(sql: SQL, userId: string) {
             SELECT ${article.id}, id FROM reading_topic WHERE user_id = ${userId} AND name_key = ${pgText(key)}
             ON CONFLICT (article_id, topic_id) DO NOTHING`
         }
-        await tx`
-          UPDATE reading_article SET tagged_at = ${at}, gist = COALESCE(${pgText(gist)}, gist)
-          WHERE id = ${article.id}`
+        if (opts.tagged !== false)
+          await tx`
+            UPDATE reading_article SET tagged_at = ${at}, gist = COALESCE(${pgText(opts.gist)}, gist)
+            WHERE id = ${article.id}`
         await tx`
           DELETE FROM reading_topic
           WHERE user_id = ${userId} AND state = 'neutral'

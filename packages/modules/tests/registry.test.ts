@@ -53,8 +53,9 @@ test("a module's tools are official and reach only a persona that lists the modu
     "mark_article",
     "list_topics",
     "update_topic",
+    "find_articles",
     "link_received",
-    "set_link_preference"
+    "update_reading_settings"
   ])
   expect(names(["web-search"])).toEqual([])
   expect(names()).toEqual([])
@@ -77,4 +78,18 @@ test("a module's prompt section is tied to one of its own tools", () => {
   const names = new Set(moduleToolGroups(ctx).flatMap(group => group.tools.map(toolName)))
   for (const section of sections) expect(names.has(section.tool)).toBe(true)
   expect(sections[0]!.body).toContain(sections[0]!.tool)
+})
+
+test("a module names each job once, and a global job says which hosts it may reach", () => {
+  const job = { id: "tick", scope: "global" as const, everyMinutes: 60, hosts: [], run: async () => undefined }
+  expect(() =>
+    defineModule(defineManifest({ id: "stub", migrations: [] }), { tools: () => [], jobs: [job, job] })
+  ).toThrow("names a job twice")
+  const jobs = modules.flatMap(module => (module.jobs ?? []).map(each => [module.id, each.id, each.scope]))
+  expect(jobs).toEqual([
+    ["reading", "collect", "global"],
+    ["reading", "discover", "user"]
+  ])
+  const collect = modules[0]!.jobs!.find(each => each.scope === "global")!
+  expect(collect.hosts).toEqual(["hn.algolia.com"])
 })

@@ -106,7 +106,8 @@ describe("reading module", () => {
       `Saved the link as #3, but its page couldn't be read (Fetch failed: 404 ${url}). Saving it again tries once more.`
     )
     expect(await row(userId, 3)).toMatchObject({ content: null, site: "blog.example", status: "inbox" })
-    expect(await call("read_article", { number: 3 })).toContain("its page couldn't be read")
+    // Reading it tries the page again too
+    expect(await call("read_article", { number: 3 })).toContain("its page can't be read")
     expect(await call("save_article", { url })).toContain("still can't be read")
 
     web.pages[url] = page("Later")
@@ -148,8 +149,8 @@ describe("reading module", () => {
 
   test("marking moves an article between inbox, read and archived; saving an archived link brings it back", async () => {
     const call = toolsFor(userId)
-    expect(await call("mark_article", { number: 1, status: "read" })).toBe("#1 is read.")
-    expect(await call("mark_article", { number: 2, status: "archived" })).toBe("#2 is archived.")
+    expect(await call("mark_article", { numbers: [1], status: "read" })).toBe("#1 is read.")
+    expect(await call("mark_article", { numbers: [2], status: "archived" })).toBe("#2 is archived.")
     expect(await row(userId, 1)).toMatchObject({ status: "read", archived_at: null })
     expect((await row(userId, 1)).read_at).toBeInstanceOf(Date)
     expect(await call("list_articles")).toStartWith("inbox: 1-1 of 1")
@@ -161,8 +162,8 @@ describe("reading module", () => {
     )
     // When it was first put away stays on record.
     expect(await row(userId, 2)).toMatchObject({ status: "inbox", archived_at: archivedAt })
-    expect(await call("mark_article", { number: 1, status: "inbox" })).toBe("#1 is back in the inbox.")
-    await expect(call("mark_article", { number: 99, status: "read" })).rejects.toThrow("There is no article #99.")
+    expect(await call("mark_article", { numbers: [1], status: "inbox" })).toBe("#1 is back in the inbox.")
+    await expect(call("mark_article", { numbers: [99], status: "read" })).rejects.toThrow("There is no article #99.")
   })
 
   test("each account has its own inbox and its own numbers", async () => {
