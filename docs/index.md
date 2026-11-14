@@ -14,8 +14,7 @@ what matters – until the job is done.
 
 - **[Terminal UI](/use/tui)** ― Console-based chat client.
 - **[Telegram](/use/telegram)** ― Chat client via a bot.
-- **[Widget](/use/widget)** ― A cloud principal with its own token and published source.
-- **[Web app](/use/web)** ― Your cloud account: Telegram link, widgets, sandboxes and usage.
+- **[Web app](/use/web)** ― Your cloud account: Telegram link, sandboxes and usage.
 
 ## Data safety
 

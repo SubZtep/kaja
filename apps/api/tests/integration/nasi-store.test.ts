@@ -71,10 +71,10 @@ describe("nasi store on Postgres", () => {
   test("the channel follows the owner's prefix, and a terminal's 'local' is refused", async () => {
     const store = nasiStore(userId)
     const ids = await Promise.all(
-      [null, "telegram:1", "widget:k:v"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
+      [null, "telegram:1"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
     )
     const rows = await sql`SELECT channel FROM nasi_session WHERE id IN ${sql(ids)} ORDER BY channel`
-    expect(rows.map((r: { channel: string }) => r.channel)).toEqual(["telegram", "web", "widget"])
+    expect(rows.map((r: { channel: string }) => r.channel)).toEqual(["telegram", "web"])
     const local = createSqlStore(sql, { userId, defaultChannel: "local", objects })
     await expect(local.createSession({ ...write([]), title: "t" })).rejects.toThrow("channel")
   })
@@ -142,9 +142,9 @@ describe("nasi store on Postgres", () => {
       useCount: 2
     }
     await store.saveMemory(null, { "user:web": note })
-    await store.saveMemory("widget:abc:visitor-1", { "user:visitor": { ...note, sticky: false } })
+    await store.saveMemory("telegram:7", { "user:visitor": { ...note, sticky: false } })
     expect(await store.loadMemory(null)).toEqual({ "user:web": note })
-    expect((await store.loadMemory("widget:abc:visitor-1"))["user:visitor"]!.sticky).toBe(false)
+    expect((await store.loadMemory("telegram:7"))["user:visitor"]!.sticky).toBe(false)
     expect(await nasiStore(otherId).loadMemory(null)).toEqual({})
   })
 

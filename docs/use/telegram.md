@@ -104,4 +104,4 @@ Never send an API key to your bot: Telegram keeps the message history. Put it in
 
 Next:
 
-[Website widget](/use/widget){: .btn .btn-green .fs-5 }
+[Voice & language](/use/voice){: .btn .btn-green .fs-5 }

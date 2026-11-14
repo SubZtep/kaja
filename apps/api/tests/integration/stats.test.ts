@@ -106,7 +106,7 @@ describe("GET /stats", () => {
     })
     await seedSession(mine.userId, {
       ageDays: 2,
-      owner: "widget:visitor",
+      owner: "telegram:100",
       messages: [
         { role: "user", content: "hey" },
         { role: "assistant", content: "hi" }
@@ -186,8 +186,7 @@ describe("GET /stats", () => {
     const { body } = await get(mine.token, "?days=7")
     expect(Object.fromEntries(body.channels.map(row => [row.channel, row.sessions]))).toEqual({
       web: 1,
-      telegram: 1,
-      widget: 1
+      telegram: 2
     })
     expect(body.personas).toEqual([
       { persona: "care", replies: 2, sessions: 1 },

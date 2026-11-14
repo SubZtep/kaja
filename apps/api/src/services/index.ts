@@ -8,7 +8,6 @@ import { SandboxService } from "./sandbox"
 import { SecretService } from "./secret"
 import { StatsService } from "./stats"
 import { TelegramLinkService } from "./telegram-link"
-import { WidgetService } from "./widget"
 
 export const marketplaceService = new MarketplaceService(sql, { repo: env.MARKETPLACE_REPO, ref: env.MARKETPLACE_REF })
 export const modelService = new ModelService(sql)
@@ -18,4 +17,3 @@ export const imageService = new ImageService(sql)
 export const sandboxService = new SandboxService(sql)
 export const statsService = new StatsService(sql)
 export const telegramLinkService = new TelegramLinkService(sql)
-export const widgetService = new WidgetService(sql)

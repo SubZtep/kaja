@@ -25,8 +25,8 @@ export const statsQuerySchema = z.object({
   tz: z.string().refine(isTimeZone, "Not an IANA timezone").default("UTC")
 })
 
-/** Where a session was started: the web app or CLI (`web`), the Telegram bot, or a widget visitor's chat. */
-export const statsChannelSchema = z.enum(["web", "telegram", "widget"])
+/** Where a session was started: the web app or CLI (`web`), or the Telegram bot. */
+export const statsChannelSchema = z.enum(["web", "telegram"])
 
 /**
  * A user's stored images: `count` and `bytes` are everything kept now, `added`/`addedBytes` only the images that

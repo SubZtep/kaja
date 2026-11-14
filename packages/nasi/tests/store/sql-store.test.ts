@@ -72,10 +72,10 @@ test("a session round-trips through its rows: pending call, granted tools and ti
 
 test("the channel follows the owner's prefix, else the host's default", async () => {
   const ids = await Promise.all(
-    [null, "telegram:1", "widget:k:v"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
+    [null, "telegram:1"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
   )
   const rows = await sql`SELECT channel FROM nasi_session WHERE id IN ${sql(ids)} ORDER BY channel`
-  expect(rows.map((row: { channel: string }) => row.channel)).toEqual(["local", "telegram", "widget"])
+  expect(rows.map((row: { channel: string }) => row.channel)).toEqual(["local", "telegram"])
 })
 
 test("an update appends only new messages and events, and links a result to its call", async () => {

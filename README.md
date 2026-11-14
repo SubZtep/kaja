@@ -9,7 +9,7 @@
 
 Kaja is an agentic AI harness. Give it a task and it keeps looping with an LLM, using tools — on the user’s machine or in an isolated sandbox environment — and switching personas as needed, until the job is done.
 
-Point it at a local model or a cloud-based one, and chat with it in a terminal or on Telegram. A cloud widget can call the same models for a program you publish, such as the homepage game.
+Point it at a local model or a cloud-based one, and chat with it in a terminal or on Telegram.
 
 The terminal client runs on macOS and Linux (x64 and arm64). The Windows build is experimental and untested; shell commands don't work there yet.
 
@@ -22,7 +22,6 @@ flowchart LR
     subgraph doors["User facing"]
         TUI["<b>tui</b><br>terminal UI<br>+ Telegram bot"]
         WEB["<b>web</b><br>homepage<br>+ web app"]
-        WID["<b>widget</b><br>cloud principal<br>+homepage game"]
     end
 
     API["<b>api</b><br>REST, auth<br>cloud agent"]
@@ -33,7 +32,6 @@ flowchart LR
 
     TUI -->|cloud mode| API
     WEB --> API
-    WID --> API
     API -->|WebSocket| SBX
     API --> PG
     TUI -->|local mode| LITE
@@ -45,7 +43,7 @@ flowchart LR
 
 | Workspace                               | What it is                                                                                                        |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [`apps/api`](./apps/api/)               | Hono REST API: Better Auth, the cloud agent, emails, and widget tokens                                            |
+| [`apps/api`](./apps/api/)               | Hono REST API: Better Auth, the cloud agent, and emails                                                           |
 | [`apps/web`](./apps/web/)               | TanStack Start: the public homepage and the signed-in web app                                                     |
 | [`apps/tui`](./apps/tui/)               | Ink terminal UI and Telegram bot, with local config and storage                                                   |
 | [`apps/sandbox`](./apps/sandbox/)       | Runs stdio MCP servers (headless Chrome and more) and sends tool requests out for cloud turns; anyone can run one |

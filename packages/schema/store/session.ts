@@ -92,7 +92,6 @@ export function telegramOwner(userId: number): string {
 }
 
 /** Where a session came from, by its owner's prefix (no owner is the web app or the terminal). */
-export function channelOf(owner: string | null): "web" | "telegram" | "widget" {
-  const prefix = owner?.split(":", 1)[0]
-  return prefix === "telegram" || prefix === "widget" ? prefix : "web"
+export function channelOf(owner: string | null): "web" | "telegram" {
+  return owner?.split(":", 1)[0] === "telegram" ? "telegram" : "web"
 }

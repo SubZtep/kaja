@@ -8,7 +8,6 @@ import { Channels } from "./-components/channels"
 import { FeatureStrip } from "./-components/feature-strip"
 import { Hero } from "./-components/hero"
 import { RunSandbox } from "./-components/run-sandbox"
-import { Showcase } from "./-components/showcase"
 
 /**
  * The homepage has no locale prefix for en-GB, so the url strategy always wins there over the cookie. Redirect here
@@ -47,7 +46,6 @@ function LandingPage() {
       <Hero />
       <Channels />
       <FeatureStrip />
-      <Showcase />
       <RunSandbox />
     </>
   )

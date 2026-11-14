@@ -1,4 +1,4 @@
-import { Brain, Drama, Globe, Image, PanelsTopLeft, Puzzle } from "lucide-react"
+import { Brain, Drama, Globe, Image, Puzzle } from "lucide-react"
 import { ContentWidth } from "../../../components/layout/content-width"
 import { m } from "../../../paraglide/messages.js"
 import { SectionTitle } from "./section-title"
@@ -9,7 +9,6 @@ const getFeatures = () =>
     { id: "memory", glyph: Brain, title: m.feature_memory_title(), meta: m.feature_memory_meta() },
     { id: "personas", glyph: Drama, title: m.feature_personas_title(), meta: m.feature_personas_meta() },
     { id: "images", glyph: Image, title: m.feature_images_title(), meta: m.feature_images_meta() },
-    { id: "widget", glyph: PanelsTopLeft, title: m.feature_widget_title(), meta: m.feature_widget_meta() },
     { id: "abilities", glyph: Puzzle, title: m.feature_abilities_title(), meta: m.feature_abilities_meta() }
   ] as const
 

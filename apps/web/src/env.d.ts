@@ -16,10 +16,6 @@ declare module "bun" {
     VITE_API_URL?: string
     /** Public web app URL */
     VITE_APP_URL?: string
-    /** Secret token of the homepage Barkochba board widget. The browser never sees it. */
-    BARKOCHBA_BOARD_TOKEN?: string
-    /** Secret token of the homepage Barkochba player widget. The browser never sees it. */
-    BARKOCHBA_PLAYER_TOKEN?: string
     /**
      * Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's
      * TURNSTILE_SECRET

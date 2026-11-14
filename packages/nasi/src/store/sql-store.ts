@@ -26,7 +26,7 @@ import type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
 export type SqlStoreOptions = {
   /** Every statement is scoped to this account; the local file has one (`LOCAL_USER_ID`). */
   userId: string
-  /** The channel of a session whose owner isn't `telegram:…` or `widget:…`. */
+  /** The channel of a session whose owner isn't `telegram:…`. */
   defaultChannel: "web" | "local"
   /** Where the images' bytes are kept: the cloud's bucket, or the folder beside the local database. */
   objects: ObjectStore

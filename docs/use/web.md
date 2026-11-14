@@ -3,14 +3,14 @@ layout: page
 title: Web app
 parent: Using Kaja
 nav_order: 2
-summary: Your cloud account with widgets, sandboxes and usage.
+summary: Your cloud account with sandboxes and usage.
 icon: 🌐
 ---
 
 # Web app
 
-[kaja.io](https://kaja.io) is where your cloud account lives. You don't chat there: you link Telegram, make
-widgets, run sandboxes and see your usage.
+[kaja.io](https://kaja.io) is where your cloud account lives. You don't chat there: you link Telegram,
+run sandboxes and see your usage.
 
 ## Signing in
 
@@ -31,7 +31,6 @@ The top menu has one item per section, and a section's pages are tabs inside it.
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Home**                | the first steps: until Telegram is linked, a **Connect Telegram** card sits at the top; afterwards a status summary                                                                                                            |
 | **Channels › Telegram** | link or disconnect your account on the cloud [Telegram bot](/use/telegram)                                                                                                                                                     |
-| **Channels › Widgets**  | create, edit, link, publish and revoke [widgets](/use/widget)                                                                                                                                                                  |
 | **Sandboxes**           | your sandbox key and the `docker run` command for a [sandbox](/use/sandbox) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
 | **Usage**               | sessions, messages, tokens and latency by day, channel, tool, persona and model                                                                                                                                                |
 | **Account › Profile**   | your name and avatar, email (a change takes a code from your current address, then one from the new one), and deleting your account with everything stored under it                                                            |

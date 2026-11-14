@@ -5,7 +5,6 @@ export * from "./model"
 export * from "./sandbox"
 export * from "./stats"
 export * from "./telegram-link"
-export * from "./widget"
 
 export const KAJA_TUI_CLIENT_ID = "kaja-tui"
 

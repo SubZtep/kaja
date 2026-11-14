@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS nasi_session (
   model text NOT NULL,
   title text NOT NULL,
   owner text,
-  channel text NOT NULL CHECK (channel IN ('web', 'telegram', 'widget', 'local')),
+  channel text NOT NULL CHECK (channel IN ('web', 'telegram', 'local')),
   system_prompt text,
   pending_call_id text,
   pending_kind text CHECK (pending_kind IN ('ask_user', 'run_command', 'tool_approval', 'client_tools')),

@@ -27,7 +27,6 @@ import { Route as PortalAccountProfileRouteImport } from './routes/_portal/accou
 import { Route as PortalAdminIndexRouteImport } from './routes/_portal/admin/index'
 import { Route as PortalChannelsIndexRouteImport } from './routes/_portal/channels/index'
 import { Route as PortalChannelsTelegramRouteImport } from './routes/_portal/channels/telegram'
-import { Route as PortalChannelsWidgetsRouteImport } from './routes/_portal/channels/widgets'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
 import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
@@ -125,11 +124,6 @@ const PortalChannelsTelegramRoute = PortalChannelsTelegramRouteImport.update({
   path: '/telegram',
   getParentRoute: () => PortalChannelsRoute,
 } as any)
-const PortalChannelsWidgetsRoute = PortalChannelsWidgetsRouteImport.update({
-  id: '/widgets',
-  path: '/widgets',
-  getParentRoute: () => PortalChannelsRoute,
-} as any)
 const PublicDeviceIndexRoute = PublicDeviceIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -185,7 +179,6 @@ export interface FileRoutesByFullPath {
   '/account/devices': typeof PortalAccountDevicesRoute
   '/account/profile': typeof PortalAccountProfileRoute
   '/channels/telegram': typeof PortalChannelsTelegramRoute
-  '/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
   '/account/': typeof PortalAccountIndexRoute
@@ -208,7 +201,6 @@ export interface FileRoutesByTo {
   '/account/devices': typeof PortalAccountDevicesRoute
   '/account/profile': typeof PortalAccountProfileRoute
   '/channels/telegram': typeof PortalChannelsTelegramRoute
-  '/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
   '/account': typeof PortalAccountIndexRoute
@@ -238,7 +230,6 @@ export interface FileRoutesById {
   '/_portal/account/devices': typeof PortalAccountDevicesRoute
   '/_portal/account/profile': typeof PortalAccountProfileRoute
   '/_portal/channels/telegram': typeof PortalChannelsTelegramRoute
-  '/_portal/channels/widgets': typeof PortalChannelsWidgetsRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
   '/_public/device/done': typeof PublicDeviceDoneRoute
   '/_portal/account/': typeof PortalAccountIndexRoute
@@ -267,7 +258,6 @@ export interface FileRouteTypes {
     | '/account/devices'
     | '/account/profile'
     | '/channels/telegram'
-    | '/channels/widgets'
     | '/device/approve'
     | '/device/done'
     | '/account/'
@@ -290,7 +280,6 @@ export interface FileRouteTypes {
     | '/account/devices'
     | '/account/profile'
     | '/channels/telegram'
-    | '/channels/widgets'
     | '/device/approve'
     | '/device/done'
     | '/account'
@@ -319,7 +308,6 @@ export interface FileRouteTypes {
     | '/_portal/account/devices'
     | '/_portal/account/profile'
     | '/_portal/channels/telegram'
-    | '/_portal/channels/widgets'
     | '/_public/device/approve'
     | '/_public/device/done'
     | '/_portal/account/'
@@ -466,13 +454,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalChannelsTelegramRouteImport
       parentRoute: typeof PortalChannelsRoute
     }
-    '/_portal/channels/widgets': {
-      id: '/_portal/channels/widgets'
-      path: '/widgets'
-      fullPath: '/channels/widgets'
-      preLoaderRoute: typeof PortalChannelsWidgetsRouteImport
-      parentRoute: typeof PortalChannelsRoute
-    }
     '/_public/device/': {
       id: '/_public/device/'
       path: '/'
@@ -572,13 +553,11 @@ const PortalAdminRouteWithChildren = PortalAdminRoute._addFileChildren(
 
 interface PortalChannelsRouteChildren {
   PortalChannelsTelegramRoute: typeof PortalChannelsTelegramRoute
-  PortalChannelsWidgetsRoute: typeof PortalChannelsWidgetsRoute
   PortalChannelsIndexRoute: typeof PortalChannelsIndexRoute
 }
 
 const PortalChannelsRouteChildren: PortalChannelsRouteChildren = {
   PortalChannelsTelegramRoute: PortalChannelsTelegramRoute,
-  PortalChannelsWidgetsRoute: PortalChannelsWidgetsRoute,
   PortalChannelsIndexRoute: PortalChannelsIndexRoute,
 }
 

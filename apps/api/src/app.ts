@@ -19,8 +19,6 @@ import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { sandboxRoutes } from "./features/sandbox"
 import { statsRoutes } from "./features/stats"
 import { telegramLinkRoutes } from "./features/telegram-link"
-import { widgetChatRoutes, widgetRoutes } from "./features/widget"
-import { widgetManageRoutes } from "./features/widget-manage"
 import type { RouteProps } from "./types"
 
 export const app = new OpenAPIHono<RouteProps>()
@@ -71,9 +69,6 @@ app.route("/nasi", nasiRoutes)
 app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram", telegramLinkRoutes)
-app.route("/ai", widgetChatRoutes)
-app.route("/widget", widgetRoutes)
-app.route("/widget/manage", widgetManageRoutes)
 
 // API documentation
 if (env.NODE_ENV === "development") {

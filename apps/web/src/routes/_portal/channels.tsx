@@ -6,7 +6,7 @@ export const Route = createFileRoute("/_portal/channels")({
   component: ChannelsLayout
 })
 
-/** Where you talk to Kaja from: the Telegram bot and published widgets. */
+/** Where you talk to Kaja from: the Telegram bot. */
 function ChannelsLayout() {
   return (
     <>
