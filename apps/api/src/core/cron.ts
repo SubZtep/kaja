@@ -11,10 +11,15 @@ export class CronService {
   #jobs: Bun.CronJob[] = []
   #isRunning = false
   readonly #describer: () => Promise<Describer | undefined>
+  readonly #moduleJobs: () => Promise<void>
 
-  /** `describer` finds the vision model the hourly sweep describes images with (none: the sweep skips). */
-  constructor(opts: { describer: () => Promise<Describer | undefined> }) {
+  /**
+   * `describer` finds the vision model the hourly sweep describes images with (none: the sweep skips); `moduleJobs`
+   * runs the modules' jobs that are due.
+   */
+  constructor(opts: { describer: () => Promise<Describer | undefined>; moduleJobs: () => Promise<void> }) {
     this.#describer = opts.describer
+    this.#moduleJobs = opts.moduleJobs
   }
 
   start() {
@@ -47,6 +52,10 @@ export class CronService {
         await sandboxService
           .pruneSamples(SANDBOX_SAMPLE_TTL_MS)
           .catch(err => reportError("Couldn't prune sandbox load samples", err))
+      }),
+      // Modules' jobs: each run reports its own failure, this catches the runner's own
+      Bun.cron("* * * * *", async () => {
+        await this.#moduleJobs().catch(err => reportError("The module job runner failed", err))
       })
     )
   }

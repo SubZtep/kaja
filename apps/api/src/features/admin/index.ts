@@ -6,6 +6,7 @@ import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminAbilities } from "./ability"
 import { registerAdminImages } from "./images"
 import { registerAdminModels } from "./model"
+import { registerAdminModules } from "./modules"
 import { registerAdminSandbox } from "./sandbox"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
@@ -15,7 +16,7 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 
 /**
  * Platform-admin-only: /admin/providers/_, /admin/models/_, /admin/abilities/sync and /admin/abilities/keys/_,
- * /admin/sandbox, /admin/users/:id/images, /admin/images.
+ * /admin/sandbox, /admin/modules, /admin/users/:id/images, /admin/images.
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -31,6 +32,10 @@ registerAdminAbilities(adminRoutes)
 adminRoutes.use("/sandbox", adminMiddleware)
 adminRoutes.use("/sandbox/*", adminMiddleware)
 registerAdminSandbox(adminRoutes)
+
+adminRoutes.use("/modules", adminMiddleware)
+adminRoutes.use("/modules/*", adminMiddleware)
+registerAdminModules(adminRoutes)
 
 adminRoutes.use("/users/*", adminMiddleware)
 adminRoutes.use("/images", adminMiddleware)

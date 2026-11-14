@@ -4,6 +4,7 @@ import { AbilityService } from "./ability"
 import { ImageService } from "./image"
 import { MarketplaceService } from "./marketplace"
 import { ModelService } from "./model"
+import { ModuleService } from "./module"
 import { SandboxService } from "./sandbox"
 import { SecretService } from "./secret"
 import { StatsService } from "./stats"
@@ -12,6 +13,7 @@ import { WidgetService } from "./widget"
 
 export const marketplaceService = new MarketplaceService(sql, { repo: env.MARKETPLACE_REPO, ref: env.MARKETPLACE_REF })
 export const modelService = new ModelService(sql)
+export const moduleService = new ModuleService(sql)
 export const secretService = new SecretService(sql, env.USER_SECRET_KEY)
 export const abilityService = new AbilityService(sql, secretService)
 export const imageService = new ImageService(sql)

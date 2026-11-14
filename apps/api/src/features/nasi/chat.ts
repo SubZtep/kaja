@@ -1,4 +1,4 @@
-import { modulePromptSections, moduleToolGroups } from "@kaja/modules"
+import { type ModuleContext, modulePromptSections, moduleToolGroups } from "@kaja/modules"
 import {
   ASK_USER_OPTIONS_INSTRUCTION,
   ASK_USER_TOOL,
@@ -18,7 +18,7 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import { sql } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
-import { abilityService, modelService, sandboxService } from "../../services"
+import { abilityService, modelService, moduleService, sandboxService } from "../../services"
 import { egressFor, mcpSandboxFor, type SandboxKeys } from "../sandbox"
 import { createPostgresAbilityStore } from "./pg-abilities"
 import { nasiStore } from "./store"
@@ -227,9 +227,10 @@ export async function openNasiFor(opts: {
   ])
   // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.
   const personas = withOwnPersonas(await abilityService.personaCatalog(), opts.client?.personas ?? [])
-  const [keys, sandboxSettings] = await Promise.all([
+  const [keys, sandboxSettings, modules] = await Promise.all([
     abilityService.serviceKeys(),
-    sandboxService.settings(opts.userId)
+    sandboxService.settings(opts.userId),
+    moduleService.enabled()
   ])
   const keyOf: SandboxKeys = name => keys.get(name)
   const egress = cloudEgress(opts.userId, keyOf)
@@ -243,13 +244,10 @@ export async function openNasiFor(opts: {
     egress,
     abilities: createPostgresAbilityStore(),
     // A module's requests leave through the turn's sandbox, like fetch_url's.
-    extraTools: moduleToolGroups({
-      sql,
-      userId: opts.userId,
-      send: egress(),
-      model: summarizer ?? chat,
-      language: opts.language
-    }),
+    extraTools: moduleToolGroups(
+      { sql, userId: opts.userId, send: egress(), model: summarizer ?? chat, language: opts.language },
+      modules
+    ),
     abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
     mcpSandbox: cloudSandbox(opts.userId, keyOf),
@@ -261,10 +259,30 @@ export async function openNasiFor(opts: {
         (sandboxSettings?.useShared ? SHARED_SANDBOX_NOTE : ""),
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       channelInstruction: opts.channelInstruction,
-      sections: modulePromptSections(),
+      sections: modulePromptSections(modules),
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })
+}
+
+/**
+ * What a module's job gets for one account, outside any turn: the account's sandboxes for its requests, the summarize
+ * model (else chat; none when no model is set up, and the job skips what needs one) and the account's language.
+ */
+export async function moduleJobContext(userId: string): Promise<ModuleContext> {
+  const [chat, summarizer, keys, [user]] = await Promise.all([
+    (chatResolver ? chatResolver() : defaultChatResolver()).catch(() => undefined),
+    resolveSummarizer(),
+    abilityService.serviceKeys(),
+    sql<{ locale: string | null }[]>`SELECT locale FROM "user" WHERE id = ${userId}`
+  ])
+  return {
+    sql,
+    userId,
+    send: cloudEgress(userId, name => keys.get(name))(),
+    model: summarizer ?? chat,
+    language: user?.locale ?? undefined
+  }
 }
 
 const CLOUD_ENVIRONMENT = "You are Kaja cloud chat. You have no access to the user's machine — you cannot run a shell. "

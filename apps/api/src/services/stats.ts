@@ -24,8 +24,9 @@ export class StatsService {
     // Sessions active in the range
     const active = db`s.user_id = ${userId} AND s.updated_at >= ${since}`
 
-    const [perDay, totals, channels, calls, approvals, widgetSpend, personas, models, images] = await Promise.all([
-      db<UsageStatsResponse["perDay"]>`
+    const [perDay, totals, channels, calls, approvals, widgetSpend, moduleSpend, personas, models, images] =
+      await Promise.all([
+        db<UsageStatsResponse["perDay"]>`
         WITH days AS (
           SELECT generate_series((${since}::timestamptz AT TIME ZONE ${timeZone})::date,
             (${since}::timestamptz AT TIME ZONE ${timeZone})::date + (${days}::int - 1), interval '1 day')::date AS day
@@ -41,7 +42,7 @@ export class StatsService {
         SELECT to_char(days.day, 'YYYY-MM-DD') AS date, coalesce(started.n, 0)::int AS started, coalesce(active.n, 0)::int AS active
         FROM days LEFT JOIN started USING (day) LEFT JOIN active USING (day)
         ORDER BY days.day`,
-      db`
+        db`
         WITH summaries AS (
           SELECT COALESCE(SUM(c.prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(c.completion_tokens), 0) AS completion_tokens
           FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
@@ -55,10 +56,10 @@ export class StatsService {
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
         WHERE ${active}
         `,
-      db<
-        { channel: string; sessions: number }[]
-      >`SELECT s.channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${active} GROUP BY 1 ORDER BY 2 DESC, 1`,
-      db`
+        db<
+          { channel: string; sessions: number }[]
+        >`SELECT s.channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${active} GROUP BY 1 ORDER BY 2 DESC, 1`,
+        db`
         SELECT tc.name, COUNT(*)::int AS calls, COUNT(*) FILTER (WHERE tc.status = 'error')::int AS errors,
           ROUND(AVG(tc.duration_ms))::int AS avg_duration_ms
         FROM nasi_tool_call tc
@@ -67,7 +68,7 @@ export class StatsService {
         WHERE ${active}
         GROUP BY 1
         `,
-      db`
+        db`
         SELECT tc.name, COUNT(*) FILTER (WHERE tc.approval = 'approved')::int AS approved, COUNT(*) FILTER (WHERE tc.approval = 'declined')::int AS declined
         FROM nasi_tool_call tc
         JOIN nasi_message m ON m.id = tc.message_id
@@ -75,27 +76,32 @@ export class StatsService {
         WHERE ${active} AND tc.approval IS NOT NULL
         GROUP BY 1
         `,
-      db<{ prompt_tokens: number; completion_tokens: number }[]>`
+        db<{ prompt_tokens: number; completion_tokens: number }[]>`
         SELECT COALESCE(SUM(c.prompt_tokens), 0)::float8 AS prompt_tokens,
           COALESCE(SUM(c.completion_tokens), 0)::float8 AS completion_tokens
         FROM widget_call c JOIN widget w ON w.id = c.widget_id
         WHERE w.user_id = ${userId} AND c.created_at >= ${since}`,
-      db`
+        // Modules' jobs call a model outside any session
+        db<{ prompt_tokens: number; completion_tokens: number }[]>`
+        SELECT COALESCE(SUM(prompt_tokens), 0)::float8 AS prompt_tokens,
+          COALESCE(SUM(completion_tokens), 0)::float8 AS completion_tokens
+        FROM module_model_call WHERE user_id = ${userId} AND created_at >= ${since}`,
+        db`
         SELECT COALESCE(m.persona, 'default') AS persona, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
         WHERE ${active} AND m.role = 'assistant' AND m.model IS NOT NULL
         GROUP BY 1 ORDER BY 2 DESC, 1
         `,
-      db<
-        {
-          model: string
-          replies: number
-          summaries: number
-          sessions: number
-          prompt_tokens: number
-          completion_tokens: number
-        }[]
-      >`
+        db<
+          {
+            model: string
+            replies: number
+            summaries: number
+            sessions: number
+            prompt_tokens: number
+            completion_tokens: number
+          }[]
+        >`
         WITH used AS (
           SELECT m.session_id, m.model, 1 AS reply, 0 AS summary, m.prompt_tokens, m.completion_tokens
           FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
@@ -104,14 +110,17 @@ export class StatsService {
           SELECT c.session_id, c.model, 0, 1, c.prompt_tokens, c.completion_tokens
           FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
           WHERE ${active}
+          UNION ALL
+          SELECT NULL::uuid, c.model, 0, 1, c.prompt_tokens, c.completion_tokens
+          FROM module_model_call c WHERE c.user_id = ${userId} AND c.created_at >= ${since}
         )
         SELECT model, SUM(reply)::int AS replies, SUM(summary)::int AS summaries, COUNT(DISTINCT session_id)::int AS sessions,
           COALESCE(SUM(prompt_tokens), 0)::float8 AS prompt_tokens, COALESCE(SUM(completion_tokens), 0)::float8 AS completion_tokens
         FROM used
         GROUP BY 1 ORDER BY SUM(reply) + SUM(summary) DESC, 1
         `,
-      this.#imagesSince(userId, since)
-    ])
+        this.#imagesSince(userId, since)
+      ])
 
     const tools = new Map<UsageStatsResponse["tools"][number]["name"], UsageStatsResponse["tools"][number]>()
     const tool = (name: string) => {
@@ -139,8 +148,12 @@ export class StatsService {
         sessions: totals[0]?.sessions ?? 0,
         messages: totals[0]?.messages ?? 0,
         toolCalls: ranked.reduce((sum, entry) => sum + entry.calls, 0),
-        promptTokens: (totals[0]?.prompt_tokens ?? 0) + (widgetSpend[0]?.prompt_tokens ?? 0),
-        completionTokens: (totals[0]?.completion_tokens ?? 0) + (widgetSpend[0]?.completion_tokens ?? 0),
+        promptTokens:
+          (totals[0]?.prompt_tokens ?? 0) + (widgetSpend[0]?.prompt_tokens ?? 0) + (moduleSpend[0]?.prompt_tokens ?? 0),
+        completionTokens:
+          (totals[0]?.completion_tokens ?? 0) +
+          (widgetSpend[0]?.completion_tokens ?? 0) +
+          (moduleSpend[0]?.completion_tokens ?? 0),
         avgLatencyMs: totals[0]?.avg_latency_ms ?? null
       },
       perDay: [...perDay],

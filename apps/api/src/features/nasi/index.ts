@@ -1,5 +1,4 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { modules } from "@kaja/modules"
 import {
   type AgentDelta,
   categorizeError,
@@ -33,7 +32,7 @@ import {
 import { imageUrl } from "../../core/files"
 import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
-import { abilityService } from "../../services"
+import { abilityService, moduleService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { requireAuthMiddleware, sessionUser } from "../auth/middleware"
 import { rememberPlace } from "../sandbox"
@@ -258,7 +257,7 @@ nasiRoutes.openapi(infoRoute, async c => {
     .filter(loads)
     .flatMap(ability => narrowed(ability.name, ability.tools ?? []))
   // Modules' tools, gated like an ability's (a persona without a list gets none of them).
-  const moduleTools = modules.flatMap(module =>
+  const moduleTools = (await moduleService.enabled()).flatMap(module =>
     entries.has(module.id) ? narrowed(module.id, module.tools({ sql, userId: user.id }).map(toolName)) : []
   )
   const loadsSkills = persona ? personaLoadsSkills(persona, await createPostgresAbilityStore().listSkills()) : false

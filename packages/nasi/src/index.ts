@@ -115,6 +115,7 @@ export { allowKey, isAllowed } from "./agent/tool-allow"
 export {
   checkToolArgs,
   LOCAL_OWNER_CTX,
+  type ModelCallUsage,
   runApprovedTool,
   type Tool,
   type ToolContext,
