@@ -1,6 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "Agente de IA de código abierto que navega por la web, te recuerda y aprende trucos nuevos. Úsalo en el navegador, en Telegram o en el terminal, en local o en la nube.",
+  "site_og_description": "Agente de IA de código abierto que navega por la web, te recuerda y aprende trucos nuevos. Úsalo en Telegram o en el terminal, en local o en la nube.",
   "site_og_image_alt": "Kaja: agente de IA de código abierto. Navega por la web, te recuerda, aprende trucos nuevos. En la web, Telegram y el terminal en kaja.io.",
   "not_found_message": "Lo sentimos, esta página no existe.",
   "nav_home": "Inicio",
@@ -28,7 +28,6 @@
   "hero_greeting_afternoon_named": "Buenas tardes, {name}.",
   "hero_greeting_evening_named": "Buenas noches, {name}.",
   "hero_greeting_night_named": "¿Despierto a estas horas, {name}?",
-  "hero_subline": "Agente de IA de código abierto. Navegador, Telegram, terminal. En local o en la nube.",
   "hero_cta_source": "Código en GitHub",
   "hero_tagline": "Agente de IA de código abierto que navega por la web, te recuerda y aprende trucos nuevos.",
   "channels_title": "Tu forma de entrar",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "開源个AI 代理，會曉看網頁、會記得你，閣會學新个本事。會使佇瀏覽器、Telegram 抑是終端機內底用，本機抑是雲端攏會使。",
+  "site_og_description": "開源个AI 代理，會曉看網頁、會記得你，閣會學新个本事。會使佇 Telegram 抑是終端機內底用，本機抑是雲端攏會使。",
   "site_og_image_alt": "Kaja：開源个AI 代理。看網頁、記得你、學新本事。佇 kaja.io 用網頁、Telegram 佮終端機。",
   "not_found_message": "歹勢，這个頁面無存在。",
   "nav_home": "頭頁",
@@ -28,7 +28,6 @@
   "hero_greeting_afternoon_named": "午安，{name}。",
   "hero_greeting_evening_named": "暗安，{name}。",
   "hero_greeting_night_named": "{name}，猶未睏？",
-  "hero_subline": "開源个 AI 代理。瀏覽器、Telegram、終端機。本機抑是雲端。",
   "hero_cta_source": "GitHub 頂懸个原始碼",
   "hero_tagline": "開源个 AI 代理，會曉看網頁、會記得你，閣會學新步數。",
   "channels_title": "你个門路",
