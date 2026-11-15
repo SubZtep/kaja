@@ -42,7 +42,7 @@ const {
   switchPersonaTool,
   tool
 } = await import("../../../src/lib/agent/agents")
-const { peekStore, saveMemory } = await import("../../../src/lib/memory/store")
+const { deleteNotes, loadMemory, peekStore, saveNote } = await import("../../../src/lib/memory/store")
 const { rememberNoteTool } = await import("@kaja/nasi")
 
 // config()'s parsed *contents* are cached in-process on top of the path resolution (see lib/config.ts) — invalidate before every test in case another test file's process-wide cache last populated it with a different config (e.g. a real location block, triggering a real network call from run()).
@@ -128,7 +128,7 @@ async function collect(agent: Agent) {
 }
 
 afterEach(async () => {
-  await saveMemory(null, {})
+  await deleteNotes(null, Object.keys(await loadMemory(null)))
 })
 
 test("run() threads the owner parameter to a tool's execute as ctx.owner", async () => {
@@ -372,25 +372,23 @@ test("resuming after run_command threads the result back as a tool response", as
 
 test("sticky notes are injected into the first system message, non-sticky ones aren't", async () => {
   const now = "2026-01-01T00:00:00.000Z"
-  await saveMemory(null, {
-    "user:sticky-fact": {
-      content: "always mentioned",
-      importance: "high",
-      tags: [],
-      sticky: true,
-      createdAt: now,
-      lastUsedAt: now,
-      useCount: 0
-    },
-    "user:quiet-fact": {
-      content: "only on recall",
-      importance: "low",
-      tags: [],
-      sticky: false,
-      createdAt: now,
-      lastUsedAt: now,
-      useCount: 0
-    }
+  await saveNote(null, "user:sticky-fact", {
+    content: "always mentioned",
+    importance: "high",
+    tags: [],
+    sticky: true,
+    createdAt: now,
+    lastUsedAt: now,
+    useCount: 0
+  })
+  await saveNote(null, "user:quiet-fact", {
+    content: "only on recall",
+    importance: "low",
+    tags: [],
+    sticky: false,
+    createdAt: now,
+    lastUsedAt: now,
+    useCount: 0
   })
 
   const agent = fakeAgent([{ content: "Hi." }], [rememberNoteTool])

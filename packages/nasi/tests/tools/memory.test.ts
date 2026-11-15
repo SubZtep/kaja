@@ -405,3 +405,39 @@ test("forget_note requires exactly one selector", async () => {
   expect(await forgetNoteTool.execute({}, ctx())).toBe("Provide exactly one of: key, tag, pattern.")
   expect(await forgetNoteTool.execute({ key: "a", tag: "b" }, ctx())).toBe("Provide exactly one of: key, tag, pattern.")
 })
+
+test("recall_memory counts a use only on the notes it returns", async () => {
+  await rememberNoteTool.execute({ key: "user:tea", content: "drinks green tea", importance: "low" }, ctx())
+  await rememberNoteTool.execute({ key: "user:sleep", content: "sleeps badly in winter", importance: "low" }, ctx())
+  const before = await store.loadMemory(null)
+
+  await Bun.sleep(5)
+  await recallMemoryTool.execute({ query: "tea" }, ctx())
+  const after = await store.loadMemory(null)
+  expect(after["user:tea"]!.useCount).toBe(1)
+  expect(after["user:tea"]!.lastUsedAt > before["user:tea"]!.lastUsedAt).toBe(true)
+  expect(after["user:sleep"]).toEqual(before["user:sleep"]!)
+})
+
+test("a recall or a forget keeps a note another chat wrote meanwhile", async () => {
+  await rememberNoteTool.execute({ key: "user:tea", content: "drinks green tea", importance: "low" }, ctx())
+  await rememberNoteTool.execute({ key: "user:old", content: "old tea habit", importance: "low" }, ctx())
+  // The other chat's note lands right after this one read the notes
+  const inner = store
+  let late = 0
+  store = {
+    ...inner,
+    loadMemory: async owner => {
+      const notes = await inner.loadMemory(owner)
+      await rememberNoteTool.execute(
+        { key: `user:late-${++late}`, content: "written meanwhile", importance: "low" },
+        { ...LOCAL_OWNER_CTX, store: inner }
+      )
+      return notes
+    }
+  }
+
+  await recallMemoryTool.execute({ query: "tea" }, ctx())
+  await forgetNoteTool.execute({ key: "user:old" }, ctx())
+  expect(Object.keys(await inner.loadMemory(null)).toSorted()).toEqual(["user:late-1", "user:late-2", "user:tea"])
+})

@@ -426,14 +426,36 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
       return store
     },
 
-    async saveMemory(owner, store) {
+    async saveNote(owner, key, note) {
+      await sql.begin(
+        tx => tx`
+          INSERT INTO nasi_note (user_id, owner, key, content, importance, tags, sticky, created_at, last_used_at, use_count)
+          VALUES (${userId}, ${ownerKey(owner)}, ${pgText(key)}, ${pgText(note.content)}, ${note.importance},
+                  ${jsonParam(tx, note.tags)}, ${note.sticky}, ${note.createdAt}, ${note.lastUsedAt}, ${note.useCount})
+          ON CONFLICT (user_id, owner, key)
+          DO UPDATE SET content = excluded.content, importance = excluded.importance, tags = excluded.tags,
+                        sticky = excluded.sticky, created_at = excluded.created_at,
+                        last_used_at = excluded.last_used_at, use_count = excluded.use_count`
+      )
+    },
+
+    async deleteNotes(owner, keys) {
+      if (keys.length === 0) return
       await sql.begin(async tx => {
-        await tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${ownerKey(owner)}`
-        for (const [key, note] of Object.entries(store)) {
+        for (const key of keys) {
+          await tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${ownerKey(owner)} AND key = ${pgText(key)}`
+        }
+      })
+    },
+
+    async touchNotes(owner, keys) {
+      if (keys.length === 0) return
+      const at = now()
+      await sql.begin(async tx => {
+        for (const key of keys) {
           await tx`
-            INSERT INTO nasi_note (user_id, owner, key, content, importance, tags, sticky, created_at, last_used_at, use_count)
-            VALUES (${userId}, ${ownerKey(owner)}, ${pgText(key)}, ${pgText(note.content)}, ${note.importance},
-                    ${jsonParam(tx, note.tags)}, ${note.sticky}, ${note.createdAt}, ${note.lastUsedAt}, ${note.useCount})`
+            UPDATE nasi_note SET last_used_at = ${at}, use_count = use_count + 1
+            WHERE user_id = ${userId} AND owner = ${ownerKey(owner)} AND key = ${pgText(key)}`
         }
       })
     },

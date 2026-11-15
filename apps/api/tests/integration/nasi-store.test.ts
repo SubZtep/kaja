@@ -141,8 +141,8 @@ describe("nasi store on Postgres", () => {
       lastUsedAt: "2026-09-21T00:00:00.000Z",
       useCount: 2
     }
-    await store.saveMemory(null, { "user:web": note })
-    await store.saveMemory("telegram:7", { "user:visitor": { ...note, sticky: false } })
+    await store.saveNote(null, "user:web", note)
+    await store.saveNote("telegram:7", "user:visitor", { ...note, sticky: false })
     expect(await store.loadMemory(null)).toEqual({ "user:web": note })
     expect((await store.loadMemory("telegram:7"))["user:visitor"]!.sticky).toBe(false)
     expect(await nasiStore(otherId).loadMemory(null)).toEqual({})
@@ -181,8 +181,14 @@ describe("nasi store on Postgres", () => {
     const store = nasiStore(gone)
     const id = await store.createSession({ ...write(TURN, { events: [{ type: "user", text: "hi" }] }), title: "t" })
     await store.images(id).put({ data: noisyPng(2, 2), mimeType: "image/png", width: 2, height: 2 })
-    await store.saveMemory(null, {
-      k: { content: "c", importance: "low", tags: [], sticky: false, createdAt: AT, lastUsedAt: AT, useCount: 0 }
+    await store.saveNote(null, "k", {
+      content: "c",
+      importance: "low",
+      tags: [],
+      sticky: false,
+      createdAt: AT,
+      lastUsedAt: AT,
+      useCount: 0
     })
     await sql`DELETE FROM "user" WHERE id = ${gone}`
     const [left] = await sql`

@@ -312,7 +312,7 @@ test("another account on the same database sees none of the sessions, images or 
   const image = await normalizeImage(png(2, 2))
   const { ref } = await store.images(id).put(image)
   const imageId = ref.slice(IMAGE_REF_PREFIX.length)
-  await store.saveMemory(null, { k: note("mine") })
+  await store.saveNote(null, "k", note("mine"))
 
   expect(await other.loadSession(id)).toBeUndefined()
   expect(await other.loadLatestSession(null)).toBeUndefined()
@@ -324,7 +324,10 @@ test("another account on the same database sees none of the sessions, images or 
   await other.images(id).clear()
   expect(await store.images(id).get(imageId)).toBeDefined()
   expect(await other.loadMemory(null)).toEqual({})
-  await store.saveMemory(null, {})
+  await other.deleteNotes(null, ["k"])
+  await other.touchNotes(null, ["k"])
+  expect(await store.loadMemory(null)).toEqual({ k: note("mine") })
+  await store.deleteNotes(null, ["k"])
 })
 
 const note = (content: string, extra = {}) => ({
@@ -338,16 +341,35 @@ const note = (content: string, extra = {}) => ({
   ...extra
 })
 
-test("memory notes round-trip, and saving one owner's set replaces only that owner's", async () => {
-  await store.saveMemory(null, { "user:web": note("web fact", { sticky: true, useCount: 3 }) })
-  await store.saveMemory("telegram:7", { "user:tg": note("telegram fact") })
+test("memory notes round-trip, and deleting one owner's notes leaves the other owner's", async () => {
+  await store.saveNote(null, "user:web", note("web fact", { sticky: true, useCount: 3 }))
+  await store.saveNote("telegram:7", "user:tg", note("telegram fact"))
   expect(await store.loadMemory(null)).toEqual({ "user:web": note("web fact", { sticky: true, useCount: 3 }) })
   expect(Object.keys(await store.loadMemory("telegram:7"))).toEqual(["user:tg"])
 
-  await store.saveMemory("telegram:7", {})
+  await store.deleteNotes("telegram:7", ["user:tg", "user:web"])
   expect(await store.loadMemory("telegram:7")).toEqual({})
   expect(Object.keys(await store.loadMemory(null))).toEqual(["user:web"])
-  await store.saveMemory(null, {})
+  await store.deleteNotes(null, ["user:web"])
+})
+
+test("a note written again replaces only its own row, and a use is counted only on the notes named", async () => {
+  await store.saveNote(null, "a", note("first"))
+  await store.saveNote(null, "b", note("other"))
+  await store.saveNote(null, "a", note("second", { importance: "high", tags: [], sticky: true }))
+  expect(await store.loadMemory(null)).toEqual({
+    a: note("second", { importance: "high", tags: [], sticky: true }),
+    b: note("other")
+  })
+
+  await store.touchNotes(null, ["a", "missing"])
+  const notes = await store.loadMemory(null)
+  expect(notes.a!.useCount).toBe(1)
+  expect(notes.a!.lastUsedAt > note("").lastUsedAt).toBe(true)
+  expect(notes.a!.createdAt).toBe(note("").createdAt)
+  expect(notes.b).toEqual(note("other"))
+  expect(Object.keys(notes).toSorted()).toEqual(["a", "b"])
+  await store.deleteNotes(null, ["a", "b"])
 })
 
 test("dataset answers upsert per field, and a version opened early is stamped again when completed", async () => {

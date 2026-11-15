@@ -61,8 +61,12 @@ export async function loadMemory(...args: Parameters<NasiStore["loadMemory"]>) {
   return (await getStore()).loadMemory(...args)
 }
 
-export async function saveMemory(...args: Parameters<NasiStore["saveMemory"]>) {
-  return (await getStore()).saveMemory(...args)
+export async function saveNote(...args: Parameters<NasiStore["saveNote"]>) {
+  return (await getStore()).saveNote(...args)
+}
+
+export async function deleteNotes(...args: Parameters<NasiStore["deleteNotes"]>) {
+  return (await getStore()).deleteNotes(...args)
 }
 
 export async function latestDatasetVersion(...args: Parameters<NasiStore["latestDatasetVersion"]>) {

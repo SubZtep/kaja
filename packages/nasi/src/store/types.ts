@@ -1,4 +1,4 @@
-import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
+import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import type { SessionImages } from "./images"
 
 export type DatasetAnswer = {
@@ -30,7 +30,11 @@ export type NasiStore = {
   loadPromptHistory(limit?: number): Promise<string[]>
 
   loadMemory(owner: string | null): Promise<MemoryStore>
-  saveMemory(owner: string | null, memory: MemoryStore): Promise<void>
+  /** Writes the note under `key`, replacing the one stored there; every other note stays as it is. */
+  saveNote(owner: string | null, key: string, note: MemoryNote): Promise<void>
+  deleteNotes(owner: string | null, keys: string[]): Promise<void>
+  /** Counts one more use of each of `keys` and stamps it used now. */
+  touchNotes(owner: string | null, keys: string[]): Promise<void>
 
   latestDatasetVersion(topic: string, owner: string | null): Promise<number>
   loadDatasetAnswers(topic: string, owner: string | null, version: number): Promise<DatasetAnswer[]>
