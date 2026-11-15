@@ -96,7 +96,7 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 | Id                | What it does                                                                                                                       |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `default`         | fallback for anything no other persona fits; uses the opt-in built-ins and most marketplace abilities                              |
-| `care`            | self-care companion: listens, reflects, doesn't lecture                                                                            |
+| `care`            | self-care companion: listens, reflects, doesn't lecture; in a crisis it points you to real help                                    |
 | `barkochba`       | plays Twenty Questions, asking through `ask_user`                                                                                  |
 | `onboarding`      | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service` and `open-meteo` |
 | `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only    |
