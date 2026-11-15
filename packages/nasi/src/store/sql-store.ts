@@ -28,6 +28,8 @@ export type SqlStoreOptions = {
   userId: string
   /** The channel of a session whose owner isn't `telegram:…`. */
   defaultChannel: "web" | "local"
+  /** Notes and dataset answers belong to the account, whichever chat they come from; unset keeps them per owner. */
+  oneMemory?: boolean
   /** Where the images' bytes are kept: the cloud's bucket, or the folder beside the local database. */
   objects: ObjectStore
   /** A session's image objects' prefix; `images/<userId>/<sessionId>` unless the host lays them out otherwise. */
@@ -160,6 +162,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
   const sessionImages = (sessionId: string) =>
     objectSessionImages(opts.objects, prefix(sessionId), imageRows(sql, userId, sessionId))
   const channel = (owner: string | null) => (channelOf(owner) === "web" ? opts.defaultChannel : channelOf(owner))
+  const memoryOwner = (owner: string | null) => (opts.oneMemory ? "" : ownerKey(owner))
   const onInvalid =
     opts.onInvalid ?? ((sessionId, error) => warn("Stored session failed validation", { sessionId, error }))
 
@@ -304,7 +307,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
     await sql.begin(
       tx => tx`
         INSERT INTO nasi_dataset_version (user_id, topic, owner, version, completed_at)
-        VALUES (${userId}, ${topic}, ${ownerKey(owner)}, ${version}, ${now()})
+        VALUES (${userId}, ${topic}, ${memoryOwner(owner)}, ${version}, ${now()})
         ON CONFLICT (user_id, topic, owner, version) DO UPDATE SET completed_at = excluded.completed_at`
     )
   }
@@ -410,7 +413,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
         }[]
       >`
         SELECT key, content, importance, tags, sticky, created_at, last_used_at, use_count
-        FROM nasi_note WHERE user_id = ${userId} AND owner = ${ownerKey(owner)}`
+        FROM nasi_note WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)}`
       const store: MemoryStore = {}
       for (const row of rows) {
         store[row.key] = {
@@ -430,7 +433,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
       await sql.begin(
         tx => tx`
           INSERT INTO nasi_note (user_id, owner, key, content, importance, tags, sticky, created_at, last_used_at, use_count)
-          VALUES (${userId}, ${ownerKey(owner)}, ${pgText(key)}, ${pgText(note.content)}, ${note.importance},
+          VALUES (${userId}, ${memoryOwner(owner)}, ${pgText(key)}, ${pgText(note.content)}, ${note.importance},
                   ${jsonParam(tx, note.tags)}, ${note.sticky}, ${note.createdAt}, ${note.lastUsedAt}, ${note.useCount})
           ON CONFLICT (user_id, owner, key)
           DO UPDATE SET content = excluded.content, importance = excluded.importance, tags = excluded.tags,
@@ -443,7 +446,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
       if (keys.length === 0) return
       await sql.begin(async tx => {
         for (const key of keys) {
-          await tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${ownerKey(owner)} AND key = ${pgText(key)}`
+          await tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key = ${pgText(key)}`
         }
       })
     },
@@ -455,7 +458,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
         for (const key of keys) {
           await tx`
             UPDATE nasi_note SET last_used_at = ${at}, use_count = use_count + 1
-            WHERE user_id = ${userId} AND owner = ${ownerKey(owner)} AND key = ${pgText(key)}`
+            WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key = ${pgText(key)}`
         }
       })
     },
@@ -463,9 +466,9 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
     async latestDatasetVersion(topic, owner) {
       const [row] = await sql<{ version: number | null }[]>`
         SELECT MAX(version) AS version FROM (
-          SELECT version FROM nasi_dataset_answer WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${ownerKey(owner)}
+          SELECT version FROM nasi_dataset_answer WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${memoryOwner(owner)}
           UNION ALL
-          SELECT version FROM nasi_dataset_version WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${ownerKey(owner)}
+          SELECT version FROM nasi_dataset_version WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${memoryOwner(owner)}
         ) t`
       return row?.version ?? 0
     },
@@ -473,7 +476,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
     async loadDatasetAnswers(topic, owner, version) {
       const rows = await sql<{ field: string; value: string; answered_at: Date | string }[]>`
         SELECT field, value, answered_at FROM nasi_dataset_answer
-        WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${ownerKey(owner)} AND version = ${version}
+        WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${memoryOwner(owner)} AND version = ${version}
         ORDER BY answered_at ASC`
       return rows.map((row): DatasetAnswer => ({
         field: row.field,
@@ -486,7 +489,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
       await sql.begin(
         tx => tx`
           INSERT INTO nasi_dataset_answer (user_id, topic, owner, version, field, value, answered_at)
-          VALUES (${userId}, ${topic}, ${ownerKey(owner)}, ${version}, ${field}, ${pgText(value)}, ${now()})
+          VALUES (${userId}, ${topic}, ${memoryOwner(owner)}, ${version}, ${field}, ${pgText(value)}, ${now()})
           ON CONFLICT (user_id, topic, owner, version, field)
           DO UPDATE SET value = excluded.value, answered_at = excluded.answered_at`
       )
@@ -498,7 +501,7 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
     async loadDatasetVersionCompletedAt(topic, owner, version) {
       const [row] = await sql<{ completed_at: Date | string }[]>`
         SELECT completed_at FROM nasi_dataset_version
-        WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${ownerKey(owner)} AND version = ${version}`
+        WHERE user_id = ${userId} AND topic = ${topic} AND owner = ${memoryOwner(owner)} AND version = ${version}`
       return row && iso(row.completed_at)
     }
   }

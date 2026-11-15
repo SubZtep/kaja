@@ -8,6 +8,8 @@ export function nasiStore(userId: string): NasiStore {
   return createSqlStore(sql, {
     userId,
     defaultChannel: "web",
+    // A linked Telegram chat is the same person as the web app and the terminal
+    oneMemory: true,
     objects,
     // Reported, so a stored shape the conversation schema doesn't know yet shows up
     onInvalid: (sessionId, error) => reportError("Stored session failed validation", error, { sessionId })

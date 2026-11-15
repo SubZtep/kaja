@@ -353,6 +353,29 @@ test("memory notes round-trip, and deleting one owner's notes leaves the other o
   await store.deleteNotes(null, ["user:web"])
 })
 
+test("with oneMemory, notes and dataset answers are the account's, whichever owner asks", async () => {
+  const shared = storeFor(USER, { oneMemory: true })
+  await shared.saveNote("telegram:7", "user:tg", note("from telegram"))
+  await shared.saveNote(null, "user:web", note("from the web"))
+  expect(Object.keys(await shared.loadMemory("telegram:8")).toSorted()).toEqual(["user:tg", "user:web"])
+  await shared.touchNotes(null, ["user:tg"])
+  expect((await shared.loadMemory("telegram:7"))["user:tg"]!.useCount).toBe(1)
+
+  await shared.saveDatasetAnswer("shared-profile", "telegram:7", 1, "name", "Ann")
+  await shared.startDatasetVersion("shared-profile", null, 2)
+  expect(await shared.latestDatasetVersion("shared-profile", "telegram:8")).toBe(2)
+  expect((await shared.loadDatasetAnswers("shared-profile", null, 1)).map(a => a.value)).toEqual(["Ann"])
+  expect(await shared.loadDatasetVersionCompletedAt("shared-profile", "telegram:7", 2)).toBeDefined()
+
+  // Sessions stay with the chat they belong to
+  const id = await shared.createSession({ ...write(TURN), owner: "telegram:7", title: "t" })
+  expect((await shared.loadLatestSession("telegram:7"))?.id).toBe(id)
+  expect(await shared.loadLatestSession("telegram:8")).toBeUndefined()
+  await shared.deleteSession(id)
+  await shared.deleteNotes("telegram:9", ["user:tg", "user:web"])
+  expect(await shared.loadMemory(null)).toEqual({})
+})
+
 test("a note written again replaces only its own row, and a use is counted only on the notes named", async () => {
   await store.saveNote(null, "a", note("first"))
   await store.saveNote(null, "b", note("other"))

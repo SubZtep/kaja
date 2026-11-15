@@ -130,7 +130,7 @@ describe("nasi store on Postgres", () => {
     expect(loaded.events).toEqual([{ type: "user", text: "ab" }])
   })
 
-  test("memory notes keep their jsonb tags and boolean, per owner and per account", async () => {
+  test("memory notes keep their jsonb tags and boolean, one set per account whichever chat wrote them", async () => {
     const store = nasiStore(userId)
     const note = {
       content: "web fact",
@@ -143,9 +143,12 @@ describe("nasi store on Postgres", () => {
     }
     await store.saveNote(null, "user:web", note)
     await store.saveNote("telegram:7", "user:visitor", { ...note, sticky: false })
-    expect(await store.loadMemory(null)).toEqual({ "user:web": note })
-    expect((await store.loadMemory("telegram:7"))["user:visitor"]!.sticky).toBe(false)
+    const both = { "user:web": note, "user:visitor": { ...note, sticky: false } }
+    expect(await store.loadMemory(null)).toEqual(both)
+    expect(await store.loadMemory("telegram:7")).toEqual(both)
     expect(await nasiStore(otherId).loadMemory(null)).toEqual({})
+    const [owners] = await sql`SELECT array_agg(DISTINCT owner) AS owners FROM nasi_note WHERE user_id = ${userId}`
+    expect(owners).toEqual({ owners: [""] })
   })
 
   test("dataset answers and versions read back as ISO text", async () => {

@@ -26,8 +26,10 @@ The agent writes a note whenever it learns something lasting about you or your w
 Each note has a **key** (a stable id like `user:communication-style`), the **content**, an **importance** of
 `low`, `medium` or `high` that weights recall ranking, optional **tags**, and a **sticky** flag.
 
-Notes belong to whoever is talking. The terminal and each Telegram user have separate sets, so one person's
-notes never reach another's chats.
+In the cloud, notes belong to your account: the web app, the terminal and your linked Telegram chat all read
+and write the same set. On your own machine they belong to whoever is talking: the terminal and each Telegram
+user of [your own bot](/use/telegram#your-own-bot) have separate sets, so one person's notes never reach
+another's chats. Dataset answers follow the same rule.
 
 ```mermaid
 ---
