@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, expect, setSystemTime, test } from "bun:test"
 import type { Dataset } from "@kaja/schema/cli"
 import { LOCAL_OWNER_CTX } from "../../src/agent/tools"
 import { setDatasetLoaders } from "../../src/personas"
@@ -166,6 +166,53 @@ test("start_new_version opens the next version without waiting for staleness", a
   expect(status).toContain("Version 2.")
   expect(status).toContain("Still need")
   expect(status).not.toContain("Already answered")
+})
+
+test("from the second version on, the status lists the answers of the version before", async () => {
+  const owner = "test:compare"
+  const today = new Date().toISOString().slice(0, 10)
+  const first = await datasetInfoTool.execute(
+    { action: "answer", dataset: "never_expires", field: "name", value: "Andras" },
+    ctx(owner)
+  )
+  expect(first).not.toContain("to compare with")
+  expect(await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))).not.toContain(
+    "to compare with"
+  )
+
+  const previous = `Version 1 (answered ${today}), to compare with:\n- name: Andras`
+  expect(
+    await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, ctx(owner))
+  ).toEndWith(previous)
+  await datasetInfoTool.execute(
+    { action: "answer", dataset: "never_expires", field: "name", value: "Andy" },
+    ctx(owner)
+  )
+  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))
+  expect(status).toStartWith("Version 2.\nAlready answered:\n- name: Andy")
+  expect(status).toEndWith(previous)
+})
+
+test("a complete version past its revalidation days gives way to a fresh one, with the old answers to compare", async () => {
+  const owner = "test:stale"
+  const answeredOn = new Date().toISOString().slice(0, 10)
+  for (const [field, value] of [
+    ["favorite_color", "green"],
+    ["notification_pref", "email"]
+  ] as const) {
+    await datasetInfoTool.execute({ action: "answer", dataset: "onboarding", field, value }, ctx(owner))
+  }
+  setSystemTime(new Date(Date.now() + 31 * 24 * 60 * 60 * 1000))
+  try {
+    const status = await datasetInfoTool.execute({ action: "get_status", dataset: "onboarding" }, ctx(owner))
+    expect(status).toContain("started fresh version 2")
+    expect(status).not.toContain("Already answered")
+    expect(status).toEndWith(
+      `Version 1 (answered ${answeredOn}), to compare with:\n- favorite_color: green\n- notification_pref: email`
+    )
+  } finally {
+    setSystemTime()
+  }
 })
 
 test("answers after start_new_version land in the new version and leave the old one as it was", async () => {

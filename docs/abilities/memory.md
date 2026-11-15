@@ -108,8 +108,8 @@ you give a new one, so redoing the profile never leaves the assistant knowing no
 
 Answers are grouped into **versions**. A complete set is stamped with a completion time. Once
 `revalidateAfterDays` has passed, the next check quietly opens a new version and the agent asks everything
-again. That's what makes a mood or check-in questionnaire useful over time: each version is a dated snapshot
-you can compare with the last.
+again. That's what makes a mood or check-in questionnaire useful over time: each version is a dated snapshot,
+and the agent sees the answers of the version before next to the new ones, so it can tell you what changed.
 
 The agent drives all of this through one tool, `dataset_info`, with four actions: `list_datasets`,
 `get_status` (progress, and what's still unanswered), `answer` (record one field) and `start_new_version`

@@ -92,6 +92,34 @@ function formatStatus(
   return lines.join("\n")
 }
 
+type LoadedDataset = NonNullable<Awaited<ReturnType<typeof loadDataset>>>
+
+/** `status` followed by what the version before `version` holds, so the model can say what changed since. */
+async function withPreviousVersion(
+  status: string,
+  store: NasiStore,
+  dataset: LoadedDataset,
+  topic: string,
+  owner: string | null,
+  version: number
+): Promise<string> {
+  if (version <= 1) return status
+  const answers = await store.loadDatasetAnswers(topic, owner, version - 1)
+  const valueByField = new Map(answers.map(a => [a.field, a.value]))
+  const kept = dataset.fields.filter(f => valueByField.has(f.name))
+  if (kept.length === 0) return status
+  // Dated by its last answer: the version row's time may be when it was opened
+  const answeredOn = answers
+    .map(a => a.answeredAt.slice(0, 10))
+    .toSorted((a, b) => a.localeCompare(b))
+    .at(-1)
+  return [
+    status,
+    `Version ${version - 1} (answered ${answeredOn}), to compare with:`,
+    ...kept.map(f => `- ${f.name}: ${valueByField.get(f.name)}`)
+  ].join("\n")
+}
+
 async function handleListDatasets(): Promise<string> {
   const datasets = await loadDatasets()
   if (datasets.size === 0) return "(no datasets configured)"
@@ -110,7 +138,8 @@ async function handleGetStatus(store: NasiStore, datasetId: string, owner: strin
     dataset.revalidateAfterDays,
     dataset.fields.length
   )
-  return formatStatus(dataset, version, answers, justStarted ? "stale" : undefined)
+  const status = formatStatus(dataset, version, answers, justStarted ? "stale" : undefined)
+  return withPreviousVersion(status, store, dataset, datasetId, owner, version)
 }
 
 async function handleAnswer(
@@ -164,7 +193,7 @@ async function handleStartNewVersion(store: NasiStore, datasetId: string, owner:
   if ((await store.loadDatasetAnswers(datasetId, owner, latest)).length === 0) return formatStatus(dataset, latest, [])
   const version = latest + 1
   await store.startDatasetVersion(datasetId, owner, version)
-  return formatStatus(dataset, version, [], "asked")
+  return withPreviousVersion(formatStatus(dataset, version, [], "asked"), store, dataset, datasetId, owner, version)
 }
 
 /**
@@ -185,7 +214,8 @@ export const datasetInfoTool = tool({
     "answered and which remain (with each remaining field's prompt and, if " +
     "applicable, its fixed list of accepted answers) — always call this " +
     "before asking anything, and again after each 'answer' to know what's " +
-    "next; if the dataset was already fully answered in a prior session and " +
+    "next; from the second version on it also lists the answers of the " +
+    "version before, so you can tell the user what changed since; if the dataset was already fully answered in a prior session and " +
     "has since become eligible for revalidation, 'get_status' transparently " +
     "starts a new version and tells you so — treat every field as " +
     "unanswered again in that case; 'answer' records the user's reply to " +
