@@ -81,4 +81,4 @@ Kokoro voice, which has no Hungarian; for that, put a `tts` model that has one a
 
 Next:
 
-[Abilities](/abilities){: .btn .btn-green .fs-5 }
+[Sandbox](/use/sandbox){: .btn .btn-green .fs-5 }

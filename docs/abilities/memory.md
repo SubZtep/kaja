@@ -82,6 +82,10 @@ the folder loads, but does nothing until a persona names it or it's a profile.
 }
 ```
 
+To use one of your own in local mode, save it as `datasets/mood-check-in.json` and give a
+[persona](/abilities/personas) of your own `dataset = "mood-check-in"`. The file name is the dataset's id,
+and a marketplace sync never touches files you added.
+
 | Field                 | Purpose                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------- |
 | `label`               | display name (required)                                                             |

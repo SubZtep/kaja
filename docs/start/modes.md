@@ -62,7 +62,8 @@ clears it.
 > {: .warning }
 
 The server picks the model (there's no model switching) and keeps your sessions, memory and dataset
-answers. The agent gets the cloud [built-in tools](/abilities/tools#built-ins) and every persona in the
+answers. Memory and answers are one set per account, shared with the cloud
+[Telegram bot](/use/telegram#cloud-bot). The agent gets the cloud [built-in tools](/abilities/tools#built-ins) and every persona in the
 marketplace, each with the abilities it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 Tools that reach the internet run on a [sandbox](/abilities/mcp#in-the-cloud), never on the API itself.
 [Run one of your own](/use/sandbox) with the key from the web app's Sandbox page.
