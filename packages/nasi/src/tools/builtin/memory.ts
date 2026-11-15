@@ -170,7 +170,8 @@ export const listNotesTool = tool({
   name: "list_notes",
   description:
     "List every stored note's key, importance, sticky flag, tags, and " +
-    "last-used date — use to audit what's currently remembered. Pass " +
+    "the dates it was first noted and last used — use to audit what's " +
+    "currently remembered. Pass " +
     "full: true to include each note's content.",
   schema: z.object({
     full: z.boolean().optional().describe("Include each note's content below its header")

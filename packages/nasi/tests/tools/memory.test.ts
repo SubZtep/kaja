@@ -163,7 +163,8 @@ test("recall_memory results carry importance, sticky, tags, and date metadata", 
   const result = await recallMemoryTool.execute({ query: "brevity" }, ctx())
   expect(result).toContain("user:style [high, sticky]")
   expect(result).toContain("(tags: user, style)")
-  expect(result).toContain("(used ")
+  const today = new Date().toISOString().slice(0, 10)
+  expect(result).toContain(`(first noted ${today}, used ${today})`)
   expect(result).toContain(": likes brevity")
 })
 

@@ -48,7 +48,7 @@ flowchart LR
 | --------------- | ------------------------------------------------------------------------------------------------ |
 | `remember_note` | write or update a fact. It **upserts by key**, so the same key overwrites instead of duplicating |
 | `recall_memory` | search notes, filtered by tags, minimum importance or sticky-only                                |
-| `list_notes`    | list what's stored                                                                               |
+| `list_notes`    | list what's stored, with the day each note was first written and last used                       |
 | `forget_note`   | delete one note by key, or every note with a tag                                                 |
 
 **Sticky** notes skip search and go into the system prompt at the start of every session. Use them for the

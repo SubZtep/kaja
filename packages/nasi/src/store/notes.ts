@@ -3,7 +3,8 @@ import type { MemoryNote, MemoryStore } from "@kaja/schema/store"
 export function noteHeader(key: string, note: MemoryNote) {
   const flags = note.sticky ? `${note.importance}, sticky` : note.importance
   const tags = note.tags.length > 0 ? ` (tags: ${note.tags.join(", ")})` : ""
-  return `${key} [${flags}]${tags} (used ${note.lastUsedAt.slice(0, 10)})`
+  // Both dates: a recall moves "used", so alone it says nothing about how old the note is
+  return `${key} [${flags}]${tags} (first noted ${note.createdAt.slice(0, 10)}, used ${note.lastUsedAt.slice(0, 10)})`
 }
 
 export function forgetNotes(store: MemoryStore, selector: { key?: string; tag?: string; pattern?: string }): string[] {
