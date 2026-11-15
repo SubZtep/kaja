@@ -4,6 +4,7 @@ import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { LOAD_SKILL_TOOL, skillsForPersona, stickySkillsForPersona } from "../abilities/skills"
 import { loadDataset as defaultLoadDataset, loadDatasets as defaultLoadDatasets } from "../personas"
+import type { NasiStore } from "../store/types"
 import {
   type Agent,
   applyPersona,
@@ -226,12 +227,21 @@ async function buildProfileBlock(
   return sections.length > 0 ? sections.join("\n\n") : undefined
 }
 
+// A fresh version fills up field by field: until then each field keeps its answer from the version before
+async function newestAnswers(store: NasiStore, topic: string, dataset: Dataset, owner: string | null) {
+  const answers = new Map<string, string>()
+  let version = await store.latestDatasetVersion(topic, owner)
+  while (version > 0 && dataset.fields.some(f => !answers.has(f.name))) {
+    for (const answer of await store.loadDatasetAnswers(topic, owner, version)) {
+      if (!answers.has(answer.field)) answers.set(answer.field, answer.value)
+    }
+    version--
+  }
+  return answers
+}
+
 async function profileSection(agent: Agent, topic: string, dataset: Dataset, owner: string | null): Promise<string> {
-  const store = agent.store!
-  const version = await store.latestDatasetVersion(topic, owner)
-  const answers = new Map(
-    (version > 0 ? await store.loadDatasetAnswers(topic, owner, version) : []).map(a => [a.field, a.value])
-  )
+  const answers = await newestAnswers(agent.store!, topic, dataset, owner)
   // A declined field counts as answered (never asked again) but isn't shown.
   const shared = dataset.fields.filter(f => {
     const value = answers.get(f.name)

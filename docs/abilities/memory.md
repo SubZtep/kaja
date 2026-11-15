@@ -101,6 +101,9 @@ shared (never the skipped fields), and records a missing detail when you happen 
 quizzing you for the rest. While your name is unknown, the assistant asks for it once, kindly. Like
 [sticky notes](#notes), that section goes to the model provider with each message.
 
+While a new [version](#versions) of a profile is being filled in, each field keeps its earlier answer until
+you give a new one, so redoing the profile never leaves the assistant knowing nothing about you.
+
 ### Versions
 
 Answers are grouped into **versions**. A complete set is stamped with a completion time. Once
