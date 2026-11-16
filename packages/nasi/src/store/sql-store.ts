@@ -444,23 +444,20 @@ export function createSqlStore(sql: SQL, opts: SqlStoreOptions): NasiStore {
 
     async deleteNotes(owner, keys) {
       if (keys.length === 0) return
-      await sql.begin(async tx => {
-        for (const key of keys) {
-          await tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key = ${pgText(key)}`
-        }
-      })
+      await sql.begin(
+        tx =>
+          tx`DELETE FROM nasi_note WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key IN ${tx(keys.map(pgText))}`
+      )
     },
 
     async touchNotes(owner, keys) {
       if (keys.length === 0) return
       const at = now()
-      await sql.begin(async tx => {
-        for (const key of keys) {
-          await tx`
-            UPDATE nasi_note SET last_used_at = ${at}, use_count = use_count + 1
-            WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key = ${pgText(key)}`
-        }
-      })
+      await sql.begin(
+        tx => tx`
+          UPDATE nasi_note SET last_used_at = ${at}, use_count = use_count + 1
+          WHERE user_id = ${userId} AND owner = ${memoryOwner(owner)} AND key IN ${tx(keys.map(pgText))}`
+      )
     },
 
     async latestDatasetVersion(topic, owner) {
