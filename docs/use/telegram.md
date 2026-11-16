@@ -93,6 +93,9 @@ Never send an API key to your bot: Telegram keeps the message history. Put it in
 - Kaja works on one message at a time. Send another while it's busy and it says it's still working, so wait for
   the answer.
 - Send a photo with a caption to ask about it. An album of photos goes in as one message.
+- The cloud bot uses your account's [memory](/abilities/memory): the notes and dataset answers are the ones
+  the terminal's cloud chat reads and writes too. Conversations stay separate. On your own bot, each paired
+  Telegram user has their own notes and answers.
 
 ## Commands
 
@@ -104,4 +107,4 @@ Never send an API key to your bot: Telegram keeps the message history. Put it in
 
 Next:
 
-[Website widget](/use/widget){: .btn .btn-green .fs-5 }
+[Voice & language](/use/voice){: .btn .btn-green .fs-5 }

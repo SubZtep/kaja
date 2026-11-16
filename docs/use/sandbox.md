@@ -64,7 +64,7 @@ config:
   theme: neo-dark
 ---
 flowchart LR
-  Chat["TUI, web or Telegram"] -->|chat| API["API"]
+  Chat["terminal or Telegram"] -->|chat| API["API"]
   API -->|"request"| Sandbox["sandbox"]
   Sandbox -->|"head, chunks"| API
   API <-->|"WebSocket, dialled out at start"| Sandbox

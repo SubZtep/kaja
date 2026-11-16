@@ -22,26 +22,18 @@ describe("cross-site protection", () => {
     expect(cookie).toContain("session_token=")
   })
 
-  test("widget admin never reflects a foreign origin", async () => {
-    const res = await app.request("/widget/manage", {
+  test("a signed-in route never reflects a foreign origin", async () => {
+    const res = await app.request("/sandbox", {
       headers: { Authorization: `Bearer ${token}`, origin: attacker }
     })
     expect(res.status).toBe(200)
     expect(res.headers.get("access-control-allow-origin")).not.toBe(attacker)
 
-    const preflight = await app.request("/widget/manage", {
+    const preflight = await app.request("/sandbox/key", {
       method: "OPTIONS",
       headers: { origin: attacker, "access-control-request-method": "POST" }
     })
     expect(preflight.headers.get("access-control-allow-origin")).not.toBe(attacker)
-  })
-
-  test("a widget token route does not reflect a foreign origin", async () => {
-    const res = await app.request("/ai/chat", {
-      method: "OPTIONS",
-      headers: { origin: attacker, "access-control-request-method": "POST" }
-    })
-    expect(res.headers.get("access-control-allow-origin")).not.toBe(attacker)
   })
 
   test("a cookie-authenticated write from another site is refused", async () => {

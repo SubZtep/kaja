@@ -35,11 +35,6 @@ export function setNasiChatResolver(resolver: ChatResolver | undefined) {
   chatResolver = resolver
 }
 
-/** A widget's chat client: the test resolver when installed, else exactly `pinnedModel`, with no random fallback. */
-export function resolveWidgetChat(pinnedModel: string) {
-  return chatResolver ? chatResolver() : defaultChatResolver(pinnedModel, true)
-}
-
 type DescriberResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string } | undefined>
 
 let describerResolver: DescriberResolver | undefined

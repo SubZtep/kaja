@@ -164,7 +164,7 @@ function ModelCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Model,
 
 function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date | null>) {
   const value = info.getValue()
-  return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+  return <span className="text-muted font-mono text-xs">{value ? getTimeAgo(value) : m.models_never_used()}</span>
 }
 
 type ModelActionsMeta = Readonly<{

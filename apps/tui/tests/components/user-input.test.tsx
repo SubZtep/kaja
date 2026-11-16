@@ -113,7 +113,7 @@ test("in a multiline draft, arrows move the cursor before recalling", async () =
 test("the field is one row with a › mark, no rules around it", async () => {
   const t = renderForTest(<UserInput pending={false} speaking={false} send={async () => {}} />)
   await t.tick()
-  expect(t.lastFrame().trimEnd().split("\n")).toEqual([" › Type something..."])
+  expect(t.lastFrame().trimEnd().split("\n")).toEqual([" › Type something…"])
   t.unmount()
   await t.waitUntilExit()
 })

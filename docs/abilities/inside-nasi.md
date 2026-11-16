@@ -18,8 +18,10 @@ Each host (the terminal in local mode, the Kaja API for everything cloud) hands 
 a model, a place to store conversations, a set of tools, and a few words about where it's running. The
 terminal in cloud mode runs no loop at all: it carries a small HTTP client and lets the API think.
 
-In the cloud one store holds many people's conversations, so every conversation has an owner: your account
-or a Telegram user. Ask to resume a conversation that isn't yours and it simply isn't there.
+In the cloud one store holds many people's conversations, so every conversation has an owner: your account,
+and within it the chat it came from (the terminal or your linked Telegram). Ask to resume a conversation that
+isn't yours and it simply isn't there. Your [notes and dataset answers](/abilities/memory) belong to the
+account as a whole, so every chat of yours reads the same ones.
 
 ## A turn is a series of rounds
 

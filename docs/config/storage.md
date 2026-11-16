@@ -38,10 +38,11 @@ always the same fixed id. Open the file with any SQLite tool to see the columns.
 | `nasi_session_event`   | the terminal timeline (what the screen showed), replayed when you resume                                                                                                                      |
 | `nasi_image`           | what is known about each saved image: size, where it came from, its description                                                                                                               |
 | `nasi_dataset_answer`  | individual answers to a [dataset](/abilities/memory#datasets) field                                                                                                                           |
-| `nasi_dataset_version` | marks a dataset as completed at a point in time                                                                                                                                               |
+| `nasi_dataset_version` | one row per [version](/abilities/memory#versions) of a dataset: when it was completed, or opened early while it's still being answered                                                        |
 
 `owner` separates rows within one file: empty for the terminal (`null` in `nasi_session`), a namespaced id for a
-Telegram user. Sessions belonging to another owner can't be resumed.
+Telegram user of [your own bot](/use/telegram#your-own-bot). Sessions belonging to another owner can't be
+resumed, and each owner has their own notes and dataset answers.
 
 ## Deleting it
 

@@ -277,6 +277,22 @@ test("## About the user only shows the answers of the owner the prompt is for", 
   expect((await buildSystemPrompt(agent, "telegram:2")) ?? "").not.toContain("Andras")
 })
 
+test("## About the user keeps the earlier answers while a new version is being filled in", async () => {
+  const agent = await profileAgent({ name: "Andras", pronouns: "he", home: "Budapest", pets: "a cat" })
+  await agent.store!.startDatasetVersion("onboarding", null, 2)
+  // Opened and still empty: the whole profile comes from the version before
+  expect((await buildSystemPrompt(agent, null)) ?? "").toContain("- name: Andras\n- pronouns: he\n- home: Budapest")
+
+  await agent.store!.saveDatasetAnswer("onboarding", null, 2, "home", "Szeged")
+  await agent.store!.saveDatasetAnswer("onboarding", null, 2, "pets", "Prefer not to say")
+  const prompt = (await buildSystemPrompt(agent, null)) ?? ""
+  expect(prompt).toContain("- name: Andras\n- pronouns: he\n- home: Szeged")
+  // The newer answer wins, a declined one too
+  expect(prompt).not.toContain("pets:")
+  expect(prompt).not.toContain("still missing")
+  expect(prompt).not.toContain("kindly ask")
+})
+
 test("a dataset that isn't a profile adds no About the user section", async () => {
   const agent = await profileAgent({ name: "Andras" })
   agent.promptContext.loadDatasets = async () => new Map([["onboarding", { ...profile, profile: false }]])

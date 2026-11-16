@@ -72,10 +72,10 @@ test("a session round-trips through its rows: pending call, granted tools and ti
 
 test("the channel follows the owner's prefix, else the host's default", async () => {
   const ids = await Promise.all(
-    [null, "telegram:1", "widget:k:v"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
+    [null, "telegram:1"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
   )
   const rows = await sql`SELECT channel FROM nasi_session WHERE id IN ${sql(ids)} ORDER BY channel`
-  expect(rows.map((row: { channel: string }) => row.channel)).toEqual(["local", "telegram", "widget"])
+  expect(rows.map((row: { channel: string }) => row.channel)).toEqual(["local", "telegram"])
 })
 
 test("an update appends only new messages and events, and links a result to its call", async () => {
@@ -312,7 +312,7 @@ test("another account on the same database sees none of the sessions, images or 
   const image = await normalizeImage(png(2, 2))
   const { ref } = await store.images(id).put(image)
   const imageId = ref.slice(IMAGE_REF_PREFIX.length)
-  await store.saveMemory(null, { k: note("mine") })
+  await store.saveNote(null, "k", note("mine"))
 
   expect(await other.loadSession(id)).toBeUndefined()
   expect(await other.loadLatestSession(null)).toBeUndefined()
@@ -324,7 +324,10 @@ test("another account on the same database sees none of the sessions, images or 
   await other.images(id).clear()
   expect(await store.images(id).get(imageId)).toBeDefined()
   expect(await other.loadMemory(null)).toEqual({})
-  await store.saveMemory(null, {})
+  await other.deleteNotes(null, ["k"])
+  await other.touchNotes(null, ["k"])
+  expect(await store.loadMemory(null)).toEqual({ k: note("mine") })
+  await store.deleteNotes(null, ["k"])
 })
 
 const note = (content: string, extra = {}) => ({
@@ -338,19 +341,61 @@ const note = (content: string, extra = {}) => ({
   ...extra
 })
 
-test("memory notes round-trip, and saving one owner's set replaces only that owner's", async () => {
-  await store.saveMemory(null, { "user:web": note("web fact", { sticky: true, useCount: 3 }) })
-  await store.saveMemory("telegram:7", { "user:tg": note("telegram fact") })
+test("memory notes round-trip, and deleting one owner's notes leaves the other owner's", async () => {
+  await store.saveNote(null, "user:web", note("web fact", { sticky: true, useCount: 3 }))
+  await store.saveNote("telegram:7", "user:tg", note("telegram fact"))
   expect(await store.loadMemory(null)).toEqual({ "user:web": note("web fact", { sticky: true, useCount: 3 }) })
   expect(Object.keys(await store.loadMemory("telegram:7"))).toEqual(["user:tg"])
 
-  await store.saveMemory("telegram:7", {})
+  await store.deleteNotes("telegram:7", ["user:tg", "user:web"])
   expect(await store.loadMemory("telegram:7")).toEqual({})
   expect(Object.keys(await store.loadMemory(null))).toEqual(["user:web"])
-  await store.saveMemory(null, {})
+  await store.deleteNotes(null, ["user:web"])
 })
 
-test("dataset answers upsert per field, and a version is completed once", async () => {
+test("with oneMemory, notes and dataset answers are the account's, whichever owner asks", async () => {
+  const shared = storeFor(USER, { oneMemory: true })
+  await shared.saveNote("telegram:7", "user:tg", note("from telegram"))
+  await shared.saveNote(null, "user:web", note("from the web"))
+  expect(Object.keys(await shared.loadMemory("telegram:8")).toSorted()).toEqual(["user:tg", "user:web"])
+  await shared.touchNotes(null, ["user:tg"])
+  expect((await shared.loadMemory("telegram:7"))["user:tg"]!.useCount).toBe(1)
+
+  await shared.saveDatasetAnswer("shared-profile", "telegram:7", 1, "name", "Ann")
+  await shared.startDatasetVersion("shared-profile", null, 2)
+  expect(await shared.latestDatasetVersion("shared-profile", "telegram:8")).toBe(2)
+  expect((await shared.loadDatasetAnswers("shared-profile", null, 1)).map(a => a.value)).toEqual(["Ann"])
+  expect(await shared.loadDatasetVersionCompletedAt("shared-profile", "telegram:7", 2)).toBeDefined()
+
+  // Sessions stay with the chat they belong to
+  const id = await shared.createSession({ ...write(TURN), owner: "telegram:7", title: "t" })
+  expect((await shared.loadLatestSession("telegram:7"))?.id).toBe(id)
+  expect(await shared.loadLatestSession("telegram:8")).toBeUndefined()
+  await shared.deleteSession(id)
+  await shared.deleteNotes("telegram:9", ["user:tg", "user:web"])
+  expect(await shared.loadMemory(null)).toEqual({})
+})
+
+test("a note written again replaces only its own row, and a use is counted only on the notes named", async () => {
+  await store.saveNote(null, "a", note("first"))
+  await store.saveNote(null, "b", note("other"))
+  await store.saveNote(null, "a", note("second", { importance: "high", tags: [], sticky: true }))
+  expect(await store.loadMemory(null)).toEqual({
+    a: note("second", { importance: "high", tags: [], sticky: true }),
+    b: note("other")
+  })
+
+  await store.touchNotes(null, ["a", "missing"])
+  const notes = await store.loadMemory(null)
+  expect(notes.a!.useCount).toBe(1)
+  expect(notes.a!.lastUsedAt > note("").lastUsedAt).toBe(true)
+  expect(notes.a!.createdAt).toBe(note("").createdAt)
+  expect(notes.b).toEqual(note("other"))
+  expect(Object.keys(notes).toSorted()).toEqual(["a", "b"])
+  await store.deleteNotes(null, ["a", "b"])
+})
+
+test("dataset answers upsert per field, and a version opened early is stamped again when completed", async () => {
   expect(await store.latestDatasetVersion("profile", null)).toBe(0)
   await store.saveDatasetAnswer("profile", null, 1, "name", "Ann")
   await Bun.sleep(2)
@@ -364,11 +409,14 @@ test("dataset answers upsert per field, and a version is completed once", async 
   ])
   expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toBeUndefined()
   await store.markDatasetVersionComplete("profile", null, 1)
-  const completed = await store.loadDatasetVersionCompletedAt("profile", null, 1)
-  await store.markDatasetVersionComplete("profile", null, 1)
-  expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toBe(completed!)
-  await store.markDatasetVersionComplete("profile", null, 2)
+  expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toMatch(/Z$/)
+  await store.startDatasetVersion("profile", null, 2)
   expect(await store.latestDatasetVersion("profile", null)).toBe(2)
+  expect(await store.loadDatasetAnswers("profile", null, 2)).toEqual([])
+  const opened = await store.loadDatasetVersionCompletedAt("profile", null, 2)
+  await Bun.sleep(5)
+  await store.markDatasetVersionComplete("profile", null, 2)
+  expect((await store.loadDatasetVersionCompletedAt("profile", null, 2))! > opened!).toBe(true)
   expect(await store.latestDatasetVersion("profile", "telegram:1")).toBe(0)
   expect(await storeFor(OTHER).latestDatasetVersion("profile", null)).toBe(0)
 })

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS nasi_session (
   model text NOT NULL,
   title text NOT NULL,
   owner text,
-  channel text NOT NULL CHECK (channel IN ('web', 'telegram', 'widget')),
+  channel text NOT NULL CHECK (channel IN ('web', 'telegram')),
   system_prompt text,
   pending_call_id text,
   pending_kind text CHECK (pending_kind IN ('ask_user', 'run_command', 'tool_approval', 'client_tools')),
@@ -127,7 +127,7 @@ CREATE INDEX IF NOT EXISTS nasi_image_user_idx ON nasi_image (user_id);
 
 CREATE TABLE IF NOT EXISTS nasi_note (
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
-  -- whose notes: '' is the web app and the CLI, else a Telegram user or a widget visitor (like sessions and datasets)
+  -- always '' here: notes and dataset answers are the account's, whichever chat wrote them (a local database keeps them per Telegram user)
   owner text NOT NULL DEFAULT '',
   key text NOT NULL,
   content text NOT NULL,
@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS nasi_dataset_version (
   topic text NOT NULL,
   owner text NOT NULL DEFAULT '',
   version integer NOT NULL,
+  -- when its last field was answered; until then, when it was opened early (start_new_version)
   completed_at timestamptz NOT NULL,
   PRIMARY KEY (user_id, topic, owner, version)
 );

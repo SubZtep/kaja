@@ -26,8 +26,10 @@ The agent writes a note whenever it learns something lasting about you or your w
 Each note has a **key** (a stable id like `user:communication-style`), the **content**, an **importance** of
 `low`, `medium` or `high` that weights recall ranking, optional **tags**, and a **sticky** flag.
 
-Notes belong to whoever is talking. The terminal and each Telegram user have separate sets, so one person's
-notes never reach another's chats.
+In the cloud, notes belong to your account: the web app, the terminal and your linked Telegram chat all read
+and write the same set. On your own machine they belong to whoever is talking: the terminal and each Telegram
+user of [your own bot](/use/telegram#your-own-bot) have separate sets, so one person's notes never reach
+another's chats. Dataset answers follow the same rule.
 
 ```mermaid
 ---
@@ -48,7 +50,7 @@ flowchart LR
 | --------------- | ------------------------------------------------------------------------------------------------ |
 | `remember_note` | write or update a fact. It **upserts by key**, so the same key overwrites instead of duplicating |
 | `recall_memory` | search notes, filtered by tags, minimum importance or sticky-only                                |
-| `list_notes`    | list what's stored                                                                               |
+| `list_notes`    | list what's stored, with the day each note was first written and last used                       |
 | `forget_note`   | delete one note by key, or every note with a tag                                                 |
 
 **Sticky** notes skip search and go into the system prompt at the start of every session. Use them for the
@@ -80,6 +82,10 @@ the folder loads, but does nothing until a persona names it or it's a profile.
 }
 ```
 
+To use one of your own in local mode, save it as `datasets/mood-check-in.json` and give a
+[persona](/abilities/personas) of your own `dataset = "mood-check-in"`. The file name is the dataset's id,
+and a marketplace sync never touches files you added.
+
 | Field                 | Purpose                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------- |
 | `label`               | display name (required)                                                             |
@@ -101,16 +107,19 @@ shared (never the skipped fields), and records a missing detail when you happen 
 quizzing you for the rest. While your name is unknown, the assistant asks for it once, kindly. Like
 [sticky notes](#notes), that section goes to the model provider with each message.
 
+While a new [version](#versions) of a profile is being filled in, each field keeps its earlier answer until
+you give a new one, so redoing the profile never leaves the assistant knowing nothing about you.
+
 ### Versions
 
 Answers are grouped into **versions**. A complete set is stamped with a completion time. Once
 `revalidateAfterDays` has passed, the next check quietly opens a new version and the agent asks everything
-again. That's what makes a mood or check-in questionnaire useful over time: each version is a dated snapshot
-you can compare with the last.
+again. That's what makes a mood or check-in questionnaire useful over time: each version is a dated snapshot,
+and the agent sees the answers of the version before next to the new ones, so it can tell you what changed.
 
 The agent drives all of this through one tool, `dataset_info`, with four actions: `list_datasets`,
 `get_status` (progress, and what's still unanswered), `answer` (record one field) and `start_new_version`
-(redo the set early, when you ask).
+(redo the set early, when you ask; the answers you gave before stay as the previous version).
 
 ---
 

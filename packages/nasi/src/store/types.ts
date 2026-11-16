@@ -1,4 +1,4 @@
-import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
+import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import type { SessionImages } from "./images"
 
 export type DatasetAnswer = {
@@ -30,11 +30,18 @@ export type NasiStore = {
   loadPromptHistory(limit?: number): Promise<string[]>
 
   loadMemory(owner: string | null): Promise<MemoryStore>
-  saveMemory(owner: string | null, memory: MemoryStore): Promise<void>
+  /** Writes the note under `key`, replacing the one stored there; every other note stays as it is. */
+  saveNote(owner: string | null, key: string, note: MemoryNote): Promise<void>
+  deleteNotes(owner: string | null, keys: string[]): Promise<void>
+  /** Counts one more use of each of `keys` and stamps it used now. */
+  touchNotes(owner: string | null, keys: string[]): Promise<void>
 
   latestDatasetVersion(topic: string, owner: string | null): Promise<number>
   loadDatasetAnswers(topic: string, owner: string | null, version: number): Promise<DatasetAnswer[]>
   saveDatasetAnswer(topic: string, owner: string | null, version: number, field: string, value: string): Promise<void>
+  /** Opens `version` before it has an answer, so the next answers land in it and the one before stays as it is. */
+  startDatasetVersion(topic: string, owner: string | null, version: number): Promise<void>
+  /** Stamps `version` complete now, replacing the time it was opened at by {@link startDatasetVersion}. */
   markDatasetVersionComplete(topic: string, owner: string | null, version: number): Promise<void>
   loadDatasetVersionCompletedAt(topic: string, owner: string | null, version: number): Promise<string | undefined>
 }

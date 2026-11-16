@@ -4,6 +4,7 @@ import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { LOAD_SKILL_TOOL, skillsForPersona, stickySkillsForPersona } from "../abilities/skills"
 import { loadDataset as defaultLoadDataset, loadDatasets as defaultLoadDatasets } from "../personas"
+import type { NasiStore } from "../store/types"
 import {
   type Agent,
   applyPersona,
@@ -226,12 +227,31 @@ async function buildProfileBlock(
   return sections.length > 0 ? sections.join("\n\n") : undefined
 }
 
+// A fresh version fills up field by field: until then each field keeps its answer from the version before
+async function newestAnswers(store: NasiStore, topic: string, dataset: Dataset, owner: string | null) {
+  const latest = await store.latestDatasetVersion(topic, owner)
+  return fillAnswers(store, topic, dataset, owner, latest, new Map())
+}
+
+// One version at a time, newest first, so it stops loading once every field has an answer
+async function fillAnswers(
+  store: NasiStore,
+  topic: string,
+  dataset: Dataset,
+  owner: string | null,
+  version: number,
+  answers: Map<string, string>
+): Promise<Map<string, string>> {
+  if (version <= 0 || dataset.fields.every(f => answers.has(f.name))) return answers
+  const rows = await store.loadDatasetAnswers(topic, owner, version)
+  for (const answer of rows) {
+    if (!answers.has(answer.field)) answers.set(answer.field, answer.value)
+  }
+  return fillAnswers(store, topic, dataset, owner, version - 1, answers)
+}
+
 async function profileSection(agent: Agent, topic: string, dataset: Dataset, owner: string | null): Promise<string> {
-  const store = agent.store!
-  const version = await store.latestDatasetVersion(topic, owner)
-  const answers = new Map(
-    (version > 0 ? await store.loadDatasetAnswers(topic, owner, version) : []).map(a => [a.field, a.value])
-  )
+  const answers = await newestAnswers(agent.store!, topic, dataset, owner)
   // A declined field counts as answered (never asked again) but isn't shown.
   const shared = dataset.fields.filter(f => {
     const value = answers.get(f.name)

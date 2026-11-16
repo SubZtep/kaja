@@ -71,10 +71,10 @@ describe("nasi store on Postgres", () => {
   test("the channel follows the owner's prefix, and a terminal's 'local' is refused", async () => {
     const store = nasiStore(userId)
     const ids = await Promise.all(
-      [null, "telegram:1", "widget:k:v"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
+      [null, "telegram:1"].map(owner => store.createSession({ ...write([]), owner, title: "t" }))
     )
     const rows = await sql`SELECT channel FROM nasi_session WHERE id IN ${sql(ids)} ORDER BY channel`
-    expect(rows.map((r: { channel: string }) => r.channel)).toEqual(["telegram", "web", "widget"])
+    expect(rows.map((r: { channel: string }) => r.channel)).toEqual(["telegram", "web"])
     const local = createSqlStore(sql, { userId, defaultChannel: "local", objects })
     await expect(local.createSession({ ...write([]), title: "t" })).rejects.toThrow("channel")
   })
@@ -130,7 +130,7 @@ describe("nasi store on Postgres", () => {
     expect(loaded.events).toEqual([{ type: "user", text: "ab" }])
   })
 
-  test("memory notes keep their jsonb tags and boolean, per owner and per account", async () => {
+  test("memory notes keep their jsonb tags and boolean, one set per account whichever chat wrote them", async () => {
     const store = nasiStore(userId)
     const note = {
       content: "web fact",
@@ -141,11 +141,14 @@ describe("nasi store on Postgres", () => {
       lastUsedAt: "2026-09-21T00:00:00.000Z",
       useCount: 2
     }
-    await store.saveMemory(null, { "user:web": note })
-    await store.saveMemory("widget:abc:visitor-1", { "user:visitor": { ...note, sticky: false } })
-    expect(await store.loadMemory(null)).toEqual({ "user:web": note })
-    expect((await store.loadMemory("widget:abc:visitor-1"))["user:visitor"]!.sticky).toBe(false)
+    await store.saveNote(null, "user:web", note)
+    await store.saveNote("telegram:7", "user:visitor", { ...note, sticky: false })
+    const both = { "user:web": note, "user:visitor": { ...note, sticky: false } }
+    expect(await store.loadMemory(null)).toEqual(both)
+    expect(await store.loadMemory("telegram:7")).toEqual(both)
     expect(await nasiStore(otherId).loadMemory(null)).toEqual({})
+    const [owners] = await sql`SELECT array_agg(DISTINCT owner) AS owners FROM nasi_note WHERE user_id = ${userId}`
+    expect(owners).toEqual({ owners: [""] })
   })
 
   test("dataset answers and versions read back as ISO text", async () => {
@@ -156,6 +159,11 @@ describe("nasi store on Postgres", () => {
     expect(answer!.answeredAt).toMatch(/Z$/)
     expect(await store.loadDatasetVersionCompletedAt("profile", null, 1)).toMatch(/Z$/)
     expect(await store.latestDatasetVersion("profile", null)).toBe(1)
+    // A version opened early exists before it has an answer, and completing it replaces its time
+    await store.startDatasetVersion("profile", null, 2)
+    expect(await store.latestDatasetVersion("profile", null)).toBe(2)
+    await store.markDatasetVersionComplete("profile", null, 2)
+    expect(await store.loadDatasetVersionCompletedAt("profile", null, 2)).toMatch(/Z$/)
   })
 
   test("delete stays inside the account, and the rows go with the session", async () => {
@@ -176,8 +184,14 @@ describe("nasi store on Postgres", () => {
     const store = nasiStore(gone)
     const id = await store.createSession({ ...write(TURN, { events: [{ type: "user", text: "hi" }] }), title: "t" })
     await store.images(id).put({ data: noisyPng(2, 2), mimeType: "image/png", width: 2, height: 2 })
-    await store.saveMemory(null, {
-      k: { content: "c", importance: "low", tags: [], sticky: false, createdAt: AT, lastUsedAt: AT, useCount: 0 }
+    await store.saveNote(null, "k", {
+      content: "c",
+      importance: "low",
+      tags: [],
+      sticky: false,
+      createdAt: AT,
+      lastUsedAt: AT,
+      useCount: 0
     })
     await sql`DELETE FROM "user" WHERE id = ${gone}`
     const [left] = await sql`

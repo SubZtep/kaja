@@ -18,8 +18,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 /**
  * Resolves the version of `topic` that's currently active for `owner`: the latest version if it's still incomplete or
- * not yet stale, otherwise a fresh next version. Returns the version number, whether it was just freshly started, and
- * its already-recorded answers (empty for a fresh version).
+ * not yet stale, otherwise a fresh next version. Returns the version number, whether it was just freshly started, its
+ * already-recorded answers (empty for a fresh version), and when it was completed (a complete version only).
  */
 async function resolveActiveVersion(
   store: NasiStore,
@@ -41,24 +41,32 @@ async function resolveActiveVersion(
     revalidateAfterDays !== undefined &&
     Date.now() - new Date(completedAt).getTime() > revalidateAfterDays * MS_PER_DAY
 
-  if (!stale) return { version: latest, justStarted: false, answers }
+  if (!stale) return { version: latest, justStarted: false, answers, completedAt }
   return { version: latest + 1, justStarted: true, answers: [] }
+}
+
+/** Why a status opens a fresh version: the one before went `stale`, or the user `asked` to redo it. */
+type Started = "stale" | "asked"
+
+function versionLine(version: number, started?: Started) {
+  if (started === "stale") return `Previous version was complete and stale — started fresh version ${version}.`
+  if (started === "asked")
+    return `As asked, started fresh version ${version}; version ${version - 1} keeps the previous answers.`
+  return `Version ${version}.`
 }
 
 function formatStatus(
   dataset: Awaited<ReturnType<typeof loadDataset>>,
   version: number,
   answers: { field: string; value: string }[],
-  justStarted: boolean
+  started?: Started
 ) {
   if (!dataset) return "Unknown dataset."
   const answeredByField = new Map(answers.map(a => [a.field, a.value]))
   const answered = dataset.fields.filter(f => answeredByField.has(f.name))
   const unanswered = dataset.fields.filter(f => !answeredByField.has(f.name))
 
-  const lines = [
-    justStarted ? `Previous version was complete and stale — started fresh version ${version}.` : `Version ${version}.`
-  ]
+  const lines = [versionLine(version, started)]
 
   if (answered.length > 0) {
     lines.push("Already answered:", ...answered.map(f => `- ${f.name}: ${answeredByField.get(f.name)}`))
@@ -84,6 +92,34 @@ function formatStatus(
   return lines.join("\n")
 }
 
+type LoadedDataset = NonNullable<Awaited<ReturnType<typeof loadDataset>>>
+
+/** `status` followed by what the version before `version` holds, so the model can say what changed since. */
+async function withPreviousVersion(
+  status: string,
+  store: NasiStore,
+  dataset: LoadedDataset,
+  topic: string,
+  owner: string | null,
+  version: number
+): Promise<string> {
+  if (version <= 1) return status
+  const answers = await store.loadDatasetAnswers(topic, owner, version - 1)
+  const valueByField = new Map(answers.map(a => [a.field, a.value]))
+  const kept = dataset.fields.filter(f => valueByField.has(f.name))
+  if (kept.length === 0) return status
+  // Dated by its last answer: the version row's time may be when it was opened
+  const answeredOn = answers
+    .map(a => a.answeredAt.slice(0, 10))
+    .toSorted((a, b) => a.localeCompare(b))
+    .at(-1)
+  return [
+    status,
+    `Version ${version - 1} (answered ${answeredOn}), to compare with:`,
+    ...kept.map(f => `- ${f.name}: ${valueByField.get(f.name)}`)
+  ].join("\n")
+}
+
 async function handleListDatasets(): Promise<string> {
   const datasets = await loadDatasets()
   if (datasets.size === 0) return "(no datasets configured)"
@@ -102,7 +138,8 @@ async function handleGetStatus(store: NasiStore, datasetId: string, owner: strin
     dataset.revalidateAfterDays,
     dataset.fields.length
   )
-  return formatStatus(dataset, version, answers, justStarted)
+  const status = formatStatus(dataset, version, answers, justStarted ? "stale" : undefined)
+  return withPreviousVersion(status, store, dataset, datasetId, owner, version)
 }
 
 async function handleAnswer(
@@ -127,7 +164,7 @@ async function handleAnswer(
       )
   }
 
-  const { version, answers } = await resolveActiveVersion(
+  const { version, answers, completedAt } = await resolveActiveVersion(
     store,
     args.dataset,
     owner,
@@ -140,18 +177,23 @@ async function handleAnswer(
     ...answers.filter(a => a.field !== field.name),
     { field: field.name, value: args.value, answeredAt: "" }
   ]
-  if (updatedAnswers.length >= dataset.fields.length)
+  // Only when this answer completes it: an answer changed later keeps the version's completion time
+  if (updatedAnswers.length >= dataset.fields.length && completedAt === undefined)
     await store.markDatasetVersionComplete(args.dataset, owner, version)
 
-  return formatStatus(dataset, version, updatedAnswers, false)
+  return formatStatus(dataset, version, updatedAnswers)
 }
 
 async function handleStartNewVersion(store: NasiStore, datasetId: string, owner: string | null): Promise<string> {
   const dataset = await loadDataset(datasetId)
   if (!dataset) return `Unknown dataset: ${datasetId}`
   const latest = await store.latestDatasetVersion(datasetId, owner)
+  // A version with no answers yet is already the fresh one
+  if (latest === 0) return formatStatus(dataset, 1, [])
+  if ((await store.loadDatasetAnswers(datasetId, owner, latest)).length === 0) return formatStatus(dataset, latest, [])
   const version = latest + 1
-  return formatStatus(dataset, version, [], true)
+  await store.startDatasetVersion(datasetId, owner, version)
+  return withPreviousVersion(formatStatus(dataset, version, [], "asked"), store, dataset, datasetId, owner, version)
 }
 
 /**
@@ -172,7 +214,8 @@ export const datasetInfoTool = tool({
     "answered and which remain (with each remaining field's prompt and, if " +
     "applicable, its fixed list of accepted answers) — always call this " +
     "before asking anything, and again after each 'answer' to know what's " +
-    "next; if the dataset was already fully answered in a prior session and " +
+    "next; from the second version on it also lists the answers of the " +
+    "version before, so you can tell the user what changed since; if the dataset was already fully answered in a prior session and " +
     "has since become eligible for revalidation, 'get_status' transparently " +
     "starts a new version and tells you so — treat every field as " +
     "unanswered again in that case; 'answer' records the user's reply to " +
@@ -180,8 +223,9 @@ export const datasetInfoTool = tool({
     "value must match one of them (case-insensitive) or it's rejected " +
     "without being saved, so tell the user the accepted options and ask " +
     "again; 'start_new_version' explicitly starts a fresh version even " +
-    "though the current one isn't stale yet — only call this if the user " +
-    "asks to redo their answers. Ask about each unanswered field " +
+    "though the current one isn't stale yet, keeping the current answers " +
+    "as the previous version — only call this if the user asks to redo " +
+    "their answers. Ask about each unanswered field " +
     "conversationally, phrasing its prompt naturally rather than reading it " +
     "verbatim, and ask one at a time rather than dumping the whole list on " +
     "the user.",

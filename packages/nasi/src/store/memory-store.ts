@@ -41,6 +41,15 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
       imageRows.get(id) ?? imageRows.set(id, memoryImageRows()).get(id)!
     )
 
+  const notesOf = (owner: string | null) =>
+    memoryByOwner.get(ownerKey(owner)) ?? memoryByOwner.set(ownerKey(owner), {}).get(ownerKey(owner))!
+
+  // A version's row holds one time: when it was opened early, then when its last field was answered
+  const stampDatasetVersion = (topic: string, owner: string | null, version: number) =>
+    Promise.try(() => {
+      versions.set(datasetKey(topic, owner, version), { topic, owner, version, completedAt: new Date().toISOString() })
+    })
+
   return {
     createSession(data: SessionWrite & { title: string }) {
       return Promise.try(() => {
@@ -134,9 +143,26 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
       })
     },
 
-    saveMemory(owner, next) {
+    saveNote(owner, key, note) {
       return Promise.try(() => {
-        memoryByOwner.set(ownerKey(owner), clone(next))
+        notesOf(owner)[key] = clone(note)
+      })
+    },
+
+    deleteNotes(owner, keys) {
+      return Promise.try(() => {
+        for (const key of keys) delete notesOf(owner)[key]
+      })
+    },
+
+    touchNotes(owner, keys) {
+      return Promise.try(() => {
+        const notes = notesOf(owner)
+        const now = new Date().toISOString()
+        for (const key of keys) {
+          const note = notes[key]
+          if (note) notes[key] = { ...note, lastUsedAt: now, useCount: note.useCount + 1 }
+        }
       })
     },
 
@@ -175,13 +201,8 @@ export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiSto
       })
     },
 
-    markDatasetVersionComplete(topic, owner, version) {
-      return Promise.try(() => {
-        const key = datasetKey(topic, owner, version)
-        if (versions.has(key)) return
-        versions.set(key, { topic, owner, version, completedAt: new Date().toISOString() })
-      })
-    },
+    startDatasetVersion: stampDatasetVersion,
+    markDatasetVersionComplete: stampDatasetVersion,
 
     loadDatasetVersionCompletedAt(topic, owner, version) {
       return Promise.try(() => {

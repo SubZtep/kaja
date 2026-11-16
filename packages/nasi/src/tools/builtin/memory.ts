@@ -42,10 +42,9 @@ export const rememberNoteTool = tool({
   execute: async (args, ctx) => {
     const nasi = requireStore(ctx)
     const owner = ctx?.owner ?? null
-    const store = await nasi.loadMemory(owner)
     const now = new Date().toISOString()
-    const existing = store[args.key]
-    store[args.key] = {
+    const existing = (await nasi.loadMemory(owner))[args.key]
+    await nasi.saveNote(owner, args.key, {
       content: args.content,
       importance: args.importance,
       tags: args.tags ?? [],
@@ -53,8 +52,7 @@ export const rememberNoteTool = tool({
       createdAt: existing?.createdAt ?? now,
       lastUsedAt: now,
       useCount: existing?.useCount ?? 0
-    }
-    await nasi.saveMemory(owner, store)
+    })
     return `Remembered "${args.key}".`
   }
 })
@@ -120,11 +118,11 @@ export const recallMemoryTool = tool({
 
     const result = scored.map(({ key, note }) => `${noteHeader(key, note)}: ${note.content}`).join("\n")
 
-    const now = new Date().toISOString()
-    for (const { key, note } of scored) {
-      store[key] = { ...note, lastUsedAt: now, useCount: note.useCount + 1 }
-    }
-    await nasi.saveMemory(owner, store)
+    // Only the notes returned: a save of the whole set would undo a note another chat wrote meanwhile
+    await nasi.touchNotes(
+      owner,
+      scored.map(({ key }) => key)
+    )
 
     return result
   }
@@ -158,7 +156,7 @@ export const forgetNoteTool = tool({
     const victims = forgetNotes(store, args)
     if (victims.length === 0) return args.key !== undefined ? "(no note with that key)" : "(no matching notes)"
 
-    await nasi.saveMemory(owner, store)
+    await nasi.deleteNotes(owner, victims)
     return `Forgot: ${victims.join(", ")}`
   }
 })
@@ -172,7 +170,8 @@ export const listNotesTool = tool({
   name: "list_notes",
   description:
     "List every stored note's key, importance, sticky flag, tags, and " +
-    "last-used date — use to audit what's currently remembered. Pass " +
+    "the dates it was first noted and last used — use to audit what's " +
+    "currently remembered. Pass " +
     "full: true to include each note's content.",
   schema: z.object({
     full: z.boolean().optional().describe("Include each note's content below its header")

@@ -75,23 +75,6 @@ const nasiTurnRateLimiterInner = rateLimiter({
   keyGenerator: (c: Context<{ Variables: RouteVariables }>) => c.get("user")?.id ?? clientIp(c)
 })
 
-/**
- * Spend ceiling for `POST /ai/chat`, per widget id. The browser never calls this route; the web server does, so a
- * per-IP bucket would count every visitor as one host.
- *
- * Default: 3000 requests per 10 minutes per widget.
- */
-const widgetSpendLimiterInner = rateLimiter({
-  windowMs: env.WIDGET_KEY_RATE_LIMIT_WINDOW_MS,
-  limit: env.WIDGET_KEY_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  keyGenerator: (c: Context) => {
-    const widget = c.get("widget" as never) as { id: string } | undefined
-    return widget?.id ?? "none"
-  }
-})
-
 export const globalRateLimiter = skipWhenDisabled(globalRateLimiterInner)
 export const authRateLimiter = skipWhenDisabled(authRateLimiterInner)
 export const nasiTurnRateLimiter = skipWhenDisabled(nasiTurnRateLimiterInner)
-export const widgetSpendLimiter = skipWhenDisabled(widgetSpendLimiterInner)

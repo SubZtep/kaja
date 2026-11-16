@@ -8,7 +8,7 @@ has_toc: false
 
 # Using Kaja
 
-One agent, several front doors: the terminal, Telegram, and widgets that call the model. The web app manages
-your cloud account, and voice works on top of the terminal.
+One agent, two front doors: the terminal and Telegram. The web app manages your cloud account, voice works on
+top of the terminal, and a sandbox runs the cloud's tools.
 
 {% include children.html %}

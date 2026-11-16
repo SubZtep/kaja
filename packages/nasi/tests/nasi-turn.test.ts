@@ -230,11 +230,11 @@ test("a fallback message is shown, never a blank reply, after exhausting retries
 
 test("a session id cannot be resumed by a different owner sharing the same store", async () => {
   const store = createMemoryStore()
-  const nasiOwnerA = await open([{ content: "reply for A" }], { store, owner: "widget:key1:visitorA" })
+  const nasiOwnerA = await open([{ content: "reply for A" }], { store, owner: "telegram:1" })
   const first = await nasiOwnerA.turnBuffered({ message: "hi" })
   expect(first.status).toBe("completed")
 
-  const nasiOwnerB = await open([{ content: "should not be reached" }], { store, owner: "widget:key1:visitorB" })
+  const nasiOwnerB = await open([{ content: "should not be reached" }], { store, owner: "telegram:2" })
   await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
 })
 

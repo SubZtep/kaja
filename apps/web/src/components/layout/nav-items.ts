@@ -31,10 +31,7 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
 }
 
 /** Tabs of the channels section: the ways to talk to Kaja. */
-export const getChannelItems = (): NavItem[] => [
-  { to: "/channels/telegram", label: m.nav_telegram() },
-  { to: "/channels/widgets", label: m.nav_widgets() }
-]
+export const getChannelItems = (): NavItem[] => [{ to: "/channels/telegram", label: m.nav_telegram() }]
 
 /** Tabs of the account section. */
 export const getAccountItems = (): NavItem[] => [

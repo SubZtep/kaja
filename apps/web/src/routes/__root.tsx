@@ -60,10 +60,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     return { rootEnv, session, sessionError }
   },
   loader: ({ context: { rootEnv, session, sessionError } }) => {
-    const { apiUrl, barkochbaReady, turnstileSiteKey } = rootEnv
+    const { apiUrl, turnstileSiteKey } = rootEnv
     return {
       apiUrl,
-      barkochbaReady,
       turnstileSiteKey,
       session,
       sessionError
