@@ -2,6 +2,11 @@
 
 Tone, typography and terms per language, settled in the 2026-11 review. `/translate` reads this before translating; add a term here when a new one is settled.
 
+## All languages
+
+- the ellipsis is one character, "…", never "..."
+- prompts that take y/N keep `[y/N]`: the code only accepts y or yes
+
 ## hu-HU
 
 - tone: informal "te"; dash " – " (never " — "); quotes „ ”; avoid "a(z) {param}" by rephrasing ("ezzel: {x}")

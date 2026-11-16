@@ -67,7 +67,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
                        互動式設定，抑是管理設定檔
   doctor               列出設定好个模型、MCP 伺服器佮工具，閣檢查連線
   telegram [--pair]    執行你个 Telegram 機器人；--pair 會顯示一組配對碼，予閣一个人配對
-  abilities [update]   揀欲載入佗寡技能，抑是提市集个內容
+  abilities [update]   列出你个能力佮用伊个角色，抑是提市集个內容
   sessions             列出儲存好个本機工作階段佮怹个 ID
   images [describe [--retry] | clean [--yes]]
                        顯示儲存个圖；共無描述个圖描述，抑是提掉賰落來个物件（--local）
@@ -308,7 +308,7 @@ invalidAt = "能力檔無效（{path}）：{message}"
 usage               = "用法：kaja abilities [update]"
 cloudHint           = "你用个是 Kaja 雲端：逐个能力攏佇遐，由角色決定開講愛用啥物；Kaja 提供 API 金鑰。這台機器頂懸个能力是予本機模式用个：`kaja --local abilities`。"
 marketplace         = "市集"
-updating            = "咧更新市集..."
+updating            = "咧更新市集…"
 synced              = "市集已經對 {url}（{ref}）同步，版本 {commit}。"
 nothingChanged      = "攏是上新个。"
 countAdded          = "加 {count} 个"
@@ -351,7 +351,7 @@ invalidAt = "secrets 檔無效（{path}）：{message}"
 
 
 [input]
-placeholder           = "拍寡字..."
+placeholder           = "拍寡字…"
 askPlaceholder        = "拍你个答覆…"
 askChoicesPlaceholder = "抑是拍你家己个答覆…"
 
@@ -438,22 +438,22 @@ pickerTitle = "揀角色"
 
 
 [toolCall]
-webSearch     = "咧揣「{query}」..."
-fetchUrl      = "咧提 {url}..."
-currentTime   = "咧查時間{timezone}..."
-generateImage = "咧產生圖片：「{prompt}」..."
-listFiles     = "咧列 {path} 个檔案..."
-readFile      = "咧讀 {path}..."
-viewImage     = "咧看 {path}..."
-editImage     = "咧編輯圖..."
-rememberNote  = "咧記「{key}」..."
-recallMemory  = "咧回想記憶{query}..."
-forgetNote    = "咧刪除筆記..."
-listNotes     = "咧列筆記..."
-rerank        = "咧共 {n} 筆結果排序..."
-summarize     = "咧摘要..."
-loadSkill     = "咧載入 {name} 技能..."
-loadSkillFile = "咧讀 {name} 技能內底个 {file}..."
+webSearch     = "咧揣「{query}」…"
+fetchUrl      = "咧提 {url}…"
+currentTime   = "咧查時間{timezone}…"
+generateImage = "咧產生圖片：「{prompt}」…"
+listFiles     = "咧列 {path} 个檔案…"
+readFile      = "咧讀 {path}…"
+viewImage     = "咧看 {path}…"
+editImage     = "咧編輯圖…"
+rememberNote  = "咧記「{key}」…"
+recallMemory  = "咧回想記憶{query}…"
+forgetNote    = "咧刪除筆記…"
+listNotes     = "咧列筆記…"
+rerank        = "咧共 {n} 筆結果排序…"
+summarize     = "咧摘要…"
+loadSkill     = "咧載入 {name} 技能…"
+loadSkillFile = "咧讀 {name} 技能內底个 {file}…"
 
 
 [timeline]

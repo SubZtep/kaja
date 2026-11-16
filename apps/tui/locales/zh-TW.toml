@@ -67,7 +67,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
                        互動式設定，或管理設定檔
   doctor               列出已設定的模型、MCP 伺服器和工具，並檢查連線
   telegram [--pair]    執行你的 Telegram 機器人；--pair 會顯示一組配對碼，讓再多一個人配對
-  abilities [update]   選擇要載入哪些技能，或取得市集內容
+  abilities [update]   列出你的能力以及使用它們的角色，或取得市集內容
   sessions             列出已儲存的本機工作階段及其 ID
   images [describe [--retry] | clean [--yes]]
                        顯示已儲存的圖片；描述沒有描述的圖片，或移除殘留項目（--local）
@@ -351,7 +351,7 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 
 
 [input]
-placeholder           = "輸入一些內容..."
+placeholder           = "輸入一些內容…"
 askPlaceholder        = "輸入你的回答…"
 askChoicesPlaceholder = "或輸入你自己的回答…"
 
@@ -438,22 +438,22 @@ pickerTitle = "選擇角色"
 
 
 [toolCall]
-webSearch     = "正在搜尋「{query}」..."
-fetchUrl      = "正在擷取 {url}..."
-currentTime   = "正在查看時間{timezone}..."
-generateImage = "正在產生圖片：「{prompt}」..."
-listFiles     = "正在列出 {path} 中的檔案..."
-readFile      = "正在讀取 {path}..."
-viewImage     = "正在檢視 {path}..."
-editImage     = "正在編輯圖片..."
-rememberNote  = "正在記住「{key}」..."
-recallMemory  = "正在回想記憶{query}..."
-forgetNote    = "正在刪除一則筆記..."
-listNotes     = "正在列出筆記..."
-rerank        = "正在為 {n} 筆結果排序..."
-summarize     = "正在摘要..."
-loadSkill     = "正在載入 {name} 技能..."
-loadSkillFile = "正在從 {name} 技能讀取 {file}..."
+webSearch     = "正在搜尋「{query}」…"
+fetchUrl      = "正在擷取 {url}…"
+currentTime   = "正在查看時間{timezone}…"
+generateImage = "正在產生圖片：「{prompt}」…"
+listFiles     = "正在列出 {path} 中的檔案…"
+readFile      = "正在讀取 {path}…"
+viewImage     = "正在檢視 {path}…"
+editImage     = "正在編輯圖片…"
+rememberNote  = "正在記住「{key}」…"
+recallMemory  = "正在回想記憶{query}…"
+forgetNote    = "正在刪除一則筆記…"
+listNotes     = "正在列出筆記…"
+rerank        = "正在為 {n} 筆結果排序…"
+summarize     = "正在摘要…"
+loadSkill     = "正在載入 {name} 技能…"
+loadSkillFile = "正在從 {name} 技能讀取 {file}…"
 
 
 [timeline]

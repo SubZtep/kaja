@@ -67,7 +67,7 @@ Kajaコマンドラインツール • v{version} • https://kaja.io
                        対話形式のセットアップ、または設定ファイルの管理
   doctor               設定済みのモデル、MCPサーバー、ツールを表示し、接続を確認
   telegram [--pair]    Telegramボットを起動。--pair でもう1人をペアリングするコードを表示
-  abilities [update]   読み込むスキルを選択、またはマーケットプレイスを取得
+  abilities [update]   アビリティとそれを使うペルソナを一覧表示、またはマーケットプレイスを取得
   sessions             保存済みのローカルセッションをIDつきで一覧表示
   images [describe [--retry] | clean [--yes]]
                        保存済みの画像を表示。説明のない画像の説明を生成、または不要なものを削除（--local）
@@ -308,7 +308,7 @@ invalidAt = "{path} のアビリティファイルが無効です: {message}"
 usage               = "使い方: kaja abilities [update]"
 cloudHint           = "Kajaクラウドを使用中です。クラウドではすべてのアビリティが利用でき、チャットで使うものはペルソナが選びます。APIキーはKajaが用意します。このマシンのアビリティはローカルモード用です: `kaja --local abilities`。"
 marketplace         = "マーケットプレイス"
-updating            = "マーケットプレイスを更新中..."
+updating            = "マーケットプレイスを更新中…"
 synced              = "マーケットプレイスを {url}({ref})の {commit} に同期しました。"
 nothingChanged      = "すべて最新です。"
 countAdded          = "{count} 件追加"
@@ -351,7 +351,7 @@ invalidAt = "{path} のシークレットファイルが無効です: {message}"
 
 
 [input]
-placeholder           = "メッセージを入力..."
+placeholder           = "メッセージを入力…"
 askPlaceholder        = "回答を入力…"
 askChoicesPlaceholder = "または自分の回答を入力…"
 
@@ -438,22 +438,22 @@ pickerTitle = "ペルソナを選択"
 
 
 [toolCall]
-webSearch     = "\"{query}\" を検索中..."
-fetchUrl      = "{url} を取得中..."
-currentTime   = "時刻を確認中{timezone}..."
-generateImage = "画像を生成中: \"{prompt}\"..."
-listFiles     = "{path} のファイルを一覧表示中..."
-readFile      = "{path} を読み込み中..."
-viewImage     = "{path} を表示中..."
-editImage     = "画像を編集中..."
-rememberNote  = "\"{key}\" を記憶中..."
-recallMemory  = "記憶を呼び出し中{query}..."
-forgetNote    = "メモを消去中..."
-listNotes     = "メモを一覧表示中..."
-rerank        = "{n} 件の結果を順位付け中..."
-summarize     = "要約中..."
-loadSkill     = "{name} スキルを読み込み中..."
-loadSkillFile = "{name} スキルの {file} を読み込み中..."
+webSearch     = "\"{query}\" を検索中…"
+fetchUrl      = "{url} を取得中…"
+currentTime   = "時刻を確認中{timezone}…"
+generateImage = "画像を生成中: \"{prompt}\"…"
+listFiles     = "{path} のファイルを一覧表示中…"
+readFile      = "{path} を読み込み中…"
+viewImage     = "{path} を表示中…"
+editImage     = "画像を編集中…"
+rememberNote  = "\"{key}\" を記憶中…"
+recallMemory  = "記憶を呼び出し中{query}…"
+forgetNote    = "メモを消去中…"
+listNotes     = "メモを一覧表示中…"
+rerank        = "{n} 件の結果を順位付け中…"
+summarize     = "要約中…"
+loadSkill     = "{name} スキルを読み込み中…"
+loadSkillFile = "{name} スキルの {file} を読み込み中…"
 
 
 [timeline]

@@ -67,7 +67,7 @@ COMANDOS
                        Configura de forma interativa ou gerencia os arquivos de configuração
   doctor               Mostra os modelos, servidores MCP e ferramentas configurados e verifica as conexões
   telegram [--pair]    Executa seu bot do Telegram; --pair mostra um código para parear mais uma pessoa
-  abilities [update]   Escolhe quais skills carregar, ou baixa o marketplace
+  abilities [update]   Lista suas habilidades e as personas que as usam, ou baixa o marketplace
   sessions             Lista as sessões locais salvas com seus ids
   images [describe [--retry] | clean [--yes]]
                        Mostra as imagens guardadas; descreve as que não têm descrição, ou remove as sobras (--local)
@@ -308,7 +308,7 @@ invalidAt = "Arquivo de habilidades inválido em {path}: {message}"
 usage               = "Uso: kaja abilities [update]"
 cloudHint           = "Você está usando a nuvem do Kaja: todas as habilidades estão disponíveis lá, e as personas escolhem o que um chat usa; o Kaja fornece as chaves de API. As habilidades desta máquina são para o modo local: `kaja --local abilities`."
 marketplace         = "Marketplace"
-updating            = "Atualizando o marketplace..."
+updating            = "Atualizando o marketplace…"
 synced              = "Marketplace sincronizado de {url} ({ref}) em {commit}."
 nothingChanged      = "Tudo está atualizado."
 countAdded          = "{count} adicionadas"
@@ -351,7 +351,7 @@ invalidAt = "Arquivo de segredos inválido em {path}: {message}"
 
 
 [input]
-placeholder           = "Digite algo..."
+placeholder           = "Digite algo…"
 askPlaceholder        = "Digite sua resposta…"
 askChoicesPlaceholder = "Ou digite a sua própria resposta…"
 
@@ -438,22 +438,22 @@ pickerTitle = "Escolha uma persona"
 
 
 [toolCall]
-webSearch     = "Pesquisando \"{query}\"..."
-fetchUrl      = "Buscando {url}..."
-currentTime   = "Verificando a hora{timezone}..."
-generateImage = "Gerando uma imagem: \"{prompt}\"..."
-listFiles     = "Listando arquivos em {path}..."
-readFile      = "Lendo {path}..."
-viewImage     = "Vendo {path}..."
-editImage     = "Editando uma imagem..."
-rememberNote  = "Memorizando \"{key}\"..."
-recallMemory  = "Consultando a memória{query}..."
-forgetNote    = "Esquecendo uma nota..."
-listNotes     = "Listando notas..."
-rerank        = "Classificando {n} resultados..."
-summarize     = "Resumindo..."
-loadSkill     = "Carregando a skill {name}..."
-loadSkillFile = "Lendo {file} da skill {name}..."
+webSearch     = "Pesquisando \"{query}\"…"
+fetchUrl      = "Buscando {url}…"
+currentTime   = "Verificando a hora{timezone}…"
+generateImage = "Gerando uma imagem: \"{prompt}\"…"
+listFiles     = "Listando arquivos em {path}…"
+readFile      = "Lendo {path}…"
+viewImage     = "Vendo {path}…"
+editImage     = "Editando uma imagem…"
+rememberNote  = "Memorizando \"{key}\"…"
+recallMemory  = "Consultando a memória{query}…"
+forgetNote    = "Esquecendo uma nota…"
+listNotes     = "Listando notas…"
+rerank        = "Classificando {n} resultados…"
+summarize     = "Resumindo…"
+loadSkill     = "Carregando a skill {name}…"
+loadSkillFile = "Lendo {file} da skill {name}…"
 
 
 [timeline]

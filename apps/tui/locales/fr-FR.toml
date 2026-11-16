@@ -67,7 +67,7 @@ COMMANDES
                        Configurer de façon interactive, ou gérer les fichiers de config
   doctor               Afficher les modèles, serveurs MCP et outils configurés, et vérifier les connexions
   telegram [--pair]    Lancer ton bot Telegram ; --pair affiche un code pour appairer une personne de plus
-  abilities [update]   Choisir les compétences à charger, ou récupérer le marketplace
+  abilities [update]   Lister tes capacités et les personas qui les utilisent, ou récupérer le marketplace
   sessions             Lister les sessions locales enregistrées avec leurs ids
   images [describe [--retry] | clean [--yes]]
                        Afficher les images stockées ; décrire celles sans description, ou supprimer les restes (--local)
@@ -308,7 +308,7 @@ invalidAt = "Fichier de capacités invalide à {path} : {message}"
 usage               = "Utilisation : kaja abilities [update]"
 cloudHint           = "Tu utilises le cloud Kaja : toutes les capacités y sont disponibles, et ses personas choisissent celles qu'un chat utilise ; Kaja fournit les clés API. Les capacités de cette machine servent au mode local : `kaja --local abilities`."
 marketplace         = "Marketplace"
-updating            = "Mise à jour du marketplace..."
+updating            = "Mise à jour du marketplace…"
 synced              = "Marketplace synchronisé depuis {url} ({ref}) à {commit}."
 nothingChanged      = "Tout est à jour."
 countAdded          = "{count} ajouté(s)"
@@ -351,7 +351,7 @@ invalidAt = "Fichier de secrets invalide à {path} : {message}"
 
 
 [input]
-placeholder           = "Écris quelque chose..."
+placeholder           = "Écris quelque chose…"
 askPlaceholder        = "Tape ta réponse…"
 askChoicesPlaceholder = "Ou tape ta propre réponse…"
 
@@ -438,22 +438,22 @@ pickerTitle = "Choisir une persona"
 
 
 [toolCall]
-webSearch     = "Recherche de \"{query}\"..."
-fetchUrl      = "Récupération de {url}..."
-currentTime   = "Consultation de l'heure{timezone}..."
-generateImage = "Génération d'une image : \"{prompt}\"..."
-listFiles     = "Liste des fichiers dans {path}..."
-readFile      = "Lecture de {path}..."
-viewImage     = "Affichage de {path}..."
-editImage     = "Modification d'une image..."
-rememberNote  = "Mémorisation de \"{key}\"..."
-recallMemory  = "Rappel de la mémoire{query}..."
-forgetNote    = "Oubli d'une note..."
-listNotes     = "Liste des notes..."
-rerank        = "Classement de {n} résultats..."
-summarize     = "Résumé en cours..."
-loadSkill     = "Chargement de la compétence {name}..."
-loadSkillFile = "Lecture de {file} dans la compétence {name}..."
+webSearch     = "Recherche de \"{query}\"…"
+fetchUrl      = "Récupération de {url}…"
+currentTime   = "Consultation de l'heure{timezone}…"
+generateImage = "Génération d'une image : \"{prompt}\"…"
+listFiles     = "Liste des fichiers dans {path}…"
+readFile      = "Lecture de {path}…"
+viewImage     = "Affichage de {path}…"
+editImage     = "Modification d'une image…"
+rememberNote  = "Mémorisation de \"{key}\"…"
+recallMemory  = "Rappel de la mémoire{query}…"
+forgetNote    = "Oubli d'une note…"
+listNotes     = "Liste des notes…"
+rerank        = "Classement de {n} résultats…"
+summarize     = "Résumé en cours…"
+loadSkill     = "Chargement de la compétence {name}…"
+loadSkillFile = "Lecture de {file} dans la compétence {name}…"
 
 
 [timeline]

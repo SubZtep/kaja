@@ -67,7 +67,7 @@ Kaja 명령줄 도구 • v{version} • https://kaja.io
                        대화형 설정 또는 설정 파일 관리
   doctor               설정된 모델, MCP 서버, 도구 출력 및 연결 확인
   telegram [--pair]    Telegram 봇 실행. --pair는 한 명을 더 연결할 코드 표시
-  abilities [update]   불러올 스킬 선택 또는 마켓플레이스 가져오기
+  abilities [update]   어빌리티와 이를 쓰는 페르소나 나열 또는 마켓플레이스 가져오기
   sessions             저장된 로컬 세션을 ID와 함께 나열
   images [describe [--retry] | clean [--yes]]
                        저장된 이미지 표시. 설명 없는 이미지에 설명 달기 또는 남은 파일 삭제 (--local)
@@ -308,7 +308,7 @@ invalidAt = "{path}의 어빌리티 파일이 잘못됐어요: {message}"
 usage               = "사용법: kaja abilities [update]"
 cloudHint           = "Kaja 클라우드를 사용 중이에요. 클라우드에서는 모든 어빌리티를 쓸 수 있고, 채팅에 쓸 것은 페르소나가 고르며, API 키는 Kaja가 제공해요. 이 컴퓨터의 어빌리티는 로컬 모드용이에요: `kaja --local abilities`."
 marketplace         = "마켓플레이스"
-updating            = "마켓플레이스 업데이트 중..."
+updating            = "마켓플레이스 업데이트 중…"
 synced              = "{url}({ref})에서 {commit} 기준으로 마켓플레이스를 동기화했어요."
 nothingChanged      = "모두 최신 상태예요."
 countAdded          = "{count}개 추가"
@@ -351,7 +351,7 @@ invalidAt = "{path}의 secrets 파일이 잘못되었어요: {message}"
 
 
 [input]
-placeholder           = "입력하세요..."
+placeholder           = "입력하세요…"
 askPlaceholder        = "답변을 입력하세요…"
 askChoicesPlaceholder = "또는 직접 답변을 입력하세요…"
 
@@ -438,22 +438,22 @@ pickerTitle = "페르소나 선택"
 
 
 [toolCall]
-webSearch     = "\"{query}\" 검색 중..."
-fetchUrl      = "{url} 가져오는 중..."
-currentTime   = "시간 확인 중{timezone}..."
-generateImage = "이미지 생성 중: \"{prompt}\"..."
-listFiles     = "{path}의 파일 목록 보는 중..."
-readFile      = "{path} 읽는 중..."
-viewImage     = "{path} 보는 중..."
-editImage     = "이미지 편집 중..."
-rememberNote  = "\"{key}\" 기억하는 중..."
-recallMemory  = "기억 떠올리는 중{query}..."
-forgetNote    = "메모 잊는 중..."
-listNotes     = "메모 목록 보는 중..."
-rerank        = "결과 {n}개 순위 매기는 중..."
-summarize     = "요약 중..."
-loadSkill     = "{name} 스킬 불러오는 중..."
-loadSkillFile = "{name} 스킬에서 {file} 읽는 중..."
+webSearch     = "\"{query}\" 검색 중…"
+fetchUrl      = "{url} 가져오는 중…"
+currentTime   = "시간 확인 중{timezone}…"
+generateImage = "이미지 생성 중: \"{prompt}\"…"
+listFiles     = "{path}의 파일 목록 보는 중…"
+readFile      = "{path} 읽는 중…"
+viewImage     = "{path} 보는 중…"
+editImage     = "이미지 편집 중…"
+rememberNote  = "\"{key}\" 기억하는 중…"
+recallMemory  = "기억 떠올리는 중{query}…"
+forgetNote    = "메모 잊는 중…"
+listNotes     = "메모 목록 보는 중…"
+rerank        = "결과 {n}개 순위 매기는 중…"
+summarize     = "요약 중…"
+loadSkill     = "{name} 스킬 불러오는 중…"
+loadSkillFile = "{name} 스킬에서 {file} 읽는 중…"
 
 
 [timeline]
