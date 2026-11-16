@@ -229,15 +229,25 @@ async function buildProfileBlock(
 
 // A fresh version fills up field by field: until then each field keeps its answer from the version before
 async function newestAnswers(store: NasiStore, topic: string, dataset: Dataset, owner: string | null) {
-  const answers = new Map<string, string>()
-  let version = await store.latestDatasetVersion(topic, owner)
-  while (version > 0 && dataset.fields.some(f => !answers.has(f.name))) {
-    for (const answer of await store.loadDatasetAnswers(topic, owner, version)) {
-      if (!answers.has(answer.field)) answers.set(answer.field, answer.value)
-    }
-    version--
+  const latest = await store.latestDatasetVersion(topic, owner)
+  return fillAnswers(store, topic, dataset, owner, latest, new Map())
+}
+
+// One version at a time, newest first, so it stops loading once every field has an answer
+async function fillAnswers(
+  store: NasiStore,
+  topic: string,
+  dataset: Dataset,
+  owner: string | null,
+  version: number,
+  answers: Map<string, string>
+): Promise<Map<string, string>> {
+  if (version <= 0 || dataset.fields.every(f => answers.has(f.name))) return answers
+  const rows = await store.loadDatasetAnswers(topic, owner, version)
+  for (const answer of rows) {
+    if (!answers.has(answer.field)) answers.set(answer.field, answer.value)
   }
-  return answers
+  return fillAnswers(store, topic, dataset, owner, version - 1, answers)
 }
 
 async function profileSection(agent: Agent, topic: string, dataset: Dataset, owner: string | null): Promise<string> {
